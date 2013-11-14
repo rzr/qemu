@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -121,7 +121,7 @@ public abstract class SkinDialog extends Dialog {
 
 			if (y < monitorBounds.y) {
 				y = monitorBounds.y;
-			} else if ((y + width) > (monitorBounds.y + monitorBounds.height)) {
+			} else if ((y + height) > (monitorBounds.y + monitorBounds.height)) {
 				y = (monitorBounds.y + monitorBounds.height) - height;
 			}
 

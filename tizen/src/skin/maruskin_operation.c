@@ -40,7 +40,6 @@
 #include "emulator.h"
 #include "debug_ch.h"
 #include "sdb.h"
-#include "qemu_socket.h"
 #include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
@@ -49,6 +48,12 @@
 #include "hw/maru_pm.h"
 #include "sysemu.h"
 #include "sysbus.h"
+
+#if defined(_WIN32)
+#include "nbd.h"
+#else
+#include "qemu_socket.h"
+#endif
 
 #ifdef CONFIG_HAX
 #include "guest_debug.h"
@@ -85,20 +90,30 @@ void start_display(uint64 handle_id,
     int lcd_size_width, int lcd_size_height,
     double scale_factor, short rotation_type)
 {
-    INFO("start_display handle_id:%ld, lcd size:%dx%d, scale_factor:%f, rotation_type:%d\n",
-        (long)handle_id, lcd_size_width, lcd_size_height, scale_factor, rotation_type);
+    INFO("start_display handle_id:%ld, display size:%dx%d, \
+scale_factor:%f, rotation_type:%d\n",
+        (long) handle_id, lcd_size_width, lcd_size_height,
+        scale_factor, rotation_type);
 
     set_emul_win_scale(scale_factor);
-    maruskin_init(handle_id, lcd_size_width, lcd_size_height, false);
+    maruskin_init(handle_id, lcd_size_width, lcd_size_height);
 }
 
 void do_mouse_event(int button_type, int event_type,
     int origin_x, int origin_y, int x, int y, int z)
 {
     if (brightness_off) {
-        TRACE("reject mouse touch in lcd off = button:%d, type:%d, x:%d, y:%d, z:%d\n",
-            button_type, event_type, x, y, z);
-        return;
+        if (button_type == 0) {
+            INFO("auto mouse release\n");
+            kbd_mouse_event(0, 0, 0, 0);
+
+            return;
+        } else {
+            TRACE("reject mouse touch in display off : "
+                "button=%d, type=%d, x=%d, y=%d, z=%d\n",
+                button_type, event_type, x, y, z);
+            return;
+        }
     }
 
     TRACE("mouse_event button:%d, type:%d, host:(%d, %d), x:%d, y:%d, z:%d\n",
@@ -126,7 +141,7 @@ void do_mouse_event(int button_type, int event_type,
 
             kbd_mouse_event(x, y, z, 1);
             TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
-            event_type, origin_x, origin_y, x, y, z);
+                event_type, origin_x, origin_y, x, y, z);
             break;
         case MOUSE_UP:
             guest_x = x;
@@ -136,7 +151,7 @@ void do_mouse_event(int button_type, int event_type,
 
             kbd_mouse_event(x, y, z, 0);
             TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
-            event_type, origin_x, origin_y, x, y, z);
+                event_type, origin_x, origin_y, x, y, z);
             break;
         case MOUSE_WHEELUP:
         case MOUSE_WHEELDOWN:
@@ -147,7 +162,7 @@ void do_mouse_event(int button_type, int event_type,
 
             kbd_mouse_event(x, y, -z, event_type);
             TRACE("mouse_event event_type:%d, origin:(%d, %d), x:%d, y:%d, z:%d\n\n",
-            event_type, origin_x, origin_y, x, y, z);
+                event_type, origin_x, origin_y, x, y, z);
             break;
         default:
             ERR("undefined mouse event type passed:%d\n", event_type);
@@ -304,6 +319,14 @@ void do_rotation_event(int rotation_type)
 
     INFO( "do_rotation_event rotation_type:%d\n", rotation_type);
 
+    set_emul_rotation( rotation_type );
+}
+
+void send_rotation_event(int rotation_type)
+{
+
+    INFO( "send_rotation_event rotation_type:%d\n", rotation_type);
+
     char send_buf[32] = { 0 };
 
     switch ( rotation_type ) {
@@ -325,38 +348,49 @@ void do_rotation_event(int rotation_type)
     }
 
     send_to_emuld( "sensor\n\n\n\n", 10, send_buf, 32 );
-
-    set_emul_rotation( rotation_type );
-
 }
 
-QemuSurfaceInfo* get_screenshot_info(void)
+void set_maru_screenshot(DisplayState *ds)
 {
-    DisplaySurface* qemu_display_surface = get_qemu_display_surface();
+    pthread_mutex_lock(&mutex_screenshot);
 
-    if ( !qemu_display_surface ) {
-        ERR( "qemu surface is NULL.\n" );
+    MaruScreenshot *maru_screenshot = get_maru_screenshot();
+    if (maru_screenshot) {
+        maru_screenshot->isReady = 1;
+        if (maru_screenshot->request_screenshot == 1) {
+            memcpy(maru_screenshot->pixel_data,
+                   ds_get_data(ds),
+                   ds_get_linesize(ds) *
+                   ds_get_height(ds));
+            maru_screenshot->request_screenshot = 0;
+
+            pthread_cond_signal(&cond_screenshot);
+        }
+    }
+    pthread_mutex_unlock(&mutex_screenshot);
+}
+
+QemuSurfaceInfo *get_screenshot_info(void)
+{
+    QemuSurfaceInfo *info =
+            (QemuSurfaceInfo *)g_malloc0(sizeof(QemuSurfaceInfo));
+    if (!info) {
+        ERR("Fail to malloc for QemuSurfaceInfo.\n");
         return NULL;
     }
 
-    QemuSurfaceInfo* info = (QemuSurfaceInfo*) g_malloc0( sizeof(QemuSurfaceInfo) );
-    if ( !info ) {
-        ERR( "Fail to malloc for QemuSurfaceInfo.\n");
+    int length = get_emul_lcd_width() * get_emul_lcd_height() * 4;
+    INFO("screenshot data length:%d\n", length);
+
+    if (0 >= length) {
+        g_free(info);
+        ERR("screenshot data ( 0 >=length ). length:%d\n", length);
         return NULL;
     }
 
-    int length = qemu_display_surface->linesize * qemu_display_surface->height;
-    INFO( "screenshot data length:%d\n", length );
-
-    if ( 0 >= length ) {
-        g_free( info );
-        ERR( "screenshot data ( 0 >=length ). length:%d\n", length );
-        return NULL;
-    }
-
-    info->pixel_data = (unsigned char*) g_malloc0( length );
-    if ( !info->pixel_data ) {
-        g_free( info );
+    info->pixel_data = (unsigned char *)g_malloc0(length);
+    if (!info->pixel_data) {
+        g_free(info);
         ERR("Fail to malloc for pixel data.\n");
         return NULL;
     }
@@ -385,7 +419,7 @@ QemuSurfaceInfo* get_screenshot_info(void)
     return info;
 }
 
-void free_screenshot_info(QemuSurfaceInfo* info)
+void free_screenshot_info(QemuSurfaceInfo *info)
 {
     if (info) {
         if(info->pixel_data) {
@@ -582,11 +616,15 @@ static void* run_timed_shutdown_thread(void* args)
 static void send_to_emuld(const char* request_type,
     int request_size, const char* send_buf, int buf_size)
 {
+#if defined(_WIN32)
+    int s = tcp_socket_outgoing( "127.0.0.1", (uint16_t) ( tizen_base_port + SDB_TCP_EMULD_INDEX ) );
+#else
     char addr[128];
     int s = 0;
 
     snprintf(addr, 128, ":%u", (uint16_t) (tizen_base_port + SDB_TCP_EMULD_INDEX));
     s = inet_connect(addr, true, NULL, NULL);
+#endif
 
     if ( s < 0 ) {
         ERR( "can't create socket to emulator daemon in guest\n" );

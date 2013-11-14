@@ -1,7 +1,7 @@
 /**
+ * General Skin Frame Maker
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -100,6 +100,8 @@ public class SkinPatches {
 
 		// TODO: copy alphaData
 		GC gc = new GC(patchedImage);
+		//gc.setInterpolation(SWT.NONE);
+
 		gc.setBackground(display.getSystemColor(SWT.COLOR_MAGENTA));
 		gc.fillRectangle(0, 0, patchedImageWidth, patchedImageHeight);
 

@@ -1,7 +1,7 @@
 /*
  * MARU display driver
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -41,8 +41,10 @@ typedef struct MaruScreenshot {
 
 void maru_display_init(DisplayState *ds);
 void maru_display_fini(void);
-void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
-DisplaySurface* get_qemu_display_surface(void);
-MaruScreenshot* get_maru_screenshot(void);
+void maruskin_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height);
+
+MaruScreenshot *get_maru_screenshot(void);
+void set_maru_screenshot(DisplayState *surface);
 
 #endif /* __MARU_DISPLAY_H__ */

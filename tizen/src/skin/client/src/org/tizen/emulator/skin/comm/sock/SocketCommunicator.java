@@ -223,6 +223,7 @@ public class SocketCommunicator implements ICommunicator {
 			}
 		};
 
+		sendThread.setDaemon(true);
 		sendThread.start();
 
 		try {
@@ -478,7 +479,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	}
 
-	public synchronized DataTranfer sendToQEMU(
+	public synchronized DataTranfer sendDataToQEMU(
 			SendCommand command, ISendData data, boolean useDataTransfer) {
 
 		DataTranfer dataTranfer = null;

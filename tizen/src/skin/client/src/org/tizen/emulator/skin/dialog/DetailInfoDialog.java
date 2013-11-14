@@ -207,7 +207,8 @@ public class DetailInfoDialog extends SkinDialog {
 
 		String infoData = null;
 
-		DataTranfer dataTranfer = communicator.sendToQEMU( SendCommand.DETAIL_INFO, null, true );
+		DataTranfer dataTranfer =
+				communicator.sendDataToQEMU(SendCommand.DETAIL_INFO, null, true);
 		byte[] receivedData = communicator.getReceivedData( dataTranfer );
 
 		if ( null != receivedData ) {

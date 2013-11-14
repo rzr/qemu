@@ -243,11 +243,13 @@ int inet_connect_opts(QemuOpts *opts, bool *in_progress, Error **errp)
         ai.ai_family = PF_INET6;
 
 #ifdef CONFIG_MARU
+	#if !defined(_WIN32)
     // for lookup loopback interface...
     if (addr[0] == '\0') {
         ai.ai_flags = 0;
         addr = NULL;
     }
+	#endif
 #endif
 
     /* lookup */

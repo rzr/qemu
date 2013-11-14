@@ -32,10 +32,8 @@
 
 #ifdef TARGET_X86_64
 #define TARGET_LONG_BITS 64
-#define TARGET_PHYS_ADDR_BITS 64
 #else
 #define TARGET_LONG_BITS 32
-#define TARGET_PHYS_ADDR_BITS 32
 #endif
 
 //#define NEED_CPU_H
@@ -219,7 +217,6 @@ enum {
 #define CASE_POINTERS CASE_IN_POINTERS: CASE_OUT_POINTERS
 #define CASE_KNOWN_SIZE_POINTERS CASE_IN_KNOWN_SIZE_POINTERS: CASE_OUT_KNOWN_SIZE_POINTERS
 
-
 #define IS_ARRAY_CHAR(type)  (type == TYPE_ARRAY_CHAR || type == TYPE_1CHAR || type == TYPE_2CHAR || type == TYPE_3CHAR || type == TYPE_4CHAR || type == TYPE_ARRAY_CHAR_OF_LENGTH_DEPENDING_ON_PREVIOUS_ARGS)
 #define IS_ARRAY_SHORT(type)  (type == TYPE_ARRAY_SHORT || type == TYPE_1SHORT || type == TYPE_2SHORT || type == TYPE_3SHORT || type == TYPE_4SHORT || type == TYPE_ARRAY_SHORT_OF_LENGTH_DEPENDING_ON_PREVIOUS_ARGS)
 #define IS_ARRAY_INT(type)  (type == TYPE_ARRAY_INT || type == TYPE_1INT || type == TYPE_2INT || type == TYPE_3INT || type == TYPE_4INT || type == TYPE_ARRAY_INT_OF_LENGTH_DEPENDING_ON_PREVIOUS_ARGS)
@@ -244,10 +241,10 @@ static const int _init64_signature[] =
     { TYPE_NONE, 1, 3, TYPE_INT, TYPE_INT, TYPE_OUT_1INT };
 
 static const int _resize_surface_signature[] =
-    {TYPE_NONE, 0, 3, TYPE_INT, TYPE_INT, TYPE_INT};
+    { TYPE_NONE, 0, 3, TYPE_INT, TYPE_INT, TYPE_INT };
 
 static const int _render_surface_signature[] =
-    {TYPE_NONE, 1, 4, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_OUT_ARRAY_CHAR};
+    { TYPE_NONE, 1, 4, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_OUT_ARRAY_CHAR };
 
 /* XVisualInfo* glXChooseVisual( Display *dpy, int screen, int *attribList ) */
 static const int glXChooseVisual_signature[] =
@@ -260,7 +257,8 @@ static const int glXCreateContext_signature[] =
 
 static const int glXCopyContext_signature[] =
     { TYPE_NONE, 0, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_INT };
+    TYPE_INT
+};
 
 /* void glXDestroyContext( Display *dpy, GLXContext ctx ) */
 static const int glXDestroyContext_signature[] =
@@ -275,12 +273,14 @@ static const int glXMakeCurrent_signature[] =
                   int attrib, int *value )*/
 static const int glXGetConfig_signature[] =
     { TYPE_INT, 1, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_OUT_1INT };
+    TYPE_OUT_1INT
+};
 
 /* "glXGetConfig_extended"(dpy, visual_id, int n, int* attribs, int* values, int* rets) */
 static const int glXGetConfig_extended_signature[] =
     { TYPE_NONE, 1, 6, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_INT, TYPE_OUT_ARRAY_INT, TYPE_OUT_ARRAY_INT };
+    TYPE_ARRAY_INT, TYPE_OUT_ARRAY_INT, TYPE_OUT_ARRAY_INT
+};
 
 /* void glXSwapBuffers( Display *dpy, GLXDrawable drawable ); */
 static const int glXSwapBuffers_signature[] =
@@ -311,13 +311,11 @@ static const int glXQueryExtensionsString_signature[] =
 static const int glXQueryServerString_signature[] =
     { TYPE_CONST_CHAR, 0, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT };
 
-
 static const int glXGetProcAddress_fake_signature[] =
     { TYPE_INT, 0, 1, TYPE_NULL_TERMINATED_STRING };
 
 static const int glXGetProcAddress_global_fake_signature[] =
     { TYPE_NONE, 1, 3, TYPE_INT, TYPE_ARRAY_CHAR, TYPE_OUT_ARRAY_CHAR };
-
 
 /* GLX 1.3 and later */
 
@@ -326,11 +324,13 @@ GLXFBConfig *glXChooseFBConfig( Display *dpy, int screen,
                                        const int *attribList, int *nitems ); */
 static const int glXChooseFBConfig_signature[] =
     { TYPE_INT, 1, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_ARRAY_INT,
-TYPE_OUT_1INT };
+    TYPE_OUT_1INT
+};
 
 static const int glXChooseFBConfigSGIX_signature[] =
     { TYPE_INT, 1, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_ARRAY_INT,
-TYPE_OUT_1INT };
+    TYPE_OUT_1INT
+};
 
 static const int glXGetFBConfigs_signature[] =
     { TYPE_INT, 1, 3, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_OUT_1INT };
@@ -338,8 +338,8 @@ static const int glXGetFBConfigs_signature[] =
 /* "glXGetFBConfigAttrib_extended"(dpy, fbconfig, int n, int* attribs, int* values, int* rets) */
 static const int glXGetFBConfigAttrib_extended_signature[] =
     { TYPE_NONE, 1, 6, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_INT, TYPE_OUT_ARRAY_INT, TYPE_OUT_ARRAY_INT };
-
+    TYPE_ARRAY_INT, TYPE_OUT_ARRAY_INT, TYPE_OUT_ARRAY_INT
+};
 
 /* GLXPbuffer glXCreatePbuffer( Display *dpy, GLXFBConfig config,
                              const int *attribList ) */
@@ -348,7 +348,8 @@ static const int glXCreatePbuffer_signature[] =
 
 static const int glXCreateGLXPbufferSGIX_signature[] =
     { TYPE_INT, 0, 5, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_INT };
+    TYPE_ARRAY_INT
+};
 
 static const int glXDestroyPbuffer_signature[] =
     { TYPE_NONE, 0, 2, TYPE_IN_IGNORED_POINTER, TYPE_INT };
@@ -363,11 +364,13 @@ static const int glXDestroyGLXPbufferSGIX_signature[] =
                                Bool  Direct) */
 static const int glXCreateNewContext_signature[] =
     { TYPE_INT, 0, 5, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT };
+    TYPE_INT
+};
 
 static const int glXCreateContextWithConfigSGIX_signature[] =
     { TYPE_INT, 0, 5, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT };
+    TYPE_INT
+};
 
 /*XVisualInfo *glXGetVisualFromFBConfig( Display *dpy, GLXFBConfig config ) */
 static const int glXGetVisualFromFBConfig_signature[] =
@@ -376,23 +379,28 @@ static const int glXGetVisualFromFBConfig_signature[] =
 /*int glXGetFBConfigAttrib(Display *dpy, GLXFBConfig  config, int attribute, int *value)*/
 static const int glXGetFBConfigAttrib_signature[] =
     { TYPE_INT, 1, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_OUT_1INT };
+    TYPE_OUT_1INT
+};
 
 static const int glXGetFBConfigAttribSGIX_signature[] =
     { TYPE_INT, 1, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_OUT_1INT };
+    TYPE_OUT_1INT
+};
 
 static const int glXQueryContext_signature[] =
     { TYPE_INT, 1, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_OUT_1INT };
+    TYPE_OUT_1INT
+};
 
 static const int glXQueryGLXPbufferSGIX_signature[] =
     { TYPE_INT, 1, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_OUT_1INT };
+    TYPE_OUT_1INT
+};
 
 static const int glXQueryDrawable_signature[] =
     { TYPE_NONE, 1, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
-TYPE_OUT_1INT };
+    TYPE_OUT_1INT
+};
 
 /* void glXUseXFont( Font font, int first, int count, int list ) */
 static const int glXUseXFont_signature[] =
@@ -408,18 +416,17 @@ static const int glXGetScreenDriver_signature[] =
 static const int glXGetDriverConfig_signature[] =
     { TYPE_CONST_CHAR, 0, 1, TYPE_NULL_TERMINATED_STRING };
 
-
 static const int glXWaitVideoSyncSGI_signature[] =
     { TYPE_INT, 1, 3, TYPE_INT, TYPE_INT, TYPE_OUT_1INT };
 
 static const int glXGetVideoSyncSGI_signature[] =
     { TYPE_INT, 1, 1, TYPE_OUT_1INT };
 
-static const int glXSwapIntervalSGI_signature[] =
-    { TYPE_INT, 0, 1, TYPE_INT };
+static const int glXSwapIntervalSGI_signature[] = { TYPE_INT, 0, 1, TYPE_INT };
 
 static const int glXCreatePixmap_signature[] =
-    { TYPE_INT, 0, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT, TYPE_ARRAY_INT };
+    { TYPE_INT, 0, 4, TYPE_IN_IGNORED_POINTER, TYPE_INT, TYPE_INT,
+TYPE_ARRAY_INT };
 
 static const int glXDestroyPixmap_signature[] =
     { TYPE_NONE, 0, 2, TYPE_IN_IGNORED_POINTER, TYPE_INT };
@@ -437,8 +444,7 @@ static const int glEGLImageTargetTexture2DOES_fake_signature[] =
     { TYPE_NONE, 0, 2, TYPE_UNSIGNED_INT, TYPE_INT };
 
 /* const GLubyte * glGetString( GLenum name ) */
-static const int glGetString_signature[] =
-    { TYPE_CONST_CHAR, 0, 1, TYPE_INT };
+static const int glGetString_signature[] = { TYPE_CONST_CHAR, 0, 1, TYPE_INT };
 
 /* void glShaderSourceARB (GLhandleARB handle , GLsizei size, const GLcharARB* *p_tab_prog, const GLint * tab_length) */
 /* --> void glShaderSourceARB (GLhandleARB handle , GLsizei size, const GLcharARB* all_progs, const GLint * tab_length) */
@@ -449,94 +455,144 @@ static const int glShaderSource_fake_signature[] =
 
 static const int glVertexPointer_fake_signature[] =
     { TYPE_NONE, 0, 6, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glNormalPointer_fake_signature[] =
     { TYPE_NONE, 0, 5, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glColorPointer_fake_signature[] =
     { TYPE_NONE, 0, 6, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glSecondaryColorPointer_fake_signature[] =
     { TYPE_NONE, 0, 6, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glIndexPointer_fake_signature[] =
     { TYPE_NONE, 0, 5, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glTexCoordPointer_fake_signature[] =
     { TYPE_NONE, 0, 7, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_ARRAY_CHAR
+};
 static const int glEdgeFlagPointer_fake_signature[] =
     { TYPE_NONE, 0, 4, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
 static const int glVertexAttribPointerARB_fake_signature[] =
     { TYPE_NONE, 0, 8, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR
+};
+
 static const int glVertexAttribPointerNV_fake_signature[] =
     { TYPE_NONE, 0, 7, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_ARRAY_CHAR
+};
+
 static const int glWeightPointerARB_fake_signature[] =
     { TYPE_NONE, 0, 6, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glMatrixIndexPointerARB_fake_signature[] =
     { TYPE_NONE, 0, 6, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glFogCoordPointer_fake_signature[] =
     { TYPE_NONE, 0, 5, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glInterleavedArrays_fake_signature[] =
     { TYPE_NONE, 0, 5, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
 static const int glElementPointerATI_fake_signature[] =
     { TYPE_NONE, 0, 3, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
 static const int glVariantPointerEXT_fake_signature[] =
     { TYPE_NONE, 0, 6, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
 static const int glTuxRacerDrawElements_fake_signature[] =
     { TYPE_NONE, 0, 4, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
 static const int glVertexAndNormalPointer_fake_signature[] =
     { TYPE_NONE, 0, 7, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_ARRAY_CHAR
+};
+
 static const int glTexCoordPointer01_fake_signature[] =
     { TYPE_NONE, 0, 5, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glTexCoordPointer012_fake_signature[] =
     { TYPE_NONE, 0, 5, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
+    TYPE_ARRAY_CHAR
+};
+
 static const int glVertexNormalPointerInterlaced_fake_signature[] =
     { TYPE_NONE, 0, 8, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR
+};
+
 static const int glVertexNormalColorPointerInterlaced_fake_signature[] =
     { TYPE_NONE, 0, 11, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR
+};
+
 static const int glVertexColorTexCoord0PointerInterlaced_fake_signature[] =
     { TYPE_NONE, 0, 12, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR
+};
+
 static const int glVertexNormalTexCoord0PointerInterlaced_fake_signature[] =
     { TYPE_NONE, 0, 11, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR
+};
+
 static const int glVertexNormalTexCoord01PointerInterlaced_fake_signature[] =
     { TYPE_NONE, 0, 14, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
+        TYPE_INT, TYPE_ARRAY_CHAR
+};
+
 static const int glVertexNormalTexCoord012PointerInterlaced_fake_signature[] =
     { TYPE_NONE, 0, 17, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
-static const int
-    glVertexNormalColorTexCoord0PointerInterlaced_fake_signature[] =
-    { TYPE_NONE, 0, 14, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_ARRAY_CHAR };
-static const int
-    glVertexNormalColorTexCoord01PointerInterlaced_fake_signature[] =
-    { TYPE_NONE, 0, 17, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
-static const int
-    glVertexNormalColorTexCoord012PointerInterlaced_fake_signature[] =
-    { TYPE_NONE, 0, 20, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR };
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
+        TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR
+};
 
-static const int glGenTextures_fake_signature[] =
-    { TYPE_NONE, 0, 1, TYPE_INT };
+static const int
+ glVertexNormalColorTexCoord0PointerInterlaced_fake_signature[] =
+    { TYPE_NONE, 0, 14, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
+        TYPE_INT,
+    TYPE_ARRAY_CHAR
+};
+
+static const int
+ glVertexNormalColorTexCoord01PointerInterlaced_fake_signature[] =
+    { TYPE_NONE, 0, 17, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
+        TYPE_INT,
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR
+};
+
+static const int
+ glVertexNormalColorTexCoord012PointerInterlaced_fake_signature[] =
+    { TYPE_NONE, 0, 20, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
+        TYPE_INT,
+    TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_ARRAY_CHAR
+};
+
+static const int glGenTextures_fake_signature[] = { TYPE_NONE, 0, 1, TYPE_INT };
 static const int glGenBuffersARB_fake_signature[] =
     { TYPE_NONE, 0, 1, TYPE_INT };
 static const int glGenLists_fake_signature[] = { TYPE_NONE, 0, 1, TYPE_INT };
@@ -545,10 +601,13 @@ static const int _glDrawElements_buffer_signature[] =
     { TYPE_NONE, 0, 4, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT };
 static const int _glDrawRangeElements_buffer_signature[] =
     { TYPE_NONE, 0, 6, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT };
+    TYPE_INT
+};
+
 static const int _glMultiDrawElements_buffer_signature[] =
     { TYPE_NONE, 0, 5, TYPE_INT, TYPE_ARRAY_INT, TYPE_INT, TYPE_ARRAY_INT,
-TYPE_INT };
+    TYPE_INT
+};
 
 static const int _glVertexPointer_buffer_signature[] =
     { TYPE_NONE, 0, 4, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT };
@@ -566,7 +625,8 @@ static const int _glEdgeFlagPointer_buffer_signature[] =
     { TYPE_NONE, 0, 2, TYPE_INT, TYPE_INT };
 static const int _glVertexAttribPointerARB_buffer_signature[] =
     { TYPE_NONE, 0, 6, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT };
+    TYPE_INT
+};
 static const int _glWeightPointerARB_buffer_signature[] =
     { TYPE_NONE, 0, 4, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT };
 static const int _glMatrixIndexPointerARB_buffer_signature[] =
@@ -578,7 +638,8 @@ static const int _glVariantPointerEXT_buffer_signature[] =
 
 static const int _glReadPixels_pbo_signature[] =
     { TYPE_INT, 0, 7, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT,
-TYPE_INT, TYPE_INT };
+    TYPE_INT, TYPE_INT
+};
 static const int _glDrawPixels_pbo_signature[] =
     { TYPE_NONE, 0, 5, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT };
 static const int _glMapBufferARB_fake_signature[] =
@@ -605,5 +666,4 @@ static const int _glGetError_fake_signature[] = { TYPE_NONE, 0, 0 };
                   func_number == glBufferDataARB_func || \
                   func_number == glNewObjectBufferATI_func)
 
-#endif // INCLUDE_OPENGL_FUNC_H
-
+#endif                          // INCLUDE_OPENGL_FUNC_H

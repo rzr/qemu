@@ -306,7 +306,7 @@ static void mloop_evhandle_keyboard(long data)
 #ifdef TARGET_I386
 static void mloop_evhandle_kbd_add(char *name)
 {
-    TRACE("mloop_evhandle_kbd_add\n");
+    TRACE("try to add a keyboard device.\n");
 
     if (name == NULL) {
         ERR("packet data is NULL.\n");
@@ -343,7 +343,7 @@ static void mloop_evhandle_kbd_add(char *name)
 
 static void mloop_evhandle_kbd_del(char *name)
 {
-    TRACE("mloop_evhandle_kbd_del\n");
+    TRACE("try to remove a keyboard device.\n");
 
     if (name == NULL) {
         ERR("packet data is NULL.\n");
@@ -382,7 +382,7 @@ static void mloop_evhandle_sdcard_attach(char *name)
 {
     char opts[PATH_MAX];
 
-    INFO("mloop_evhandle_sdcard_attach\n");
+    INFO("try to attach sdcard.\n");
 
     if (name == NULL) {
         ERR("Packet data is NULL.\n");
@@ -402,18 +402,21 @@ static void mloop_evhandle_sdcard_attach(char *name)
     qdict_put(qdict, "opts", qstring_from_str(opts));
 
     virtio_sdcard = pci_device_hot_add(cur_mon, qdict);
-
-    INFO("hot add virtio storage device with [%s]\n", opts);
-    INFO("virtio-sdcard device: domain %d, bus %d, slot %d, function %d\n",
+    if (virtio_sdcard) {
+        INFO("hot add virtio storage device with [%s]\n", opts);
+        INFO("virtio-sdcard device: domain %d, bus %d, slot %d, function %d\n",
             pci_find_domain(virtio_sdcard->bus), pci_bus_num(virtio_sdcard->bus),
             PCI_SLOT(virtio_sdcard->devfn), PCI_FUNC(virtio_sdcard->devfn));
+    } else {
+        ERR("failed to create a device for sdcard.\n");
+    }
 
     QDECREF(qdict);
 }
 
 static void mloop_evhandle_sdcard_detach(char *name)
 {
-    INFO("mloop_evhandle_sdcard_detach\n");
+    INFO("try to detach sdcard.\n");
 
     if (name == NULL) {
         ERR("packet data is NULL.\n");
@@ -612,7 +615,6 @@ void mloop_evcmd_usbdisk(char *img)
 
     if (img) {
         if (strlen(img) > PACKET_LEN-5) {
-            // Need log
             ERR("The length of disk image path is greater than "
                 "lenth of maximum packet.\n");
             return;
@@ -634,7 +636,6 @@ void mloop_evcmd_sdcard(char *img)
 
     if (img) {
         if (strlen(img) > PACKET_LEN-5) {
-            // Need log
             ERR("The length of disk image path is greater than "
                 "lenth of maximum packet.\n");
             return;
@@ -718,4 +719,3 @@ void mloop_evcmd_ramdump(void)
     pack.size = 5;
     mloop_evsock_send(&mloop, &pack);
 }
-

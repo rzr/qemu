@@ -1,9 +1,9 @@
-/* 
+/*
  * Emulator
  *
  * Copyright (C) 2012, 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -140,6 +140,23 @@ void set_bin_path_os(gchar * exec_argv)
     g_strlcat(bin_path, "\\", PATH_MAX);
 }
 
+int get_number_of_processors(void)
+{
+    SYSTEM_INFO sysi;
+    int num_processors = 0;
+
+    GetSystemInfo(&sysi);
+    TRACE("Processor type: %d, Core number: %d\n",
+        sysi.dwProcessorType, sysi.dwNumberOfProcessors);
+
+    num_processors = sysi.dwNumberOfProcessors;
+    if (num_processors < 1) {
+        num_processors = 1;
+    }
+
+    return num_processors;
+}
+
 void print_system_info_os(void)
 {
     INFO("* Windows\n");
@@ -160,9 +177,12 @@ void print_system_info_os(void)
     SYSTEM_INFO sysi;
     ZeroMemory(&sysi, sizeof(SYSTEM_INFO));
 
+#if 0
     GetSystemInfo(&sysi);
     INFO("* Processor type : %d, Number of processors : %d\n",
             sysi.dwProcessorType, sysi.dwNumberOfProcessors);
+#endif
+    get_number_of_processors();
 
     MEMORYSTATUSEX memInfo;
     memInfo.dwLength = sizeof(MEMORYSTATUSEX);
@@ -213,7 +233,7 @@ static int get_auto_proxy(BYTE *url, char *http_proxy, char *https_proxy, char *
             ERR("pac file is not wrong! It could be the wrong pac address or pac file format\n");
             fclose(fp_pacfile);
         }
-    } 
+    }
     else {
         ERR("fail to get pacfile fp\n");
         return -1;
@@ -260,7 +280,7 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
             lRet = RegQueryValueEx(hKey, "AutoConfigURL", 0, NULL, url, &dwLength);
             if (lRet == ERROR_SUCCESS && dwLength != 0) {
                 get_auto_proxy(url, http_proxy, https_proxy, ftp_proxy, socks_proxy);
-                RegCloseKey(hKey);      
+                RegCloseKey(hKey);
                 return 0;
             }
         }
@@ -290,7 +310,7 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
     }
     if (*(char*)proxyenable == 0) {
         free(proxyenable);
-        RegCloseKey(hKey);      
+        RegCloseKey(hKey);
         return 0;
     }
 
@@ -299,14 +319,14 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
     if (lRet != ERROR_SUCCESS && dwLength == 0) {
         ERR("Failed to query value from from %s\n",
                 "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
-        RegCloseKey(hKey);      
+        RegCloseKey(hKey);
         return 0;
     }
 
     proxyserver = (BYTE*)malloc(dwLength);
     if (proxyserver == NULL) {
         ERR( "Failed to allocate a buffer\n");
-        RegCloseKey(hKey);      
+        RegCloseKey(hKey);
         return 0;
     }
 
@@ -319,11 +339,11 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
         RegCloseKey(hKey);
         return 0;
     }
-    
+
     if((char*)proxyserver != NULL) {
         INFO("proxy value: %s\n", (char*)proxyserver);
         real_proxy = malloc(MAXLEN);
-        
+
         for(p = strtok((char*)proxyserver, ";"); p; p = strtok(NULL, ";")){
             if(strstr(p, HTTP_PROTOCOL)) {
                 remove_string(p, real_proxy, HTTP_PROTOCOL);

@@ -31,6 +31,7 @@
 #include "console.h"
 #include "maru_virtio_touchscreen.h"
 #include "maru_device_ids.h"
+#include "emul_state.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, touchscreen);
@@ -106,7 +107,7 @@ void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_sta
 
     pthread_mutex_lock(&event_mutex);
 
-    entry->index = ++event_queue_cnt; // 1 ~
+    entry->index = ++event_queue_cnt; /* 1 ~ */
 
     QTAILQ_INSERT_TAIL(&events_queue, entry, node);
 
@@ -268,10 +269,27 @@ void maru_virtio_touchscreen_notify(void)
     }
 }
 
+static void virtio_touchscreen_get_config(
+    VirtIODevice *vdev, uint8_t *config_data)
+{
+    int max_trkid = 10;
+    INFO("virtio_touchscreen_get_config\n");
+
+    max_trkid = get_emul_max_touch_point();
+    memcpy(config_data, &max_trkid, 4);
+}
+
+static void virtio_touchscreen_set_config(
+    VirtIODevice *vdev, const uint8_t *config_data)
+{
+    /* do nothing */
+}
+
 static uint32_t virtio_touchscreen_get_features(
     VirtIODevice *vdev, uint32_t request_features)
 {
-    // TODO:
+    /* do nothing */
+
     return request_features;
 }
 
@@ -287,16 +305,18 @@ VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev)
     INFO("initialize the touchscreen device\n");
 
     ts = (TouchscreenState *)virtio_common_init(DEVICE_NAME,
-        VIRTIO_ID_TOUCHSCREEN, 0 /*config_size*/, sizeof(TouchscreenState));
+        VIRTIO_ID_TOUCHSCREEN, 4, sizeof(TouchscreenState));
 
     if (ts == NULL) {
         ERR("failed to initialize the touchscreen device\n");
         return NULL;
     }
 
+    ts->vdev.get_config = virtio_touchscreen_get_config;
+    ts->vdev.set_config = virtio_touchscreen_set_config;
     ts->vdev.get_features = virtio_touchscreen_get_features;
-    ts->vq = virtio_add_queue(&ts->vdev, 64, maru_virtio_touchscreen_handle);
 
+    ts->vq = virtio_add_queue(&ts->vdev, 64, maru_virtio_touchscreen_handle);
     ts->qdev = dev;
 
     /* reset the counters */

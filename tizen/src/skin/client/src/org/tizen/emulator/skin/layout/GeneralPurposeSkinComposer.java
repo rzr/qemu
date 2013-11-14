@@ -1,5 +1,5 @@
 /**
- * 
+ * General-Purpose Skin Layout
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -48,8 +48,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinState;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
-import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -90,9 +88,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 	private MouseMoveListener shellMouseMoveListener;
 	private MouseListener shellMouseListener;
 
-	private boolean isGrabbedShell;
-	private Point grabPosition;
-
 	public GeneralPurposeSkinComposer(EmulatorConfig config, EmulatorSkin skin,
 			Shell shell, EmulatorSkinState currentState,
 			ImageRegistry imageRegistry) {
@@ -101,8 +96,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		this.shell = shell;
 		this.currentState = currentState;
 		this.imageRegistry = imageRegistry;
-		this.isGrabbedShell= false;
-		this.grabPosition = new Point(0, 0);
 
 		this.frameMaker = new SkinPatches(PATCH_IMAGES_PATH);
 		this.backgroundColor = new Color(shell.getDisplay(), new RGB(38, 38, 38));
@@ -143,6 +136,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		//shell.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 		shell.setLocation(x, y);
 
+		/* This string must match the definition of Emulator-Manager */
 		String emulatorName = SkinUtil.makeEmulatorName(config);
 		shell.setText("Emulator - " + emulatorName);
 
@@ -230,9 +224,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
 
 		if (displayBounds == null) {
-			logger.severe("Failed to lcd information for phone shape skin.");
+			logger.severe("Failed to read display information for skin.");
 			SkinUtil.openMessage(shell, null,
-					"Failed to read lcd information for phone shape skin.\n" +
+					"Failed to read display information for skin.\n" +
 					"Check the contents of skin dbi file.",
 					SWT.ICON_ERROR, config);
 			System.exit(-1);
@@ -268,13 +262,6 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* set window size */
-		if (currentState.getCurrentImage() != null) {
-			ImageData imageData = currentState.getCurrentImage().getImageData();
-			shell.setMinimumSize(imageData.width, imageData.height);
-		}
-
-		shell.pack();
-
 		if (currentState.getCurrentImage() != null) {
 			ImageData imageData = currentState.getCurrentImage().getImageData();
 			shell.setSize(imageData.width, imageData.height);
@@ -375,19 +362,16 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			public void paintControl(final PaintEvent e) {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
+				}
 
-					if (skin.communicator.isSensorDaemonStarted() == true) {
-						/* Let's do one more update for sdl display surface
-						while skipping of framebuffer drawing */
-						DisplayStateData lcdStateData = new DisplayStateData(
-								currentState.getCurrentScale(), currentState.getCurrentRotationId());
-						skin.communicator.sendToQEMU(
-								SendCommand.CHANGE_LCD_STATE, lcdStateData, false);
-					}
+				/* set window size once again (for ubuntu 12.04) */
+				if (currentState.getCurrentImage() != null) {
+					ImageData imageData = currentState.getCurrentImage().getImageData();
+					shell.setSize(imageData.width, imageData.height);
 				}
 
 				/* general shell does not support native transparency,
-				 * so draw image with GC. */
+				 so draw image with GC */
 				if (currentState.getCurrentImage() != null) {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
 				}
@@ -405,13 +389,16 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
-				if (isGrabbedShell == true && e.button == 0/* left button */) {
+				if (skin.isShellGrabbing() == true && e.button == 0/* left button */) {
 					/* move a window */
 					Point previousLocation = shell.getLocation();
-					int x = previousLocation.x + (e.x - grabPosition.x);
-					int y = previousLocation.y + (e.y - grabPosition.y);
+					Point grabLocation = skin.getGrabPosition();
+					if (grabLocation != null) {
+						int x = previousLocation.x + (e.x - grabLocation.x);
+						int y = previousLocation.y + (e.y - grabLocation.y);
 
-					shell.setLocation(x, y);
+						shell.setLocation(x, y);
+					}
 
 					if (skin.keyWindow != null &&
 							skin.keyWindow.getDockPosition() != SWT.NONE) {
@@ -430,8 +417,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (e.button == 1) { /* left button */
 					logger.info("mouseUp in Skin");
 
-					isGrabbedShell = false;
-					grabPosition.x = grabPosition.y = 0;
+					skin.ungrabShell();
 
 					if (skin.keyWindow != null &&
 							skin.keyWindow.getDockPosition() != SWT.NONE) {
@@ -446,9 +432,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				if (1 == e.button) { /* left button */
 					logger.info("mouseDown in Skin");
 
-					isGrabbedShell = true;
-					grabPosition.x = e.x;
-					grabPosition.y = e.y;
+					skin.grabShell(e.x, e.y);
 				}
 			}
 

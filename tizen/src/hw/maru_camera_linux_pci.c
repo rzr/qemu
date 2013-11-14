@@ -81,6 +81,7 @@ static struct marucam_framebuffer *framebuffer;
 static const char *dev_name = "/dev/video0";
 static int v4l2_fd;
 static int convert_trial;
+static int read_trial;
 static int ready_count;
 static int timeout_n;
 
@@ -556,7 +557,12 @@ static int read_frame(MaruCamState *state)
         switch (errno) {
         case EAGAIN:
         case EINTR:
-            ERR("DQBUF error, try again: %s\n", strerror(errno));
+            ERR("DQBUF error, try again(trial=%d): %s\n",
+                read_trial, strerror(errno));
+            if (--read_trial == -1) {
+                ERR("Failed trying to dequeue buffer from device\n");
+                return -1;
+            }
             return 0;
         case EIO:
             ERR("The v4l2_read() met the EIO\n");
@@ -581,6 +587,8 @@ static int read_frame(MaruCamState *state)
     return 0;
 }
 
+#define MAX_CONVERT_TRIAL    10
+#define MAX_READ_TRIAL       30
 static int __v4l2_streaming(MaruCamState *state)
 {
     fd_set fds;
@@ -649,9 +657,11 @@ static int __v4l2_streaming(MaruCamState *state)
     }
 
     /* clear the skip count for select time-out */
-    if (timeout_n > 0) {
-        timeout_n = 0;
-    }
+    timeout_n = 0;
+    /* reset the read trial */
+    read_trial = MAX_READ_TRIAL;
+    /* reset the convert trial */
+    convert_trial = MAX_CONVERT_TRIAL;
 
     return 0;
 }
@@ -671,7 +681,8 @@ static void *marucam_worker_thread(void *thread_param)
             break;
         }
 
-        convert_trial = 10;
+        convert_trial = MAX_CONVERT_TRIAL;
+        read_trial = MAX_READ_TRIAL;
         ready_count = 0;
         timeout_n = 0;
         has_success_frame = 0;
@@ -854,6 +865,8 @@ void marucam_device_open(MaruCamState *state)
         ERR("Failed to set video format: format(0x%x), width:height(%d:%d), "
           "errstr(%s)\n", dst_fmt.fmt.pix.pixelformat, dst_fmt.fmt.pix.width,
           dst_fmt.fmt.pix.height, strerror(errno));
+        v4l2_close(v4l2_fd);
+        v4l2_fd = 0;
         param->errCode = errno;
         return;
     }

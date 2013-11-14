@@ -59,7 +59,7 @@ public class SdlScreenShotWindow extends ScreenShotDialog {
 	}
 
 	protected void capture() throws ScreenShotException {
-		DataTranfer dataTranfer = communicator.sendToQEMU(
+		DataTranfer dataTranfer = communicator.sendDataToQEMU(
 				SendCommand.SCREEN_SHOT, null, true);
 		byte[] receivedData = communicator.getReceivedData(dataTranfer);
 

@@ -31,4 +31,4 @@
 
 int gl_acceleration_capability_check(void);
 
-#endif /* __GLOFFSCREEN_TEST_H__ */
+#endif                          /* __GLOFFSCREEN_TEST_H__ */

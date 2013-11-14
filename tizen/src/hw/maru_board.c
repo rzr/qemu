@@ -12,7 +12,7 @@
  * SungMin Ha <sungmin82.ha@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * JiHye Kim <jihye1128.kim@samsung.com>
- * GiWoong Kim <giwoong.kim@samsung.com> 
+ * GiWoong Kim <giwoong.kim@samsung.com>
  * DongKyun Yun
  * DoHyung Hong
  * Hyunjun Son
@@ -68,7 +68,7 @@
 #include "maru_pm.h"
 
 int codec_init(PCIBus *bus);
-
+int maru_brill_codec_pci_device_init(PCIBus *bus);
 
 #define MAX_IDE_BUS 2
 
@@ -333,7 +333,8 @@ static void maru_x86_machine_init(MemoryRegion *system_memory,
 
     // maru specialized device init...
     if (pci_enabled) {
-        codec_init(pci_bus);        
+//        codec_init(pci_bus);
+        maru_brill_codec_pci_device_init(pci_bus);
     }
 #ifdef CONFIG_YAGL
     pci_create_simple(pci_bus, -1, "yagl");

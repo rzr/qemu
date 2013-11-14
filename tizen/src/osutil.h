@@ -71,5 +71,7 @@ inline void download_url(char *);
 inline size_t write_data(void *, size_t, size_t, FILE *);
 inline void remove_string(char *, char *, const char *);
 
+int get_number_of_processors(void);
+
 #endif // __OS_UTIL_H__
 

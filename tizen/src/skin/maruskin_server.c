@@ -277,7 +277,7 @@ void shutdown_skin_server(void)
 
 void notify_sdb_daemon_start(void)
 {
-    INFO("notify_sensor_daemon_start\n");
+    INFO("notify_sdb_daemon_start\n");
 
     is_sdbd_initialized = 1;
     if (client_sock) {
@@ -870,6 +870,7 @@ static void* run_skin_server(void* args)
                     int scale = 0;
                     double scale_ratio = 0.0;
                     short rotation_type = 0;
+                    int is_rotate = 0;
 
                     char* p = recvbuf;
                     memcpy( &scale, p, sizeof( scale ) );
@@ -886,11 +887,16 @@ static void* run_skin_server(void* args)
 
                     if ( is_sensord_initialized == 1 && get_emul_rotation() != rotation_type ) {
                         do_rotation_event( rotation_type );
+                        is_rotate = 1;
                     }
 
 #ifndef CONFIG_USE_SHM
                     maruskin_sdl_resize(); // send sdl event
 #endif
+                    if (is_rotate) {
+                        send_rotation_event( rotation_type );
+                    }
+
                     break;
                 }
                 case RECV_SCREEN_SHOT: {

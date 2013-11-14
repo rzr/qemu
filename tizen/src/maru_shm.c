@@ -40,7 +40,7 @@ void qemu_ds_shm_update(DisplayState *ds, int x, int y, int w, int h)
     //TODO:
 }
 
-void qemu_ds_shm_resize(DisplayState *ds)
+void qemu_ds_shm_switch(DisplayState *ds)
 {
     //TODO:
 }
@@ -50,13 +50,12 @@ void qemu_ds_shm_refresh(DisplayState *ds)
     vga_hw_update();
 }
 
-void maruskin_shm_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+void maruskin_shm_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height)
 {
-    INFO("maru shm initialization = %d\n", is_resize);
+    INFO("maru shm initialization\n");
 
-    if (is_resize == FALSE) { //once
-        set_emul_lcd_size(lcd_size_width, lcd_size_height);
-        set_emul_sdl_bpp(32);
-    }
+    set_emul_lcd_size(lcd_size_width, lcd_size_height);
+    set_emul_sdl_bpp(32);
 }
 

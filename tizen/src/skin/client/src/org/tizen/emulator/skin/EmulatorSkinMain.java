@@ -1,7 +1,7 @@
 /**
- * 
+ * Emulator Skin Main
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -57,6 +57,7 @@ import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
+import org.tizen.emulator.skin.util.CocoaUtil;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.SkinUtil;
@@ -94,10 +95,17 @@ public class EmulatorSkinMain {
 	 */
 	public static void main(String[] args) {
 		
-		if(SwtUtil.isMacPlatform()) {
-			//TODO: event handling of about dialog 
+		/* make vm name and remove unused menu for macos-x */
+		if (SwtUtil.isMacPlatform()) {
 			System.setProperty("apple.laf.useScreenMenuBar", "true");
-			System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Emulator"); 
+			System.setProperty("com.apple.mrj.application.apple.menu.about.name",
+					"Emulator");
+			Display display = Display.getDefault();
+			display.syncExec(new Runnable() {
+				public void run() {
+					new CocoaUtil().removeTopMenuItems();
+				}
+			});
 		}
 		
 		String simpleMsg = getSimpleMsg(args);
@@ -129,14 +137,16 @@ public class EmulatorSkinMain {
 			logger = SkinLogger.getSkinLogger(EmulatorSkinMain.class).getLogger();
 			logger.info("!!! Start Emualtor Skin !!!");
 
-			logger.info("java.version: " + System.getProperty("java.version"));
-			logger.info("java vendor: " + System.getProperty("java.vendor"));
-			logger.info("vm version: " + System.getProperty("java.vm.version"));
-			logger.info("vm vendor: " + System.getProperty("java.vm.vendor"));
-			logger.info("vm name: " + System.getProperty("java.vm.name"));
-			logger.info("os name: " + System.getProperty("os.name"));
-			logger.info("os arch: " + System.getProperty("os.arch"));
-			logger.info("os version: " + System.getProperty("os.version"));
+			logger.info("java.version : " + System.getProperty("java.version"));
+			logger.info("java vendor : " + System.getProperty("java.vendor"));
+			logger.info("vm version : " + System.getProperty("java.vm.version"));
+			logger.info("vm vendor : " + System.getProperty("java.vm.vendor"));
+			logger.info("vm name : " + System.getProperty("java.vm.name"));
+			logger.info("os name : " + System.getProperty("os.name"));
+			logger.info("os arch : " + System.getProperty("os.arch"));
+			logger.info("os version : " + System.getProperty("os.version"));
+			logger.info("swt platform : " + SWT.getPlatform());
+			logger.info("swt version : " + SWT.getVersion());
 
 			/* startup arguments parsing */
 			Map<String, String> argsMap = parsArgs(args);

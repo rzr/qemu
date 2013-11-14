@@ -1,5 +1,5 @@
 /**
- *
+ * Multi-touch
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -486,9 +486,9 @@ public class EmulatorFingers {
 			}
 		}
 
-		if (count != 0) {
+		/* if (count != 0) {
 			this.grabFingerID = 0;
-		}
+		} */
 
 		return count;
 	}

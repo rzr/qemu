@@ -1,9 +1,9 @@
-/* 
+/*
  * Emulator
  *
  * Copyright (C) 2012, 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -63,16 +63,16 @@ int gproxytool = GCONFTOOL;
 
 /* Getting proxy commands */
 static const char* gproxycmds[][2] = {
-	{ "gconftool-2 -g /system/proxy/mode" , "gsettings get org.gnome.system.proxy mode" },
-	{ "gconftool-2 -g /system/proxy/autoconfig_url", "gsettings get org.gnome.system.proxy autoconfig-url" },
-	{ "gconftool-2 -g /system/http_proxy/host", "gsettings get org.gnome.system.proxy.http host" },
-	{ "gconftool-2 -g /system/http_proxy/port", "gsettings get org.gnome.system.proxy.http port"},
-	{ "gconftool-2 -g /system/proxy/secure_host", "gsettings get org.gnome.system.proxy.https host" },
-	{ "gconftool-2 -g /system/proxy/secure_port", "gsettings get org.gnome.system.proxy.https port" },
-	{ "gconftool-2 -g /system/proxy/ftp_host", "gsettings get org.gnome.system.proxy.ftp host" },
-	{ "gconftool-2 -g /system/proxy/ftp_port", "gsettings get org.gnome.system.proxy.ftp port" },
-	{ "gconftool-2 -g /system/proxy/socks_host", "gsettings get org.gnome.system.proxy.socks host" },
-	{ "gconftool-2 -g /system/proxy/socks_port", "gsettings get org.gnome.system.proxy.socks port" },
+    { "gconftool-2 -g /system/proxy/mode" , "gsettings get org.gnome.system.proxy mode" },
+    { "gconftool-2 -g /system/proxy/autoconfig_url", "gsettings get org.gnome.system.proxy autoconfig-url" },
+    { "gconftool-2 -g /system/http_proxy/host", "gsettings get org.gnome.system.proxy.http host" },
+    { "gconftool-2 -g /system/http_proxy/port", "gsettings get org.gnome.system.proxy.http port"},
+    { "gconftool-2 -g /system/proxy/secure_host", "gsettings get org.gnome.system.proxy.https host" },
+    { "gconftool-2 -g /system/proxy/secure_port", "gsettings get org.gnome.system.proxy.https port" },
+    { "gconftool-2 -g /system/proxy/ftp_host", "gsettings get org.gnome.system.proxy.ftp host" },
+    { "gconftool-2 -g /system/proxy/ftp_port", "gsettings get org.gnome.system.proxy.ftp port" },
+    { "gconftool-2 -g /system/proxy/socks_host", "gsettings get org.gnome.system.proxy.socks host" },
+    { "gconftool-2 -g /system/proxy/socks_port", "gsettings get org.gnome.system.proxy.socks port" },
 };
 
 void check_vm_lock_os(void)
@@ -161,15 +161,28 @@ void set_bin_path_os(gchar * exec_argv)
     g_strlcat(bin_path, "/", PATH_MAX);
 }
 
+int get_number_of_processors(void)
+{
+    int num_processors = 0;
+
+    num_processors = sysconf(_SC_NPROCESSORS_ONLN);
+    if (num_processors < 1) {
+        num_processors = 1;
+    }
+    TRACE("Number of processors : %d\n", num_processors);
+
+    return num_processors;
+}
+
 void print_system_info_os(void)
 {
     INFO("* Linux\n");
 
     /* depends on building */
     INFO("* QEMU build machine linux kernel version : (%d, %d, %d)\n",
-            LINUX_VERSION_CODE >> 16,
-            (LINUX_VERSION_CODE >> 8) & 0xff,
-            LINUX_VERSION_CODE & 0xff);
+        LINUX_VERSION_CODE >> 16,
+        (LINUX_VERSION_CODE >> 8) & 0xff,
+        LINUX_VERSION_CODE & 0xff);
 
      /* depends on launching */
     struct utsname host_uname_buf;

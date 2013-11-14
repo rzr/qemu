@@ -6,13 +6,13 @@ $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/sr
 
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
-QEMU_CFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
+LDFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
 QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
 QEMU_CFLAGS += -framework Cocoa -framework QTKit -framework CoreVideo
-QEMU_CFLAGS += -framework AppKit
+QEMU_CFLAGS += -framework AppKit -framework CoreServices
 endif
 ifndef CONFIG_DEBUG_EXEC
 CFLAGS += -g -O2
@@ -130,6 +130,7 @@ obj-y += maru_virtio_keyboard.o
 obj-y += maru_codec.o
 obj-y += maru_virtio_esm.o
 obj-y += maru_virtio_hwkey.o
+obj-y += maru_brill_codec.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
@@ -155,9 +156,9 @@ obj-y += guest_server.o
 #ifndef CONFIG_DARWIN
 ###########################################################
 ## opengl library for i386
-obj-$(CONFIG_GL) += virtio-gl.o 
+obj-$(CONFIG_GL) += virtio-gl.o
 obj-$(CONFIG_GL) += helper_opengl.o opengl_exec.o mesa_mipmap.o
-obj-$(CONFIG_NO_GL) += virtio-gl-stub.o 
+obj-$(CONFIG_NO_GL) += virtio-gl-stub.o
 obj-y += gloffscreen_test.o gloffscreen_xcomposite.o gloffscreen_common.o gloffscreen_wgl.o gloffscreen_agl.o
 ###########################################################
 #endif

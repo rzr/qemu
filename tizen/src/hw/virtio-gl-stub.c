@@ -18,8 +18,7 @@
 
 #include "virtio.h"
 
-VirtIODevice *virtio_gl_init(DeviceState *dev)
+VirtIODevice *virtio_gl_init(DeviceState * dev)
 {
-	return NULL;
+    return NULL;
 }
-

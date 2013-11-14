@@ -39,6 +39,9 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
+import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
@@ -111,7 +114,6 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		public void run() {
 			stopRequest = false;
 
-			Image temp;
 			int sizeFramebuffer = widthFB * heightFB;
 
 			while (!stopRequest) {
@@ -293,6 +295,15 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	@Override
 	public void displayOff() {
 		logger.info("display off");
+
+		if (isDisplayDragging == true) {
+			logger.info("auto release : mouseEvent");
+			MouseEventData mouseEventData = new MouseEventData(
+					0, MouseEventType.RELEASE.value(),
+					0, 0, 0, 0, 0);
+
+			communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData);
+		}
 
 		if (pollThread.isAlive()) {
 			pollThread.setWaitIntervalTime(0);

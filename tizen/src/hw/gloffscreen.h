@@ -75,41 +75,46 @@ extern const char *glo_glXQueryExtensionsString(void);
 extern GloContext *__glo_context_create(int formatFlags);
 
 /* Create an OpenGL context for a certain pixel format. formatflags are from the GLO_ constants */
-extern GloContext *glo_context_create(int formatFlags, GloContext *shareLists);
+extern GloContext *glo_context_create(int formatFlags, GloContext * shareLists);
 
 /* Destroy a previouslu created OpenGL context */
-extern void glo_context_destroy(GloContext *context);
+extern void glo_context_destroy(GloContext * context);
 
 /* Update the context in surface and free previous light-weight context */
-extern void glo_surface_update_context(GloSurface *surface, GloContext *context, int free_flags);
+extern void glo_surface_update_context(GloSurface * surface,
+                                       GloContext * context, int free_flags);
 
 /* Link the pixmap/pbuffer associated with surface as texture.
  * ctxt is the target context for the texture operation
  */
-extern void glo_surface_as_texture(GloContext *ctxt, GloSurface *surface, int surface_type);
+extern void glo_surface_as_texture(GloContext * ctxt, GloSurface * surface,
+                                   int surface_type);
 
 /* Create a surface with given width and height, */
-extern GloSurface *glo_surface_create(int width, int height, GloContext *context);
+extern GloSurface *glo_surface_create(int width, int height,
+                                      GloContext * context);
 
 /* Destroy the given surface */
-extern void glo_surface_destroy(GloSurface *surface);
+extern void glo_surface_destroy(GloSurface * surface);
 
 /* Make the given surface current */
-extern int glo_surface_makecurrent(GloSurface *surface);
+extern int glo_surface_makecurrent(GloSurface * surface);
 
 /* Get the contents of the given surface. Note that this is top-down, not
  * bottom-up as glReadPixels would do. */
-extern void glo_surface_getcontents(GloSurface *surface, int stride, int type, void *data);
+extern void glo_surface_getcontents(GloSurface * surface, int stride, int type,
+                                    void *data);
 
 /* Return the width and height of the given surface */
-extern void glo_surface_get_size(GloSurface *surface, int *width, int *height);
+extern void glo_surface_get_size(GloSurface * surface, int *width, int *height);
 
 /* Functions to decode the format flags */
 extern int glo_flags_get_depth_bits(int formatFlags);
 extern int glo_flags_get_stencil_bits(int formatFlags);
 extern void glo_flags_get_rgba_bits(int formatFlags, int *rgba);
 extern int glo_flags_get_bytes_per_pixel(int formatFlags);
-extern void glo_flags_get_readpixel_type(int formatFlags, int *glFormat, int *glType);
+extern void glo_flags_get_readpixel_type(int formatFlags, int *glFormat,
+                                         int *glType);
 /* Score how close the given format flags match. 0=great, >0 not so great */
 extern int glo_flags_score(int formatFlagsExpected, int formatFlagsReal);
 
@@ -123,7 +128,11 @@ extern int glo_flags_get_from_glx(const int *fbConfig, int assumeBooleans);
 extern int glo_get_glx_from_flags(int formatFlags, int glxEnum);
 
 /* Get the width and height from attrib_list */
-extern void glo_geometry_get_from_glx(const int* attrib_list, int* width, int* height);
+extern void glo_geometry_get_from_glx(const int *attrib_list, int *width,
+                                      int *height);
+
+extern void glo_surface_release_texture(GloSurface * surface);
+extern void glo_surface_updatecontents(GloSurface * surface);
 
 /* In terms of speed, glReadPixels actually seems the best we can do.
  * * On Windows PFB_DRAW_TO_BITMAP is software-only.
@@ -136,4 +145,4 @@ extern void glo_geometry_get_from_glx(const int* attrib_list, int* width, int* h
  * doing this on Windows at least.
  */
 
-#endif /* GLOFFSCREEN_H_ */
+#endif                          /* GLOFFSCREEN_H_ */

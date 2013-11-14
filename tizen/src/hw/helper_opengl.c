@@ -34,6 +34,7 @@
 #include "opengl_func.h"
 #include "opengl_process.h"
 #include "opengl_exec.h"
+#include "helper_opengl.h"
 
 #include "tizen/src/debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, opengl);
@@ -43,7 +44,7 @@ MULTI_DEBUG_CHANNEL(qemu, opengl);
 #ifdef _WIN32
 #define DEBUGF(...) printf(__VA_ARGS__)
 #else
-extern struct FILE *stderr;		/* Standard error output stream.  */
+extern struct FILE *stderr;     /* Standard error output stream.  */
 #define DEBUGF(...) fprintf(stderr, __VA_ARGS__)
 #endif
 #endif
@@ -58,72 +59,71 @@ extern struct FILE *stderr;		/* Standard error output stream.  */
 
 typedef unsigned long host_ptr;
 
-static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int args_len, char *r_buffer)
+static inline int do_decode_call_int(ProcessStruct * process, void *args_in,
+                                     int args_len, char *r_buffer)
 {
     Signature *signature;
     int i, ret;
-    char *argptr, *tmp;
-    static void* args[50];
+    char *argptr;
+    static host_ptr args[50];
     int func_number;
 #ifdef __APPLE__
     char temp4mac[256];
 #endif
 
-    if(!args_len)
-	return 0;
+    if (!args_len)
+        return 0;
 
     argptr = args_in;
 
-    while((char*)argptr < (char*)args_in + args_len) {
-        func_number = *(short*)argptr;
+    while ((char *)argptr < (char *)args_in + args_len) {
+        func_number = *(short *)argptr;
         argptr += 2;
 
-        if(func_number >= GL_N_CALLS) {
+        if (func_number >= GL_N_CALLS) {
             DEBUGF("Bad function number or corrupt command queue\n");
             return 0;
         }
 
         signature = (Signature *) tab_opengl_calls[func_number];
 
-        tmp = argptr;
-
         for (i = 0; i < signature->nb_args; i++) {
-            int args_size = *(int*)argptr;
-            argptr+=4;
+            int args_size = *(int *)argptr;
+            argptr += 4;
             switch (signature->args_type[i]) {
-                case TYPE_UNSIGNED_INT:
-                case TYPE_INT:
-                case TYPE_UNSIGNED_CHAR:
-                case TYPE_CHAR:
-                case TYPE_UNSIGNED_SHORT:
-                case TYPE_SHORT:
-                case TYPE_FLOAT:
-        	    args[i] = *(int*)argptr;
+            case TYPE_UNSIGNED_INT:
+            case TYPE_INT:
+            case TYPE_UNSIGNED_CHAR:
+            case TYPE_CHAR:
+            case TYPE_UNSIGNED_SHORT:
+            case TYPE_SHORT:
+            case TYPE_FLOAT:
+                args[i] = *(int *)argptr;
                 break;
 
-                case TYPE_NULL_TERMINATED_STRING:
-                CASE_IN_UNKNOWN_SIZE_POINTERS:
+            case TYPE_NULL_TERMINATED_STRING:
+ CASE_IN_UNKNOWN_SIZE_POINTERS:
                 {
-                    if(*(int*)argptr)
-                        args[i] = (host_ptr)argptr+4;
+                    if (*(int *)argptr)
+                        args[i] = (host_ptr) argptr + 4;
                     else
-                        args[i] = (host_ptr)NULL;
+                        args[i] = (host_ptr) NULL;
 
                     if ((args[i] == 0 && args_size == 0 &&
-                        !IS_NULL_POINTER_OK_FOR_FUNC(func_number)) ||
+                         !IS_NULL_POINTER_OK_FOR_FUNC(func_number)) ||
                         (args[i] == 0 && args_size != 0))
-                            return 0;
+                        return 0;
 
                     argptr += 4;
                     break;
                 }
 
-                CASE_IN_LENGTH_DEPENDING_ON_PREVIOUS_ARGS:
+ CASE_IN_LENGTH_DEPENDING_ON_PREVIOUS_ARGS:
                 {
-                    if(*(int*)argptr)
-                        args[i] = (host_ptr)argptr+4;
+                    if (*(int *)argptr)
+                        args[i] = (host_ptr) argptr + 4;
                     else
-                        args[i] = (host_ptr)NULL;
+                        args[i] = (host_ptr) NULL;
 
                     if (args[i] == 0 && args_size != 0)
                         return 0;
@@ -132,41 +132,40 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
                     break;
                 }
 
-                CASE_OUT_POINTERS:
+ CASE_OUT_POINTERS:
                 {
-					/* NULL pointer is used as output pointer
-					   since the argument size is zero. */
-					if (args_size == 0) {
-						*(int*)r_buffer = 0;
-						r_buffer += 4;
+                    /* NULL pointer is used as output pointer
+                       since the argument size is zero. */
+                    if (args_size == 0) {
+                        *(int *)r_buffer = 0;
+                        r_buffer += 4;
 #ifdef __APPLE__
 /*On MAC OS, GL call glGetProgramInfoLog and glGetShaderInfoLog will crash if ouput pointer is NULL*/
-						args[i] = temp4mac;
+                        args[i] = (host_ptr) temp4mac;
 #else
-						args[i] = NULL;
+                        args[i] = (host_ptr) NULL;
 #endif
-					} else if(*(int*)argptr) {
-                        *(int*)r_buffer = args_size;
-                        r_buffer+=4;
-                        args[i] = (host_ptr)r_buffer;
+                    } else if (*(int *)argptr) {
+                        *(int *)r_buffer = args_size;
+                        r_buffer += 4;
+                        args[i] = (host_ptr) r_buffer;
                         r_buffer += args_size;
-                    }
-                    else {
+                    } else {
                         args[i] = 0;
                     }
 
                     argptr += 4;
                     args_size = 0;
                     break;
-                } 
+                }
 
-                case TYPE_DOUBLE:
-                CASE_IN_KNOWN_SIZE_POINTERS:
+            case TYPE_DOUBLE:
+ CASE_IN_KNOWN_SIZE_POINTERS:
                 {
-                    if(*(int*)argptr)
-                        args[i] = (host_ptr)argptr+4;
+                    if (*(int *)argptr)
+                        args[i] = (host_ptr) argptr + 4;
                     else
-                        args[i] = (host_ptr)NULL;
+                        args[i] = (host_ptr) NULL;
 
                     if (args[i] == 0 && args_size != 0)
                         return 0;
@@ -175,29 +174,29 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
                     break;
                 }
 
-                case TYPE_IN_IGNORED_POINTER:
-                    args[i] = 0;
-                    break;
+            case TYPE_IN_IGNORED_POINTER:
+                args[i] = 0;
+                break;
 
-                default:
-                    DEBUGF( "Oops : call %s arg %d pid=%d\n",
-                            tab_opengl_calls_name[func_number], i,
-                            process->process_id);
-                    return 0;
+            default:
+                DEBUGF("Oops : call %s arg %d pid=%d\n",
+                       tab_opengl_calls_name[func_number], i,
+                       process->process_id);
+                return 0;
             }
             argptr += args_size;
         }
 
-        if((char*)argptr > (char*)args_in + args_len) {
+        if ((char *)argptr > (char *)args_in + args_len) {
             DEBUGF("Client bug: malformed command, killing process\n");
             return 0;
         }
 
         if (signature->ret_type == TYPE_CONST_CHAR)
-            r_buffer[0] = 0; // In case high bits are set.
+            r_buffer[0] = 0;    // In case high bits are set.
 
         ret = do_function_call(process, func_number, args, r_buffer);
-	switch(signature->ret_type) {
+        switch (signature->ret_type) {
         case TYPE_INT:
         case TYPE_UNSIGNED_INT:
             memcpy(r_buffer, &ret, sizeof(int));
@@ -210,10 +209,10 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
         case TYPE_NONE:
             break;
         default:
-           DEBUGF("Unsupported GL API return type %i!\n", signature->ret_type);
-           exit (-1);
+            DEBUGF("Unsupported GL API return type %i!\n", signature->ret_type);
+            exit(-1);
         }
-    }  // endwhile
+    }                           // endwhile
 /*
     switch(signature->ret_type) {
         case TYPE_INT:
@@ -234,64 +233,66 @@ static inline int do_decode_call_int(ProcessStruct *process, void *args_in, int 
 */
     return 1;
 }
+
 #define GL_PASSINGTHROUGH_ABI 1
 
 #define GLINIT_FAIL_ABI 3
 #define GLINIT_QUEUE 2
 #define GLINIT_NOQUEUE 1
 
-int decode_call_int(ProcessStruct *process, char *in_args, int args_len, char *r_buffer)
+int decode_call_int(ProcessStruct * process, char *in_args, int args_len,
+                    char *r_buffer)
 {
-	static ProcessStruct *cur_process = NULL;
-	int ret;
-	int first_func = *(short*)in_args;
+    static ProcessStruct *cur_process = NULL;
+    int ret;
+    int first_func = *(short *)in_args;
 
-	/* Select the appropriate context for this pid if it isnt already active
-	 * Note: if we're about to execute glXMakeCurrent() then we tell the
-	 * renderer not to waste its time switching contexts
-	 */
+    /* Select the appropriate context for this pid if it isnt already active
+     * Note: if we're about to execute glXMakeCurrent() then we tell the
+     * renderer not to waste its time switching contexts
+     */
 
-	if (cur_process != process) {
-		cur_process = process;
-		vmgl_context_switch(cur_process, (first_func == glXMakeCurrent_func)?0:1);
-	}
+    if (cur_process != process) {
+        cur_process = process;
+        vmgl_context_switch(cur_process,
+                            (first_func == glXMakeCurrent_func) ? 0 : 1);
+    }
 
-	if(unlikely(first_func == _init32_func || first_func == _init64_func)) {
-		if(!cur_process->wordsize) {
-			int *version = (int*)(in_args+2);
-			cur_process->wordsize = first_func == _init32_func?4:8;
+    if (unlikely(first_func == _init32_func || first_func == _init64_func)) {
+        if (!cur_process->wordsize) {
+            int *version = (int *)(in_args + 2);
+            cur_process->wordsize = first_func == _init32_func ? 4 : 8;
 
-			if((version[0] != 1) || (version[1] < GL_PASSINGTHROUGH_ABI)) {
-				*(int*)r_buffer = GLINIT_FAIL_ABI; // ABI check FAIL
-				TRACE("Error! The GL passing through package in the image does not match the version of QEMUGL. Please update the image!\n");
-				exit (1);
-			} else if(version[1] > GL_PASSINGTHROUGH_ABI) {
-				*(int*)r_buffer = GLINIT_FAIL_ABI; // ABI check FAIL
-				TRACE("Error! The GL passing through package in the image does not match the version of QEMUGL. Please update the QEMUGL!\n");
-				exit (1);
-			}
-			else
-				*(int*)r_buffer = GLINIT_QUEUE; // Indicate that we can buffer commands
+            if ((version[0] != 1) || (version[1] < GL_PASSINGTHROUGH_ABI)) {
+                *(int *)r_buffer = GLINIT_FAIL_ABI;     // ABI check FAIL
+                TRACE
+                    ("Error! The GL passing through package in the image does not match the version of QEMUGL. Please update the image!\n");
+                exit(1);
+            } else if (version[1] > GL_PASSINGTHROUGH_ABI) {
+                *(int *)r_buffer = GLINIT_FAIL_ABI;     // ABI check FAIL
+                TRACE
+                    ("Error! The GL passing through package in the image does not match the version of QEMUGL. Please update the QEMUGL!\n");
+                exit(1);
+            } else
+                *(int *)r_buffer = GLINIT_QUEUE;        // Indicate that we can buffer commands
 
-			return 1; // Initialisation done
-		}
-		else {
-			DEBUGF("Attempt to init twice. Continuing regardless.\n");
-			return 1;
-		}
-	}
+            return 1;           // Initialisation done
+        } else {
+            DEBUGF("Attempt to init twice. Continuing regardless.\n");
+            return 1;
+        }
+    }
 
-	if(unlikely(first_func == -1 || !cur_process->wordsize)) {
-		if(!cur_process->wordsize && first_func != -1)
-			DEBUGF("commands submitted before process init.\n");
-		ret = 0;
-	}
-	else {
-		ret = do_decode_call_int(cur_process, in_args, args_len, r_buffer);
-	}
+    if (unlikely(first_func == -1 || !cur_process->wordsize)) {
+        if (!cur_process->wordsize && first_func != -1)
+            DEBUGF("commands submitted before process init.\n");
+        ret = 0;
+    } else {
+        ret = do_decode_call_int(cur_process, in_args, args_len, r_buffer);
+    }
 
-	if(!ret)
-		cur_process = NULL;
+    if (!ret)
+        cur_process = NULL;
 
-	return ret;
+    return ret;
 }

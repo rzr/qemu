@@ -1,7 +1,7 @@
 /*
  * MARU display driver
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -59,12 +59,12 @@ void maru_display_init(DisplayState *ds)
 #ifndef CONFIG_USE_SHM
     /* sdl library */
     dcl->dpy_update = qemu_ds_sdl_update;
-    dcl->dpy_resize = qemu_ds_sdl_resize;
+    dcl->dpy_resize = qemu_ds_sdl_switch;
     dcl->dpy_refresh = qemu_ds_sdl_refresh;
 #else
     /* shared memroy */
     dcl->dpy_update = qemu_ds_shm_update;
-    dcl->dpy_resize = qemu_ds_shm_resize;
+    dcl->dpy_resize = qemu_ds_shm_switch;
     dcl->dpy_refresh = qemu_ds_shm_refresh;
 #endif
 
@@ -91,26 +91,18 @@ void maru_display_fini(void)
 #endif
 }
 
-void maruskin_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize)
+void maruskin_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height)
 {
 #ifndef CONFIG_USE_SHM
-    maruskin_sdl_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);
+    maruskin_sdl_init(swt_handle, lcd_size_width, lcd_size_height);
 #else
-    maruskin_shm_init(swt_handle, lcd_size_width, lcd_size_height, is_resize);
+    maruskin_shm_init(swt_handle, lcd_size_width, lcd_size_height);
 #endif
 }
 
-DisplaySurface* get_qemu_display_surface(void) {
-#ifndef CONFIG_USE_SHM
-    return maruskin_sdl_get_display();
-#else
-    //TODO:
-#endif
-
-    return NULL;
-}
-
-MaruScreenshot* get_maru_screenshot(void) {
+MaruScreenshot *get_maru_screenshot(void)
+{
     return maru_screenshot;
 }
-
+/* set_maru_screenshot() implemented in maruskin_operation.c */

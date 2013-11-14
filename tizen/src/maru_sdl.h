@@ -1,9 +1,10 @@
 /*
  * SDL_WINDOWID hack
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
+ * Jinhyung Jo <jinhyung.jo@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
@@ -36,15 +37,13 @@
 #include <SDL_syswm.h>
 #include "qemu-common.h"
 
-
 void qemu_ds_sdl_update(DisplayState *ds, int x, int y, int w, int h);
-void qemu_ds_sdl_resize(DisplayState *ds);
+void qemu_ds_sdl_switch(DisplayState *ds);
 void qemu_ds_sdl_refresh(DisplayState *ds);
 
-void maruskin_sdl_init(uint64 swt_handle, int lcd_size_width, int lcd_size_height, bool is_resize);
+void maruskin_sdl_init(uint64 swt_handle,
+    int lcd_size_width, int lcd_size_height);
 void maruskin_sdl_resize(void);
 void maruskin_sdl_quit(void);
-
-DisplaySurface* maruskin_sdl_get_display(void);
 
 #endif /* MARU_SDL_H_ */

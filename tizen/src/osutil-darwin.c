@@ -49,9 +49,11 @@
 #include <sys/shm.h>
 #include <sys/sysctl.h>
 #include <SystemConfiguration/SystemConfiguration.h>
+#include <CoreServices/CoreServices.h>
 
 MULTI_DEBUG_CHANNEL(qemu, osutil);
 
+int g_shmid;
 extern char tizen_target_img_path[];
 extern int tizen_base_port;
 CFDictionaryRef proxySettings;
@@ -85,23 +87,22 @@ void check_vm_lock_os(void)
 
 void make_vm_lock_os(void)
 {
-    int shmid;
     char *shared_memory;
 
-    shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
-    if (shmid == -1) {
+    g_shmid = shmget((key_t)tizen_base_port, MAXLEN, 0666|IPC_CREAT);
+    if (g_shmid == -1) {
         ERR("shmget failed\n");
         perror("osutil-darwin: ");
         return;
     }
 
-    shared_memory = shmat(shmid, (char *)0x00, 0);
+    shared_memory = shmat(g_shmid, (char *)0x00, 0);
     if (shared_memory == (void *)-1) {
         ERR("shmat failed\n");
         perror("osutil-darwin: ");
         return;
     }
-    sprintf(shared_memory, "%s", tizen_target_img_path);
+    g_sprintf(shared_memory, "%s", tizen_target_img_path);
     INFO("shared memory key: %d, value: %s\n", tizen_base_port, (char *)shared_memory);
     
     if (shmdt(shared_memory) == -1) {
@@ -137,10 +138,42 @@ void set_bin_path_os(gchar * exec_argv)
     free(data);
 }
 
+int get_number_of_processors(void)
+{
+    int mib[2], sys_num = 0;
+    size_t len;
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_AVAILCPU;
+
+    sysctl(mib, 2, &sys_num, &len, NULL, 0);
+    if (sys_num < 1) {
+        mib[1] = HW_NCPU;
+        sysctl(mib, 2, &sys_num, &len, NULL, 0);
+
+        if (sys_num < 1) {
+            sys_num = 1;
+        }
+    }
+    INFO("* Number of processors : %d\n", sys_num);
+
+    return sys_num;
+}
+
+static void get_host_os_version(void)
+{
+    int major_version, minor_version, bugfix_version;
+
+    Gestalt(gestaltSystemVersionMajor, &major_version);
+    Gestalt(gestaltSystemVersionMinor, &minor_version);
+    Gestalt(gestaltSystemVersionBugFix, &bugfix_version);
+
+    INFO("* Mac OS X Version: %d.%d.%d\n", major_version, minor_version, bugfix_version);
+}
 
 void print_system_info_os(void)
 {
-  INFO("* Mac\n");
+    INFO("* Mac\n");
 
     /* uname */
     INFO("* Host machine uname :\n");
@@ -175,12 +208,15 @@ void print_system_info_os(void)
     }
     free(sys_info);
 
+#if 0
     mib[0] = CTL_HW;
     mib[1] = HW_NCPU;
     len = sizeof(sys_num);
     if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
         INFO("* Number of processors : %d\n", sys_num);
     }
+#endif
+    get_number_of_processors();
 
     mib[0] = CTL_HW;
     mib[1] = HW_PHYSMEM;
@@ -188,6 +224,8 @@ void print_system_info_os(void)
     if (sysctl(mib, 2, &sys_num, &len, NULL, 0) >= 0) {
         INFO("* Total memory : %llu bytes\n", sys_num);
     }
+
+    get_host_os_version();
 }
 
 static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
@@ -241,7 +279,7 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     }
     else {
         ERR("fail to get pacfile fp\n");
-	return -1;
+    return -1;
     }
 
     remove(pac_tempfile);
@@ -333,7 +371,7 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
         ret = get_auto_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
         if(strlen(http_proxy) == 0 && ret < 0) {
             INFO("MANUAL PROXY MODE\n");
-	        get_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-	    }
+            get_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+        }
     }
 }
