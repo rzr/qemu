@@ -71,6 +71,7 @@
         <rotateItem visible="true" />
         <scaleItem visible="true" />
         <keywindowItem visible="true" />
+        <hostKeyboardItem visible="true" />
         <shellItem visible="true" />
     </popupMenu>
     <option>

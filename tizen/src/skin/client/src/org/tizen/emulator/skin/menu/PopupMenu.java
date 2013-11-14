@@ -182,15 +182,16 @@ public class PopupMenu {
 			createScreenShotItem(advancedSubMenu, SCREENSHOT_MENUITEM_NAME);
 
 			/* VirtIO Keyboard menu */
-			hostKeyboardItem = new MenuItem(advancedSubMenu, SWT.CASCADE);
-			hostKeyboardItem.setText(HOSTKEYBOARD_MENUITEM_NAME);
-			hostKeyboardItem.setImage(imageRegistry.getIcon(IconName.HOST_KEYBOARD));
-
-			Menu hostKeyboardSubMenu = new Menu(advancedSubMenu.getShell(), SWT.DROP_DOWN);
-			{
-				createKeyboardOnOffItem(hostKeyboardSubMenu);
+			if (itemProperties == null || itemProperties.getHostKeyboardItem() == null) {
+				createHostKeyboardItem(advancedSubMenu, HOSTKEYBOARD_MENUITEM_NAME);
+			} else {
+				MenuItemType hostKeyboardMenuType = itemProperties.getHostKeyboardItem();
+				if (hostKeyboardMenuType.isVisible() == true) {
+					createHostKeyboardItem(advancedSubMenu,
+							(hostKeyboardMenuType.getItemName().isEmpty()) ?
+							HOSTKEYBOARD_MENUITEM_NAME : hostKeyboardMenuType.getItemName());
+				}
 			}
-			hostKeyboardItem.setMenu(hostKeyboardSubMenu);
 
 			/* Diagnosis menu */
 			if (SwtUtil.isLinuxPlatform()) { //TODO: windows
@@ -320,6 +321,18 @@ public class PopupMenu {
 
 		SelectionAdapter screenshotListener = skin.createScreenshotMenuListener();
 		screenshotItem.addSelectionListener(screenshotListener);
+	}
+
+	private void createHostKeyboardItem(Menu menu, String name) {
+		hostKeyboardItem = new MenuItem(menu, SWT.CASCADE);
+		hostKeyboardItem.setText(name);
+		hostKeyboardItem.setImage(imageRegistry.getIcon(IconName.HOST_KEYBOARD));
+
+		Menu hostKeyboardSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
+		{
+			createKeyboardOnOffItem(hostKeyboardSubMenu);
+		}
+		hostKeyboardItem.setMenu(hostKeyboardSubMenu);
 	}
 
 	private void createKeyboardOnOffItem(Menu menu) {

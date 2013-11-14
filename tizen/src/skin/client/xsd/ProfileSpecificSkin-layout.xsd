@@ -99,6 +99,7 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 			<element name="rotateItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 			<element name="scaleItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 			<element name="keywindowItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
+			<element name="hostKeyboardItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 			<element name="shellItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 		</all>
 	</complexType>
