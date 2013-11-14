@@ -20,6 +20,15 @@ void yagl_host_glReadPixels(GLint x,
     GLenum format,
     GLenum type,
     GLvoid *pixels, int32_t pixels_maxcount, int32_t *pixels_count);
+void yagl_host_glDrawArraysInstanced(GLenum mode,
+    GLint start,
+    GLsizei count,
+    GLsizei primcount);
+void yagl_host_glDrawElementsInstanced(GLenum mode,
+    GLsizei count,
+    GLenum type,
+    const void *indices, int32_t indices_count,
+    GLsizei primcount);
 void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count);
 void yagl_host_glBindVertexArray(GLuint array);
 void yagl_host_glDisableVertexAttribArray(GLuint index);
@@ -74,6 +83,8 @@ void yagl_host_glTexCoordPointerOffset(GLint size,
     GLsizei offset);
 void yagl_host_glDisableClientState(GLenum array);
 void yagl_host_glEnableClientState(GLenum array);
+void yagl_host_glVertexAttribDivisor(GLuint index,
+    GLuint divisor);
 void yagl_host_glGenBuffers(const GLuint *buffers, int32_t buffers_count);
 void yagl_host_glBindBuffer(GLenum target,
     GLuint buffer);

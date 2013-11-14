@@ -284,6 +284,9 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC1(EndQuery, GLenum, target)
     YAGL_GLES_DRIVER_FUNC3(GetQueryObjectuiv, GLuint, GLenum, GLuint*, id, pname, params)
     YAGL_GLES_DRIVER_FUNC2(DeleteQueries, GLsizei, const GLuint*, n, ids)
+    YAGL_GLES_DRIVER_FUNC4(DrawArraysInstanced, GLenum, GLint, GLsizei, GLsizei, mode, start, count, primcount);
+    YAGL_GLES_DRIVER_FUNC5(DrawElementsInstanced, GLenum, GLsizei, GLenum, const void*, GLsizei, mode, count, type, indices, primcount);
+    YAGL_GLES_DRIVER_FUNC2(VertexAttribDivisor, GLuint, GLuint, index, divisor);
 
     /*
      * @}

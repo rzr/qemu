@@ -500,6 +500,31 @@ void yagl_host_glReadPixels(GLint x,
     }
 }
 
+void yagl_host_glDrawArraysInstanced(GLenum mode,
+    GLint start,
+    GLsizei count,
+    GLsizei primcount)
+{
+    gles_api_ts->driver->DrawArraysInstanced(mode, start, count, primcount);
+}
+
+void yagl_host_glDrawElementsInstanced(GLenum mode,
+    GLsizei count,
+    GLenum type,
+    const void *indices, int32_t indices_count,
+    GLsizei primcount)
+{
+    if (indices) {
+        gles_api_ts->driver->DrawElementsInstanced(mode, count, type, indices, primcount);
+    } else {
+        gles_api_ts->driver->DrawElementsInstanced(mode,
+                                                   count,
+                                                   type,
+                                                   (const GLvoid*)(uintptr_t)indices_count,
+                                                   primcount);
+    }
+}
+
 void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count)
 {
     int i;
@@ -660,6 +685,12 @@ void yagl_host_glDisableClientState(GLenum array)
 void yagl_host_glEnableClientState(GLenum array)
 {
     gles_api_ts->driver->EnableClientState(array);
+}
+
+void yagl_host_glVertexAttribDivisor(GLuint index,
+    GLuint divisor)
+{
+    gles_api_ts->driver->VertexAttribDivisor(index, divisor);
 }
 
 void yagl_host_glGenBuffers(const GLuint *buffers, int32_t buffers_count)
