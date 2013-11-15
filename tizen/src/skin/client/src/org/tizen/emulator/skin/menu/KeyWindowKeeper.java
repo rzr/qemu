@@ -67,12 +67,10 @@ public class KeyWindowKeeper {
 				/* show the Key Window */
 				selectKeyWindowMenu(skin.isKeyWindow = true);
 
-				if (skin.pairTag != null) {
-					skin.pairTag.setVisible(true);
-				}
-
 				keyWindow.getShell().setVisible(true);
 				SkinUtil.setTopMost(keyWindow.getShell(), skin.isOnTop);
+
+				skin.updateSkin();
 
 				return;
 			} else {
@@ -119,36 +117,30 @@ public class KeyWindowKeeper {
 		selectKeyWindowMenu(skin.isKeyWindow = true);
 		SkinUtil.setTopMost(keyWindow.getShell(), skin.isOnTop);
 
-		if (skin.pairTag != null) {
-			skin.pairTag.setVisible(true);
-		}
-
 		keyWindow.open(dockValue);
+
+		skin.updateSkin();
 	}
 
 	public void closeKeyWindow() {
 		selectKeyWindowMenu(skin.isKeyWindow = false);
 
-		if (skin.pairTag != null) {
-			skin.pairTag.setVisible(false);
-		}
-
 		if (keyWindow != null) {
 			keyWindow.getShell().close();
 			keyWindow = null;
 		}
+
+		skin.updateSkin();
 	}
 
 	public void hideKeyWindow() {
 		selectKeyWindowMenu(skin.isKeyWindow = false);
 
-		if (skin.pairTag != null) {
-			skin.pairTag.setVisible(false);
-		}
-
 		if (keyWindow != null) {
 			keyWindow.getShell().setVisible(false);
 		}
+
+		skin.updateSkin();
 	}
 
 	public SkinWindow getKeyWindow() {

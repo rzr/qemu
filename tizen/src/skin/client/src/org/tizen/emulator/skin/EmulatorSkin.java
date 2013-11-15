@@ -80,7 +80,6 @@ import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
-import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.custom.SkinWindow;
 import org.tizen.emulator.skin.dbi.HoverType;
@@ -158,7 +157,6 @@ public class EmulatorSkin {
 
 	public Color colorVM;
 	private KeyWindowKeeper keyWindowKeeper;
-	public ColorTag pairTag;
 	public CustomProgressBar bootingProgress;
 	public ScreenShotDialog screenShotDialog;
 
@@ -1212,6 +1210,10 @@ public class EmulatorSkin {
 		lcdCanvas.setFocus();
 	}
 
+	public void updateSkin() {
+		skinComposer.updateSkin();
+	}
+
 	public void updateDisplay() {
 		/* abstract */
 	}
@@ -1867,12 +1869,12 @@ public class EmulatorSkin {
 
 		isShutdownRequested = true;
 
-		if (!this.shell.isDisposed()) {
-			this.shell.getDisplay().asyncExec(new Runnable() {
+		if (!shell.isDisposed()) {
+			shell.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
 					if (!shell.isDisposed()) {
-						EmulatorSkin.this.shell.close();
+						shell.close();
 					}
 				}
 			});

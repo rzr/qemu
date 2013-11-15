@@ -489,10 +489,6 @@ public class SpecialKeyWindow extends SkinWindow {
 	}
 
 	private void dispose() {
-		if (skin.pairTag != null) {
-			skin.pairTag.setVisible(false);
-		}
-
 		if (null != shellPaintListener) {
 			shell.removePaintListener(shellPaintListener);
 		}

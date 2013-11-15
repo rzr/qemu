@@ -38,6 +38,7 @@ public interface ISkinComposer {
 			int x, int y, int scale, short rotationId);
 
 	public abstract void arrangeSkin(int scale, short rotationId);
+	public abstract void updateSkin();
 
 	public abstract Rectangle adjustDisplayGeometry(
 			Canvas displayCanvas, int resolutionW, int resolutionH,

@@ -339,6 +339,13 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		currentHoveredHWKey = null;
 	}
 
+	@Override
+	public void updateSkin() {
+		logger.info("update skin");
+
+		/* do nothing */
+	}
+
 	public void addProfileSpecificListener(final Shell shell) {
 		shellPaintListener = new PaintListener() {
 			@Override
