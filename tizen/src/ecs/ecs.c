@@ -49,6 +49,7 @@
 #include "sdb.h"
 #include "ecs.h"
 #include "guest_server.h"
+#include "emul_state.h"
 
 #include "genmsg/ecs.pb-c.h"
 
@@ -106,6 +107,36 @@ static char* get_emulator_ecs_log_path(void)
     return emulator_ecs_log_path;
 }
 
+static char* get_emulator_ecs_prop_path(void)
+{
+    int path_len = 0;
+    gchar *ecs_property_path = NULL;
+    gchar *tizen_sdk_data = NULL;
+#ifndef CONFIG_WIN32
+    char emulator_vms[] = "/emulator/vms/";
+    char ecs_prop[] = "/.ecs.properties";
+#else
+    char emulator_vms[] = "\\emulator\\vms\\";
+    char ecs_prop[] = "\\.ecs.properties";
+#endif
+    char* emul_name = get_emul_vm_name();
+
+    tizen_sdk_data = get_tizen_sdk_data_path();
+    if (!tizen_sdk_data) {
+        LOG("failed to get tizen-sdk-data path.\n");
+        return NULL;
+    }
+
+    path_len = strlen(tizen_sdk_data) + sizeof(emulator_vms) + sizeof(ecs_prop) + strlen(emul_name);
+    ecs_property_path = g_malloc(path_len + 1);
+    g_snprintf(ecs_property_path, path_len, "%s%s%s%s", tizen_sdk_data, emulator_vms, emul_name, ecs_prop);
+
+    g_free(tizen_sdk_data);
+    LOG("ecs property path: %s", ecs_property_path);
+
+    return ecs_property_path;
+}
+
 static inline void start_logging(void) {
     char* path = get_emulator_ecs_log_path();
     if (!path)
@@ -119,7 +150,7 @@ static inline void start_logging(void) {
     if (fnul != NULL)
     stdin[0] = fnul[0];
 
-    flog = fopen(path, "at");
+    flog = fopen(path, "wt+");
     if (flog == NULL)
     flog = fnul;
 
@@ -722,30 +753,52 @@ static int ecs_loop(ECS_State *cs)
 
 #endif
 
-static int check_port(int port) {
-    int try = EMULATOR_SERVER_NUM;
-
-    for (; try > 0; try--) {
-        if (0 <= check_port_bind_listen(port)) {
-            LOG("Listening port is %d", port);
-            return port;
-        }
-        port++;
-    }
-    return -1;
-}
-
 int get_ecs_port(void) {
     if (port_setting < 0) {
         LOG("ecs port is not determined yet.");
         return 0;
     }
+    LOG("requests ecs port, and port is %d", port);
     return port;
+}
+
+static int set_ecs_port(int port) {
+    FILE* fprop;
+    char* path = get_emulator_ecs_prop_path();
+    if (!path)
+        return -1;
+
+    fprop = fopen(path, "wt+");
+    if (fprop == NULL) {
+        return -1;
+    }
+
+    fprintf(fprop, "%d", port);
+    fclose(fprop);
+
+    g_free(path);
+
+    return 0;
+}
+
+static int setting_ecs_port(ECS_State *cs) {
+    struct sockaddr server_addr;
+    socklen_t server_len;
+
+    server_len = sizeof(server_addr);
+    memset(&server_addr, 0, sizeof(server_addr));
+    if (getsockname(cs->listen_fd, (struct sockaddr *) &server_addr, &server_len) < 0) {
+        return -1;
+    }
+
+    port = ntohs( ((struct sockaddr_in *) &server_addr)->sin_port );
+    LOG("listen port is %d", port);
+
+    return set_ecs_port(port);
 }
 
 static void* ecs_initialize(void* args) {
     int ret = 1;
-    int index;
     ECS_State *cs = NULL;
     QemuOpts *opts = NULL;
     Error *local_err = NULL;
@@ -762,12 +815,6 @@ static void* ecs_initialize(void* args) {
         return NULL;
     }
 
-    port = check_port(HOST_LISTEN_PORT);
-    if (port < 0) {
-        LOG("None of port is available.");
-        return NULL;
-    }
-
     qemu_opt_set(opts, "host", HOST_LISTEN_ADDR);
 
     cs = g_malloc0(sizeof(ECS_State));
@@ -776,27 +823,18 @@ static void* ecs_initialize(void* args) {
         return NULL;
     }
 
-    for (index = 0; index < EMULATOR_SERVER_NUM; index ++) {
-        sprintf(host_port, "%d", port);
-        qemu_opt_set(opts, "port", host_port);
-        ret = socket_initialize(cs, opts);
-        if (0 > ret) {
-            LOG("socket initialization failed with port %d. next trial", port);
-            port ++;
-
-            port = check_port(port);
-            if (port < 0) {
-                LOG("None of port is available.");
-                break;
-            }
-        } else {
-            break;
-        }
+    sprintf(host_port, "%d", port);
+    qemu_opt_set(opts, "port", host_port);
+    ret = socket_initialize(cs, opts);
+    if (ret < 0) {
+        LOG("Socket initialization is failed.");
+        ecs_close(cs);
+        return NULL;
     }
 
-    if (0 > ret) {
-        LOG("socket resource is full.");
-        port = -1;
+    if (setting_ecs_port(cs) < 0) {
+        LOG("Failed to get random port.");
+        ecs_close(cs);
         return NULL;
     }
 

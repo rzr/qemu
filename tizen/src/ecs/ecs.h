@@ -64,7 +64,7 @@
 
 #define ECS_OPTS_NAME           "ecs"
 #define HOST_LISTEN_ADDR        "127.0.0.1"
-#define HOST_LISTEN_PORT        27000
+#define HOST_LISTEN_PORT        0
 #define EMULATOR_SERVER_NUM     10
 
 #define COMMANDS_TYPE           "type"
