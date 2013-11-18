@@ -123,7 +123,9 @@ static void send_to_client(GS_Client* client, int state)
     serial_len = strlen(client->serial);
 
     // send message "[4 digit message length]host:sync:emulator-26101:[0|1]"
-    sprintf(buf, "%04dhost:sync:%s:%01d", (serial_len + 12), client->serial, state);
+    sprintf(buf, "%04xhost:sync:%s:%01d", (serial_len + 12), client->serial, state);
+
+    INFO("send %s to client \n", buf);
 
     if (send(s, buf, sizeof(buf), 0) == -1)
     {
