@@ -131,7 +131,7 @@ static int maru_brill_codec_parser_parse (AVCodecParserContext *pctx, AVCodecCon
                             int64_t pts, int64_t dts, int64_t pos);
 #endif
 
-static void maru_brill_codec_pop_writequeue(MaruBrillCodecState *s, int32_t f_id);
+static void maru_brill_codec_pop_writequeue(MaruBrillCodecState *s, uint32_t ctx_idx);
 static void maru_brill_codec_push_readqueue(MaruBrillCodecState *s, CodecParam *ioparam);
 static void maru_brill_codec_push_writequeue(MaruBrillCodecState *s, void* buf,
                                             uint32_t buf_size, int ctx_id, int f_id);
@@ -395,26 +395,19 @@ static void maru_brill_codec_push_writequeue(MaruBrillCodecState *s, void* buf,
     qemu_mutex_unlock(&s->context_queue_mutex);
 }
 
-static void maru_brill_codec_pop_writequeue(MaruBrillCodecState *s, int32_t file_index)
+static void maru_brill_codec_pop_writequeue(MaruBrillCodecState *s, uint32_t ctx_idx)
 {
     DeviceMemEntry *elem = NULL;
-    uint32_t mem_offset = 0, ctx_idx;
+    uint32_t mem_offset = 0;
 
     TRACE("enter: %s\n", __func__);
 
-    for (ctx_idx = 1; ctx_idx < CODEC_CONTEXT_MAX; ctx_idx++) {
-        if (s->context[ctx_idx].file_index == file_index) {
-            break;
-        }
-    }
-
-    if (ctx_idx == CODEC_CONTEXT_MAX) {
-        ERR("failed to find a proper entry via file_index. %x\n", file_index);
+    if (ctx_idx < 1 || ctx_idx > (CODEC_CONTEXT_MAX - 1)) {
+        ERR("invalid buffer index. %d\n", ctx_idx);
         return;
     }
 
     TRACE("pop_writeqeue. context index: %d\n", ctx_idx);
-
     elem = entry[ctx_idx];
     if (elem) {
         mem_offset = s->ioparam.mem_offset;
@@ -518,72 +511,56 @@ static void maru_brill_codec_reset_parser_info(MaruBrillCodecState *s, int32_t c
 }
 #endif
 
-static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t file_index)
+static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t context_id)
 {
     DeviceMemEntry *wq_elem = NULL, *wnext = NULL;
     CodecDataStg *rq_elem = NULL, *rnext = NULL;
-    int ctx_id;
 
     TRACE("enter: %s\n", __func__);
 
-    qemu_mutex_lock(&s->threadpool.mutex);
-    for (ctx_id = 1; ctx_id < CODEC_CONTEXT_MAX; ctx_id++) {
-        if (s->context[ctx_id].file_index == file_index) {
-            TRACE("reset %d context\n", ctx_id);
-            s->context[ctx_id].occupied = false;
-            break;
+    TRACE("release %d of context\n", context_id);
+    codec_deinit(s, context_id, 0, NULL);
+    s->context[context_id].occupied = false;
+
+    // TODO: check if foreach statment needs lock or not.
+    QTAILQ_FOREACH_SAFE(rq_elem, &codec_rq, node, rnext) {
+        if (rq_elem && rq_elem->data_buf &&
+            (rq_elem->data_buf->ctx_id == context_id)) {
+
+            TRACE("remove unused node from codec_rq. ctx_id: %d\n", context_id);
+            qemu_mutex_lock(&s->context_queue_mutex);
+            QTAILQ_REMOVE(&codec_rq, rq_elem, node);
+            qemu_mutex_unlock(&s->context_queue_mutex);
+            if (rq_elem && rq_elem->data_buf) {
+                TRACE("release rq_buffer: %p\n", rq_elem->data_buf);
+                g_free(rq_elem->data_buf);
+            }
+
+            TRACE("release rq_elem: %p\n", rq_elem);
+            g_free(rq_elem);
+        } else {
+            TRACE("no elem of %d context in the codec_rq.\n", context_id);
         }
     }
-    qemu_mutex_unlock(&s->threadpool.mutex);
 
-    if (ctx_id == CODEC_CONTEXT_MAX) {
-        WARN("cannot find a context for 0x%x\n", file_index);
-    } else {
-        codec_deinit(s, ctx_id, file_index, NULL);
+    QTAILQ_FOREACH_SAFE(wq_elem, &codec_wq, node, wnext) {
+        if (wq_elem && wq_elem->ctx_id == context_id) {
+            TRACE("remove unused node from codec_wq. ctx_id: %d\n", context_id);
+            qemu_mutex_lock(&s->context_queue_mutex);
+            QTAILQ_REMOVE(&codec_wq, wq_elem, node);
+            qemu_mutex_unlock(&s->context_queue_mutex);
 
-        QTAILQ_FOREACH_SAFE(rq_elem, &codec_rq, node, rnext) {
-            if (rq_elem && rq_elem->data_buf &&
-                (rq_elem->data_buf->buf_id == file_index)) {
-
-                TRACE("remove unused node from codec_rq. file: %p\n", file_index);
-                qemu_mutex_lock(&s->context_queue_mutex);
-                QTAILQ_REMOVE(&codec_rq, rq_elem, node);
-                qemu_mutex_unlock(&s->context_queue_mutex);
-                if (rq_elem && rq_elem->data_buf) {
-                    TRACE("release_context. release rq_buffer: %p\n",
-                        rq_elem->data_buf);
-                    g_free(rq_elem->data_buf);
-                }
-
-                TRACE("release rq_elem: %p\n", rq_elem);
-                g_free(rq_elem);
-            } else {
-                TRACE("remain this node in the codec_rq. %x\n",
-                    rq_elem->data_buf->buf_id);
+            if (wq_elem && wq_elem->buf) {
+                TRACE("release wq_buffer: %p\n", wq_elem->buf);
+                g_free(wq_elem->buf);
+                wq_elem->buf = NULL;
             }
+
+            TRACE("release wq_elem: %p\n", wq_elem);
+            g_free(wq_elem);
+        } else {
+            TRACE("no elem of %d context in the codec_wq.\n", context_id);
         }
-
-        QTAILQ_FOREACH_SAFE(wq_elem, &codec_wq, node, wnext) {
-            if (wq_elem && wq_elem->buf_id == file_index) {
-                TRACE("remove nodes from codec_wq."
-                    " elem: %p, buf_id: %p, ctx_id: %d\n", wq_elem, wq_elem->ctx_id, file_index);
-                qemu_mutex_lock(&s->context_queue_mutex);
-                QTAILQ_REMOVE(&codec_wq, wq_elem, node);
-                qemu_mutex_unlock(&s->context_queue_mutex);
-
-                if (wq_elem && wq_elem->buf) {
-                    TRACE("release_context. release wq_buffer: %p\n", wq_elem->buf);
-                    g_free(wq_elem->buf);
-                    wq_elem->buf = NULL;
-                }
-
-                TRACE("release wq_elem: %p\n", wq_elem);
-                g_free(wq_elem);
-            } else {
-                TRACE("remain this node in the codec_wq. :%x\n", wq_elem->buf_id);
-            }
-        }
-//        maru_brill_codec_reset_parser_info(s, ctx_id);
     }
 
     TRACE("leave: %s\n", __func__);
