@@ -69,7 +69,6 @@ import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
@@ -1355,30 +1354,26 @@ public class EmulatorSkin {
 		}
 
 		/* temp : swap rotation menu names */
-		if (currentState.getCurrentResolutionWidth() > currentState
-				.getCurrentResolutionHeight()) {
+		if (currentState.getCurrentResolutionWidth() >
+				currentState.getCurrentResolutionHeight()) {
 			for (MenuItem m : rotationList) {
 				short rotationId = (Short) m.getData();
 
 				if (rotationId == RotationInfo.PORTRAIT.id()) {
-					String landscape = SkinRotation
-							.getRotation(RotationInfo.LANDSCAPE.id()).getName()
-							.value();
+					String landscape = SkinRotation.getRotation(
+							RotationInfo.LANDSCAPE.id()).getName().value();
 					m.setText(landscape);
 				} else if (rotationId == RotationInfo.LANDSCAPE.id()) {
-					String portrait = SkinRotation
-							.getRotation(RotationInfo.PORTRAIT.id()).getName()
-							.value();
+					String portrait = SkinRotation.getRotation(
+							RotationInfo.PORTRAIT.id()).getName().value();
 					m.setText(portrait);
 				} else if (rotationId == RotationInfo.REVERSE_PORTRAIT.id()) {
-					String landscapeReverse = SkinRotation
-							.getRotation(RotationInfo.REVERSE_LANDSCAPE.id())
-							.getName().value();
+					String landscapeReverse = SkinRotation.getRotation(
+							RotationInfo.REVERSE_LANDSCAPE.id()).getName().value();
 					m.setText(landscapeReverse);
 				} else if (rotationId == RotationInfo.REVERSE_LANDSCAPE.id()) {
-					String portraitReverse = SkinRotation
-							.getRotation(RotationInfo.REVERSE_PORTRAIT.id())
-							.getName().value();
+					String portraitReverse = SkinRotation.getRotation(
+							RotationInfo.REVERSE_PORTRAIT.id()).getName().value();
 					m.setText(portraitReverse);
 				}
 			}
@@ -1387,10 +1382,11 @@ public class EmulatorSkin {
 		SelectionAdapter selectionAdapter = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				logger.info("Rotate menu is selected");
+
 				MenuItem item = (MenuItem) e.getSource();
 
 				boolean selection = item.getSelection();
-
 				if (!selection) {
 					return;
 				}
@@ -1445,43 +1441,20 @@ public class EmulatorSkin {
 		return menu;
 	}
 
-	public Menu createScaleMenuListener() {
-		Menu menu = new Menu(shell, SWT.DROP_DOWN);
-
-		final List<MenuItem> scaleList = new ArrayList<MenuItem>();
-
-		final MenuItem scaleOneItem = new MenuItem(menu, SWT.RADIO);
-		scaleOneItem.setText("1x");
-		scaleOneItem.setData(Scale.SCALE_100);
-		scaleList.add(scaleOneItem);
-
-		final MenuItem scaleThreeQtrItem = new MenuItem(menu, SWT.RADIO);
-		scaleThreeQtrItem.setText("3/4x");
-		scaleThreeQtrItem.setData(Scale.SCALE_75);
-		scaleList.add(scaleThreeQtrItem);
-
-		final MenuItem scalehalfItem = new MenuItem(menu, SWT.RADIO);
-		scalehalfItem.setText("1/2x");
-		scalehalfItem.setData(Scale.SCALE_50);
-		scaleList.add(scalehalfItem);
-
-		final MenuItem scaleOneQtrItem = new MenuItem(menu, SWT.RADIO);
-		scaleOneQtrItem.setText("1/4x");
-		scaleOneQtrItem.setData(Scale.SCALE_25);
-		scaleList.add(scaleOneQtrItem);
-
-		SelectionAdapter selectionAdapter = new SelectionAdapter() {
+	public SelectionAdapter createScaleMenuListener() {
+		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				logger.info("Scale menu is selected");
+
 				MenuItem item = (MenuItem) e.getSource();
 
 				boolean selection = item.getSelection();
-
 				if (!selection) {
 					return;
 				}
 
-				final int scale = ((Scale) item.getData()).value();
+				final int scale = (Integer)item.getData(); /* percentage */
 
 				shell.getDisplay().syncExec(new Runnable() {
 					@Override
@@ -1506,35 +1479,26 @@ public class EmulatorSkin {
 			}
 		};
 
-		for (MenuItem menuItem : scaleList) {
-			int scale = ((Scale) menuItem.getData()).value();
-			if (currentState.getCurrentScale() == scale) {
-				menuItem.setSelection(true);
-			}
-
-			menuItem.addSelectionListener(selectionAdapter);
-		}
-
-		return menu;
+		return listener;
 	}
 
 	public SelectionAdapter createKeyWindowMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				logger.info("Key Window menu is selected");
+
 				/* control the menu */
 				if (getKeyWindowKeeper().isGeneralKeyWindow() == false) {
 					MenuItem layoutSelected = (MenuItem) e.widget;
 
 					if (layoutSelected.getSelection() == true) {
-						for (MenuItem layout : layoutSelected.getParent()
-								.getItems()) {
+						for (MenuItem layout : layoutSelected.getParent().getItems()) {
 							if (layout != layoutSelected) {
 								/* uncheck other menu items */
 								layout.setSelection(false);
 							} else {
-								int layoutIndex = getKeyWindowKeeper()
-										.getLayoutIndex();
+								int layoutIndex = getKeyWindowKeeper().getLayoutIndex();
 								if (getKeyWindowKeeper().determineLayout() != layoutIndex) {
 									/* switch */
 									getKeyWindowKeeper().closeKeyWindow();

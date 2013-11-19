@@ -47,7 +47,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -70,7 +69,11 @@ public class SkinUtil {
 	public static final String COCOA_OS_CLASS = "org.eclipse.swt.internal.cocoa.OS";
 
 	public static final int UNKNOWN_KEYCODE = -1;
+
+	public static final int MIN_SCALE_FACTOR = 25;
+	public static final int MAX_SCALE_FACTOR = 200;
 	public static final int SCALE_CONVERTER = 100;
+
 	public static final String EMULATOR_PREFIX = "Emulator";
 
 	private static Logger logger =
@@ -311,10 +314,8 @@ public class SkinUtil {
 	}
 
 	public static boolean isValidScale(int scale) {
-		if (Scale.SCALE_100.value() == scale
-				|| Scale.SCALE_75.value() == scale
-				|| Scale.SCALE_50.value() == scale
-				|| Scale.SCALE_25.value() == scale) {
+		if (scale >= MIN_SCALE_FACTOR &&
+				scale <= MAX_SCALE_FACTOR) { /* percentage */
 			return true;
 		} else {
 			return false;

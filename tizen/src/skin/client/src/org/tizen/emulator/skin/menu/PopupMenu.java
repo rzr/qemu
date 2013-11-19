@@ -273,17 +273,59 @@ public class PopupMenu {
 		scaleItem.setText(name);
 		scaleItem.setImage(imageRegistry.getIcon(IconName.SCALE));
 
-		Menu scaleSubMenu = skin.createScaleMenuListener();
+		SelectionAdapter scaleListener = skin.createScaleMenuListener();
+
+		Menu scaleSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
+		{
+			MenuItem scaleOneItem = new MenuItem(scaleSubMenu, SWT.RADIO);
+			scaleOneItem.setText("1x");
+			scaleOneItem.setData(100);
+			if (skin.getEmulatorSkinState().getCurrentScale()
+					== (Integer)scaleOneItem.getData()) {
+				scaleOneItem.setSelection(true);
+			}
+			scaleOneItem.addSelectionListener(scaleListener);
+
+			MenuItem scaleThreeQtrItem = new MenuItem(scaleSubMenu, SWT.RADIO);
+			scaleThreeQtrItem.setText("3/4x");
+			scaleThreeQtrItem.setData(75);
+			if (skin.getEmulatorSkinState().getCurrentScale()
+					== (Integer) scaleThreeQtrItem.getData()) {
+				scaleThreeQtrItem.setSelection(true);
+			}
+			scaleThreeQtrItem.addSelectionListener(scaleListener);
+
+			MenuItem scalehalfItem = new MenuItem(scaleSubMenu, SWT.RADIO);
+			scalehalfItem.setText("1/2x");
+			scalehalfItem.setData(50);
+			if (skin.getEmulatorSkinState().getCurrentScale()
+					== (Integer) scalehalfItem.getData()) {
+				scalehalfItem.setSelection(true);
+			}
+			scalehalfItem.addSelectionListener(scaleListener);
+
+			MenuItem scaleOneQtrItem = new MenuItem(scaleSubMenu, SWT.RADIO);
+			scaleOneQtrItem.setText("1/4x");
+			scaleOneQtrItem.setData(25);
+			if (skin.getEmulatorSkinState().getCurrentScale()
+					== (Integer) scaleOneQtrItem.getData()) {
+				scaleOneQtrItem.setSelection(true);
+			}
+			scaleOneQtrItem.addSelectionListener(scaleListener);
+		}
+
 		scaleItem.setMenu(scaleSubMenu);
 	}
 
 	private void createKeyWindowItem(Menu menu, String name) {
 		/* load Key Window layout */
+		SelectionAdapter keyWindowListener = skin.createKeyWindowMenuListener();
+
 		String pathLayoutRoot = skin.skinInfo.getSkinPath() +
 				File.separator + SpecialKeyWindow.KEYWINDOW_LAYOUT_ROOT;
 		ArrayList<File> layouts = getKeyWindowLayoutList(pathLayoutRoot);
 
-		if (layouts != null) {
+		if (layouts != null && layouts.size() != 0) {
 			keyWindowItem = new MenuItem(menu, SWT.CASCADE);
 			keyWindowItem.setText(name);
 
@@ -300,17 +342,17 @@ public class PopupMenu {
 						keywindowLayoutItem.setSelection(true);
 					}
 
-					keywindowLayoutItem.addSelectionListener(
-							skin.createKeyWindowMenuListener());
+					keywindowLayoutItem.addSelectionListener(keyWindowListener);
 				}
 			}
+
 			keyWindowItem.setMenu(keywindowSubMenu);
 		} else { /* general key window */
 			keyWindowItem = new MenuItem(menu, SWT.CHECK);
 			keyWindowItem.setText(name);
 			keyWindowItem.setSelection(skin.isKeyWindow);
 
-			keyWindowItem.addSelectionListener(skin.createKeyWindowMenuListener());
+			keyWindowItem.addSelectionListener(keyWindowListener);
 		}
 	}
 
