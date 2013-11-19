@@ -31,12 +31,16 @@
 #include "sysemu/sysemu.h"
 
 #include "debug_ch.h"
+#include "guest_server.h"
 
 /* define debug channel */
 MULTI_DEBUG_CHANNEL(tizen, maru_pm);
 
 ACPIREGS *maru_pm_ar;
 acpi_update_sci_fn maru_pm_update_sci;
+
+static Notifier maru_suspend;
+static Notifier maru_wakeup;
 
 void resume(void)
 {
@@ -45,8 +49,21 @@ void resume(void)
     maru_pm_update_sci(maru_pm_ar);
 }
 
+static void maru_notify_suspend(Notifier *notifier, void *data) {
+    notify_all_sdb_clients(STATE_SUSPEND);
+}
+
+static void maru_notify_wakeup(Notifier *notifier, void *data) {
+    notify_all_sdb_clients(STATE_RUNNING);
+}
+
 void acpi_maru_pm_init(ACPIREGS *ar, acpi_update_sci_fn update_sci) {
     maru_pm_ar = ar;
     qemu_system_wakeup_enable(QEMU_WAKEUP_REASON_OTHER, 1);
     maru_pm_update_sci = update_sci;
+
+    maru_suspend.notify = maru_notify_suspend;
+    maru_wakeup.notify = maru_notify_wakeup;
+    qemu_register_suspend_notifier(&maru_suspend);
+    qemu_register_wakeup_notifier(&maru_wakeup);
 }
