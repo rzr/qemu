@@ -37,6 +37,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 public class SkinPatches {
 	private Logger logger =
@@ -99,14 +100,28 @@ public class SkinPatches {
 		Image patchedImage = new Image(display,
 				patchedImageWidth, patchedImageHeight);
 
-		// TODO: copy alphaData
 		GC gc = new GC(patchedImage);
-		gc.setInterpolation(SWT.NONE);
+		if (SwtUtil.isLinuxPlatform() == true) {
+			/*
+			* Bug in Cairo.  When drawing the image stretched with an interpolation
+			* algorithm, the edges of the image are faded.  This is not a bug, but
+			* it is not desired.  To avoid the faded edges, it should be possible to
+			* use cairo_pattern_set_extend() to set the pattern extend to either
+			* CAIRO_EXTEND_REFLECT or CAIRO_EXTEND_PAD, but these are not implemented
+			* in some versions of cairo (1.2.x) and have bugs in others (in 1.4.2 it
+			* draws with black edges).  The fix is to implement CAIRO_EXTEND_REFLECT
+			* by creating an image that is 3 times bigger than the original, drawing
+			* the original image in every quadrant (with an appropriate transform) and
+			* use this image as the pattern.
+			*/
+			gc.setInterpolation(SWT.NONE);
+		}
 
 		gc.setBackground(display.getSystemColor(SWT.COLOR_MAGENTA));
 		gc.fillRectangle(0, 0, patchedImageWidth, patchedImageHeight);
 
 		/* top side */
+		// TODO: copy alphaData
 		gc.drawImage(imageLT, 0, 0);
 		gc.drawImage(imageT, 0, 0, imageT.getImageData().width, imageT.getImageData().height,
 				patchWidth, 0, centerPatchWidth, patchHeight);
