@@ -125,7 +125,7 @@ static void send_to_client(GS_Client* client, int state)
     // send message "[4 digit message length]host:sync:emulator-26101:[0|1]"
     sprintf(buf, "%04xhost:sync:%s:%01d", (serial_len + 12), client->serial, state);
 
-    INFO("send %s to client \n", buf);
+    INFO("send %s to client %s\n", buf, inet_ntoa(client->addr.sin_addr));
 
     if (send(s, buf, sizeof(buf), 0) == -1)
     {
@@ -151,12 +151,8 @@ void notify_all_sdb_clients(int state)
 
 static void add_sdb_client(struct sockaddr_in* addr, int port, const char* serial)
 {
-
-    GS_Client *client = g_malloc0(sizeof(GS_Client));
-    if (NULL == client) {
-        INFO("GS_Client allocation failed.\n");
-        return;
-    }
+    GS_Client *cli = NULL;
+    GS_Client *client = NULL;
 
     if (addr == NULL) {
         INFO("GS_Client client's address is EMPTY.\n");
@@ -166,6 +162,20 @@ static void add_sdb_client(struct sockaddr_in* addr, int port, const char* seria
         return;
     } else if (strlen(serial) > RECV_BUF_SIZE) {
         INFO("GS_Client client's serial is too long. %s\n", serial);
+        return;
+    }
+
+    QTAILQ_FOREACH(cli, &clients, next)
+    {
+        if (!strcmp(serial, cli->serial) && !strcmp(inet_ntoa(addr->sin_addr), inet_ntoa((cli->addr).sin_addr))) {
+            INFO("Client cannot be duplicated.\n");
+            return;
+        }
+    }
+
+    client = g_malloc0(sizeof(GS_Client));
+    if (NULL == client) {
+        INFO("GS_Client allocation failed.\n");
         return;
     }
 
@@ -179,7 +189,7 @@ static void add_sdb_client(struct sockaddr_in* addr, int port, const char* seria
 
     pthread_mutex_unlock(&mutex_clilist);
 
-    INFO("Added new sdb client. ip: %s, port: %d, serial: %s\n", inet_ntoa(client->addr.sin_addr), client->port, client->serial);
+    INFO("Added new sdb client. ip: %s, port: %d, serial: %s\n", inet_ntoa((client->addr).sin_addr), client->port, client->serial);
 
     send_to_client(client, runstate_check(RUN_STATE_SUSPENDED));
 }

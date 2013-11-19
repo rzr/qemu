@@ -391,7 +391,7 @@ static void ecs_read(ECS_Client *cli) {
 #endif
 
     if (to_read_bytes == 0) {
-        LOG("ioctl FIONREAD: 0\n");
+        LOG("ioctl FIONREAD: 0");
         goto fail;
     }
 
