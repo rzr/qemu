@@ -31,6 +31,8 @@ package org.tizen.emulator.skin.menu;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
@@ -42,6 +44,7 @@ import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.MenuItemType;
 import org.tizen.emulator.skin.dbi.PopupMenuType;
+import org.tizen.emulator.skin.dbi.ScaleItemType;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -147,12 +150,23 @@ public class PopupMenu {
 
 		/* Scale menu */
 		if (itemProperties == null || itemProperties.getScaleItem() == null) {
-			createScaleItem(menu, SCALE_MENUITEM_NAME);
+			createScaleItem(menu, SCALE_MENUITEM_NAME, null);
 		} else {
-			MenuItemType scaleMenuType = itemProperties.getScaleItem();
+			ScaleItemType scaleMenuType = itemProperties.getScaleItem();
 			if (scaleMenuType.isVisible() == true) {
-				createScaleItem(menu, (scaleMenuType.getItemName().isEmpty()) ?
-						SCALE_MENUITEM_NAME : scaleMenuType.getItemName());
+				String menuName = (scaleMenuType.getItemName().isEmpty()) ?
+						SCALE_MENUITEM_NAME : scaleMenuType.getItemName();
+
+				List<ScaleItemType.FactorItem> factors = scaleMenuType.getFactorItem();
+				if (factors == null || factors.size() == 0) {
+					logger.info("create a default Scale menu");
+
+					createScaleItem(menu, menuName, null);
+				} else {
+					logger.info("create a custom Scale menu");
+
+					createScaleItem(menu, menuName, factors);
+				}
 			}
 		}
 
@@ -268,7 +282,8 @@ public class PopupMenu {
 		rotateItem.setMenu(rotateSubMenu);
 	}
 
-	private void createScaleItem(Menu menu, String name) {
+	private void createScaleItem(Menu menu, String name,
+			List<ScaleItemType.FactorItem> factors) {
 		scaleItem = new MenuItem(menu, SWT.CASCADE);
 		scaleItem.setText(name);
 		scaleItem.setImage(imageRegistry.getIcon(IconName.SCALE));
@@ -277,41 +292,39 @@ public class PopupMenu {
 
 		Menu scaleSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
 		{
-			MenuItem scaleOneItem = new MenuItem(scaleSubMenu, SWT.RADIO);
-			scaleOneItem.setText("1x");
-			scaleOneItem.setData(100);
-			if (skin.getEmulatorSkinState().getCurrentScale()
-					== (Integer)scaleOneItem.getData()) {
-				scaleOneItem.setSelection(true);
-			}
-			scaleOneItem.addSelectionListener(scaleListener);
+			if (factors == null) {
+				/* use default factor array */
+				ScaleItemType.FactorItem actual = new ScaleItemType.FactorItem();
+				actual.setItemName("1x");
+				actual.setValue(100);
 
-			MenuItem scaleThreeQtrItem = new MenuItem(scaleSubMenu, SWT.RADIO);
-			scaleThreeQtrItem.setText("3/4x");
-			scaleThreeQtrItem.setData(75);
-			if (skin.getEmulatorSkinState().getCurrentScale()
-					== (Integer) scaleThreeQtrItem.getData()) {
-				scaleThreeQtrItem.setSelection(true);
-			}
-			scaleThreeQtrItem.addSelectionListener(scaleListener);
+				ScaleItemType.FactorItem threeQuater = new ScaleItemType.FactorItem();
+				threeQuater.setItemName("3/4x");
+				threeQuater.setValue(75);
 
-			MenuItem scalehalfItem = new MenuItem(scaleSubMenu, SWT.RADIO);
-			scalehalfItem.setText("1/2x");
-			scalehalfItem.setData(50);
-			if (skin.getEmulatorSkinState().getCurrentScale()
-					== (Integer) scalehalfItem.getData()) {
-				scalehalfItem.setSelection(true);
-			}
-			scalehalfItem.addSelectionListener(scaleListener);
+				ScaleItemType.FactorItem half = new ScaleItemType.FactorItem();
+				half.setItemName("1/2x");
+				half.setValue(50);
 
-			MenuItem scaleOneQtrItem = new MenuItem(scaleSubMenu, SWT.RADIO);
-			scaleOneQtrItem.setText("1/4x");
-			scaleOneQtrItem.setData(25);
-			if (skin.getEmulatorSkinState().getCurrentScale()
-					== (Integer) scaleOneQtrItem.getData()) {
-				scaleOneQtrItem.setSelection(true);
+				ScaleItemType.FactorItem quater = new ScaleItemType.FactorItem();
+				quater.setItemName("1/4x");
+				quater.setValue(25);
+
+				factors = Arrays.asList(actual, threeQuater, half, quater);
 			}
-			scaleOneQtrItem.addSelectionListener(scaleListener);
+
+			for (ScaleItemType.FactorItem factor : factors) {
+				final MenuItem menuItem = new MenuItem(scaleSubMenu, SWT.RADIO);
+				menuItem.setText(factor.getItemName());
+				menuItem.setData(factor.getValue());
+
+				if (skin.getEmulatorSkinState().getCurrentScale()
+						== (Integer) menuItem.getData()) {
+					menuItem.setSelection(true);
+				}
+
+				menuItem.addSelectionListener(scaleListener);
+			}
 		}
 
 		scaleItem.setMenu(scaleSubMenu);
