@@ -111,6 +111,10 @@ static bool yagl_egl_onscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
+    struct yagl_egl_onscreen *egl_onscreen =
+        (struct yagl_egl_onscreen*)sfc->dpy->backend;
+
+    egl_onscreen->gles_driver->Finish();
 
     osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
 
@@ -121,6 +125,10 @@ static bool yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
+    struct yagl_egl_onscreen *egl_onscreen =
+        (struct yagl_egl_onscreen*)sfc->dpy->backend;
+
+    egl_onscreen->gles_driver->Finish();
 
     osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
 
@@ -131,10 +139,10 @@ static void yagl_egl_onscreen_surface_wait_gl(struct yagl_eglb_surface *sfc)
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
+    struct yagl_egl_onscreen *egl_onscreen =
+        (struct yagl_egl_onscreen*)sfc->dpy->backend;
 
-    /*
-     * M.b. glFinish here ?
-     */
+    egl_onscreen->gles_driver->Finish();
 
     osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
 }
