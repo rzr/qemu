@@ -1,5 +1,5 @@
 /**
- * 
+ * Communication Interface Between Qemu And Skin
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -37,23 +37,6 @@ import org.tizen.emulator.skin.dbi.RotationNameType;
  *
  */
 public interface ICommunicator extends Runnable {
-	public enum Scale {
-		SCALE_25(25),
-		SCALE_50(50),
-		SCALE_75(75),
-		SCALE_100(100);
-
-		private int value;
-
-		Scale( int value ) {
-			this.value = value;
-		}
-
-		public int value() {
-			return this.value;
-		}
-	}
-
 	public enum MouseButtonType {
 		LEFT( (short)1 ),
 		WHEEL( (short)2 ),

@@ -174,7 +174,7 @@ void set_emulator_condition(int state)
 /* emulator window scale */
 void set_emul_win_scale(double scale_factor)
 {
-    if (scale_factor < 0.0 || scale_factor > 1.0) {
+    if (scale_factor < 0.0 || scale_factor > 2.0) {
         INFO("scale_factor is out of range : %f\n", scale_factor);
         scale_factor = 1.0;
     }
