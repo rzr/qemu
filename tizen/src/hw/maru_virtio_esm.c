@@ -106,26 +106,31 @@ static void virtio_esm_handle(VirtIODevice *vdev, VirtQueue *vq)
     virtio_notify(&vesm->vdev, vesm->vq);
 }
 
-static void virtio_esm_reset(VirtIODevice *vdev)
-{
-    TRACE("virtio_esm_reset.\n");
-}
-
 static uint32_t virtio_esm_get_features(VirtIODevice *vdev, uint32_t feature)
 {
     TRACE("virtio_esm_get_features.\n");
     return feature;
 }
 
+static void virtio_esm_reset(VirtIODevice* vdev)
+{
+    TRACE("virtio_esm_reset.\n");
+
+    progress.mode = '\0';
+    progress.percentage = 0;
+}
+
+
 static int virtio_esm_device_init(VirtIODevice *vdev)
 {
-//    DeviceState *qdev = DEVICE(vdev);
     VirtIOESM *vesm = VIRTIO_ESM(vdev);
 
     INFO("initialize virtio-esm device\n");
     virtio_init(vdev, "virtio-esm", VIRTIO_ID_ESM, 0);
 
     vesm->vq = virtio_add_queue(vdev, 1, virtio_esm_handle);
+
+    virtio_esm_reset(vdev);
 
     return 0;
 }
@@ -147,7 +152,8 @@ static void virtio_esm_class_init(ObjectClass *klass, void *data)
     dc->exit = virtio_esm_device_exit;
     vdc->init = virtio_esm_device_init;
     vdc->get_features = virtio_esm_get_features;
-    vdc->reset = virtio_esm_reset;
+    // This device is no need to reset.
+    //vdc->reset = virtio_esm_reset;
 }
 
 static const TypeInfo virtio_device_info = {
