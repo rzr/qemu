@@ -1,5 +1,5 @@
 /*
- * Emulator
+ * Emulator State Information
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -56,24 +56,24 @@ int get_emul_skin_enable(void)
     return _emul_info.skin_enable;
 }
 
-/* display screen size */
-void set_emul_lcd_size(int width, int height)
+/* display screen resolution */
+void set_emul_resolution(int width, int height)
 {
-    _emul_info.lcd_size_w = width;
-    _emul_info.lcd_size_h = height;
+    _emul_info.resolution_w = width;
+    _emul_info.resolution_h = height;
 
     INFO("emulator graphic resolution : %dx%d\n",
-        _emul_info.lcd_size_w, _emul_info.lcd_size_h);
+        _emul_info.resolution_w, _emul_info.resolution_h);
 }
 
-int get_emul_lcd_width(void)
+int get_emul_resolution_width(void)
 {
-    return _emul_info.lcd_size_w;
+    return _emul_info.resolution_w;
 }
 
-int get_emul_lcd_height(void)
+int get_emul_resolution_height(void)
 {
-    return _emul_info.lcd_size_h;
+    return _emul_info.resolution_h;
 }
 
 /* sdl bits per pixel */

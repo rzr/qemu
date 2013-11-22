@@ -387,8 +387,8 @@ void maru_finger_processing_2(
                 int distance_x = x - finger->x;
                 int distance_y = y - finger->y;
 
-                int current_screen_w = get_emul_lcd_width();
-                int current_screen_h = get_emul_lcd_height();
+                int current_screen_w = get_emul_resolution_width();
+                int current_screen_h = get_emul_resolution_height();
                 int temp_finger_x, temp_finger_y;
 
                 int i = 0;

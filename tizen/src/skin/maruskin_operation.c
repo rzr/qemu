@@ -407,7 +407,7 @@ QemuSurfaceInfo *get_screenshot_info(void)
         return NULL;
     }
 
-    int length = get_emul_lcd_width() * get_emul_lcd_height() * 4;
+    int length = get_emul_resolution_width() * get_emul_resolution_height() * 4;
     INFO("screenshot data length:%d\n", length);
 
     if (0 >= length) {

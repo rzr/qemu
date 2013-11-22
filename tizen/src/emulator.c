@@ -293,7 +293,7 @@ static void extract_skin_info(int skin_argc, char **skin_argv)
         }
 
         if (w != 0 && h != 0) {
-            set_emul_lcd_size(w, h);
+            set_emul_resolution(w, h);
             break;
         }
     }

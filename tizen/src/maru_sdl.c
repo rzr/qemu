@@ -249,8 +249,8 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
     }
 
     /* create surface_qemu */
-    if (console_width == get_emul_lcd_width() &&
-        console_height == get_emul_lcd_height()) {
+    if (console_width == get_emul_resolution_width() &&
+        console_height == get_emul_resolution_height()) {
         INFO("create SDL screen : (%d, %d)\n",
              console_width, console_height);
 
@@ -265,7 +265,7 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
             dpy_surface->pf.amask);
     } else {
         INFO("create blank screen : (%d, %d)\n",
-             get_emul_lcd_width(), get_emul_lcd_height());
+             get_emul_resolution_width(), get_emul_resolution_height());
 
         surface_qemu = SDL_CreateRGBSurface(
             SDL_SWSURFACE,
@@ -686,8 +686,8 @@ static void maru_sdl_resize_bh(void *opaque)
 #endif
 
     /* get current setting information and calculate screen size */
-    display_width = get_emul_lcd_width();
-    display_height = get_emul_lcd_height();
+    display_width = get_emul_resolution_width();
+    display_height = get_emul_resolution_height();
     current_scale_factor = get_emul_win_scale();
 
     short rotaton_type = get_emul_rotation();
@@ -750,7 +750,7 @@ static void maru_sdl_resize_bh(void *opaque)
     /* rearrange multi-touch finger points */
     if (get_emul_multi_touch_state()->multitouch_enable == 1 ||
             get_emul_multi_touch_state()->multitouch_enable == 2) {
-        rearrange_finger_points(get_emul_lcd_width(), get_emul_lcd_height(),
+        rearrange_finger_points(get_emul_resolution_width(), get_emul_resolution_height(),
             current_scale_factor, rotaton_type);
     }
 
@@ -812,7 +812,7 @@ void maruskin_sdl_init(uint64 swt_handle,
     INFO("register SDL environment variable. "
         "(SDL_WINDOWID = %s)\n", SDL_windowhack);
 
-    set_emul_lcd_size(display_width, display_height);
+    set_emul_resolution(display_width, display_height);
     set_emul_sdl_bpp(SDL_BPP);
     init_multi_touch_state();
 

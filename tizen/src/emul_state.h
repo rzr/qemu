@@ -1,5 +1,5 @@
 /*
- * Emulator
+ * Emulator State Information
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -82,8 +82,8 @@ enum {
 
 typedef  struct EmulatorConfigInfo {
     int skin_enable;
-    int lcd_size_w;
-    int lcd_size_h;
+    int resolution_w;
+    int resolution_h;
     int sdl_bpp;
     bool input_mouse_enable;
     bool input_touch_enable;
@@ -107,7 +107,7 @@ typedef struct EmulatorConfigState {
 
 /* setter */
 void set_emul_skin_enable(int enable);
-void set_emul_lcd_size(int width, int height);
+void set_emul_resolution(int width, int height);
 void set_emul_win_scale(double scale);
 void set_emul_sdl_bpp(int bpp);
 void set_emul_input_mouse_enable(bool on);
@@ -123,8 +123,8 @@ void set_emul_vm_name(char *vm_name);
 
 /* getter */
 int get_emul_skin_enable(void);
-int get_emul_lcd_width(void);
-int get_emul_lcd_height(void);
+int get_emul_resolution_width(void);
+int get_emul_resolution_height(void);
 double get_emul_win_scale(void);
 int get_emul_sdl_bpp(void);
 bool is_emul_input_mouse_enable(void);
