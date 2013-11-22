@@ -284,8 +284,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					logger.info("Advanced graphics not supported");
 				} */
 
-				int ww = lcdCanvas.getSize().x;
-				int hh = lcdCanvas.getSize().y;
+				final int screen_width = lcdCanvas.getSize().x;
+				final int screen_height = lcdCanvas.getSize().y;
 
 				/* if (pollThread.getWaitIntervalTime() == 0) {
 					logger.info("draw black screen");
@@ -297,24 +297,25 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
 					e.gc.drawImage(pollThread.imageFramebuffer,
 							0, 0, pollThread.widthFB, pollThread.heightFB,
-							0, 0, ww, hh);
+							0, 0, screen_width, screen_height);
 				} else { /* non-portrait */
 					Transform newTransform = new Transform(lcdCanvas.getDisplay());
 					Transform oldTransform = new Transform(lcdCanvas.getDisplay());
 					newTransform.rotate(currentState.getCurrentAngle());
 
+					int frame_width = 0, frame_height = 0;
 					if (currentState.getCurrentAngle() == 90) { /* reverse landscape */
-						int temp = ww;
-						ww = hh;
-						hh = temp;
-						newTransform.translate(0, hh * -1);
+						frame_width = screen_height;
+						frame_height = screen_width;
+						newTransform.translate(0, frame_height * -1);
 					} else if (currentState.getCurrentAngle() == 180) { /* reverse portrait */
-						newTransform.translate(ww * -1, hh * -1);
+						frame_width = screen_width;
+						frame_height = screen_height;
+						newTransform.translate(frame_width * -1, frame_height * -1);
 					} else if (currentState.getCurrentAngle() == -90) { /* landscape */
-						int temp = ww;
-						ww = hh;
-						hh = temp;
-						newTransform.translate(ww * -1, 0);
+						frame_width = screen_height;
+						frame_height = screen_width;
+						newTransform.translate(frame_width * -1, 0);
 					}
 
 					/* save current transform as oldTransform */
@@ -323,7 +324,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					e.gc.setTransform(newTransform);
 					e.gc.drawImage(pollThread.imageFramebuffer,
 							0, 0, pollThread.widthFB, pollThread.heightFB,
-							0, 0, ww, hh);
+							0, 0, frame_width, frame_height);
 					/* back to old transform */
 					e.gc.setTransform(oldTransform);
 
@@ -335,18 +336,23 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				if (imageGuide != null) {
 					logger.info("draw blank guide");
 
-					float convertedScale = SkinUtil.convertScale(
-							currentState.getCurrentScale());
-
 					int widthImage = imageGuide.getImageData().width;
 					int heightImage = imageGuide.getImageData().height;
-					int scaledWidthImage = (int)(widthImage * convertedScale);
-					int scaledHeightImage = (int)(heightImage * convertedScale);
+					int margin_w = screen_width - widthImage;
+					int margin_h = screen_height - heightImage;
+					int margin = Math.min(margin_w, margin_h);
+
+					int scaledWidthImage = widthImage;
+					int scaledHeightImage = heightImage;
+					if (margin < 0) {
+						scaledWidthImage += margin;
+						scaledHeightImage += margin;
+					}
 
 					e.gc.drawImage(imageGuide, 0, 0,
 							widthImage, heightImage,
-							(lcdCanvas.getSize().x - scaledWidthImage) / 2,
-							(lcdCanvas.getSize().y - scaledHeightImage) / 2,
+							(screen_width - scaledWidthImage) / 2,
+							(screen_height - scaledHeightImage) / 2,
 							scaledWidthImage, scaledHeightImage);
 
 					imageGuide = null;

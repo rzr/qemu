@@ -496,20 +496,27 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
                     int dst_x = 0; int dst_y = 0;
                     int dst_w = 0; int dst_h = 0;
 
-                    if (current_scale_factor != 1.0) {
+                    unsigned int screen_width =
+                        get_emul_resolution_width() * current_scale_factor;
+                    unsigned int screen_height =
+                        get_emul_resolution_height() * current_scale_factor;
+
+                    int margin_w = screen_width - guide->w;
+                    int margin_h = screen_height - guide->h;
+
+                    if (margin_w < 0 || margin_h < 0) {
                         /* guide image scaling */
+                        int margin = (margin_w < margin_h)? margin_w : margin_h;
+                        dst_w = guide->w + margin;
+                        dst_h = guide->h + margin;
+
                         SDL_Surface *scaled_guide = SDL_CreateRGBSurface(
-                            SDL_SWSURFACE,
-                            guide->w * current_scale_factor,
-                            guide->h * current_scale_factor,
-                            get_emul_sdl_bpp(),
+                            SDL_SWSURFACE, dst_w, dst_h, get_emul_sdl_bpp(),
                             guide->format->Rmask, guide->format->Gmask,
                             guide->format->Bmask, guide->format->Amask);
 
                         scaled_guide = maru_do_pixman_scale(guide, scaled_guide);
 
-                        dst_w = scaled_guide->w;
-                        dst_h = scaled_guide->h;
                         dst_x = (surface_screen->w - dst_w) / 2;
                         dst_y = (surface_screen->h - dst_h) / 2;
                         SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
