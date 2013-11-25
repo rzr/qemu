@@ -31,8 +31,7 @@
 #define _QEMU_YAGL_OBJECT_MAP_H
 
 #include "yagl_types.h"
-
-struct yagl_avl_table;
+#include <glib.h>
 
 struct yagl_object
 {
@@ -43,7 +42,7 @@ struct yagl_object
 
 struct yagl_object_map
 {
-    struct yagl_avl_table *entries;
+    GHashTable *entries;
 };
 
 struct yagl_object_map *yagl_object_map_create(void);
