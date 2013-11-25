@@ -51,7 +51,6 @@
 typedef struct CodecParam {
     int32_t     api_index;
     int32_t     ctx_index;
-    uint32_t    file_index;
     uint32_t    mem_offset;
 } CodecParam;
 
@@ -84,8 +83,7 @@ typedef struct CodecContext {
     AVCodecParserContext    *parser_ctx;
     uint8_t                 *parser_buf;
     uint16_t                parser_use;
-    uint16_t                occupied;
-    uint32_t                file_index;
+    bool                    occupied;
     bool                    opened;
 } CodecContext;
 
@@ -108,8 +106,11 @@ typedef struct MaruBrillCodecState {
     QemuMutex           ioparam_queue_mutex;
 
     CodecThreadPool     threadpool;
-    uint32_t            thread_state;
-    uint8_t             is_thread_running;
+    bool                is_thread_running;
+    uint32_t            worker_thread_cnt;
+    uint32_t            idle_thread_cnt;
+
+    int                 irq_raised;
 
     CodecContext        context[CODEC_CONTEXT_MAX];
     CodecParam          ioparam;
@@ -118,7 +119,6 @@ typedef struct MaruBrillCodecState {
 enum codec_io_cmd {
     CODEC_CMD_API_INDEX             = 0x28,
     CODEC_CMD_CONTEXT_INDEX         = 0x2C,
-    CODEC_CMD_FILE_INDEX            = 0x30,
     CODEC_CMD_DEVICE_MEM_OFFSET     = 0x34,
     CODEC_CMD_GET_THREAD_STATE      = 0x38,
     CODEC_CMD_GET_CTX_FROM_QUEUE    = 0x3C,
