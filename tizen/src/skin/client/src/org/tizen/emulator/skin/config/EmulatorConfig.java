@@ -60,14 +60,16 @@ public class EmulatorConfig {
 	public static final String INVALID_OPTION_MESSAGE =
 			"An invalid option have caused the error.\n";
 
-	private static Logger logger =
-			SkinLogger.getSkinLogger(EmulatorConfig.class).getLogger();
-
 	public static final int DEFAULT_WINDOW_SCALE = 50;
+	public static final int MIN_SCALE_FACTOR = 25;
+	public static final int MAX_SCALE_FACTOR = 200;
 	public static final short DEFAULT_WINDOW_ROTATION = RotationInfo.PORTRAIT.id();
 	public static final int DEFAULT_WINDOW_X = 50;
 	public static final int DEFAULT_WINDOW_Y = 50;
 	public static final SkinLogLevel DEFAULT_LOG_LEVEL = SkinLogLevel.DEBUG;
+
+	private static Logger logger =
+			SkinLogger.getSkinLogger(EmulatorConfig.class).getLogger();
 
 	public interface ArgsConstants {
 		public static final String SIMPLE_MESSAGE = "simple.msg";
@@ -244,14 +246,14 @@ public class EmulatorConfig {
 
 		if (skinProperties.containsKey(
 				SkinPropertiesConstants.WINDOW_X) == true) {
-			String x = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_X);
+			String window_x = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_X);
 			int xx = 0;
 
 			try {
-				xx = Integer.parseInt(x);
+				xx = Integer.parseInt(window_x);
 			} catch (NumberFormatException e) {
 				String msg = SkinPropertiesConstants.WINDOW_X +
-						" in .skin.properties is not numeric : " + x;
+						" in .skin.properties is not numeric : " + window_x;
 				logger.warning(msg);
 
 				xx = DEFAULT_WINDOW_X;
@@ -275,14 +277,14 @@ public class EmulatorConfig {
 
 		if (skinProperties.containsKey(
 				SkinPropertiesConstants.WINDOW_Y) == true) {
-			String y = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_Y);
+			String window_y = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_Y);
 			int yy = 0;
 
 			try {
-				yy = Integer.parseInt(y);
+				yy = Integer.parseInt(window_y);
 			} catch (NumberFormatException e) {
 				String msg = SkinPropertiesConstants.WINDOW_Y +
-						" in .skin.properties is not numeric. : " + y;
+						" in .skin.properties is not numeric. : " + window_y;
 				logger.warning(msg);
 
 				yy = DEFAULT_WINDOW_Y;
@@ -336,6 +338,8 @@ public class EmulatorConfig {
 
 			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_SCALE, "" + percent);
 		}
+
+		// TODO: WINDOW_ONTOP, KEYWINDOW_POSITION
 	}
 
 	public static void validateSkinConfigProperties(
@@ -344,7 +348,7 @@ public class EmulatorConfig {
 			return;
 		}
 
-		// TODO:
+		// TODO: HEART_BEAT_IGNORE, LOG_LEVEL
 	}
 
 	public void saveSkinProperties() {
@@ -419,6 +423,14 @@ public class EmulatorConfig {
 			return defaultValue;
 		}
 		return Boolean.parseBoolean(arg);
+	}
+
+	public int getValidResolutionWidth() {
+		return getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+	}
+
+	public int getValidResolutionHeight() {
+		return getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
 	}
 
 	/* java properties */
@@ -500,6 +512,18 @@ public class EmulatorConfig {
 
 	public void setSkinProperty(String key, int value) {
 		setProperty(skinProperties, key, value);
+	}
+
+	public int getValidScale() {
+		int storedScale = getSkinPropertyInt(
+				SkinPropertiesConstants.WINDOW_SCALE, DEFAULT_WINDOW_SCALE);
+
+		if (storedScale >= MIN_SCALE_FACTOR &&
+				storedScale <= MAX_SCALE_FACTOR) { /* percentage */
+			return storedScale;
+		} else {
+			return DEFAULT_WINDOW_SCALE;
+		}
 	}
 
 	/* config properties */

@@ -49,7 +49,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EventInfoType;
 import org.tizen.emulator.skin.dbi.KeyMapListType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
@@ -69,9 +68,6 @@ public class SkinUtil {
 	public static final String COCOA_OS_CLASS = "org.eclipse.swt.internal.cocoa.OS";
 
 	public static final int UNKNOWN_KEYCODE = -1;
-
-	public static final int MIN_SCALE_FACTOR = 25;
-	public static final int MAX_SCALE_FACTOR = 200;
 	public static final int SCALE_CONVERTER = 100;
 
 	public static final String EMULATOR_PREFIX = "Emulator";
@@ -300,26 +296,6 @@ public class SkinUtil {
 
 	public static float convertScale(int scale) {
 		return (float) scale / SCALE_CONVERTER;
-	}
-
-	public static int getValidScale(EmulatorConfig config) {
-		int storedScale = config.getSkinPropertyInt(
-				SkinPropertiesConstants.WINDOW_SCALE, EmulatorConfig.DEFAULT_WINDOW_SCALE);
-
-		if (!SkinUtil.isValidScale(storedScale)) {
-			return EmulatorConfig.DEFAULT_WINDOW_SCALE;
-		} else {
-			return storedScale;
-		}
-	}
-
-	public static boolean isValidScale(int scale) {
-		if (scale >= MIN_SCALE_FACTOR &&
-				scale <= MAX_SCALE_FACTOR) { /* percentage */
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 	public static <T> int openMessage(Shell shell,

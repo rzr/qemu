@@ -288,30 +288,32 @@ public class PopupMenu {
 		scaleItem.setText(name);
 		scaleItem.setImage(imageRegistry.getIcon(IconName.SCALE));
 
+		if (factors == null) {
+			/* use default factor array */
+			ScaleItemType.FactorItem actual = new ScaleItemType.FactorItem();
+			actual.setItemName("1x");
+			actual.setValue(100);
+
+			ScaleItemType.FactorItem threeQuater = new ScaleItemType.FactorItem();
+			threeQuater.setItemName("3/4x");
+			threeQuater.setValue(75);
+
+			ScaleItemType.FactorItem half = new ScaleItemType.FactorItem();
+			half.setItemName("1/2x");
+			half.setValue(50);
+
+			ScaleItemType.FactorItem quater = new ScaleItemType.FactorItem();
+			quater.setItemName("1/4x");
+			quater.setValue(25);
+
+			factors = Arrays.asList(actual, threeQuater, half, quater);
+		}
+
 		SelectionAdapter scaleListener = skin.createScaleMenuListener();
 
 		Menu scaleSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
 		{
-			if (factors == null) {
-				/* use default factor array */
-				ScaleItemType.FactorItem actual = new ScaleItemType.FactorItem();
-				actual.setItemName("1x");
-				actual.setValue(100);
-
-				ScaleItemType.FactorItem threeQuater = new ScaleItemType.FactorItem();
-				threeQuater.setItemName("3/4x");
-				threeQuater.setValue(75);
-
-				ScaleItemType.FactorItem half = new ScaleItemType.FactorItem();
-				half.setItemName("1/2x");
-				half.setValue(50);
-
-				ScaleItemType.FactorItem quater = new ScaleItemType.FactorItem();
-				quater.setItemName("1/4x");
-				quater.setValue(25);
-
-				factors = Arrays.asList(actual, threeQuater, half, quater);
-			}
+			MenuItem matchedItem = null;
 
 			for (ScaleItemType.FactorItem factor : factors) {
 				final MenuItem menuItem = new MenuItem(scaleSubMenu, SWT.RADIO);
@@ -320,11 +322,19 @@ public class PopupMenu {
 
 				if (skin.getEmulatorSkinState().getCurrentScale()
 						== (Integer) menuItem.getData()) {
-					menuItem.setSelection(true);
+					matchedItem = menuItem;
 				}
 
 				menuItem.addSelectionListener(scaleListener);
 			}
+
+			if (matchedItem == null) {
+				matchedItem = scaleSubMenu.getItem(0);
+				skin.getEmulatorSkinState().setCurrentScale(
+						(Integer) matchedItem.getData());
+			}
+
+			matchedItem.setSelection(true);
 		}
 
 		scaleItem.setMenu(scaleSubMenu);

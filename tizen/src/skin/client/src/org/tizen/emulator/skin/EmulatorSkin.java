@@ -247,13 +247,10 @@ public class EmulatorSkin {
 		imageRegistry = ImageRegistry.getInstance();
 
 		/* set emulator states */
-		currentState.setCurrentResolutionWidth(
-				config.getArgInt(ArgsConstants.RESOLUTION_WIDTH));
-		currentState.setCurrentResolutionHeight(
-				config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT));
+		currentState.setCurrentResolutionWidth(config.getValidResolutionWidth());
+		currentState.setCurrentResolutionHeight(config.getValidResolutionHeight());
 
-		int scale = SkinUtil.getValidScale(config);
-		currentState.setCurrentScale(scale);
+		currentState.setCurrentScale(config.getValidScale());
 
 		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
 		currentState.setCurrentRotationId(rotationId);
