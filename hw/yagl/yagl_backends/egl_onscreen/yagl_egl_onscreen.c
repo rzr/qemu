@@ -145,6 +145,10 @@ static bool yagl_egl_onscreen_make_current(struct yagl_egl_backend *backend,
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_make_current, NULL);
 
+    if (egl_onscreen_ts->dpy) {
+        egl_onscreen->gles_driver->Flush();
+    }
+
     if (draw && read) {
         res = egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
                                                      egl_onscreen_dpy->native_dpy,
@@ -226,6 +230,8 @@ static bool yagl_egl_onscreen_release_current(struct yagl_egl_backend *backend, 
     if (!egl_onscreen_ts->dpy) {
         return false;
     }
+
+    egl_onscreen->gles_driver->Flush();
 
     res = egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
                                                  egl_onscreen_ts->dpy->native_dpy,

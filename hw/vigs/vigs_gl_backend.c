@@ -326,14 +326,6 @@ static void vigs_gl_backend_batch_start(struct vigs_backend *backend)
     if (!gl_backend->make_current(gl_backend, true)) {
         VIGS_LOG_CRITICAL("make_current failed");
     }
-
-    /*
-     * Wait until previous rendering is finished. If we don't do this
-     * then in case if vsync is off many frames will be batched together and
-     * then flushed once the display is finally updated. This can cause lags
-     * on some GPUs.
-     */
-    gl_backend->Finish();
 }
 
 /*
@@ -836,6 +828,7 @@ static void vigs_gl_backend_batch_end(struct vigs_backend *backend)
 {
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)backend;
 
+    gl_backend->Finish();
     gl_backend->make_current(gl_backend, false);
 }
 

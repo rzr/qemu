@@ -36,6 +36,7 @@
 #include "yagl_log.h"
 #include "yagl_process.h"
 #include "yagl_thread.h"
+#include "yagl_gles_driver.h"
 
 YAGL_DEFINE_TLS(struct yagl_egl_offscreen_ts*, egl_offscreen_ts);
 
@@ -106,6 +107,10 @@ static bool yagl_egl_offscreen_make_current(struct yagl_egl_backend *backend,
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_make_current, NULL);
 
+    if (egl_offscreen_ts->dpy) {
+        egl_offscreen->gles_driver->Flush();
+    }
+
     if (draw && read) {
         res = egl_offscreen->egl_driver->make_current(egl_offscreen->egl_driver,
                                                       egl_offscreen_dpy->native_dpy,
@@ -144,6 +149,8 @@ static bool yagl_egl_offscreen_release_current(struct yagl_egl_backend *backend,
     if (!egl_offscreen_ts->dpy) {
         return false;
     }
+
+    egl_offscreen->gles_driver->Flush();
 
     res = egl_offscreen->egl_driver->make_current(egl_offscreen->egl_driver,
                                                   egl_offscreen_ts->dpy->native_dpy,
