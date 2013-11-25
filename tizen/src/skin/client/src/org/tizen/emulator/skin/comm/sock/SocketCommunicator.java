@@ -53,11 +53,9 @@ import org.tizen.emulator.skin.comm.sock.data.ISendData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.dbi.OptionType;
 import org.tizen.emulator.skin.image.ImageRegistry.ResourceImageName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
-import org.tizen.emulator.skin.util.SkinUtil;
 
 
 /**
@@ -101,7 +99,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	private EmulatorConfig config;
 	private int uId;
-	private long initialData;
+	private StartData startData;
 	private EmulatorSkin skin;
 
 	private Socket socket;
@@ -170,8 +168,13 @@ public class SocketCommunicator implements ICommunicator {
 		this.dataOutputStream = new DataOutputStream(bao);
 	}
 
-	public void setInitialData(long data) {
-		this.initialData = data;
+	public void setInitialData(StartData data) {
+		this.startData = data;
+	}
+
+	private void sendInitialData() {
+		logger.info("send startData");
+		sendToQEMU(SendCommand.SEND_SKIN_OPENED, startData, false);
 	}
 
 	@Override
@@ -230,23 +233,8 @@ public class SocketCommunicator implements ICommunicator {
 		sendThread.setDaemon(true);
 		sendThread.start();
 
-		int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
-		int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
-		int scale = SkinUtil.getValidScale(config);
-		short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
-
-		boolean isBlankGuide = true;
-		OptionType option = config.getDbiContents().getOption();
-		if (option != null) {
-			isBlankGuide = (option.getBlankGuide() == null) ?
-					true : option.getBlankGuide().isVisible();
-		}
-
-		StartData startData = new StartData(initialData,
-				width, height, scale, rotation, isBlankGuide);
-		logger.info("" + startData);
-
-		sendToQEMU(SendCommand.SEND_SKIN_OPENED, startData, false);
+		/* notify to Qemu */
+		sendInitialData();
 
 		boolean ignoreHeartbeat =
 				config.getArgBoolean(ArgsConstants.HEART_BEAT_IGNORE);

@@ -76,6 +76,7 @@ import org.tizen.emulator.skin.comm.sock.data.BooleanData;
 import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
+import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
@@ -188,6 +189,7 @@ public class EmulatorSkin {
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		this.isOnTop = isOnTop;
+		this.isOnKbd = false;
 		this.isKeyWindow = false;
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
@@ -233,7 +235,13 @@ public class EmulatorSkin {
 		}
 	}
 
-	public long initLayout() {
+	public StartData initSkin() {
+		/* abstract */
+
+		return null;
+	}
+
+	protected long initLayout() {
 		logger.info("initialize the skin layout");
 
 		imageRegistry = ImageRegistry.getInstance();
@@ -251,7 +259,6 @@ public class EmulatorSkin {
 		currentState.setCurrentRotationId(rotationId);
 
 		/* create and attach a popup menu */
-		isOnKbd = false;
 		popupMenu = new PopupMenu(config, this);
 
 		/* build a skin layout */
@@ -269,6 +276,8 @@ public class EmulatorSkin {
 
 		lcdCanvas = skinComposer.compose(displayCanvasStyle);
 
+		/* */
+		//TODO: move
 		if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true) {
 			prev_x = lcdCanvas.getSize().x / 2;
 			prev_y = lcdCanvas.getSize().y / 2;
@@ -283,7 +292,7 @@ public class EmulatorSkin {
 		addMainWindowListeners();
 		addCanvasListeners();
 
-		setFocus();
+		lcdCanvas.setFocus();
 
 		return 0;
 	}
@@ -1203,10 +1212,6 @@ public class EmulatorSkin {
 		if (null != canvasMouseWheelListener) {
 			lcdCanvas.removeMouseWheelListener(canvasMouseWheelListener);
 		}
-	}
-
-	public void setFocus() {
-		lcdCanvas.setFocus();
 	}
 
 	public void updateSkin() {

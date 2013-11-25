@@ -36,17 +36,17 @@ import java.io.IOException;
  *
  */
 public class StartData extends AbstractSendData {
-	private long windowHandleId;
+	private long displayHandleId;
 	private int displayWidth;
 	private int displayHeight;
 	private int scale;
 	private short rotation;
 	private boolean isBlankGuide;
 	
-	public StartData(long windowHandleId,
+	public StartData(long displayHandleId,
 			int displayWidth, int displayHeight, int scale, short rotation,
 			boolean isBlankGuide) {
-		this.windowHandleId = windowHandleId;
+		this.displayHandleId = displayHandleId;
 		this.displayWidth = displayWidth;
 		this.displayHeight = displayHeight;
 		this.scale = scale;
@@ -56,7 +56,7 @@ public class StartData extends AbstractSendData {
 
 	@Override
 	protected void write() throws IOException {
-		writeLong(windowHandleId);
+		writeLong(displayHandleId);
 		writeInt(displayWidth);
 		writeInt(displayHeight);
 		writeInt(scale);
@@ -72,8 +72,8 @@ public class StartData extends AbstractSendData {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("StartData [windowHandleId=");
-		builder.append(windowHandleId);
+		builder.append("StartData [displayHandleId=");
+		builder.append(displayHandleId);
 		builder.append(", display size " + displayWidth + "x" + displayHeight);
 		builder.append(", scale=");
 		builder.append(scale);

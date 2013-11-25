@@ -45,6 +45,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
+import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.ConfigPropertiesConstants;
@@ -258,8 +259,8 @@ public class EmulatorSkinMain {
 			skin.setCommunicator(communicator);
 
 			/* initialize a skin layout */
-			long windowHandleId = skin.initLayout();
-			communicator.setInitialData(windowHandleId);
+			StartData startData = skin.initSkin();
+			communicator.setInitialData(startData);
 
 			Socket commSocket = communicator.getSocket();
 

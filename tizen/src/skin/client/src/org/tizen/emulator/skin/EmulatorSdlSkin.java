@@ -33,7 +33,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.dbi.OptionType;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
@@ -54,14 +56,34 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 		super(config, skinInfo, SWT.EMBEDDED, isOnTop);
 	}
 
-	public long initLayout() {
-		super.initLayout();
+	@Override
+	public StartData initSkin() {
+		initLayout();
 
-		/* sdl uses this handle ID */
-		return getWindowHandleId();
+		/* maru_sdl uses this handle ID */
+		long id = getDisplayHandleId();
+
+		/* generate a start data */
+		int width = getEmulatorSkinState().getCurrentResolutionWidth();
+		int height = getEmulatorSkinState().getCurrentResolutionHeight();
+		int scale = getEmulatorSkinState().getCurrentScale();
+		short rotation = getEmulatorSkinState().getCurrentRotationId();
+
+		boolean isBlankGuide = true;
+		OptionType option = config.getDbiContents().getOption();
+		if (option != null) {
+			isBlankGuide = (option.getBlankGuide() == null) ?
+					true : option.getBlankGuide().isVisible();
+		}
+
+		StartData startData = new StartData(id,
+				width, height, scale, rotation, isBlankGuide);
+		logger.info("" + startData);
+
+		return startData;
 	}
 
-	private long getWindowHandleId() {
+	private long getDisplayHandleId() {
 		long windowHandleId = 0;
 
 		/* org.eclipse.swt.widgets.Widget */

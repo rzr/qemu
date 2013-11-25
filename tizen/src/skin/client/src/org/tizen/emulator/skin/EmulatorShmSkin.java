@@ -48,8 +48,10 @@ import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
+import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
+import org.tizen.emulator.skin.dbi.OptionType;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
@@ -224,6 +226,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		this.imageGuide = null;
 	}
 
+	@Override
 	protected void skinFinalize() {
 		pollThread.stopRequest();
 
@@ -234,8 +237,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		super.skinFinalize();
 	}
 
-	public long initLayout() {
-		super.initLayout();
+	@Override
+	public StartData initSkin() {
+		initLayout();
 
 		finger = new EmulatorFingers(maxTouchPoint, currentState, communicator);
 		if (SwtUtil.isMacPlatform() == true) {
@@ -245,12 +249,35 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		}
 		multiTouchKeySub = SWT.SHIFT;
 
+		initDisplay();
+
+		/* generate a start data */
+		int width = getEmulatorSkinState().getCurrentResolutionWidth();
+		int height = getEmulatorSkinState().getCurrentResolutionHeight();
+		int scale = getEmulatorSkinState().getCurrentScale();
+		short rotation = getEmulatorSkinState().getCurrentRotationId();
+
+		boolean isBlankGuide = true;
+		OptionType option = config.getDbiContents().getOption();
+		if (option != null) {
+			isBlankGuide = (option.getBlankGuide() == null) ?
+					true : option.getBlankGuide().isVisible();
+		}
+
+		StartData startData = new StartData(0,
+				width, height, scale, rotation, isBlankGuide);
+		logger.info("" + startData);
+
+		return startData;
+	}
+
+	private void initDisplay() {
+		/* initialize shared memory */
 		/* base + 1 = sdb port */
 		/* base + 2 = shared memory key */
 		int shmkey = config.getArgInt(ArgsConstants.VM_BASE_PORT) + 2;
 		logger.info("shmkey = " + shmkey);
 
-		/* initialize shared memory */
 		int result = shmget(shmkey,
 				currentState.getCurrentResolutionWidth() *
 				currentState.getCurrentResolutionHeight() * 4);
@@ -262,6 +289,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					"Cannot launch this VM.\n" +
 					"Failed to get identifier of the shared memory segment.",
 					SWT.ICON_ERROR, config);
+
 			System.exit(-1);
 		} else if (result == 2) {
 			logger.severe("Failed to attach the shared memory segment.");
@@ -269,6 +297,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					"Cannot launch this VM.\n" +
 					"Failed to attach the shared memory segment.",
 					SWT.ICON_ERROR, config);
+
 			System.exit(-1);
 		}
 
@@ -372,8 +401,6 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		});
 
 		pollThread.start();
-
-		return 0;
 	}
 
 	@Override
