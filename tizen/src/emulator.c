@@ -53,6 +53,7 @@
 #include "skin/maruskin_client.h"
 #include "debug_ch.h"
 #include "ecs/ecs.h"
+#include "tethering/app_tethering.h"
 
 #ifdef CONFIG_SDL
 #include <SDL.h>
@@ -115,6 +116,7 @@ void exit_emulator(void)
     shutdown_skin_server();
     shutdown_guest_server();
     stop_ecs();
+    disconnect_tethering_app();
 
 #if defined(CONFIG_LINUX) || defined(CONFIG_DARWIN)
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {

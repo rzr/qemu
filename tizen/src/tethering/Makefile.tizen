@@ -1,0 +1,9 @@
+# tethering Makefile.tizen
+
+$(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/tizen/src/tethering:$(SRC_PATH)/tizen/src/tethering/genmsg:$(SRC_PATH)/tizen/distrib/protobuf)
+
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/protobuf
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src/tethering/genmsg
+
+obj-y += tethering.pb-c.o # protobuf-c.o
+obj-y += app_tethering.o

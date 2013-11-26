@@ -50,7 +50,6 @@
 #endif
 
 #include "qemu-common.h"
-//#include "qemu_socket.h"
 #include "sdb.h"
 #include "ecs-json-streamer.h"
 #include "qmp-commands.h"
@@ -310,7 +309,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 
     if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
         if (group == MSG_GROUP_STATUS) {
-            if (action ==MSG_ACTION_ACCEL) {
+            if (action == MSG_ACTION_ACCEL) {
                 get_sensor_accel();
             } else if (action == MSG_ACTION_GYRO) {
                 get_sensor_gyro();
@@ -604,4 +603,5 @@ bool send_nfc_ntf(struct nfc_msg_info* msg)
 
     return true;
 }
+
 

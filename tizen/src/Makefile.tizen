@@ -108,6 +108,9 @@ obj-y += debug_ch.o
 # ECS
 include $(SRC_PATH)/tizen/src/ecs/Makefile.tizen
 
+# tethering
+include $(SRC_PATH)/tizen/src/tethering/Makefile.tizen
+
 # maru hardware
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 
