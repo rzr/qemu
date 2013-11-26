@@ -425,11 +425,23 @@ public class EmulatorConfig {
 	}
 
 	public int getValidResolutionWidth() {
-		return getArgInt(ArgsConstants.RESOLUTION_WIDTH);
+		final int storedValue = getArgInt(ArgsConstants.RESOLUTION_WIDTH, 1);
+
+		if (storedValue > 0) {
+			return storedValue;
+		} else {
+			return 1;
+		}
 	}
 
 	public int getValidResolutionHeight() {
-		return getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
+		final int storedValue = getArgInt(ArgsConstants.RESOLUTION_HEIGHT, 1);
+
+		if (storedValue > 0) {
+			return storedValue;
+		} else {
+			return 1;
+		}
 	}
 
 	/* java properties */
@@ -514,7 +526,7 @@ public class EmulatorConfig {
 	}
 
 	public int getValidScale() {
-		int storedScale = getSkinPropertyInt(
+		final int storedScale = getSkinPropertyInt(
 				SkinPropertiesConstants.WINDOW_SCALE, DEFAULT_WINDOW_SCALE);
 
 		if (storedScale >= MIN_SCALE_FACTOR &&
