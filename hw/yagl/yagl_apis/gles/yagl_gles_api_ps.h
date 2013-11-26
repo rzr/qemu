@@ -31,9 +31,9 @@
 #define _QEMU_YAGL_GLES_API_PS_H
 
 #include "yagl_api.h"
+#include <glib.h>
 
 struct yagl_gles_driver;
-struct yagl_avl_table;
 
 struct yagl_gles_api_ps
 {
@@ -41,7 +41,7 @@ struct yagl_gles_api_ps
 
     struct yagl_gles_driver *driver;
 
-    struct yagl_avl_table *locations;
+    GHashTable *locations;
 };
 
 void yagl_gles_api_ps_init(struct yagl_gles_api_ps *gles_api_ps,

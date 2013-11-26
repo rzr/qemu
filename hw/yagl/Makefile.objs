@@ -12,7 +12,6 @@ obj-y += yagl_handle_gen.o
 obj-y += yagl_dyn_lib.o
 obj-y += yagl_api.o
 obj-y += yagl_vector.o
-obj-y += yagl_avl.o
 obj-y += yagl_transport.o
 obj-y += yagl_egl_backend.o
 obj-y += yagl_eglb_display.o

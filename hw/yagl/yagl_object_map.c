@@ -28,47 +28,23 @@
  */
 
 #include "yagl_object_map.h"
-#include "yagl_avl.h"
 
-struct yagl_object_map_entry
+static void yagl_object_map_entry_destroy_func(gpointer data)
 {
-    yagl_object_name local_name;
+    struct yagl_object *item = data;
 
-    struct yagl_object *obj;
-};
-
-static int yagl_object_map_entry_comparison_func(const void *avl_a,
-                                                 const void *avl_b,
-                                                 void *avl_param)
-{
-    const struct yagl_object_map_entry *a = avl_a;
-    const struct yagl_object_map_entry *b = avl_b;
-
-    if (a->local_name < b->local_name) {
-        return -1;
-    } else if (a->local_name > b->local_name) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-static void yagl_object_map_entry_destroy_func(void *avl_item, void *avl_param)
-{
-    struct yagl_object_map_entry *item = avl_item;
-
-    item->obj->destroy(item->obj);
-
-    g_free(item);
+    item->destroy(item);
 }
 
 struct yagl_object_map *yagl_object_map_create(void)
 {
     struct yagl_object_map *object_map = g_malloc0(sizeof(struct yagl_object_map));
 
-    object_map->entries = yagl_avl_create(&yagl_object_map_entry_comparison_func,
-                                          object_map,
-                                          NULL);
+    object_map->entries = g_hash_table_new_full(g_direct_hash,
+                                                g_direct_equal,
+                                                NULL,
+                                                &yagl_object_map_entry_destroy_func);
+
     assert(object_map->entries);
 
     return object_map;
@@ -76,7 +52,8 @@ struct yagl_object_map *yagl_object_map_create(void)
 
 void yagl_object_map_destroy(struct yagl_object_map *object_map)
 {
-    yagl_avl_destroy(object_map->entries, &yagl_object_map_entry_destroy_func);
+    g_hash_table_destroy(object_map->entries);
+
     object_map->entries = NULL;
 
     g_free(object_map);
@@ -86,50 +63,38 @@ void yagl_object_map_add(struct yagl_object_map *object_map,
                          yagl_object_name local_name,
                          struct yagl_object *obj)
 {
-    struct yagl_object_map_entry *item =
-        g_malloc0(sizeof(struct yagl_object_map_entry));
+    guint size = g_hash_table_size(object_map->entries);
 
-    item->local_name = local_name;
-    item->obj = obj;
+    g_hash_table_insert(object_map->entries,
+                        GUINT_TO_POINTER(local_name),
+                        obj);
 
-    yagl_avl_assert_insert(object_map->entries, item);
+    assert(g_hash_table_size(object_map->entries) > size);
 }
 
 void yagl_object_map_remove(struct yagl_object_map *object_map,
                             yagl_object_name local_name)
 {
-    void *item;
-    struct yagl_object_map_entry dummy;
+    guint size = g_hash_table_size(object_map->entries);
 
-    dummy.local_name = local_name;
+    g_hash_table_remove(object_map->entries, GUINT_TO_POINTER(local_name));
 
-    item = yagl_avl_assert_delete(object_map->entries, &dummy);
-
-    yagl_object_map_entry_destroy_func(item, object_map->entries->avl_param);
+    assert(g_hash_table_size(object_map->entries) < size);
 }
 
 void yagl_object_map_remove_all(struct yagl_object_map *object_map)
 {
-    yagl_avl_destroy(object_map->entries, &yagl_object_map_entry_destroy_func);
-
-    object_map->entries = yagl_avl_create(&yagl_object_map_entry_comparison_func,
-                                          object_map,
-                                          NULL);
-    assert(object_map->entries);
+    g_hash_table_remove_all(object_map->entries);
 }
 
 yagl_object_name yagl_object_map_get(struct yagl_object_map *object_map,
                                      yagl_object_name local_name)
 {
-    struct yagl_object_map_entry *item;
-    struct yagl_object_map_entry dummy;
-
-    dummy.local_name = local_name;
-
-    item = yagl_avl_find(object_map->entries, &dummy);
+    struct yagl_object *item = g_hash_table_lookup(object_map->entries,
+                                                   GUINT_TO_POINTER(local_name));
 
     if (item) {
-        return item->obj->global_name;
+        return item->global_name;
     } else {
         assert(0);
         return 0;
