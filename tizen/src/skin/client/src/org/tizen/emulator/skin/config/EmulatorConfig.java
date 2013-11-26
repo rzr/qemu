@@ -143,8 +143,7 @@ public class EmulatorConfig {
 		} else {
 			BufferedReader reader = null;
 			try {
-				reader = new BufferedReader(
-						new FileReader(versionFilePath));
+				reader = new BufferedReader(new FileReader(file));
 			} catch (FileNotFoundException e) {
 				logger.warning(e.getMessage());
 			}

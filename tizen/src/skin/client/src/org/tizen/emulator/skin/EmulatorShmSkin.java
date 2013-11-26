@@ -88,7 +88,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			messageBox.open();
 			temp.dispose();
 
-			System.exit(-1);
+			EmulatorSkinMain.terminateImmediately(-1);;
 		}
 	}
 
@@ -290,7 +290,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					"Failed to get identifier of the shared memory segment.",
 					SWT.ICON_ERROR, config);
 
-			System.exit(-1);
+			EmulatorSkinMain.terminateImmediately(-1);
 		} else if (result == 2) {
 			logger.severe("Failed to attach the shared memory segment.");
 			SkinUtil.openMessage(shell, null,
@@ -298,7 +298,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					"Failed to attach the shared memory segment.",
 					SWT.ICON_ERROR, config);
 
-			System.exit(-1);
+			EmulatorSkinMain.terminateImmediately(-1);
 		}
 
 		/* display updater thread */

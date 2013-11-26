@@ -47,6 +47,7 @@ import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
+import org.tizen.emulator.skin.EmulatorSkinMain;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
@@ -237,7 +238,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					"Failed to read display information for skin.\n" +
 					"Check the contents of skin dbi file.",
 					SWT.ICON_ERROR, config);
-			System.exit(-1);
+
+			EmulatorSkinMain.terminateImmediately(-1);
 		}
 		logger.info("display bounds : " + displayBounds);
 

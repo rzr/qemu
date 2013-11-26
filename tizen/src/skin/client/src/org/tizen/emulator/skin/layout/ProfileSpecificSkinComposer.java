@@ -49,6 +49,7 @@ import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
+import org.tizen.emulator.skin.EmulatorSkinMain;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
@@ -158,7 +159,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			logger.severe("Failed to load initial skin image file. Kill this skin process.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
-			System.exit(-1);
+
+			EmulatorSkinMain.terminateImmediately(-1);
 		}
 
 		/* open the key window if key window menu item was enabled */
@@ -198,7 +200,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					"Failed to read display information for skin.\n" +
 					"Check the contents of skin dbi file.",
 					SWT.ICON_ERROR, config);
-			System.exit(-1);
+
+			EmulatorSkinMain.terminateImmediately(-1);
 		}
 		logger.info("display bounds : " + displayBounds);
 

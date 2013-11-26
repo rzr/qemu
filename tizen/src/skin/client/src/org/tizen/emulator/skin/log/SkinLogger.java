@@ -44,6 +44,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import org.tizen.emulator.skin.EmulatorSkinMain;
 import org.tizen.emulator.skin.util.StringUtil;
 
 /**
@@ -135,13 +136,13 @@ public class SkinLogger {
 						System.err.println("[SkinLog:error] "
 								+ "Cannot create skin log file. path : " + file.getAbsolutePath());
 
-						System.exit(-1);
+						EmulatorSkinMain.terminateImmediately(-1);
 						return;
 					}
 				} catch (IOException e) {
 					e.printStackTrace();
 
-					System.exit(-1);
+					EmulatorSkinMain.terminateImmediately(-1);
 					return;
 				}
 			}

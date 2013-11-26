@@ -1648,7 +1648,7 @@ public class EmulatorSkin {
 					shell.getDisplay().asyncExec(new Runnable() {
 						@Override
 						public void run() {
-							System.exit(-1);
+							EmulatorSkinMain.terminateImmediately(-1);
 						}
 					});
 				}

@@ -78,7 +78,6 @@ public class SpecialKeyWindow extends SkinWindow {
 	public static final String KEYWINDOW_LAYOUT_ROOT = "keywindow-layout";
 	public static final String DBI_FILE_NAME = "default.dbi";
 
-	private EmulatorSkin skin;
 	private SpecialKeyWindowImageRegistry imageRegistry;
 	private SocketCommunicator communicator;
 
@@ -99,7 +98,6 @@ public class SpecialKeyWindow extends SkinWindow {
 	public SpecialKeyWindow(EmulatorSkin skin, String layoutName) {
 		super(skin.getShell(), SWT.RIGHT | SWT.CENTER);
 
-		this.skin = skin;
 		this.parent = skin.getShell();
 		this.shell = new Shell(parent.getDisplay() /* for Mac & Always on Top */,
 				SWT.NO_TRIM | SWT.RESIZE | SWT.TOOL | SWT.NO_FOCUS);

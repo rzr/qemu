@@ -100,7 +100,7 @@ public class EmulatorSkinMain {
 			messageBox.open();
 			temp.dispose();
 
-			System.exit(-1);
+			return;
 		}
 
 		SocketCommunicator communicator = null;
@@ -163,7 +163,7 @@ public class EmulatorSkinMain {
 				messageBox.open();
 				temp.dispose();
 
-				System.exit(-1);
+				terminateImmediately(-1);
 			}
 
 			String skinInfoResolutionW =
@@ -225,7 +225,7 @@ public class EmulatorSkinMain {
 				messageBox.open();
 				temp.dispose();
 
-				System.exit(-1);
+				terminateImmediately(-1);
 			}
 			logger.info("dbi version : " + dbiContents.getDbiVersion());
 
@@ -301,7 +301,7 @@ public class EmulatorSkinMain {
 			if (null != communicator) {
 				communicator.terminate();
 			} else {
-				System.exit(-1);
+				terminateImmediately(-1);
 			}
 		} finally {
 			ImageRegistry.getInstance().dispose();
@@ -477,5 +477,13 @@ public class EmulatorSkinMain {
 		}
 
 		return properties;
+	}
+
+	public static void terminateImmediately(int exit) {
+		if (logger != null) {
+			logger.info("shutdown immediately! exit value : " + exit);
+		}
+
+		System.exit(exit);
 	}
 }

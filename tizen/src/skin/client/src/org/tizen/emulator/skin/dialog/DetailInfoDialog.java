@@ -244,7 +244,7 @@ public class DetailInfoDialog extends SkinDialog {
 				infoData = new String(receivedData, "UTF-8");
 			} catch (UnsupportedEncodingException e) {
 				logger.warning("unsupported encoding exception");
-				infoData = new String(receivedData);
+				infoData = null;
 			}
 		} else {
 			logger.severe("Fail to get detail info");

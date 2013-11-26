@@ -317,8 +317,8 @@ public class SocketCommunicator implements ICommunicator {
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
-						String strLayer = new String(receivedData, 0, 1);
-						String strValue = new String(receivedData, 1, length - 2);
+						String strLayer = new String(receivedData, 0, 1, "UTF-8");
+						String strValue = new String(receivedData, 1, length - 2, "UTF-8");
 
 						int layer = 0;
 						int value = 0;
@@ -343,7 +343,7 @@ public class SocketCommunicator implements ICommunicator {
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
-						String strValue = new String(receivedData, 0, length - 1);
+						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
 
 						int value = 1;
 						try {
@@ -375,7 +375,7 @@ public class SocketCommunicator implements ICommunicator {
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
-						String strValue = new String(receivedData, 0, length - 1);
+						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
 
 						int value = 1;
 						try {
