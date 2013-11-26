@@ -55,9 +55,11 @@ MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
 #define ECS_TETHERING_MSG_ACTION_TOUCH_STATUS           5
 #endif
 
-// ecs <-> ecp
-static bool send_tethering_ntf(const char *data, const int len);
+// static bool send_tethering_ntf(const char *data, const int len);
+static bool send_tethering_ntf(const char *data);
 static void send_tethering_status_ntf(type_group group, type_action action);
+
+static int tethering_port = 0;
 
 void send_tethering_sensor_status_ecp(void)
 {
@@ -79,6 +81,41 @@ void send_tethering_connection_status_ecp(void)
             ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS);
 }
 
+static void send_tethering_port_ecp(void)
+{
+    type_length length;
+    type_group group = ECS_TETHERING_MSG_GROUP_ECP;
+    type_action action = ECS_TETHERING_MSG_ACTION_CONNECT;
+    uint8_t *msg = NULL;
+    gchar data[12];
+
+    msg = g_malloc(MSG_BUF_SIZE);
+    if (!msg) {
+        return;
+    }
+
+    LOG(">> send port_num: %d", tethering_port);
+
+    g_snprintf(data, sizeof(data) - 1, "%d", tethering_port);
+    length = strlen(data);
+
+    memcpy(msg, ECS_TETHERING_MSG_CATEGORY, 10);
+    memcpy(msg + 10, &length, sizeof(unsigned short));
+    memcpy(msg + 12, &group, sizeof(unsigned char));
+    memcpy(msg + 13, &action, sizeof(unsigned char));
+    memcpy(msg + 14, data, length);
+
+    LOG(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s",
+        action, group, data);
+
+//    send_tethering_ntf((const char *)msg, MSG_BUF_SIZE);
+    send_tethering_ntf((const char *)msg);
+
+    if (msg) {
+        g_free(msg);
+    }
+}
+
 static void send_tethering_status_ntf(type_group group, type_action action)
 {
     type_length length = 1;
@@ -89,6 +126,9 @@ static void send_tethering_status_ntf(type_group group, type_action action)
     switch (action) {
     case ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS:
         status = get_tethering_connection_status();
+        if (status == CONNECTED) {
+            send_tethering_port_ecp();
+        }
         break;
     case ECS_TETHERING_MSG_ACTION_SENSOR_STATUS:
         status = get_tethering_sensor_status();
@@ -116,14 +156,16 @@ static void send_tethering_status_ntf(type_group group, type_action action)
     LOG(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s",
         action, group, data);
 
-    send_tethering_ntf((const char *)msg, MSG_BUF_SIZE);
+//    send_tethering_ntf((const char *)msg, MSG_BUF_SIZE);
+    send_tethering_ntf((const char *)msg);
 
     if (msg) {
         g_free(msg);
     }
 }
 
-static bool send_tethering_ntf(const char *data, const int len)
+// static bool send_tethering_ntf(const char *data, const int len)
+static bool send_tethering_ntf(const char *data)
 {
     type_length length = 0;
     type_group group = 0;
@@ -212,17 +254,19 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
                 port = g_ascii_strtoull(data, NULL, 10);
 
                 LOG(">> MSG_ACTION_CONNECT");
-                LOG(">> port_num: %d", port);
                 LOG(">> len = %zd, data\" %s\"", strlen(data), data);
 
                 connect_tethering_app(port);
+                tethering_port = port;
+
+                LOG(">> port_num: %d, %d", port, tethering_port);
             }
         }
             break;
         case ECS_TETHERING_MSG_ACTION_DISCONNECT:
             LOG(">> MSG_ACTION_DISCONNECT");
-            // end_tethering_socket(tethering_sock);
             disconnect_tethering_app();
+            tethering_port = 0;
             break;
         case ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS:
         case ECS_TETHERING_MSG_ACTION_SENSOR_STATUS:
