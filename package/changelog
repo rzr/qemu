@@ -1,3 +1,6 @@
+* 1.7.1
+- method for initial scale factor value determining
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-11-26
 * 1.7.0
 - Rewrite maru_pm. Rewrite power management codes.
 == Seokyeon Hwang <syeon.hwang@samsung.com> 2013-11-19
