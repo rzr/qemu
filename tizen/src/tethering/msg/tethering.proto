@@ -108,6 +108,11 @@ message SensorMsg {
 	optional SensorData data = 6;
 }
 
+message Resolution {
+	required int32 width = 1;
+	required int32 height = 2;
+}
+
 message MultiTouchMaxCount {
 	optional int32 max = 1 [default = 10];
 }
@@ -131,6 +136,7 @@ message MultiTouchMsg {
 		TERMINATE = 4;
 		MAX_COUNT = 5;
 		TOUCH_DATA = 6;
+		RESOLUTION = 7;
 	}
 	required Type type = 1;
 	optional StartReq startReq= 2;
@@ -138,6 +144,7 @@ message MultiTouchMsg {
 	optional EventTerminate terminate= 4;
 	optional MultiTouchMaxCount maxCount = 5;
 	optional MultiTouchData touchData = 6;
+	optional Resolution resolution = 7;
 }
 
 message InjectorMsg {

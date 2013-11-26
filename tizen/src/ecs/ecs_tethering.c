@@ -27,8 +27,7 @@
  *
  */
 
-#include "qemu-common.h"
-#include "qemu/sockets.h"
+#include "ui/console.h"
 
 #include "ecs.h"
 #include "ecs_tethering.h"
@@ -41,6 +40,7 @@ MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
 #define MSG_BUF_SIZE  255
 #define MSG_LEN_SIZE    4
 
+#if 0
 // ecs <-> ecp messages
 #define ECS_TETHERING_MSG_CATEGORY                      "tethering"
 
@@ -53,6 +53,7 @@ MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
 #define ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS      3
 #define ECS_TETHERING_MSG_ACTION_SENSOR_STATUS          4
 #define ECS_TETHERING_MSG_ACTION_TOUCH_STATUS           5
+#endif
 
 // ecs <-> ecp
 static bool send_tethering_ntf(const char *data, const int len);
@@ -65,7 +66,7 @@ void send_tethering_sensor_status_ecp(void)
             ECS_TETHERING_MSG_ACTION_SENSOR_STATUS);
 }
 
-void send_tethering_multitouch_status_ecp(void)
+void send_tethering_touch_status_ecp(void)
 {
     send_tethering_status_ntf(ECS_TETHERING_MSG_GROUP_ECP,
             ECS_TETHERING_MSG_ACTION_TOUCH_STATUS);
@@ -177,6 +178,15 @@ static bool send_tethering_ntf(const char *data, const int len)
     return true;
 }
 
+void send_tethering_sensor_data(const char *data, int len)
+{
+    set_sensor_data(len, data);
+}
+
+void send_tethering_touch_data(int x, int y, int index, int status)
+{
+    kbd_mouse_event(x, y, index, status);
+}
 
 // handle tethering_req message
 bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)

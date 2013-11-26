@@ -522,6 +522,49 @@ void   injector__sensor_msg__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   injector__resolution__init
+                     (Injector__Resolution         *message)
+{
+  static Injector__Resolution init_value = INJECTOR__RESOLUTION__INIT;
+  *message = init_value;
+}
+size_t injector__resolution__get_packed_size
+                     (const Injector__Resolution *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__resolution__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t injector__resolution__pack
+                     (const Injector__Resolution *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__resolution__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t injector__resolution__pack_to_buffer
+                     (const Injector__Resolution *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__resolution__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Injector__Resolution *
+       injector__resolution__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Injector__Resolution *)
+     protobuf_c_message_unpack (&injector__resolution__descriptor,
+                                allocator, len, data);
+}
+void   injector__resolution__free_unpacked
+                     (Injector__Resolution *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__resolution__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   injector__multi_touch_max_count__init
                      (Injector__MultiTouchMaxCount         *message)
 {
@@ -1361,6 +1404,57 @@ const ProtobufCMessageDescriptor injector__sensor_msg__descriptor =
   (ProtobufCMessageInit) injector__sensor_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
+static const ProtobufCFieldDescriptor injector__resolution__field_descriptors[2] =
+{
+  {
+    "width",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Injector__Resolution, width),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "height",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Injector__Resolution, height),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned injector__resolution__field_indices_by_name[] = {
+  1,   /* field[1] = height */
+  0,   /* field[0] = width */
+};
+static const ProtobufCIntRange injector__resolution__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor injector__resolution__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "injector.Resolution",
+  "Resolution",
+  "Injector__Resolution",
+  "injector",
+  sizeof(Injector__Resolution),
+  2,
+  injector__resolution__field_descriptors,
+  injector__resolution__field_indices_by_name,
+  1,  injector__resolution__number_ranges,
+  (ProtobufCMessageInit) injector__resolution__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const int32_t injector__multi_touch_max_count__max__default_value = 10;
 static const ProtobufCFieldDescriptor injector__multi_touch_max_count__field_descriptors[1] =
 {
@@ -1480,20 +1574,22 @@ const ProtobufCMessageDescriptor injector__multi_touch_data__descriptor =
   (ProtobufCMessageInit) injector__multi_touch_data__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue injector__multi_touch_msg__type__enum_values_by_number[5] =
+const ProtobufCEnumValue injector__multi_touch_msg__type__enum_values_by_number[6] =
 {
   { "START_REQ", "INJECTOR__MULTI_TOUCH_MSG__TYPE__START_REQ", 2 },
   { "START_ANS", "INJECTOR__MULTI_TOUCH_MSG__TYPE__START_ANS", 3 },
   { "TERMINATE", "INJECTOR__MULTI_TOUCH_MSG__TYPE__TERMINATE", 4 },
   { "MAX_COUNT", "INJECTOR__MULTI_TOUCH_MSG__TYPE__MAX_COUNT", 5 },
   { "TOUCH_DATA", "INJECTOR__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA", 6 },
+  { "RESOLUTION", "INJECTOR__MULTI_TOUCH_MSG__TYPE__RESOLUTION", 7 },
 };
 static const ProtobufCIntRange injector__multi_touch_msg__type__value_ranges[] = {
-{2, 0},{0, 5}
+{2, 0},{0, 6}
 };
-const ProtobufCEnumValueIndex injector__multi_touch_msg__type__enum_values_by_name[5] =
+const ProtobufCEnumValueIndex injector__multi_touch_msg__type__enum_values_by_name[6] =
 {
   { "MAX_COUNT", 3 },
+  { "RESOLUTION", 5 },
   { "START_ANS", 1 },
   { "START_REQ", 0 },
   { "TERMINATE", 2 },
@@ -1506,15 +1602,15 @@ const ProtobufCEnumDescriptor injector__multi_touch_msg__type__descriptor =
   "Type",
   "Injector__MultiTouchMsg__Type",
   "injector",
-  5,
+  6,
   injector__multi_touch_msg__type__enum_values_by_number,
-  5,
+  6,
   injector__multi_touch_msg__type__enum_values_by_name,
   1,
   injector__multi_touch_msg__type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descriptors[6] =
+static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descriptors[7] =
 {
   {
     "type",
@@ -1588,9 +1684,22 @@ static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descripto
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "resolution",
+    7,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMsg, resolution),
+    &injector__resolution__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned injector__multi_touch_msg__field_indices_by_name[] = {
   4,   /* field[4] = maxCount */
+  6,   /* field[6] = resolution */
   2,   /* field[2] = startAns */
   1,   /* field[1] = startReq */
   3,   /* field[3] = terminate */
@@ -1600,7 +1709,7 @@ static const unsigned injector__multi_touch_msg__field_indices_by_name[] = {
 static const ProtobufCIntRange injector__multi_touch_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 6 }
+  { 0, 7 }
 };
 const ProtobufCMessageDescriptor injector__multi_touch_msg__descriptor =
 {
@@ -1610,7 +1719,7 @@ const ProtobufCMessageDescriptor injector__multi_touch_msg__descriptor =
   "Injector__MultiTouchMsg",
   "injector",
   sizeof(Injector__MultiTouchMsg),
-  6,
+  7,
   injector__multi_touch_msg__field_descriptors,
   injector__multi_touch_msg__field_indices_by_name,
   1,  injector__multi_touch_msg__number_ranges,

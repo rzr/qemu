@@ -38,7 +38,6 @@
 #include "app_tethering.h"
 #include "../ecs/ecs_tethering.h"
 #include "genmsg/tethering.pb-c.h"
-#include "../hw/maru_virtio_sensor.h"
 
 #include "../debug_ch.h"
 MULTI_DEBUG_CHANNEL(tizen, app_tethering);
@@ -72,6 +71,21 @@ enum connection_status {
 enum device_status {
     ENABLED = 1,
     DISABLED,
+};
+
+enum sensor_level {
+    level_accel = 1,
+    level_proxi = 2,
+    level_light = 3,
+    level_gyro = 4,
+    level_geo = 5,
+    level_tilt = 12,
+    level_magnetic = 13
+};
+
+enum touch_status {
+    RELEASED = 0,
+    PRESSED,
 };
 
 #ifndef DEBUG
@@ -314,53 +328,69 @@ static bool send_set_sensor_status_msg(Injector__SensorType sensor_type,
 
 static void set_sensor_data(Injector__SensorData *data)
 {
+    /*
+     * data format for sensor device
+     * each value is classified by carriage return character
+     * sensor_type/param numbers/parameters
+     * ex) acceleration sensor: "level_accel\n3\nx\ny\nz\n"
+     */
+
     switch(data->sensor) {
     case INJECTOR__SENSOR_TYPE__ACCEL:
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%s, %s, %s", data->x, data->y, data->z);
-        set_sensor_accel(tmp, strlen(tmp));
+        sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
+                level_accel, 3, data->x, data->y, data->z);
+        send_tethering_sensor_data(tmp, strlen(tmp));
 
-        INFO("sensor_accel x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
+        TRACE("sensor_accel x: %s, y: %s, z: %s\n",
+            data->x, data->y, data->z);
     }
         break;
     case INJECTOR__SENSOR_TYPE__MAGNETIC:
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%s %s %s", data->x, data->y, data->z);
-        set_sensor_mag(tmp, strlen(tmp));
+        sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
+                level_magnetic, 3, data->x, data->y, data->z);
+        send_tethering_sensor_data(tmp, strlen(tmp));
 
-        INFO("sensor_mag x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
+        TRACE("sensor_mag x: %s, y: %s, z: %s\n",
+            data->x, data->y, data->z);
     }
         break;
     case INJECTOR__SENSOR_TYPE__GYROSCOPE:
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%s %s %s", data->x, data->y, data->z);
-        set_sensor_gyro(tmp, strlen(tmp));
+        sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
+                level_gyro, 3, data->x, data->y, data->z);
+        send_tethering_sensor_data(tmp, strlen(tmp));
 
-        INFO("sensor_gyro x: %s, y: %s, z: %s\n", data->x, data->y, data->z);
+        TRACE("sensor_gyro x: %s, y: %s, z: %s\n",
+            data->x, data->y, data->z);
     }
         break;
     case INJECTOR__SENSOR_TYPE__PROXIMITY:
     {
         char tmp[255] = {0};
+        double x = (double)(atoi(data->x));
 
-        sprintf(tmp, "%s", data->x);
-        set_sensor_proxi(tmp, strlen(tmp));
-        INFO("sensor_proxi x: %s\n", data->x);
+        sprintf(tmp, "%d\n%d\n%.1f\n", level_proxi, 1, x);
+        send_tethering_sensor_data(tmp, strlen(tmp));
+
+        TRACE("sensor_proxi x: %.1f, %s\n", x, tmp);
     }
         break;
     case INJECTOR__SENSOR_TYPE__LIGHT:
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%s", data->x);
-        set_sensor_light(tmp, strlen(tmp));
-        INFO("sensor_light x: %s\n", data->x);
+        sprintf(tmp, "%d\n%d\n%s\n", level_light, 1, data->x);
+        send_tethering_sensor_data(tmp, strlen(tmp));
+
+        TRACE("sensor_light x: %s\n", data->x);
     }
         break;
     default:
@@ -409,7 +439,7 @@ static bool send_mulitouch_start_ans_msg(Injector__Result result)
     return ret;
 }
 
-static bool send_multitouch_max_count(void)
+static bool send_set_multitouch_max_count(void)
 {
     bool ret = false;
 
@@ -432,41 +462,64 @@ static bool send_multitouch_max_count(void)
     return ret;
 }
 
-
 static void set_multitouch_data(Injector__MultiTouchData *data)
 {
     float x = 0.0, y = 0.0;
-    int32_t index = 0;
+    int32_t index = 0, status = 0;
 
     switch(data->status) {
     case INJECTOR__TOUCH_STATUS__PRESS:
         TRACE("touch pressed\n");
-
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
+        status = PRESSED;
         break;
     case INJECTOR__TOUCH_STATUS__RELEASE:
         TRACE("touch released\n");
-
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
+        status = RELEASED;
         break;
     default:
         TRACE("invalid multitouch data\n");
         break;
     }
 
-    INFO("MT. index: %d, x: %f, y: %f\n", index, x, y);
-
+    INFO("set touch_data. index: %d, x: %d, y: %d\n", index, x, y);
     // set ecs_multitouch
-    kbd_mouse_event(x, y, index, data->status);
+    send_tethering_touch_data(x, y, index, status);
+}
+
+static bool send_set_multitouch_resolution(void)
+{
+    bool ret = false;
+
+    Injector__MultiTouchMsg mt = INJECTOR__MULTI_TOUCH_MSG__INIT;
+    Injector__Resolution resolution = INJECTOR__RESOLUTION__INIT;
+
+    TRACE("enter: %s\n", __func__);
+
+    resolution.width = get_emul_lcd_width();
+    resolution.height = get_emul_lcd_height();
+
+    mt.type = INJECTOR__MULTI_TOUCH_MSG__TYPE__RESOLUTION;
+    mt.resolution = &resolution;
+
+    INFO("send multi-touch resolution: %dx%d\n",
+        resolution.width, resolution.height);
+    ret = build_mulitouch_msg(&mt);
+
+    TRACE("leave: %s, ret: %d\n", __func__, ret);
+
+    return ret;
 }
 
 static void msgproc_tethering_handshake_ans(Injector__HandShakeAns *msg)
 {
-//  ans = msg->result;
+    // FIXME: handle handshake answer
+    //  ans = msg->result;
 }
 
 static void msgproc_app_state_msg(Injector__AppState *msg)
@@ -516,12 +569,6 @@ static bool msgproc_tethering_event_msg(Injector__EventMsg *msg)
         send_event_start_ans_msg(INJECTOR__RESULT__SUCCESS);
     }
         break;
-#if 0
-    case INJECTOR__EVENT_MSG__TYPE__START_ANS:
-        break;
-    case INJECTOR__EVENT_MSG__TYPE__EVENT_STATUS:
-        break;
-#endif
     case INJECTOR__EVENT_MSG__TYPE__TERMINATE:
         break;
     default:
@@ -557,12 +604,6 @@ static bool msgproc_tethering_sensor_msg(Injector__SensorMsg *msg)
         send_sensor_start_ans_msg(INJECTOR__RESULT__SUCCESS);
 
         break;
-#if 0
-    case INJECTOR__SENSOR_MSG__TYPE__START_ANS:
-        break;
-    case INJECTOR__SENSOR_MSG__TYPE__SENSOR_STATUS:
-        break;
-#endif
     case INJECTOR__SENSOR_MSG__TYPE__TERMINATE:
         TRACE("SENSOR_MSG_TYPE_TERMINATE\n");
         break;
@@ -587,17 +628,13 @@ static bool msgproc_tethering_mt_msg(Injector__MultiTouchMsg *msg)
     switch(msg->type) {
     case INJECTOR__MULTI_TOUCH_MSG__TYPE__START_REQ:
         TRACE("MULTITOUCH_MSG_TYPE_START\n");
+
+        send_set_multitouch_max_count();
+        send_set_multitouch_resolution();
+
         ret = send_mulitouch_start_ans_msg(INJECTOR__RESULT__SUCCESS);
         break;
-#if 0
-    case INJECTOR__MULTI_TOUCH_MSG__TYPE__START_ANS:
-        break;
-#endif
     case INJECTOR__MULTI_TOUCH_MSG__TYPE__TERMINATE:
-        TRACE("MULTITOUCH_MSG_TYPE_TERMINATE\n");
-        break;
-    case INJECTOR__MULTI_TOUCH_MSG__TYPE__MAX_COUNT:
-        ret = send_multitouch_max_count();
         TRACE("MULTITOUCH_MSG_TYPE_TERMINATE\n");
         break;
     case INJECTOR__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA:
@@ -752,9 +789,7 @@ static void tethering_io_handler(void *opaque)
             return;
         }
 #endif
-
         recv_buf.len = payloadsize;
-
         to_read_bytes -= sizeof(payloadsize);
     }
 

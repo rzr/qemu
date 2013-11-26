@@ -28,6 +28,21 @@
  *
  */
 
+// ecs <-> ecp messages
+#define ECS_TETHERING_MSG_CATEGORY                      "tethering"
+
+#define ECS_TETHERING_MSG_GROUP_ECP                     1
+// #define TETHERING_MSG_GROUP_USB
+// #define TETHERING_MSG_GROUP_WIFI
+
+#define ECS_TETHERING_MSG_ACTION_CONNECT                1
+#define ECS_TETHERING_MSG_ACTION_DISCONNECT             2
+#define ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS      3
+#define ECS_TETHERING_MSG_ACTION_SENSOR_STATUS          4
+#define ECS_TETHERING_MSG_ACTION_TOUCH_STATUS           5
+
 void send_tethering_sensor_status_ecp(void);
-void send_tethering_multitouch_status_ecp(void);
+void send_tethering_touch_status_ecp(void);
 void send_tethering_connection_status_ecp(void);
+void send_tethering_sensor_data(const char *data, int len);
+void send_tethering_touch_data(int x, int y, int index, int status);

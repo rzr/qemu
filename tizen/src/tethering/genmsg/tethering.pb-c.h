@@ -20,6 +20,7 @@ typedef struct _Injector__EventTerminate Injector__EventTerminate;
 typedef struct _Injector__SetSensorStatus Injector__SetSensorStatus;
 typedef struct _Injector__SensorData Injector__SensorData;
 typedef struct _Injector__SensorMsg Injector__SensorMsg;
+typedef struct _Injector__Resolution Injector__Resolution;
 typedef struct _Injector__MultiTouchMaxCount Injector__MultiTouchMaxCount;
 typedef struct _Injector__MultiTouchData Injector__MultiTouchData;
 typedef struct _Injector__MultiTouchMsg Injector__MultiTouchMsg;
@@ -46,7 +47,8 @@ typedef enum _Injector__MultiTouchMsg__Type {
   INJECTOR__MULTI_TOUCH_MSG__TYPE__START_ANS = 3,
   INJECTOR__MULTI_TOUCH_MSG__TYPE__TERMINATE = 4,
   INJECTOR__MULTI_TOUCH_MSG__TYPE__MAX_COUNT = 5,
-  INJECTOR__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA = 6
+  INJECTOR__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA = 6,
+  INJECTOR__MULTI_TOUCH_MSG__TYPE__RESOLUTION = 7
 } Injector__MultiTouchMsg__Type;
 typedef enum _Injector__InjectorMsg__Type {
   INJECTOR__INJECTOR_MSG__TYPE__HANDSHAKE_REQ = 2,
@@ -224,6 +226,17 @@ struct  _Injector__SensorMsg
     , 0, NULL, NULL, NULL, NULL, NULL }
 
 
+struct  _Injector__Resolution
+{
+  ProtobufCMessage base;
+  int32_t width;
+  int32_t height;
+};
+#define INJECTOR__RESOLUTION__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&injector__resolution__descriptor) \
+    , 0, 0 }
+
+
 struct  _Injector__MultiTouchMaxCount
 {
   ProtobufCMessage base;
@@ -261,10 +274,11 @@ struct  _Injector__MultiTouchMsg
   Injector__EventTerminate *terminate;
   Injector__MultiTouchMaxCount *maxcount;
   Injector__MultiTouchData *touchdata;
+  Injector__Resolution *resolution;
 };
 #define INJECTOR__MULTI_TOUCH_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&injector__multi_touch_msg__descriptor) \
-    , 0, NULL, NULL, NULL, NULL, NULL }
+    , 0, NULL, NULL, NULL, NULL, NULL, NULL }
 
 
 struct  _Injector__InjectorMsg
@@ -512,6 +526,25 @@ Injector__SensorMsg *
 void   injector__sensor_msg__free_unpacked
                      (Injector__SensorMsg *message,
                       ProtobufCAllocator *allocator);
+/* Injector__Resolution methods */
+void   injector__resolution__init
+                     (Injector__Resolution         *message);
+size_t injector__resolution__get_packed_size
+                     (const Injector__Resolution   *message);
+size_t injector__resolution__pack
+                     (const Injector__Resolution   *message,
+                      uint8_t             *out);
+size_t injector__resolution__pack_to_buffer
+                     (const Injector__Resolution   *message,
+                      ProtobufCBuffer     *buffer);
+Injector__Resolution *
+       injector__resolution__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   injector__resolution__free_unpacked
+                     (Injector__Resolution *message,
+                      ProtobufCAllocator *allocator);
 /* Injector__MultiTouchMaxCount methods */
 void   injector__multi_touch_max_count__init
                      (Injector__MultiTouchMaxCount         *message);
@@ -626,6 +659,9 @@ typedef void (*Injector__SensorData_Closure)
 typedef void (*Injector__SensorMsg_Closure)
                  (const Injector__SensorMsg *message,
                   void *closure_data);
+typedef void (*Injector__Resolution_Closure)
+                 (const Injector__Resolution *message,
+                  void *closure_data);
 typedef void (*Injector__MultiTouchMaxCount_Closure)
                  (const Injector__MultiTouchMaxCount *message,
                   void *closure_data);
@@ -664,6 +700,7 @@ extern const ProtobufCMessageDescriptor injector__set_sensor_status__descriptor;
 extern const ProtobufCMessageDescriptor injector__sensor_data__descriptor;
 extern const ProtobufCMessageDescriptor injector__sensor_msg__descriptor;
 extern const ProtobufCEnumDescriptor    injector__sensor_msg__type__descriptor;
+extern const ProtobufCMessageDescriptor injector__resolution__descriptor;
 extern const ProtobufCMessageDescriptor injector__multi_touch_max_count__descriptor;
 extern const ProtobufCMessageDescriptor injector__multi_touch_data__descriptor;
 extern const ProtobufCMessageDescriptor injector__multi_touch_msg__descriptor;
