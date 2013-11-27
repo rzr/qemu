@@ -323,6 +323,14 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					return;
 				}*/
 
+				if (isOnInterpolation == false) {
+					/* Mac - NSImageInterpolationNone */
+					e.gc.setInterpolation(SWT.NONE);
+				} else {
+					/* Mac - NSImageInterpolationHigh */
+					e.gc.setInterpolation(SWT.HIGH);
+				}
+
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
 					e.gc.drawImage(pollThread.imageFramebuffer,
 							0, 0, pollThread.widthFB, pollThread.heightFB,

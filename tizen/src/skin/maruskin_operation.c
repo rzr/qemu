@@ -566,6 +566,13 @@ void do_host_kbd_enable(bool on)
 #endif
 }
 
+void do_interpolation_enable(bool on)
+{
+    INFO("interpolation enable : %d\n", on);
+
+    maru_display_interpolation(on);
+}
+
 void do_ram_dump(void)
 {
     INFO("dump ram!\n");

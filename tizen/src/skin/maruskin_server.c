@@ -112,6 +112,7 @@ enum {
     RECV_RAM_DUMP = 18,
     RECV_GUESTMEMORY_DUMP = 19,
     RECV_ECP_PORT_REQ = 20,
+    RECV_INTERPOLATION_STATE = 21,
 
     RECV_RESPONSE_HEART_BEAT = 900,
     RECV_RESPONSE_DRAW_FRAME = 901,
@@ -1090,6 +1091,27 @@ static void* run_skin_server(void* args)
                     } else {
                         do_host_kbd_enable(true);
                     }
+                    break;
+                }
+                case RECV_INTERPOLATION_STATE: {
+                    char on = 0;
+
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_INTERPOLATION_STATE ==\n");
+                    TRACE(log_buf);
+
+                    if (length <= 0) {
+                        INFO("there is no data looking at 0 length.\n");
+                        continue;
+                    }
+
+                    memcpy(&on, recvbuf, sizeof(on));
+
+                    if (on == 0) {
+                        do_interpolation_enable(false);
+                    } else {
+                        do_interpolation_enable(true);
+                    }
+
                     break;
                 }
                 case RECV_RESPONSE_DRAW_FRAME: {
