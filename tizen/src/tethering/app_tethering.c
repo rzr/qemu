@@ -27,7 +27,11 @@
  * - S-Core Co., Ltd
  *
  */
+#ifndef __WIN32
 #include <sys/ioctl.h>
+#else
+#define EISCONN	WSAEISCONN
+#endif
 
 #include "qemu-common.h"
 #include "qemu/main-loop.h"
@@ -764,7 +768,7 @@ static void tethering_io_handler(void *opaque)
     }
 #else
     unsigned long to_read_bytes_long = 0;
-    ret = ioctlsocket(tethering_sock. FIONREAD, &to_read_bytes_long);
+    ret = ioctlsocket(tethering_sock, FIONREAD, &to_read_bytes_long);
     if (ret < 0) {
     }
     to_read_bytes = (int)to_read_bytes_long;
@@ -884,7 +888,7 @@ static int start_tethering_socket(int port)
 
     set_tethering_connection_status(CONNECTING);
     do {
-        if (connect(sock, &addr, sizeof(addr)) < 0) {
+        if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
             INFO("tethering socket is connecting.\n");
             ret = -socket_error();
         } else {
