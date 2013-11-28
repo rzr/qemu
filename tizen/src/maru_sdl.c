@@ -839,7 +839,7 @@ void maruskin_sdl_init(uint64 swt_handle,
 
     set_emul_resolution(display_width, display_height);
     set_emul_sdl_bpp(SDL_BPP);
-    maruskin_sdl_interpolation(true);
+    maruskin_sdl_interpolation(false);
     init_multi_touch_state();
 
     if (blank_guide_enable == true) {

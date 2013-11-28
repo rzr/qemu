@@ -190,7 +190,7 @@ public class EmulatorSkin {
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		this.isOnTop = isOnTop;
-		this.isOnInterpolation = true;
+		this.isOnInterpolation = false;
 		this.isOnKbd = false;
 		this.isKeyWindow = false;
 
@@ -425,6 +425,9 @@ public class EmulatorSkin {
 					config.setSkinProperty(
 							SkinPropertiesConstants.WINDOW_ONTOP,
 							Boolean.toString(isOnTop));
+					config.setSkinProperty(
+							SkinPropertiesConstants.WINDOW_INTERPOLATION,
+							Boolean.toString(isOnInterpolation));
 
 					int dockValue = 0;
 					SkinWindow keyWindow = getKeyWindowKeeper().getKeyWindow();

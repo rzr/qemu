@@ -55,7 +55,6 @@ import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.dbi.DisplayType;
@@ -111,13 +110,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	public Canvas compose(int style) {
 		lcdCanvas = new Canvas(shell, style);
 
-		int vmIndex =
-				config.getArgInt(ArgsConstants.VM_BASE_PORT) % 100;
-		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
-				EmulatorConfig.DEFAULT_WINDOW_X + vmIndex);
-		int y = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
-				EmulatorConfig.DEFAULT_WINDOW_Y + vmIndex);
-
+		int x = config.getValidWindowX();
+		int y = config.getValidWindowY();
 		int scale = currentState.getCurrentScale();
 		short rotationId = currentState.getCurrentRotationId();
 
