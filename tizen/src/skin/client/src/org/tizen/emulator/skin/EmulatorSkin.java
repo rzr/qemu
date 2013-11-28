@@ -1541,14 +1541,13 @@ public class EmulatorSkin {
 					if (getKeyWindowKeeper().getKeyWindow() == null) {
 						if (getKeyWindowKeeper().getRecentlyDocked() != SWT.NONE) {
 							getKeyWindowKeeper().openKeyWindow(
-									getKeyWindowKeeper().getRecentlyDocked(),
-									false);
+									getKeyWindowKeeper().getRecentlyDocked(), false);
 
 							getKeyWindowKeeper().setRecentlyDocked(SWT.NONE);
 						} else {
 							/* opening for first time */
 							getKeyWindowKeeper().openKeyWindow(
-									SWT.RIGHT | SWT.CENTER, false);
+									KeyWindowKeeper.DEFAULT_DOCK_POSITION, false);
 						}
 					} else {
 						getKeyWindowKeeper().openKeyWindow(

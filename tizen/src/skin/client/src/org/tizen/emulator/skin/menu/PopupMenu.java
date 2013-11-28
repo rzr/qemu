@@ -334,6 +334,9 @@ public class PopupMenu {
 
 			if (matchedItem == null) {
 				matchedItem = scaleSubMenu.getItem(0);
+				if (matchedItem == null) {
+					return;
+				}
 				skin.getEmulatorSkinState().setCurrentScale(
 						(Integer) matchedItem.getData());
 			}

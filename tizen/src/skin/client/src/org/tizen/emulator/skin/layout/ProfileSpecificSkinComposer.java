@@ -65,6 +65,7 @@ import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
 import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
 import org.tizen.emulator.skin.info.EmulatorSkinState;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
@@ -162,14 +163,14 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 		if (popupMenu != null && popupMenu.keyWindowItem != null) {
 			final int dockValue = config.getSkinPropertyInt(
-					SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+					SkinPropertiesConstants.KEYWINDOW_POSITION, SWT.NONE);
 
 			shell.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
 					if (dockValue == SWT.NONE) {
 						skin.getKeyWindowKeeper().openKeyWindow(
-								SWT.RIGHT | SWT.CENTER, false);
+								KeyWindowKeeper.DEFAULT_DOCK_POSITION, false);
 					} else {
 						skin.getKeyWindowKeeper().openKeyWindow(
 								dockValue, false);
