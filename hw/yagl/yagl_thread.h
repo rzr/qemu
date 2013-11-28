@@ -33,10 +33,12 @@
 #include "yagl_types.h"
 #include "yagl_event.h"
 #include "yagl_tls.h"
+#include "work_queue.h"
 #include "qemu/queue.h"
 #include "qemu/thread.h"
 
 struct yagl_process_state;
+struct yagl_transport;
 
 struct yagl_thread_state
 {
@@ -46,7 +48,9 @@ struct yagl_thread_state
 
     yagl_tid id;
 
-    uint8_t **pages;
+    struct yagl_transport *t;
+
+    uint32_t num_in_progress;
 
     /*
      * Fake TLS.
@@ -73,6 +77,6 @@ void yagl_thread_state_destroy(struct yagl_thread_state *ts,
 
 void yagl_thread_set_buffer(struct yagl_thread_state *ts, uint8_t **pages);
 
-void yagl_thread_call(struct yagl_thread_state *ts, uint32_t offset);
+void yagl_thread_call(struct yagl_thread_state *ts, bool sync);
 
 #endif

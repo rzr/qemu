@@ -71,9 +71,9 @@ struct yagl_eglb_surface
                   EGLint /*attribute*/,
                   EGLint */*value*/);
 
-    bool (*swap_buffers)(struct yagl_eglb_surface */*sfc*/);
+    void (*swap_buffers)(struct yagl_eglb_surface */*sfc*/);
 
-    bool (*copy_buffers)(struct yagl_eglb_surface */*sfc*/);
+    void (*copy_buffers)(struct yagl_eglb_surface */*sfc*/);
 
     void (*wait_gl)(struct yagl_eglb_surface */*sfc*/);
 

@@ -35,10 +35,24 @@
 #include "yagl_stats.h"
 #include "yagl_transport.h"
 #include "yagl_object_map.h"
+#include "work_queue.h"
+#include "winsys.h"
 #include "sysemu/kvm.h"
 #include "sysemu/hax.h"
 
 YAGL_DEFINE_TLS(struct yagl_thread_state*, cur_ts);
+
+struct yagl_thread_work_item
+{
+    struct work_queue_item base;
+
+    struct yagl_thread_state *ts;
+
+    uint32_t fence_seq;
+
+    uint32_t batch_size;
+    uint32_t out_arrays_size;
+};
 
 #ifdef CONFIG_KVM
 static __inline void yagl_cpu_synchronize_state(struct yagl_process_state *ps)
@@ -53,6 +67,88 @@ static __inline void yagl_cpu_synchronize_state(struct yagl_process_state *ps)
 }
 #endif
 
+static void yagl_thread_work(struct work_queue_item *wq_item)
+{
+    struct yagl_thread_work_item *item = (struct yagl_thread_work_item*)wq_item;
+    int i;
+    uint32_t num_calls = 0;
+    struct yagl_transport *t = item->ts->t;
+    struct winsys_interface *wsi = item->ts->ps->ss->wsi;
+
+    cur_ts = item->ts;
+
+    YAGL_LOG_FUNC_SET(yagl_thread_work);
+
+    YAGL_LOG_TRACE("batch started");
+
+    for (i = 0; i < YAGL_NUM_APIS; ++i) {
+        if (cur_ts->ps->api_states[i]) {
+            cur_ts->ps->api_states[i]->batch_start(cur_ts->ps->api_states[i]);
+        }
+    }
+
+    yagl_transport_reset(t, (uint8_t*)(item + 1),
+                         item->batch_size, item->out_arrays_size);
+
+    while (true) {
+        yagl_api_id api_id;
+        yagl_func_id func_id;
+        struct yagl_api_ps *api_ps;
+        yagl_api_func func;
+
+        if (!yagl_transport_begin_call(t, &api_id, &func_id)) {
+            /*
+              * Batch ended.
+              */
+             break;
+        }
+
+        if ((api_id <= 0) || (api_id > YAGL_NUM_APIS)) {
+            YAGL_LOG_CRITICAL("target-host protocol error, bad api_id - %u", api_id);
+            break;
+        }
+
+        api_ps = cur_ts->ps->api_states[api_id - 1];
+
+        if (!api_ps) {
+            YAGL_LOG_CRITICAL("uninitialized api - %u. host logic error", api_id);
+            break;
+        }
+
+        func = api_ps->get_func(api_ps, func_id);
+
+        if (func) {
+            func(t);
+            yagl_transport_end_call(t);
+        } else {
+            YAGL_LOG_CRITICAL("bad function call (api = %u, func = %u)",
+                              api_id,
+                              func_id);
+            break;
+        }
+
+        ++num_calls;
+    }
+
+    YAGL_LOG_TRACE("batch ended: %u calls", num_calls);
+
+    for (i = 0; i < YAGL_NUM_APIS; ++i) {
+        if (cur_ts->ps->api_states[i]) {
+            cur_ts->ps->api_states[i]->batch_end(cur_ts->ps->api_states[i]);
+        }
+    }
+
+    cur_ts = NULL;
+
+    --item->ts->num_in_progress;
+
+    if (wsi && item->fence_seq) {
+        wsi->fence_ack(wsi, item->fence_seq);
+    }
+
+    g_free(item);
+}
+
 struct yagl_thread_state
     *yagl_thread_state_create(struct yagl_process_state *ps,
                               yagl_tid id,
@@ -65,6 +161,7 @@ struct yagl_thread_state
 
     ts->ps = ps;
     ts->id = id;
+    ts->t = yagl_transport_create();
 
     cur_ts = ts;
 
@@ -134,107 +231,63 @@ void yagl_thread_state_destroy(struct yagl_thread_state *ts,
 
     yagl_thread_set_buffer(ts, NULL);
 
+    yagl_transport_destroy(ts->t);
+
     g_free(ts);
 }
 
 void yagl_thread_set_buffer(struct yagl_thread_state *ts, uint8_t **pages)
 {
-    if (ts->pages) {
+    if (ts->t->pages) {
         uint8_t **tmp;
 
-        for (tmp = ts->pages; *tmp; ++tmp) {
+        for (tmp = ts->t->pages; *tmp; ++tmp) {
             cpu_physical_memory_unmap(*tmp,
                                       TARGET_PAGE_SIZE,
                                       false,
                                       TARGET_PAGE_SIZE);
         }
 
-        g_free(ts->pages);
-        ts->pages = NULL;
+        g_free(ts->t->pages);
     }
 
-    ts->pages = pages;
+    yagl_transport_set_buffer(ts->t, pages);
 }
 
-void yagl_thread_call(struct yagl_thread_state *ts, uint32_t offset)
+void yagl_thread_call(struct yagl_thread_state *ts, bool sync)
 {
-    int i;
-    uint32_t num_calls = 0;
-    struct yagl_transport *t = ts->ps->ss->t;
-
-    YAGL_LOG_FUNC_SET(yagl_thread_call);
-
     assert(current_cpu);
 
     yagl_cpu_synchronize_state(ts->ps);
 
-    YAGL_LOG_TRACE("batch started");
-
-    cur_ts = ts;
-
-    for (i = 0; i < YAGL_NUM_APIS; ++i) {
-        if (ts->ps->api_states[i]) {
-            ts->ps->api_states[i]->batch_start(ts->ps->api_states[i]);
-        }
-    }
-
-    yagl_transport_begin(t, ts->pages, offset);
-
-    while (true) {
-        yagl_api_id api_id;
-        yagl_func_id func_id;
-        struct yagl_api_ps *api_ps;
-        yagl_api_func func;
-
-        yagl_transport_begin_call(t, &api_id, &func_id);
-
-        if (api_id == 0) {
-            /*
-             * Batch ended.
-             */
-            break;
+    if (sync) {
+        if (ts->num_in_progress > 0) {
+            work_queue_wait(ts->ps->ss->render_queue);
         }
 
-        if ((api_id <= 0) || (api_id > YAGL_NUM_APIS)) {
-            YAGL_LOG_CRITICAL("target-host protocol error, bad api_id - %u", api_id);
-            break;
+        yagl_transport_end(ts->t);
+    } else {
+        struct yagl_thread_work_item *item;
+        uint32_t batch_size;
+        uint32_t out_arrays_size;
+        uint32_t fence_seq;
+
+        item = (struct yagl_thread_work_item*)yagl_transport_begin(ts->t,
+            sizeof(*item), &batch_size, &out_arrays_size, &fence_seq);
+
+        if (!item) {
+            return;
         }
 
-        api_ps = ts->ps->api_states[api_id - 1];
+        work_queue_item_init(&item->base, &yagl_thread_work);
 
-        if (!api_ps) {
-            YAGL_LOG_CRITICAL("uninitialized api - %u. host logic error", api_id);
-            break;
-        }
+        item->ts = ts;
+        item->fence_seq = fence_seq;
+        item->batch_size = batch_size;
+        item->out_arrays_size = out_arrays_size;
 
-        func = api_ps->get_func(api_ps, func_id);
+        ++ts->num_in_progress;
 
-        if (func) {
-            if (func(t)) {
-                yagl_transport_end_call(t);
-            } else {
-                /*
-                 * Retry is requested.
-                 */
-                break;
-            }
-        } else {
-            YAGL_LOG_CRITICAL("bad function call (api = %u, func = %u)",
-                              api_id,
-                              func_id);
-            break;
-        }
-
-        ++num_calls;
-    }
-
-    YAGL_LOG_TRACE("batch ended: %u calls", num_calls);
-
-    yagl_stats_batch(num_calls, yagl_transport_bytes_processed(t));
-
-    for (i = 0; i < YAGL_NUM_APIS; ++i) {
-        if (ts->ps->api_states[i]) {
-            ts->ps->api_states[i]->batch_end(ts->ps->api_states[i]);
-        }
+        work_queue_add_item(ts->ps->ss->render_queue, &item->base);
     }
 }

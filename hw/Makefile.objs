@@ -33,3 +33,4 @@ devices-dirs-$(CONFIG_BUILD_VIGS) += vigs/
 devices-dirs-y += core/
 common-obj-y += $(devices-dirs-y)
 obj-y += $(devices-dirs-y)
+obj-y += work_queue.o

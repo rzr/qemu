@@ -31,6 +31,7 @@
 #define _QEMU_YAGL_COMPILED_TRANSFER_H
 
 #include "yagl_types.h"
+#include "qemu/queue.h"
 
 struct yagl_compiled_transfer_section
 {
@@ -49,9 +50,16 @@ struct yagl_compiled_transfer_section
 
 struct yagl_compiled_transfer
 {
+    QLIST_ENTRY(yagl_compiled_transfer) entry;
+
+    target_ulong va;
+    uint32_t len;
+    bool is_write;
+
+    bool in_list;
+
     struct yagl_compiled_transfer_section *sections;
     int num_sections;
-    bool is_write;
 };
 
 struct yagl_compiled_transfer
@@ -60,6 +68,8 @@ struct yagl_compiled_transfer
                                    bool is_write);
 
 void yagl_compiled_transfer_destroy(struct yagl_compiled_transfer *ct);
+
+void yagl_compiled_transfer_prepare(struct yagl_compiled_transfer *ct);
 
 void yagl_compiled_transfer_exec(struct yagl_compiled_transfer *ct, void* data);
 

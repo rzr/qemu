@@ -40,7 +40,7 @@
 /*
  * eglGetDisplay dispatcher. id = 1
  */
-static bool yagl_func_eglGetDisplay(struct yagl_transport *t)
+static void yagl_func_eglGetDisplay(struct yagl_transport *t)
 {
     uint32_t display_id;
     EGLint *error;
@@ -51,14 +51,12 @@ static bool yagl_func_eglGetDisplay(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT2(eglGetDisplay, uint32_t, void*, display_id, error);
     *retval = yagl_host_eglGetDisplay(display_id, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, *retval);
-
-    return true;
 }
 
 /*
  * eglInitialize dispatcher. id = 2
  */
-static bool yagl_func_eglInitialize(struct yagl_transport *t)
+static void yagl_func_eglInitialize(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     EGLint *major;
@@ -73,14 +71,12 @@ static bool yagl_func_eglInitialize(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT4(eglInitialize, yagl_host_handle, void*, void*, void*, dpy, major, minor, error);
     *retval = yagl_host_eglInitialize(dpy, major, minor, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglTerminate dispatcher. id = 3
  */
-static bool yagl_func_eglTerminate(struct yagl_transport *t)
+static void yagl_func_eglTerminate(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     EGLint *error;
@@ -91,14 +87,12 @@ static bool yagl_func_eglTerminate(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT2(eglTerminate, yagl_host_handle, void*, dpy, error);
     *retval = yagl_host_eglTerminate(dpy, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglGetConfigs dispatcher. id = 4
  */
-static bool yagl_func_eglGetConfigs(struct yagl_transport *t)
+static void yagl_func_eglGetConfigs(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle *configs;
@@ -107,23 +101,19 @@ static bool yagl_func_eglGetConfigs(struct yagl_transport *t)
     EGLint *error;
     EGLBoolean *retval;
     dpy = yagl_transport_get_out_yagl_host_handle(t);
-    if (!yagl_transport_get_in_array(t, sizeof(yagl_host_handle), (void**)&configs, &configs_maxcount, &configs_count)) {
-        return false;
-    }
+    yagl_transport_get_in_array(t, sizeof(yagl_host_handle), (void**)&configs, &configs_maxcount, &configs_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT3(eglGetConfigs, yagl_host_handle, void*, void*, dpy, configs, error);
     *configs_count = 0;
     *retval = yagl_host_eglGetConfigs(dpy, configs, configs_maxcount, configs_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglChooseConfig dispatcher. id = 5
  */
-static bool yagl_func_eglChooseConfig(struct yagl_transport *t)
+static void yagl_func_eglChooseConfig(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     const EGLint *attrib_list;
@@ -134,26 +124,20 @@ static bool yagl_func_eglChooseConfig(struct yagl_transport *t)
     EGLint *error;
     EGLBoolean *retval;
     dpy = yagl_transport_get_out_yagl_host_handle(t);
-    if (!yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count)) {
-        return false;
-    }
-    if (!yagl_transport_get_in_array(t, sizeof(yagl_host_handle), (void**)&configs, &configs_maxcount, &configs_count)) {
-        return false;
-    }
+    yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count);
+    yagl_transport_get_in_array(t, sizeof(yagl_host_handle), (void**)&configs, &configs_maxcount, &configs_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT4(eglChooseConfig, yagl_host_handle, void*, void*, void*, dpy, attrib_list, configs, error);
     *configs_count = 0;
     *retval = yagl_host_eglChooseConfig(dpy, attrib_list, attrib_list_count, configs, configs_maxcount, configs_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglGetConfigAttrib dispatcher. id = 6
  */
-static bool yagl_func_eglGetConfigAttrib(struct yagl_transport *t)
+static void yagl_func_eglGetConfigAttrib(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle config;
@@ -170,14 +154,12 @@ static bool yagl_func_eglGetConfigAttrib(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT5(eglGetConfigAttrib, yagl_host_handle, yagl_host_handle, EGLint, void*, void*, dpy, config, attribute, value, error);
     *retval = yagl_host_eglGetConfigAttrib(dpy, config, attribute, value, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglDestroySurface dispatcher. id = 7
  */
-static bool yagl_func_eglDestroySurface(struct yagl_transport *t)
+static void yagl_func_eglDestroySurface(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle surface;
@@ -190,14 +172,12 @@ static bool yagl_func_eglDestroySurface(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT3(eglDestroySurface, yagl_host_handle, yagl_host_handle, void*, dpy, surface, error);
     *retval = yagl_host_eglDestroySurface(dpy, surface, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglQuerySurface dispatcher. id = 8
  */
-static bool yagl_func_eglQuerySurface(struct yagl_transport *t)
+static void yagl_func_eglQuerySurface(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle surface;
@@ -214,40 +194,34 @@ static bool yagl_func_eglQuerySurface(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT5(eglQuerySurface, yagl_host_handle, yagl_host_handle, EGLint, void*, void*, dpy, surface, attribute, value, error);
     *retval = yagl_host_eglQuerySurface(dpy, surface, attribute, value, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglBindAPI dispatcher. id = 9
  */
-static bool yagl_func_eglBindAPI(struct yagl_transport *t)
+static void yagl_func_eglBindAPI(struct yagl_transport *t)
 {
     EGLenum api;
     api = yagl_transport_get_out_EGLenum(t);
     YAGL_LOG_FUNC_ENTER_SPLIT1(eglBindAPI, EGLenum, api);
     (void)yagl_host_eglBindAPI(api);
     YAGL_LOG_FUNC_EXIT(NULL);
-
-    return true;
 }
 
 /*
  * eglWaitClient dispatcher. id = 10
  */
-static bool yagl_func_eglWaitClient(struct yagl_transport *t)
+static void yagl_func_eglWaitClient(struct yagl_transport *t)
 {
     YAGL_LOG_FUNC_ENTER_SPLIT0(eglWaitClient);
     (void)yagl_host_eglWaitClient();
     YAGL_LOG_FUNC_EXIT(NULL);
-
-    return true;
 }
 
 /*
  * eglReleaseThread dispatcher. id = 11
  */
-static bool yagl_func_eglReleaseThread(struct yagl_transport *t)
+static void yagl_func_eglReleaseThread(struct yagl_transport *t)
 {
     EGLint *error;
     EGLBoolean *retval;
@@ -256,14 +230,12 @@ static bool yagl_func_eglReleaseThread(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT1(eglReleaseThread, void*, error);
     *retval = yagl_host_eglReleaseThread(error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglSurfaceAttrib dispatcher. id = 12
  */
-static bool yagl_func_eglSurfaceAttrib(struct yagl_transport *t)
+static void yagl_func_eglSurfaceAttrib(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle surface;
@@ -280,14 +252,12 @@ static bool yagl_func_eglSurfaceAttrib(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT5(eglSurfaceAttrib, yagl_host_handle, yagl_host_handle, EGLint, EGLint, void*, dpy, surface, attribute, value, error);
     *retval = yagl_host_eglSurfaceAttrib(dpy, surface, attribute, value, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglCreateContext dispatcher. id = 13
  */
-static bool yagl_func_eglCreateContext(struct yagl_transport *t)
+static void yagl_func_eglCreateContext(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle config;
@@ -299,22 +269,18 @@ static bool yagl_func_eglCreateContext(struct yagl_transport *t)
     dpy = yagl_transport_get_out_yagl_host_handle(t);
     config = yagl_transport_get_out_yagl_host_handle(t);
     share_context = yagl_transport_get_out_yagl_host_handle(t);
-    if (!yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count)) {
-        return false;
-    }
+    yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT5(eglCreateContext, yagl_host_handle, yagl_host_handle, yagl_host_handle, void*, void*, dpy, config, share_context, attrib_list, error);
     *retval = yagl_host_eglCreateContext(dpy, config, share_context, attrib_list, attrib_list_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, *retval);
-
-    return true;
 }
 
 /*
  * eglDestroyContext dispatcher. id = 14
  */
-static bool yagl_func_eglDestroyContext(struct yagl_transport *t)
+static void yagl_func_eglDestroyContext(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle ctx;
@@ -327,14 +293,12 @@ static bool yagl_func_eglDestroyContext(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT3(eglDestroyContext, yagl_host_handle, yagl_host_handle, void*, dpy, ctx, error);
     *retval = yagl_host_eglDestroyContext(dpy, ctx, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglMakeCurrent dispatcher. id = 15
  */
-static bool yagl_func_eglMakeCurrent(struct yagl_transport *t)
+static void yagl_func_eglMakeCurrent(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle draw;
@@ -347,14 +311,12 @@ static bool yagl_func_eglMakeCurrent(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT4(eglMakeCurrent, yagl_host_handle, yagl_host_handle, yagl_host_handle, yagl_host_handle, dpy, draw, read, ctx);
     (void)yagl_host_eglMakeCurrent(dpy, draw, read, ctx);
     YAGL_LOG_FUNC_EXIT(NULL);
-
-    return true;
 }
 
 /*
  * eglQueryContext dispatcher. id = 16
  */
-static bool yagl_func_eglQueryContext(struct yagl_transport *t)
+static void yagl_func_eglQueryContext(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle ctx;
@@ -371,54 +333,40 @@ static bool yagl_func_eglQueryContext(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT5(eglQueryContext, yagl_host_handle, yagl_host_handle, EGLint, void*, void*, dpy, ctx, attribute, value, error);
     *retval = yagl_host_eglQueryContext(dpy, ctx, attribute, value, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglSwapBuffers dispatcher. id = 17
  */
-static bool yagl_func_eglSwapBuffers(struct yagl_transport *t)
+static void yagl_func_eglSwapBuffers(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle surface;
-    EGLint *error;
-    EGLBoolean *retval;
     dpy = yagl_transport_get_out_yagl_host_handle(t);
     surface = yagl_transport_get_out_yagl_host_handle(t);
-    yagl_transport_get_in_arg(t, (void**)&error);
-    yagl_transport_get_in_arg(t, (void**)&retval);
-    YAGL_LOG_FUNC_ENTER_SPLIT3(eglSwapBuffers, yagl_host_handle, yagl_host_handle, void*, dpy, surface, error);
-    *retval = yagl_host_eglSwapBuffers(dpy, surface, error);
-    YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
+    YAGL_LOG_FUNC_ENTER_SPLIT2(eglSwapBuffers, yagl_host_handle, yagl_host_handle, dpy, surface);
+    (void)yagl_host_eglSwapBuffers(dpy, surface);
+    YAGL_LOG_FUNC_EXIT(NULL);
 }
 
 /*
  * eglCopyBuffers dispatcher. id = 18
  */
-static bool yagl_func_eglCopyBuffers(struct yagl_transport *t)
+static void yagl_func_eglCopyBuffers(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle surface;
-    EGLint *error;
-    EGLBoolean *retval;
     dpy = yagl_transport_get_out_yagl_host_handle(t);
     surface = yagl_transport_get_out_yagl_host_handle(t);
-    yagl_transport_get_in_arg(t, (void**)&error);
-    yagl_transport_get_in_arg(t, (void**)&retval);
-    YAGL_LOG_FUNC_ENTER_SPLIT3(eglCopyBuffers, yagl_host_handle, yagl_host_handle, void*, dpy, surface, error);
-    *retval = yagl_host_eglCopyBuffers(dpy, surface, error);
-    YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
+    YAGL_LOG_FUNC_ENTER_SPLIT2(eglCopyBuffers, yagl_host_handle, yagl_host_handle, dpy, surface);
+    (void)yagl_host_eglCopyBuffers(dpy, surface);
+    YAGL_LOG_FUNC_EXIT(NULL);
 }
 
 /*
  * eglCreateWindowSurfaceOffscreenYAGL dispatcher. id = 19
  */
-static bool yagl_func_eglCreateWindowSurfaceOffscreenYAGL(struct yagl_transport *t)
+static void yagl_func_eglCreateWindowSurfaceOffscreenYAGL(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle config;
@@ -436,22 +384,18 @@ static bool yagl_func_eglCreateWindowSurfaceOffscreenYAGL(struct yagl_transport 
     height = yagl_transport_get_out_uint32_t(t);
     bpp = yagl_transport_get_out_uint32_t(t);
     pixels = yagl_transport_get_out_va(t);
-    if (!yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count)) {
-        return false;
-    }
+    yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT8(eglCreateWindowSurfaceOffscreenYAGL, yagl_host_handle, yagl_host_handle, uint32_t, uint32_t, uint32_t, target_ulong, void*, void*, dpy, config, width, height, bpp, pixels, attrib_list, error);
     *retval = yagl_host_eglCreateWindowSurfaceOffscreenYAGL(dpy, config, width, height, bpp, pixels, attrib_list, attrib_list_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, *retval);
-
-    return true;
 }
 
 /*
  * eglCreatePbufferSurfaceOffscreenYAGL dispatcher. id = 20
  */
-static bool yagl_func_eglCreatePbufferSurfaceOffscreenYAGL(struct yagl_transport *t)
+static void yagl_func_eglCreatePbufferSurfaceOffscreenYAGL(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle config;
@@ -469,22 +413,18 @@ static bool yagl_func_eglCreatePbufferSurfaceOffscreenYAGL(struct yagl_transport
     height = yagl_transport_get_out_uint32_t(t);
     bpp = yagl_transport_get_out_uint32_t(t);
     pixels = yagl_transport_get_out_va(t);
-    if (!yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count)) {
-        return false;
-    }
+    yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT8(eglCreatePbufferSurfaceOffscreenYAGL, yagl_host_handle, yagl_host_handle, uint32_t, uint32_t, uint32_t, target_ulong, void*, void*, dpy, config, width, height, bpp, pixels, attrib_list, error);
     *retval = yagl_host_eglCreatePbufferSurfaceOffscreenYAGL(dpy, config, width, height, bpp, pixels, attrib_list, attrib_list_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, *retval);
-
-    return true;
 }
 
 /*
  * eglCreatePixmapSurfaceOffscreenYAGL dispatcher. id = 21
  */
-static bool yagl_func_eglCreatePixmapSurfaceOffscreenYAGL(struct yagl_transport *t)
+static void yagl_func_eglCreatePixmapSurfaceOffscreenYAGL(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle config;
@@ -502,22 +442,18 @@ static bool yagl_func_eglCreatePixmapSurfaceOffscreenYAGL(struct yagl_transport 
     height = yagl_transport_get_out_uint32_t(t);
     bpp = yagl_transport_get_out_uint32_t(t);
     pixels = yagl_transport_get_out_va(t);
-    if (!yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count)) {
-        return false;
-    }
+    yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT8(eglCreatePixmapSurfaceOffscreenYAGL, yagl_host_handle, yagl_host_handle, uint32_t, uint32_t, uint32_t, target_ulong, void*, void*, dpy, config, width, height, bpp, pixels, attrib_list, error);
     *retval = yagl_host_eglCreatePixmapSurfaceOffscreenYAGL(dpy, config, width, height, bpp, pixels, attrib_list, attrib_list_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, *retval);
-
-    return true;
 }
 
 /*
  * eglResizeOffscreenSurfaceYAGL dispatcher. id = 22
  */
-static bool yagl_func_eglResizeOffscreenSurfaceYAGL(struct yagl_transport *t)
+static void yagl_func_eglResizeOffscreenSurfaceYAGL(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle surface;
@@ -538,14 +474,12 @@ static bool yagl_func_eglResizeOffscreenSurfaceYAGL(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT7(eglResizeOffscreenSurfaceYAGL, yagl_host_handle, yagl_host_handle, uint32_t, uint32_t, uint32_t, target_ulong, void*, dpy, surface, width, height, bpp, pixels, error);
     *retval = yagl_host_eglResizeOffscreenSurfaceYAGL(dpy, surface, width, height, bpp, pixels, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 /*
  * eglCreateWindowSurfaceOnscreenYAGL dispatcher. id = 23
  */
-static bool yagl_func_eglCreateWindowSurfaceOnscreenYAGL(struct yagl_transport *t)
+static void yagl_func_eglCreateWindowSurfaceOnscreenYAGL(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle config;
@@ -557,22 +491,18 @@ static bool yagl_func_eglCreateWindowSurfaceOnscreenYAGL(struct yagl_transport *
     dpy = yagl_transport_get_out_yagl_host_handle(t);
     config = yagl_transport_get_out_yagl_host_handle(t);
     win = yagl_transport_get_out_yagl_winsys_id(t);
-    if (!yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count)) {
-        return false;
-    }
+    yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT5(eglCreateWindowSurfaceOnscreenYAGL, yagl_host_handle, yagl_host_handle, yagl_winsys_id, void*, void*, dpy, config, win, attrib_list, error);
     *retval = yagl_host_eglCreateWindowSurfaceOnscreenYAGL(dpy, config, win, attrib_list, attrib_list_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, *retval);
-
-    return true;
 }
 
 /*
  * eglCreatePbufferSurfaceOnscreenYAGL dispatcher. id = 24
  */
-static bool yagl_func_eglCreatePbufferSurfaceOnscreenYAGL(struct yagl_transport *t)
+static void yagl_func_eglCreatePbufferSurfaceOnscreenYAGL(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle config;
@@ -584,22 +514,18 @@ static bool yagl_func_eglCreatePbufferSurfaceOnscreenYAGL(struct yagl_transport 
     dpy = yagl_transport_get_out_yagl_host_handle(t);
     config = yagl_transport_get_out_yagl_host_handle(t);
     buffer = yagl_transport_get_out_yagl_winsys_id(t);
-    if (!yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count)) {
-        return false;
-    }
+    yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT5(eglCreatePbufferSurfaceOnscreenYAGL, yagl_host_handle, yagl_host_handle, yagl_winsys_id, void*, void*, dpy, config, buffer, attrib_list, error);
     *retval = yagl_host_eglCreatePbufferSurfaceOnscreenYAGL(dpy, config, buffer, attrib_list, attrib_list_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, *retval);
-
-    return true;
 }
 
 /*
  * eglCreatePixmapSurfaceOnscreenYAGL dispatcher. id = 25
  */
-static bool yagl_func_eglCreatePixmapSurfaceOnscreenYAGL(struct yagl_transport *t)
+static void yagl_func_eglCreatePixmapSurfaceOnscreenYAGL(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle config;
@@ -611,22 +537,18 @@ static bool yagl_func_eglCreatePixmapSurfaceOnscreenYAGL(struct yagl_transport *
     dpy = yagl_transport_get_out_yagl_host_handle(t);
     config = yagl_transport_get_out_yagl_host_handle(t);
     pixmap = yagl_transport_get_out_yagl_winsys_id(t);
-    if (!yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count)) {
-        return false;
-    }
+    yagl_transport_get_out_array(t, sizeof(EGLint), (const void**)&attrib_list, &attrib_list_count);
     yagl_transport_get_in_arg(t, (void**)&error);
     yagl_transport_get_in_arg(t, (void**)&retval);
     YAGL_LOG_FUNC_ENTER_SPLIT5(eglCreatePixmapSurfaceOnscreenYAGL, yagl_host_handle, yagl_host_handle, yagl_winsys_id, void*, void*, dpy, config, pixmap, attrib_list, error);
     *retval = yagl_host_eglCreatePixmapSurfaceOnscreenYAGL(dpy, config, pixmap, attrib_list, attrib_list_count, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(yagl_host_handle, *retval);
-
-    return true;
 }
 
 /*
  * eglInvalidateOnscreenSurfaceYAGL dispatcher. id = 26
  */
-static bool yagl_func_eglInvalidateOnscreenSurfaceYAGL(struct yagl_transport *t)
+static void yagl_func_eglInvalidateOnscreenSurfaceYAGL(struct yagl_transport *t)
 {
     yagl_host_handle dpy;
     yagl_host_handle surface;
@@ -637,14 +559,12 @@ static bool yagl_func_eglInvalidateOnscreenSurfaceYAGL(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT3(eglInvalidateOnscreenSurfaceYAGL, yagl_host_handle, yagl_host_handle, yagl_winsys_id, dpy, surface, buffer);
     (void)yagl_host_eglInvalidateOnscreenSurfaceYAGL(dpy, surface, buffer);
     YAGL_LOG_FUNC_EXIT(NULL);
-
-    return true;
 }
 
 /*
  * eglCreateImageYAGL dispatcher. id = 27
  */
-static bool yagl_func_eglCreateImageYAGL(struct yagl_transport *t)
+static void yagl_func_eglCreateImageYAGL(struct yagl_transport *t)
 {
     uint32_t texture;
     yagl_host_handle dpy;
@@ -659,8 +579,6 @@ static bool yagl_func_eglCreateImageYAGL(struct yagl_transport *t)
     YAGL_LOG_FUNC_ENTER_SPLIT4(eglCreateImageYAGL, uint32_t, yagl_host_handle, yagl_winsys_id, void*, texture, dpy, buffer, error);
     *retval = yagl_host_eglCreateImageYAGL(texture, dpy, buffer, error);
     YAGL_LOG_FUNC_EXIT_SPLIT(EGLBoolean, *retval);
-
-    return true;
 }
 
 const uint32_t yagl_egl_api_num_funcs = 27;

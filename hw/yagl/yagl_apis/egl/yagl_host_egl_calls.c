@@ -1088,66 +1088,46 @@ out:
     return res;
 }
 
-EGLBoolean yagl_host_eglSwapBuffers(yagl_host_handle dpy_,
-    yagl_host_handle surface_,
-    EGLint *error)
+void yagl_host_eglSwapBuffers(yagl_host_handle dpy_,
+    yagl_host_handle surface_)
 {
-    EGLBoolean res = EGL_FALSE;
+    EGLint error = 0;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_surface *surface = NULL;
 
-    YAGL_LOG_FUNC_SET(eglSwapBuffers);
-
-    if (!yagl_validate_display(dpy_, &dpy, error)) {
+    if (!yagl_validate_display(dpy_, &dpy, &error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface, error)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, &error)) {
         goto out;
     }
 
-    if (!surface->backend_sfc->swap_buffers(surface->backend_sfc)) {
-        YAGL_SET_ERR(EGL_BAD_ALLOC);
-        goto out;
-    }
-
-    res = EGL_TRUE;
+    surface->backend_sfc->swap_buffers(surface->backend_sfc);
 
 out:
     yagl_egl_surface_release(surface);
-
-    return res;
 }
 
-EGLBoolean yagl_host_eglCopyBuffers(yagl_host_handle dpy_,
-    yagl_host_handle surface_,
-    EGLint *error)
+void yagl_host_eglCopyBuffers(yagl_host_handle dpy_,
+    yagl_host_handle surface_)
 {
-    EGLBoolean res = EGL_FALSE;
+    EGLint error = 0;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_surface *surface = NULL;
 
-    YAGL_LOG_FUNC_SET(eglCopyBuffers);
-
-    if (!yagl_validate_display(dpy_, &dpy, error)) {
+    if (!yagl_validate_display(dpy_, &dpy, &error)) {
         goto out;
     }
 
-    if (!yagl_validate_surface(dpy, surface_, &surface, error)) {
+    if (!yagl_validate_surface(dpy, surface_, &surface, &error)) {
         goto out;
     }
 
-    if (!surface->backend_sfc->copy_buffers(surface->backend_sfc)) {
-        YAGL_SET_ERR(EGL_BAD_NATIVE_PIXMAP);
-        goto out;
-    }
-
-    res = EGL_TRUE;
+    surface->backend_sfc->copy_buffers(surface->backend_sfc);
 
 out:
     yagl_egl_surface_release(surface);
-
-    return res;
 }
 
 yagl_host_handle yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle dpy_,

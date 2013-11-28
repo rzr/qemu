@@ -119,7 +119,7 @@ static bool yagl_egl_onscreen_surface_query(struct yagl_eglb_surface *sfc,
     return true;
 }
 
-static bool yagl_egl_onscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc)
+static void yagl_egl_onscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc)
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
@@ -129,11 +129,9 @@ static bool yagl_egl_onscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc
     egl_onscreen->gles_driver->Finish();
 
     osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
-
-    return true;
 }
 
-static bool yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc)
+static void yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc)
 {
     struct yagl_egl_onscreen_surface *osfc =
         (struct yagl_egl_onscreen_surface*)sfc;
@@ -143,8 +141,6 @@ static bool yagl_egl_onscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc
     egl_onscreen->gles_driver->Finish();
 
     osfc->ws_sfc->base.set_dirty(&osfc->ws_sfc->base);
-
-    return true;
 }
 
 static void yagl_egl_onscreen_surface_wait_gl(struct yagl_eglb_surface *sfc)

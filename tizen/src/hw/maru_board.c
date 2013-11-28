@@ -75,6 +75,7 @@
 #include <X11/Xlib.h>
 #endif
 #include "vigs/vigs_device.h"
+#include "work_queue.h"
 extern int enable_yagl;
 extern const char *yagl_backend;
 extern int enable_vigs;
@@ -113,15 +114,21 @@ static void maru_device_init(void)
 #else
     void *display = NULL;
 #endif
+    struct work_queue *render_queue = NULL;
     struct winsys_interface *vigs_wsi = NULL;
 
     pci_maru_overlay_init(pci_bus);
     pci_maru_brightness_init(pci_bus);
     maru_brill_codec_pci_device_init(pci_bus);
 
+    if (enable_vigs || enable_yagl) {
+        render_queue = work_queue_create();
+    }
+
     if (enable_vigs) {
         PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
         qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
+        qdev_prop_set_ptr(&pci_dev->qdev, "render_queue", render_queue);
         qdev_init_nofail(&pci_dev->qdev);
         vigs_wsi = DO_UPCAST(VIGSDevice, pci_dev, pci_dev)->wsi;
     }
@@ -129,6 +136,7 @@ static void maru_device_init(void)
     if (enable_yagl) {
         PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
         qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
+        qdev_prop_set_ptr(&pci_dev->qdev, "render_queue", render_queue);
         if (vigs_wsi &&
             (strcmp(yagl_backend, "vigs") == 0) &&
             (strcmp(vigs_backend, "gl") == 0)) {

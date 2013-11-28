@@ -34,13 +34,25 @@
 
 struct vigs_comm_ops
 {
-    void (*batch_start)(void */*user_data*/);
-
-    bool (*init)(void */*user_data*/);
+    void (*init)(void */*user_data*/);
 
     void (*reset)(void */*user_data*/);
 
     void (*exit)(void */*user_data*/);
+
+    void (*set_root_surface)(void */*user_data*/,
+                             vigsp_surface_id /*id*/,
+                             vigsp_offset /*offset*/,
+                             vigsp_fence_seq /*fence_seq*/);
+
+    void (*batch)(void */*user_data*/,
+                  const uint8_t */*data*/,
+                  uint32_t /*size*/);
+};
+
+struct vigs_comm_batch_ops
+{
+    void (*start)(void */*user_data*/);
 
     void (*create_surface)(void */*user_data*/,
                            uint32_t /*width*/,
@@ -51,10 +63,6 @@ struct vigs_comm_ops
 
     void (*destroy_surface)(void */*user_data*/,
                             vigsp_surface_id /*id*/);
-
-    void (*set_root_surface)(void */*user_data*/,
-                             vigsp_surface_id /*id*/,
-                             vigsp_offset /*offset*/);
 
     void (*update_vram)(void */*user_data*/,
                         vigsp_surface_id /*sfc_id*/,
@@ -78,25 +86,26 @@ struct vigs_comm_ops
                        const struct vigsp_rect */*entries*/,
                        uint32_t /*num_entries*/);
 
-    void (*batch_end)(void */*user_data*/);
+    void (*end)(void */*user_data*/, vigsp_fence_seq /*fence_seq*/);
 };
 
 struct vigs_comm
 {
     uint8_t *ram_ptr;
-
-    struct vigs_comm_ops *comm_ops;
-
-    void *user_data;
 };
 
-struct vigs_comm *vigs_comm_create(uint8_t *ram_ptr,
-                                   struct vigs_comm_ops *comm_ops,
-                                   void *user_data);
+struct vigs_comm *vigs_comm_create(uint8_t *ram_ptr);
 
 void vigs_comm_destroy(struct vigs_comm *comm);
 
 void vigs_comm_dispatch(struct vigs_comm *comm,
-                        uint32_t ram_offset);
+                        uint32_t ram_offset,
+                        struct vigs_comm_ops *ops,
+                        void *user_data);
+
+void vigs_comm_dispatch_batch(struct vigs_comm *comm,
+                              uint8_t *batch,
+                              struct vigs_comm_batch_ops *ops,
+                              void *user_data);
 
 #endif

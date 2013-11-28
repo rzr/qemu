@@ -35,49 +35,57 @@
  * @{
  */
 
-static vigsp_status vigs_comm_dispatch_init(struct vigs_comm *comm,
-                                            struct vigsp_cmd_init_request *request,
-                                            struct vigsp_cmd_init_response *response)
+static void vigs_comm_dispatch_init(struct vigs_comm_ops *ops,
+                                    void *user_data,
+                                    struct vigsp_cmd_init_request *request)
 {
-    response->server_version = VIGS_PROTOCOL_VERSION;
+    request->server_version = VIGS_PROTOCOL_VERSION;
 
     if (request->client_version != VIGS_PROTOCOL_VERSION) {
         VIGS_LOG_CRITICAL("protocol version mismatch, expected %u, actual %u",
                           VIGS_PROTOCOL_VERSION,
                           request->client_version);
-        return vigsp_status_success;
+        return;
     }
 
     VIGS_LOG_TRACE("client_version = %d", request->client_version);
 
-    if (comm->comm_ops->init(comm->user_data)) {
-        return vigsp_status_success;
-    } else {
-        return vigsp_status_exec_error;
-    }
+    ops->init(user_data);
 }
 
-static vigsp_status vigs_comm_dispatch_reset(struct vigs_comm *comm,
-                                             void *response)
+static void vigs_comm_dispatch_reset(struct vigs_comm_ops *ops,
+                                     void *user_data)
 {
     VIGS_LOG_TRACE("enter");
 
-    comm->comm_ops->reset(comm->user_data);
-
-    return vigsp_status_success;
+    ops->reset(user_data);
 }
 
-static vigsp_status vigs_comm_dispatch_exit(struct vigs_comm *comm,
-                                            void *response)
+static void vigs_comm_dispatch_exit(struct vigs_comm_ops *ops,
+                                    void *user_data)
 {
     VIGS_LOG_TRACE("enter");
 
-    comm->comm_ops->exit(comm->user_data);
-
-    return vigsp_status_success;
+    ops->exit(user_data);
 }
 
-static void vigs_comm_dispatch_create_surface(struct vigs_comm *comm,
+static void vigs_comm_dispatch_set_root_surface(struct vigs_comm_ops *ops,
+                                                void *user_data,
+                                                struct vigsp_cmd_set_root_surface_request *request,
+                                                vigsp_fence_seq fence_seq)
+{
+    VIGS_LOG_TRACE("id = %u, offset = %u",
+                   request->id,
+                   request->offset);
+
+    ops->set_root_surface(user_data,
+                          request->id,
+                          request->offset,
+                          fence_seq);
+}
+
+static void vigs_comm_dispatch_create_surface(struct vigs_comm_batch_ops *ops,
+                                              void *user_data,
                                               struct vigsp_cmd_create_surface_request *request)
 {
     switch (request->format) {
@@ -96,35 +104,25 @@ static void vigs_comm_dispatch_create_surface(struct vigs_comm *comm,
                    request->format,
                    request->id);
 
-    comm->comm_ops->create_surface(comm->user_data,
-                                   request->width,
-                                   request->height,
-                                   request->stride,
-                                   request->format,
-                                   request->id);
+    ops->create_surface(user_data,
+                        request->width,
+                        request->height,
+                        request->stride,
+                        request->format,
+                        request->id);
 }
 
-static void vigs_comm_dispatch_destroy_surface(struct vigs_comm *comm,
+static void vigs_comm_dispatch_destroy_surface(struct vigs_comm_batch_ops *ops,
+                                               void *user_data,
                                                struct vigsp_cmd_destroy_surface_request *request)
 {
     VIGS_LOG_TRACE("id = %u", request->id);
 
-    comm->comm_ops->destroy_surface(comm->user_data, request->id);
+    ops->destroy_surface(user_data, request->id);
 }
 
-static void vigs_comm_dispatch_set_root_surface(struct vigs_comm *comm,
-                                                struct vigsp_cmd_set_root_surface_request *request)
-{
-    VIGS_LOG_TRACE("id = %u, offset = %u",
-                   request->id,
-                   request->offset);
-
-    comm->comm_ops->set_root_surface(comm->user_data,
-                                     request->id,
-                                     request->offset);
-}
-
-static void vigs_comm_dispatch_update_vram(struct vigs_comm *comm,
+static void vigs_comm_dispatch_update_vram(struct vigs_comm_batch_ops *ops,
+                                           void *user_data,
                                            struct vigsp_cmd_update_vram_request *request)
 {
     if (request->sfc_id == 0) {
@@ -136,12 +134,13 @@ static void vigs_comm_dispatch_update_vram(struct vigs_comm *comm,
                        request->offset);
     }
 
-    comm->comm_ops->update_vram(comm->user_data,
-                                request->sfc_id,
-                                request->offset);
+    ops->update_vram(user_data,
+                     request->sfc_id,
+                     request->offset);
 }
 
-static void vigs_comm_dispatch_update_gpu(struct vigs_comm *comm,
+static void vigs_comm_dispatch_update_gpu(struct vigs_comm_batch_ops *ops,
+                                          void *user_data,
                                           struct vigsp_cmd_update_gpu_request *request)
 {
     if (request->sfc_id == 0) {
@@ -153,90 +152,77 @@ static void vigs_comm_dispatch_update_gpu(struct vigs_comm *comm,
                        request->offset);
     }
 
-    comm->comm_ops->update_gpu(comm->user_data,
-                               request->sfc_id,
-                               request->offset,
-                               &request->entries[0],
-                               request->num_entries);
+    ops->update_gpu(user_data,
+                    request->sfc_id,
+                    request->offset,
+                    &request->entries[0],
+                    request->num_entries);
 }
 
-static void vigs_comm_dispatch_copy(struct vigs_comm *comm,
+static void vigs_comm_dispatch_copy(struct vigs_comm_batch_ops *ops,
+                                    void *user_data,
                                     struct vigsp_cmd_copy_request *request)
 {
     VIGS_LOG_TRACE("src = %u, dst = %u",
                    request->src_id,
                    request->dst_id);
 
-    comm->comm_ops->copy(comm->user_data,
-                         request->src_id,
-                         request->dst_id,
-                         &request->entries[0],
-                         request->num_entries);
+    ops->copy(user_data,
+              request->src_id,
+              request->dst_id,
+              &request->entries[0],
+              request->num_entries);
 }
 
-static void vigs_comm_dispatch_solid_fill(struct vigs_comm *comm,
+static void vigs_comm_dispatch_solid_fill(struct vigs_comm_batch_ops *ops,
+                                          void *user_data,
                                           struct vigsp_cmd_solid_fill_request *request)
 {
     VIGS_LOG_TRACE("sfc = %u, color = 0x%X",
                    request->sfc_id,
                    request->color);
 
-    comm->comm_ops->solid_fill(comm->user_data,
-                               request->sfc_id,
-                               request->color,
-                               &request->entries[0],
-                               request->num_entries);
+    ops->solid_fill(user_data,
+                    request->sfc_id,
+                    request->color,
+                    &request->entries[0],
+                    request->num_entries);
 }
 
 /*
  * @}
  */
 
-#define VIGS_DISPATCH_ENTRY(cmd, func, has_request, has_response) \
-    [cmd] = { func, has_request, has_response }
+#define VIGS_DISPATCH_ENTRY(cmd, func) [cmd] = (vigs_dispatch_func)func
 
-struct vigs_dispatch_entry
-{
-    void *func;
-    bool has_request;
-    bool has_response;
-};
+typedef void (*vigs_dispatch_func)(struct vigs_comm_batch_ops*, void*, void*);
 
-static const struct vigs_dispatch_entry vigs_dispatch_table[] =
+static const vigs_dispatch_func vigs_dispatch_table[] =
 {
-    VIGS_DISPATCH_ENTRY(vigsp_cmd_init,
-                        vigs_comm_dispatch_init, true, true),
-    VIGS_DISPATCH_ENTRY(vigsp_cmd_reset,
-                        vigs_comm_dispatch_reset, false, true),
-    VIGS_DISPATCH_ENTRY(vigsp_cmd_exit,
-                        vigs_comm_dispatch_exit, false, true),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_create_surface,
-                        vigs_comm_dispatch_create_surface, true, false),
+                        vigs_comm_dispatch_create_surface),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_destroy_surface,
-                        vigs_comm_dispatch_destroy_surface, true, false),
-    VIGS_DISPATCH_ENTRY(vigsp_cmd_set_root_surface,
-                        vigs_comm_dispatch_set_root_surface, true, false),
+                        vigs_comm_dispatch_destroy_surface),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_update_vram,
-                        vigs_comm_dispatch_update_vram, true, false),
+                        vigs_comm_dispatch_update_vram),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_update_gpu,
-                        vigs_comm_dispatch_update_gpu, true, false),
+                        vigs_comm_dispatch_update_gpu),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_copy,
-                        vigs_comm_dispatch_copy, true, false),
+                        vigs_comm_dispatch_copy),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_solid_fill,
-                        vigs_comm_dispatch_solid_fill, true, false)
+                        vigs_comm_dispatch_solid_fill)
 };
 
-struct vigs_comm *vigs_comm_create(uint8_t *ram_ptr,
-                                   struct vigs_comm_ops *comm_ops,
-                                   void *user_data)
+#define VIGS_MIN_BATCH_CMD_ID vigsp_cmd_create_surface
+#define VIGS_MAX_BATCH_CMD_ID vigsp_cmd_solid_fill
+
+struct vigs_comm *vigs_comm_create(uint8_t *ram_ptr)
 {
     struct vigs_comm *comm;
 
     comm = g_malloc0(sizeof(*comm));
 
     comm->ram_ptr = ram_ptr;
-    comm->comm_ops = comm_ops;
-    comm->user_data = user_data;
 
     return comm;
 }
@@ -247,67 +233,74 @@ void vigs_comm_destroy(struct vigs_comm *comm)
 }
 
 void vigs_comm_dispatch(struct vigs_comm *comm,
-                        uint32_t ram_offset)
+                        uint32_t ram_offset,
+                        struct vigs_comm_ops *ops,
+                        void *user_data)
 {
     struct vigsp_cmd_batch_header *batch_header =
         (struct vigsp_cmd_batch_header*)(comm->ram_ptr + ram_offset);
     struct vigsp_cmd_request_header *request_header =
         (struct vigsp_cmd_request_header*)(batch_header + 1);
-    struct vigsp_cmd_response_header *response_header;
-    vigsp_u32 i;
-    vigsp_status status = vigsp_status_success;
+
+    if (batch_header->size > 0) {
+        switch (request_header->cmd) {
+        case vigsp_cmd_init:
+            vigs_comm_dispatch_init(ops,
+                                    user_data,
+                                    (struct vigsp_cmd_init_request*)(request_header + 1));
+            return;
+        case vigsp_cmd_reset:
+            vigs_comm_dispatch_reset(ops, user_data);
+            return;
+        case vigsp_cmd_exit:
+            vigs_comm_dispatch_exit(ops, user_data);
+            return;
+        case vigsp_cmd_set_root_surface:
+            vigs_comm_dispatch_set_root_surface(ops,
+                                                user_data,
+                                                (struct vigsp_cmd_set_root_surface_request*)(request_header + 1),
+                                                batch_header->fence_seq);
+            return;
+        default:
+            break;
+        }
+    }
+
+    ops->batch(user_data,
+               (uint8_t*)batch_header,
+               sizeof(*batch_header) + batch_header->size);
+}
+
+void vigs_comm_dispatch_batch(struct vigs_comm *comm,
+                              uint8_t *batch,
+                              struct vigs_comm_batch_ops *ops,
+                              void *user_data)
+{
+    struct vigsp_cmd_batch_header *batch_header =
+        (struct vigsp_cmd_batch_header*)batch;
+    struct vigsp_cmd_request_header *request_header =
+        (struct vigsp_cmd_request_header*)(batch_header + 1);
 
     VIGS_LOG_TRACE("batch_start");
 
-    comm->comm_ops->batch_start(comm->user_data);
+    ops->start(user_data);
 
-    for (i = 0; i < batch_header->num_requests; ++i) {
-        response_header =
-            (struct vigsp_cmd_response_header*)((uint8_t*)(request_header + 1) +
-            request_header->size);
-
-        if (status == vigsp_status_success) {
-            if (request_header->cmd >= ARRAY_SIZE(vigs_dispatch_table)) {
-                VIGS_LOG_CRITICAL("bad command = %d", request_header->cmd);
-                status = vigsp_status_bad_call;
-            } else {
-                const struct vigs_dispatch_entry *dispatch_entry =
-                    &vigs_dispatch_table[request_header->cmd];
-
-                if (dispatch_entry->has_response && (i != (batch_header->num_requests - 1))) {
-                    VIGS_LOG_CRITICAL("only last request in a batch is allowed to have response, bad command = %d",
-                                      request_header->cmd);
-                    status = vigsp_status_bad_call;
-                } else {
-                    if (dispatch_entry->has_request && dispatch_entry->has_response) {
-                        vigsp_status (*func)(struct vigs_comm*, void*, void*) =
-                            dispatch_entry->func;
-                        status = func(comm, request_header + 1, response_header + 1);
-                    } else if (dispatch_entry->has_request) {
-                        void (*func)(struct vigs_comm*, void*) =
-                            dispatch_entry->func;
-                        func(comm, request_header + 1);
-                    } else if (dispatch_entry->has_response) {
-                        vigsp_status (*func)(struct vigs_comm*, void*) =
-                            dispatch_entry->func;
-                        status = func(comm, response_header + 1);
-                    } else {
-                        void (*func)(struct vigs_comm*) =
-                            dispatch_entry->func;
-                        func(comm);
-                    }
-                }
-            }
+    while ((uint8_t*)request_header <
+           (uint8_t*)(batch_header + 1) + batch_header->size) {
+        if ((request_header->cmd < VIGS_MIN_BATCH_CMD_ID) ||
+            (request_header->cmd > VIGS_MAX_BATCH_CMD_ID)) {
+            VIGS_LOG_CRITICAL("bad command = %d", request_header->cmd);
+        } else {
+            vigs_dispatch_table[request_header->cmd](ops,
+                                                     user_data,
+                                                     request_header + 1);
         }
 
-        request_header = (struct vigsp_cmd_request_header*)response_header;
+        request_header = (struct vigsp_cmd_request_header*)(
+            (uint8_t*)(request_header + 1) + request_header->size);
     }
 
-    response_header = (struct vigsp_cmd_response_header*)request_header;
+    VIGS_LOG_TRACE("batch_end(%d)", batch_header->fence_seq);
 
-    response_header->status = status;
-
-    VIGS_LOG_TRACE("batch_end");
-
-    comm->comm_ops->batch_end(comm->user_data);
+    ops->end(user_data, batch_header->fence_seq);
 }

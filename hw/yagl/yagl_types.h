@@ -74,6 +74,6 @@ typedef enum
 
 #define YAGL_NUM_CLIENT_APIS 4
 
-typedef bool (*yagl_api_func)(struct yagl_transport */*t*/);
+typedef void (*yagl_api_func)(struct yagl_transport */*t*/);
 
 #endif

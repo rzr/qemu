@@ -29,6 +29,9 @@ struct winsys_interface
      */
     struct winsys_surface *(*acquire_surface)(struct winsys_interface */*wsi*/,
                                               winsys_id /*id*/);
+
+    void (*fence_ack)(struct winsys_interface */*wsi*/,
+                      uint32_t /*fence_seq*/);
 };
 
 #endif

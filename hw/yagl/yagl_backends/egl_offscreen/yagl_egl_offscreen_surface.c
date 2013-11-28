@@ -116,7 +116,7 @@ static bool yagl_egl_offscreen_surface_query(struct yagl_eglb_surface *sfc,
     return true;
 }
 
-static bool yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc)
+static void yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sfc)
 {
     struct yagl_egl_offscreen_surface *osfc =
         (struct yagl_egl_offscreen_surface*)sfc;
@@ -132,17 +132,15 @@ static bool yagl_egl_offscreen_surface_swap_buffers(struct yagl_eglb_surface *sf
                                                 osfc->bpp,
                                                 osfc->host_pixels)) {
         YAGL_LOG_ERROR("read_pixels failed");
-        return false;
+        return;
     }
 
     assert(osfc->bimage_ct);
 
     yagl_compiled_transfer_exec(osfc->bimage_ct, osfc->host_pixels);
-
-    return true;
 }
 
-static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc)
+static void yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sfc)
 {
     struct yagl_egl_offscreen_surface *osfc =
         (struct yagl_egl_offscreen_surface*)sfc;
@@ -158,14 +156,12 @@ static bool yagl_egl_offscreen_surface_copy_buffers(struct yagl_eglb_surface *sf
                                                 osfc->bpp,
                                                 osfc->host_pixels)) {
         YAGL_LOG_ERROR("read_pixels failed");
-        return false;
+        return;
     }
 
     assert(osfc->bimage_ct);
 
     yagl_compiled_transfer_exec(osfc->bimage_ct, osfc->host_pixels);
-
-    return true;
 }
 
 static void yagl_egl_offscreen_surface_wait_gl(struct yagl_eglb_surface *sfc)

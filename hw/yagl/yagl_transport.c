@@ -28,6 +28,7 @@
  */
 
 #include "yagl_transport.h"
+#include "yagl_compiled_transfer.h"
 #include "yagl_mem.h"
 
 typedef enum
@@ -36,29 +37,60 @@ typedef enum
     yagl_call_result_retry = 0xB, /* Page fault on host, retry is required. */
 } yagl_call_result;
 
+#define YAGL_TRANSPORT_BATCH_HEADER_SIZE (4 * 8)
+
+static __inline uint32_t yagl_transport_uint32_t_at(struct yagl_transport *t,
+                                                    uint32_t offset)
+{
+    return *(uint32_t*)(t->pages[offset / TARGET_PAGE_SIZE] +
+                        (offset & ~TARGET_PAGE_MASK));
+}
+
+static __inline target_ulong yagl_transport_va_at(struct yagl_transport *t,
+                                                  uint32_t offset)
+{
+    return *(target_ulong*)(t->pages[offset / TARGET_PAGE_SIZE] +
+                            (offset & ~TARGET_PAGE_MASK));
+}
+
+static __inline void yagl_transport_uint32_t_to(struct yagl_transport *t,
+                                                uint32_t offset,
+                                                uint32_t value)
+{
+    *(uint32_t*)(t->pages[offset / TARGET_PAGE_SIZE] +
+                 (offset & ~TARGET_PAGE_MASK)) = value;
+}
+
 static void yagl_transport_copy_from(struct yagl_transport *t,
+                                     uint32_t offset,
                                      uint8_t *data,
                                      uint32_t size)
 {
+    uint32_t page_index = offset / TARGET_PAGE_SIZE;
+    uint8_t *ptr = t->pages[page_index] + (offset & ~TARGET_PAGE_MASK);
+
     while (size > 0) {
-        uint32_t rem = t->next_page - t->ptr;
+        uint32_t rem = t->pages[page_index] + TARGET_PAGE_SIZE - ptr;
         rem = MIN(rem, size);
 
-        memcpy(data, t->ptr, rem);
+        memcpy(data, ptr, rem);
 
         size -= rem;
         data += rem;
 
-        yagl_transport_advance(t, rem);
+        ++page_index;
+        ptr = t->pages[page_index];
     }
 }
 
 static void yagl_transport_copy_to(struct yagl_transport *t,
-                                   uint32_t page_index,
-                                   uint8_t *ptr,
-                                   uint8_t *data,
+                                   uint32_t offset,
+                                   const uint8_t *data,
                                    uint32_t size)
 {
+    uint32_t page_index = offset / TARGET_PAGE_SIZE;
+    uint8_t *ptr = t->pages[page_index] + (offset & ~TARGET_PAGE_MASK);
+
     while (size > 0) {
         uint32_t rem = t->pages[page_index] + TARGET_PAGE_SIZE - ptr;
         rem = MIN(rem, size);
@@ -80,14 +112,11 @@ struct yagl_transport *yagl_transport_create(void)
 
     t = g_malloc0(sizeof(*t));
 
-    for (i = 0; i < YAGL_TRANSPORT_MAX_OUT; ++i) {
-        yagl_vector_init(&t->out_arrays[i], 1, 0);
-    }
-
     for (i = 0; i < YAGL_TRANSPORT_MAX_IN; ++i) {
         yagl_vector_init(&t->in_arrays[i].v, 1, 0);
-        t->in_arrays[i].mt = yagl_mem_transfer_create();
     }
+
+    QLIST_INIT(&t->compiled_transfers);
 
     return t;
 }
@@ -96,44 +125,124 @@ void yagl_transport_destroy(struct yagl_transport *t)
 {
     uint32_t i;
 
-    for (i = 0; i < YAGL_TRANSPORT_MAX_OUT; ++i) {
-        yagl_vector_cleanup(&t->out_arrays[i]);
-    }
-
     for (i = 0; i < YAGL_TRANSPORT_MAX_IN; ++i) {
         yagl_vector_cleanup(&t->in_arrays[i].v);
-        yagl_mem_transfer_destroy(t->in_arrays[i].mt);
     }
 
     g_free(t);
 }
 
-void yagl_transport_begin(struct yagl_transport *t,
-                          uint8_t **pages,
-                          uint32_t offset)
+void yagl_transport_set_buffer(struct yagl_transport *t, uint8_t **pages)
 {
     t->pages = pages;
-    t->offset = offset;
-    t->page_index = offset / TARGET_PAGE_SIZE;
-    t->ptr = t->pages[t->page_index] + (offset & ~TARGET_PAGE_MASK);
-    t->next_page = t->pages[t->page_index] + TARGET_PAGE_SIZE;
 }
 
-void yagl_transport_begin_call(struct yagl_transport *t,
+uint8_t *yagl_transport_begin(struct yagl_transport *t,
+                              uint32_t header_size,
+                              uint32_t *batch_size,
+                              uint32_t *out_arrays_size,
+                              uint32_t *fence_seq)
+{
+    uint32_t num_out_da, i;
+    uint8_t *batch_data, *tmp;
+
+    *fence_seq = yagl_transport_uint32_t_at(t, 1 * 8);
+    *batch_size = yagl_transport_uint32_t_at(t, 2 * 8);
+    num_out_da = yagl_transport_uint32_t_at(t, 3 * 8);
+
+    *out_arrays_size = 0;
+
+    for (i = 0; i < num_out_da; ++i) {
+        *out_arrays_size += yagl_transport_uint32_t_at(t,
+            YAGL_TRANSPORT_BATCH_HEADER_SIZE + *batch_size + ((2 * i + 1) * 8));
+    }
+
+    batch_data = tmp = g_malloc(
+        header_size + YAGL_TRANSPORT_BATCH_HEADER_SIZE +
+        *batch_size + *out_arrays_size);
+
+    tmp += header_size + YAGL_TRANSPORT_BATCH_HEADER_SIZE + *batch_size;
+
+    for (i = 0; i < num_out_da; ++i) {
+        target_ulong va = yagl_transport_va_at(t,
+            YAGL_TRANSPORT_BATCH_HEADER_SIZE + *batch_size + ((2 * i + 0) * 8));
+        uint32_t size = yagl_transport_uint32_t_at(t,
+            YAGL_TRANSPORT_BATCH_HEADER_SIZE + *batch_size + ((2 * i + 1) * 8));
+
+        if (!yagl_mem_get(va, size, tmp)) {
+            yagl_transport_uint32_t_to(t, 0, yagl_call_result_retry);
+            g_free(batch_data);
+            return NULL;
+        }
+
+        tmp += size;
+    }
+
+    yagl_transport_copy_from(t,
+        0,
+        batch_data + header_size,
+        YAGL_TRANSPORT_BATCH_HEADER_SIZE + *batch_size);
+
+    yagl_transport_uint32_t_to(t, 0, yagl_call_result_ok);
+
+    return batch_data;
+}
+
+void yagl_transport_end(struct yagl_transport *t)
+{
+    uint32_t i;
+    struct yagl_compiled_transfer *ct, *tmp;
+
+    for (i = 0; i < t->num_in_arrays; ++i) {
+        struct yagl_transport_in_array *in_array = &t->in_arrays[i];
+
+        if ((*in_array->count > 0) && t->direct) {
+            if (!yagl_mem_put(in_array->va,
+                              yagl_vector_data(&in_array->v),
+                              *in_array->count * in_array->el_size)) {
+                yagl_transport_uint32_t_to(t, 0, yagl_call_result_retry);
+                return;
+            }
+        }
+    }
+
+    QLIST_FOREACH_SAFE(ct, &t->compiled_transfers, entry, tmp) {
+        yagl_compiled_transfer_prepare(ct);
+    }
+
+    t->direct = false;
+    t->num_in_arrays = 0;
+
+    yagl_transport_uint32_t_to(t, 0, yagl_call_result_ok);
+}
+
+void yagl_transport_reset(struct yagl_transport *t,
+                          uint8_t *batch_data,
+                          uint32_t batch_size,
+                          uint32_t out_arrays_size)
+{
+    t->batch_data = batch_data;
+    t->batch_size = batch_size;
+    t->out_arrays_size = out_arrays_size;
+
+    t->ptr = batch_data + YAGL_TRANSPORT_BATCH_HEADER_SIZE;
+    t->out_array_ptr = batch_data + YAGL_TRANSPORT_BATCH_HEADER_SIZE + batch_size;
+}
+
+bool yagl_transport_begin_call(struct yagl_transport *t,
                                yagl_api_id *api_id,
                                yagl_func_id *func_id)
 {
-    *api_id = yagl_transport_get_out_uint32_t(t);
-
-    if (!*api_id) {
-        return;
+    if (t->ptr >= (t->batch_data + t->batch_size)) {
+        return false;
     }
 
+    *api_id = yagl_transport_get_out_uint32_t(t);
     *func_id = yagl_transport_get_out_uint32_t(t);
-
-    t->res = (uint32_t*)t->ptr;
     t->direct = yagl_transport_get_out_uint32_t(t);
-    t->num_out_arrays = t->num_in_arrays = 0;
+    t->num_in_arrays = 0;
+
+    return true;
 }
 
 void yagl_transport_end_call(struct yagl_transport *t)
@@ -143,92 +252,42 @@ void yagl_transport_end_call(struct yagl_transport *t)
     for (i = 0; i < t->num_in_arrays; ++i) {
         struct yagl_transport_in_array *in_array = &t->in_arrays[i];
 
-        if (*in_array->count > 0) {
-            if (t->direct) {
-                yagl_mem_put(in_array->mt,
-                             yagl_vector_data(&in_array->v),
-                             *in_array->count * in_array->el_size);
-            } else {
-                yagl_transport_copy_to(t,
-                                       in_array->page_index,
-                                       in_array->ptr,
-                                       yagl_vector_data(&in_array->v),
-                                       *in_array->count * in_array->el_size);
-            }
+        if ((*in_array->count > 0) && !t->direct) {
+            yagl_transport_copy_to(t,
+                                   in_array->offset,
+                                   t->batch_data + in_array->offset,
+                                   *in_array->count * in_array->el_size);
         }
     }
-
-    *t->res = yagl_call_result_ok;
 }
 
-uint32_t yagl_transport_bytes_processed(struct yagl_transport *t)
-{
-    uint32_t start_page_index = t->offset / TARGET_PAGE_SIZE;
-    uint32_t start_page_offset = t->offset & ~TARGET_PAGE_MASK;
-    uint32_t end_page_offset = t->ptr - t->pages[t->page_index];
-
-    return (t->page_index - start_page_index) * TARGET_PAGE_SIZE +
-           end_page_offset - start_page_offset;
-}
-
-bool yagl_transport_get_out_array(struct yagl_transport *t,
+void yagl_transport_get_out_array(struct yagl_transport *t,
                                   int32_t el_size,
                                   const void **data,
                                   int32_t *count)
 {
     target_ulong va = (target_ulong)yagl_transport_get_out_uint32_t(t);
     uint32_t size;
-    struct yagl_vector *v;
 
     *count = yagl_transport_get_out_uint32_t(t);
 
     if (!va) {
         *data = NULL;
-        return true;
+        return;
     }
 
     size = (*count > 0) ? (*count * el_size) : 0;
 
     if (t->direct) {
-        v = &t->out_arrays[t->num_out_arrays];
-
-        yagl_vector_resize(v, size);
-
-        if (!yagl_mem_get(va, size, yagl_vector_data(v))) {
-            *t->res = yagl_call_result_retry;
-            return false;
-        }
-
-        ++t->num_out_arrays;
-
-        *data = yagl_vector_data(v);
-
-        return true;
-    }
-
-    if ((t->ptr + size) <= t->next_page) {
+        *data = t->out_array_ptr;
+        t->out_array_ptr += size;
+    } else {
         *data = t->ptr;
-
-        yagl_transport_advance(t, (size + 7U) & ~7U);
-
-        return true;
+        t->ptr += (size + 7U) & ~7U;
     }
-
-    v = &t->out_arrays[t->num_out_arrays];
-
-    yagl_vector_resize(v, size);
-
-    yagl_transport_copy_from(t, yagl_vector_data(v), size);
-    yagl_transport_advance(t, 7U - ((size + 7U) & 7U));
-
-    ++t->num_out_arrays;
-
-    *data = yagl_vector_data(v);
-
-    return true;
 }
 
-bool yagl_transport_get_in_array(struct yagl_transport *t,
+void yagl_transport_get_in_array(struct yagl_transport *t,
                                  int32_t el_size,
                                  void **data,
                                  int32_t *maxcount,
@@ -237,60 +296,42 @@ bool yagl_transport_get_in_array(struct yagl_transport *t,
     target_ulong va = (target_ulong)yagl_transport_get_out_uint32_t(t);
     uint32_t size;
     struct yagl_transport_in_array *in_array;
+    uint32_t offset;
 
-    *count = (int32_t*)t->ptr;
+    offset = t->ptr - t->batch_data;
+
+    *count = (int32_t*)(t->pages[offset / TARGET_PAGE_SIZE] +
+                        (offset & ~TARGET_PAGE_MASK));
     *maxcount = yagl_transport_get_out_uint32_t(t);
 
     if (!va) {
         *data = NULL;
-        return true;
+        return;
     }
 
     size = (*maxcount > 0) ? (*maxcount * el_size) : 0;
 
+    in_array = &t->in_arrays[t->num_in_arrays];
+
     if (t->direct) {
-        in_array = &t->in_arrays[t->num_in_arrays];
-
-        if (!yagl_mem_prepare(in_array->mt, va, size)) {
-            *t->res = yagl_call_result_retry;
-            return false;
-        }
-
         yagl_vector_resize(&in_array->v, size);
 
+        in_array->va = va;
         in_array->el_size = el_size;
         in_array->count = *count;
 
         ++t->num_in_arrays;
 
         *data = yagl_vector_data(&in_array->v);
+    } else {
+        in_array->offset = t->ptr - t->batch_data;
+        in_array->el_size = el_size;
+        in_array->count = *count;
 
-        return true;
-    }
+        ++t->num_in_arrays;
 
-    if ((t->ptr + size) <= t->next_page) {
         *data = t->ptr;
 
-        yagl_transport_advance(t, (size + 7U) & ~7U);
-
-        return true;
+        t->ptr += (size + 7U) & ~7U;
     }
-
-    in_array = &t->in_arrays[t->num_in_arrays];
-
-    in_array->page_index = t->page_index;
-    in_array->ptr = t->ptr;
-
-    yagl_vector_resize(&in_array->v, size);
-
-    in_array->el_size = el_size;
-    in_array->count = *count;
-
-    yagl_transport_advance(t, (size + 7U) & ~7U);
-
-    ++t->num_in_arrays;
-
-    *data = yagl_vector_data(&in_array->v);
-
-    return true;
 }

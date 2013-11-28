@@ -31,12 +31,12 @@
 #define _QEMU_VIGS_SERVER_H
 
 #include "vigs_types.h"
-#include "vigs_vector.h"
 #include "winsys.h"
 #include <glib.h>
 
 struct vigs_comm;
 struct vigs_backend;
+struct work_queue;
 
 struct vigs_display_ops
 {
@@ -61,6 +61,9 @@ struct vigs_display_ops
     /*
      * @}
      */
+
+    void (*fence_ack)(void */*user_data*/,
+                      uint32_t /*fence_seq*/);
 };
 
 struct vigs_server
@@ -73,6 +76,8 @@ struct vigs_server
     void *display_user_data;
 
     struct vigs_backend *backend;
+
+    struct work_queue *render_queue;
 
     struct vigs_comm *comm;
 
@@ -87,20 +92,22 @@ struct vigs_server
     GHashTable *surfaces;
 
     struct vigs_surface *root_sfc;
-    uint8_t *root_sfc_data;
+    uint8_t *root_sfc_ptr;
 
-    bool in_batch;
+    QemuMutex capture_mutex;
 
-    /*
-     * General purpose vectors.
-     * @{
-     */
+    bool is_capturing;
 
-    struct vigs_vector v1;
+    uint32_t capture_fence_seq;
 
-    /*
-     * @}
-     */
+    struct
+    {
+        uint8_t *data;
+        uint32_t width;
+        uint32_t height;
+        uint32_t stride;
+        vigsp_surface_format format;
+    } captured;
 
     /*
      * @}
@@ -111,7 +118,8 @@ struct vigs_server *vigs_server_create(uint8_t *vram_ptr,
                                        uint8_t *ram_ptr,
                                        struct vigs_display_ops *display_ops,
                                        void *display_user_data,
-                                       struct vigs_backend *backend);
+                                       struct vigs_backend *backend,
+                                       struct work_queue *render_queue);
 
 void vigs_server_destroy(struct vigs_server *server);
 

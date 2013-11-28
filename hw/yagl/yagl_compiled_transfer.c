@@ -32,6 +32,7 @@
 #include "yagl_thread.h"
 #include "yagl_process.h"
 #include "yagl_log.h"
+#include "yagl_transport.h"
 #include "exec/cpu-all.h"
 
 #define YAGL_TARGET_PAGE_VA(addr) ((addr) & ~(TARGET_PAGE_SIZE - 1))
@@ -56,16 +57,62 @@ struct yagl_compiled_transfer
                                    bool is_write)
 {
     struct yagl_compiled_transfer *ct;
+
+    ct = g_malloc0(sizeof(*ct));
+
+    ct->va = va;
+    ct->len = len;
+    ct->is_write = is_write;
+
+    QLIST_INSERT_HEAD(&cur_ts->t->compiled_transfers, ct, entry);
+
+    ct->in_list = true;
+
+    return ct;
+}
+
+void yagl_compiled_transfer_destroy(struct yagl_compiled_transfer *ct)
+{
+    int i;
+
+    if (ct->in_list) {
+        QLIST_REMOVE(ct, entry);
+        ct->in_list = false;
+    }
+
+    for (i = 0; i < ct->num_sections; ++i) {
+        cpu_physical_memory_unmap(ct->sections[i].map_base,
+                                  ct->sections[i].map_len,
+                                  0,
+                                  ct->sections[i].map_len);
+    }
+
+    g_free(ct->sections);
+
+    ct->sections = NULL;
+    ct->num_sections = 0;
+
+    g_free(ct);
+}
+
+void yagl_compiled_transfer_prepare(struct yagl_compiled_transfer *ct)
+{
     struct yagl_vector v;
-    target_ulong last_page_va = YAGL_TARGET_PAGE_VA(va + len - 1);
-    target_ulong cur_va = va;
+    target_ulong last_page_va = YAGL_TARGET_PAGE_VA(ct->va + ct->len - 1);
+    target_ulong cur_va = ct->va;
+    uint32_t len = ct->len;
     int i, num_sections;
 
-    YAGL_LOG_FUNC_ENTER(yagl_compiled_transfer_init,
+    YAGL_LOG_FUNC_ENTER(yagl_compiled_transfer_prepare,
                         "va = 0x%X, len = 0x%X, is_write = %u",
-                        (uint32_t)va,
-                        len,
-                        (uint32_t)is_write);
+                        (uint32_t)ct->va,
+                        ct->len,
+                        (uint32_t)ct->is_write);
+
+    if (ct->in_list) {
+        QLIST_REMOVE(ct, entry);
+        ct->in_list = false;
+    }
 
     yagl_vector_init(&v, sizeof(struct yagl_compiled_transfer_section), 0);
 
@@ -128,15 +175,12 @@ struct yagl_compiled_transfer
         cur_va += section.len;
     }
 
-    ct = g_malloc0(sizeof(*ct));
-
     ct->num_sections = yagl_vector_size(&v);
     ct->sections = yagl_vector_detach(&v);
-    ct->is_write = is_write;
 
     YAGL_LOG_FUNC_EXIT("num_sections = %d", ct->num_sections);
 
-    return ct;
+    return;
 
 fail:
     num_sections = yagl_vector_size(&v);
@@ -156,28 +200,6 @@ fail:
     yagl_vector_cleanup(&v);
 
     YAGL_LOG_FUNC_EXIT(NULL);
-
-    return NULL;
-}
-
-void yagl_compiled_transfer_destroy(struct yagl_compiled_transfer *ct)
-{
-    int i;
-
-    for (i = 0; i < ct->num_sections; ++i) {
-        cpu_physical_memory_unmap(ct->sections[i].map_base,
-                                  ct->sections[i].map_len,
-                                  0,
-                                  ct->sections[i].map_len);
-    }
-
-    g_free(ct->sections);
-
-    ct->sections = NULL;
-    ct->num_sections = 0;
-    ct->is_write = false;
-
-    g_free(ct);
 }
 
 void yagl_compiled_transfer_exec(struct yagl_compiled_transfer *ct, void* data)

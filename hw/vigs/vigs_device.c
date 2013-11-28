@@ -32,19 +32,25 @@
 #include "vigs_server.h"
 #include "vigs_backend.h"
 #include "vigs_regs.h"
+#include "vigs_fenceman.h"
 #include "hw/hw.h"
 #include "ui/console.h"
+#include "qemu/main-loop.h"
 
 #define PCI_VENDOR_ID_VIGS 0x19B2
 #define PCI_DEVICE_ID_VIGS 0x1011
 
 #define VIGS_IO_SIZE 0x1000
 
+struct work_queue;
+
 typedef struct VIGSState
 {
     VIGSDevice dev;
 
     void *display;
+
+    struct work_queue *render_queue;
 
     MemoryRegion vram_bar;
     uint32_t vram_size;
@@ -53,6 +59,10 @@ typedef struct VIGSState
     uint32_t ram_size;
 
     MemoryRegion io_bar;
+
+    struct vigs_fenceman *fenceman;
+
+    QEMUBH *fence_ack_bh;
 
     struct vigs_server *server;
 
@@ -70,16 +80,33 @@ extern const char *vigs_backend;
 
 static void vigs_update_irq(VIGSState *s)
 {
-    if ((s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) == 0) {
-        pci_set_irq(&s->dev.pci_dev, 0);
-        return;
+    bool raise = false;
+
+    if ((s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) &&
+        (s->reg_int & VIGS_REG_INT_VBLANK_PENDING)) {
+        raise = true;
     }
 
-    if (s->reg_int & VIGS_REG_INT_VBLANK_PENDING) {
+    if (s->reg_int & VIGS_REG_INT_FENCE_ACK_PENDING) {
+        raise = true;
+    }
+
+    if (raise) {
         pci_set_irq(&s->dev.pci_dev, 1);
     } else {
         pci_set_irq(&s->dev.pci_dev, 0);
     }
+}
+
+static void vigs_fence_ack_bh(void *opaque)
+{
+    VIGSState *s = opaque;
+
+    if (vigs_fenceman_pending(s->fenceman)) {
+        s->reg_int |= VIGS_REG_INT_FENCE_ACK_PENDING;
+    }
+
+    vigs_update_irq(s);
 }
 
 static void vigs_hw_update(void *opaque)
@@ -143,6 +170,16 @@ static uint8_t *vigs_dpy_get_data(void *user_data)
     return surface_data(ds);
 }
 
+static void vigs_fence_ack(void *user_data,
+                           uint32_t fence_seq)
+{
+    VIGSState *s = user_data;
+
+    vigs_fenceman_ack(s->fenceman, fence_seq);
+
+    qemu_bh_schedule(s->fence_ack_bh);
+}
+
 static uint64_t vigs_io_read(void *opaque, hwaddr offset,
                              unsigned size)
 {
@@ -151,6 +188,10 @@ static uint64_t vigs_io_read(void *opaque, hwaddr offset,
     switch (offset) {
     case VIGS_REG_INT:
         return s->reg_int;
+    case VIGS_REG_FENCE_LOWER:
+        return vigs_fenceman_get_lower(s->fenceman);
+    case VIGS_REG_FENCE_UPPER:
+        return vigs_fenceman_get_upper(s->fenceman);
     default:
         VIGS_LOG_CRITICAL("Bad register 0x%X read", (uint32_t)offset);
         break;
@@ -169,10 +210,16 @@ static void vigs_io_write(void *opaque, hwaddr offset,
         vigs_server_dispatch(s->server, value);
         break;
     case VIGS_REG_INT:
-        if (((s->reg_int & VIGS_REG_INT_VBLANK_PENDING) == 0) &&
-            (value & VIGS_REG_INT_VBLANK_PENDING)) {
-            VIGS_LOG_CRITICAL("Attempt to set VBLANK_PENDING");
+        if (value & VIGS_REG_INT_VBLANK_PENDING) {
             value &= ~VIGS_REG_INT_VBLANK_PENDING;
+        } else {
+            value |= (s->reg_int & VIGS_REG_INT_VBLANK_PENDING);
+        }
+
+        if (value & VIGS_REG_INT_FENCE_ACK_PENDING) {
+            value &= ~VIGS_REG_INT_FENCE_ACK_PENDING;
+        } else {
+            value |= (s->reg_int & VIGS_REG_INT_FENCE_ACK_PENDING);
         }
 
         if (((s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) == 0) &&
@@ -184,9 +231,7 @@ static void vigs_io_write(void *opaque, hwaddr offset,
         }
 
         s->reg_int = value & VIGS_REG_INT_MASK;
-        if ((value & VIGS_REG_INT_VBLANK_ENABLE) == 0) {
-            s->reg_int &= ~VIGS_REG_INT_VBLANK_PENDING;
-        }
+
         vigs_update_irq(s);
         break;
     default:
@@ -214,6 +259,7 @@ static struct vigs_display_ops vigs_dpy_ops =
     .get_stride = vigs_dpy_get_stride,
     .get_bpp = vigs_dpy_get_bpp,
     .get_data = vigs_dpy_get_data,
+    .fence_ack = vigs_fence_ack,
 };
 
 static int vigs_device_init(PCIDevice *dev)
@@ -263,6 +309,10 @@ static int vigs_device_init(PCIDevice *dev)
         goto fail;
     }
 
+    s->fenceman = vigs_fenceman_create();
+
+    s->fence_ack_bh = qemu_bh_new(vigs_fence_ack_bh, s);
+
     s->con = graphic_console_init(DEVICE(dev), &vigs_hw_ops, s);
 
     if (!s->con) {
@@ -273,7 +323,8 @@ static int vigs_device_init(PCIDevice *dev)
                                    memory_region_get_ram_ptr(&s->ram_bar),
                                    &vigs_dpy_ops,
                                    s,
-                                   backend);
+                                   backend,
+                                   s->render_queue);
 
     if (!s->server) {
         goto fail;
@@ -293,6 +344,14 @@ fail:
         backend->destroy(backend);
     }
 
+    if (s->fence_ack_bh) {
+        qemu_bh_delete(s->fence_ack_bh);
+    }
+
+    if (s->fenceman) {
+        vigs_fenceman_destroy(s->fenceman);
+    }
+
     memory_region_destroy(&s->io_bar);
     memory_region_destroy(&s->ram_bar);
     memory_region_destroy(&s->vram_bar);
@@ -308,6 +367,10 @@ static void vigs_device_reset(DeviceState *d)
 
     vigs_server_reset(s->server);
 
+    vigs_fenceman_reset(s->fenceman);
+
+    pci_set_irq(&s->dev.pci_dev, 0);
+
     s->reg_int = 0;
 
     VIGS_LOG_INFO("VIGS reset");
@@ -318,6 +381,10 @@ static void vigs_device_exit(PCIDevice *dev)
     VIGSState *s = DO_UPCAST(VIGSState, dev.pci_dev, dev);
 
     vigs_server_destroy(s->server);
+
+    qemu_bh_delete(s->fence_ack_bh);
+
+    vigs_fenceman_destroy(s->fenceman);
 
     memory_region_destroy(&s->io_bar);
     memory_region_destroy(&s->ram_bar);
@@ -333,6 +400,11 @@ static Property vigs_properties[] = {
         .name   = "display",
         .info   = &qdev_prop_ptr,
         .offset = offsetof(VIGSState, display),
+    },
+    {
+        .name   = "render_queue",
+        .info   = &qdev_prop_ptr,
+        .offset = offsetof(VIGSState, render_queue),
     },
     DEFINE_PROP_UINT32("vram_size", VIGSState, vram_size,
                        32 * 1024 * 1024),

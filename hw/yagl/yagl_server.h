@@ -37,7 +37,8 @@ struct yagl_api;
 struct yagl_process_state;
 struct yagl_egl_backend;
 struct yagl_gles_driver;
-struct yagl_transport;
+struct work_queue;
+struct winsys_interface;
 
 struct yagl_server_state
 {
@@ -47,10 +48,9 @@ struct yagl_server_state
 
     QLIST_HEAD(, yagl_process_state) processes;
 
-    /*
-     * Single transport that's used by all threads.
-     */
-    struct yagl_transport *t;
+    struct work_queue *render_queue;
+
+    struct winsys_interface *wsi;
 };
 
 /*
@@ -65,7 +65,9 @@ struct yagl_server_state
  */
 struct yagl_server_state
     *yagl_server_state_create(struct yagl_egl_backend *egl_backend,
-                              struct yagl_gles_driver *gles_driver);
+                              struct yagl_gles_driver *gles_driver,
+                              struct work_queue *render_queue,
+                              struct winsys_interface *wsi);
 
 void yagl_server_state_destroy(struct yagl_server_state *ss);
 /*
@@ -99,7 +101,7 @@ void yagl_server_dispatch_update(struct yagl_server_state *ss,
 void yagl_server_dispatch_batch(struct yagl_server_state *ss,
                                 yagl_pid target_pid,
                                 yagl_tid target_tid,
-                                uint32_t offset);
+                                bool sync);
 
 /*
  * This is called for last YaGL call.

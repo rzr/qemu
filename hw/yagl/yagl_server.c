@@ -33,7 +33,6 @@
 #include "yagl_thread.h"
 #include "yagl_version.h"
 #include "yagl_log.h"
-#include "yagl_transport.h"
 #include "yagl_egl_backend.h"
 #include "yagl_apis/egl/yagl_egl_api.h"
 #include "yagl_apis/gles/yagl_gles_api.h"
@@ -71,22 +70,15 @@ static struct yagl_thread_state
 
 struct yagl_server_state
     *yagl_server_state_create(struct yagl_egl_backend *egl_backend,
-                              struct yagl_gles_driver *gles_driver)
+                              struct yagl_gles_driver *gles_driver,
+                              struct work_queue *render_queue,
+                              struct winsys_interface *wsi)
 {
     int i;
     struct yagl_server_state *ss =
         g_malloc0(sizeof(struct yagl_server_state));
 
     QLIST_INIT(&ss->processes);
-
-    ss->t = yagl_transport_create();
-
-    if (!ss->t) {
-        egl_backend->destroy(egl_backend);
-        gles_driver->destroy(gles_driver);
-
-        goto fail;
-    }
 
     ss->apis[yagl_api_id_egl - 1] = yagl_egl_api_create(egl_backend);
 
@@ -107,6 +99,10 @@ struct yagl_server_state
 
     ss->render_type = egl_backend->render_type;
 
+    ss->render_queue = render_queue;
+
+    ss->wsi = wsi;
+
     return ss;
 
 fail:
@@ -115,10 +111,6 @@ fail:
             ss->apis[i]->destroy(ss->apis[i]);
             ss->apis[i] = NULL;
         }
-    }
-
-    if (ss->t) {
-        yagl_transport_destroy(ss->t);
     }
 
     g_free(ss);
@@ -139,14 +131,14 @@ void yagl_server_state_destroy(struct yagl_server_state *ss)
         }
     }
 
-    yagl_transport_destroy(ss->t);
-
     g_free(ss);
 }
 
 void yagl_server_reset(struct yagl_server_state *ss)
 {
     struct yagl_process_state *ps, *next;
+
+    work_queue_wait(ss->render_queue);
 
     QLIST_FOREACH_SAFE(ps, &ss->processes, entry, next) {
         QLIST_REMOVE(ps, entry);
@@ -195,6 +187,8 @@ bool yagl_server_dispatch_init(struct yagl_server_state *ss,
 
         return false;
     }
+
+    work_queue_wait(ss->render_queue);
 
     QLIST_FOREACH(ps, &ss->processes, entry) {
         if (ps->id == *target_pid) {
@@ -312,6 +306,8 @@ void yagl_server_dispatch_update(struct yagl_server_state *ss,
         goto fail;
     }
 
+    work_queue_wait(ss->render_queue);
+
     count = yagl_marshal_get_uint32_t(&buff);
 
     if (count > ((TARGET_PAGE_SIZE / 8) - 2)) {
@@ -358,7 +354,7 @@ out:
 void yagl_server_dispatch_batch(struct yagl_server_state *ss,
                                 yagl_pid target_pid,
                                 yagl_tid target_tid,
-                                uint32_t offset)
+                                bool sync)
 {
     struct yagl_thread_state *ts;
 
@@ -367,7 +363,7 @@ void yagl_server_dispatch_batch(struct yagl_server_state *ss,
     ts = yagl_server_find_thread(ss, target_pid, target_tid);
 
     if (ts) {
-        yagl_thread_call(ts, offset);
+        yagl_thread_call(ts, sync);
     } else {
         YAGL_LOG_CRITICAL("process/thread %u/%u not found",
                           target_pid, target_tid);
@@ -394,6 +390,8 @@ void yagl_server_dispatch_exit(struct yagl_server_state *ss,
 
         return;
     }
+
+    work_queue_wait(ss->render_queue);
 
     ps = ts->ps;
 

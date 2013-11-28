@@ -56,6 +56,8 @@
 
 #define YAGL_MAX_USERS (YAGL_MEM_SIZE / YAGL_REGS_SIZE)
 
+struct work_queue;
+
 struct yagl_user
 {
     bool activated;
@@ -66,8 +68,13 @@ struct yagl_user
 typedef struct YaGLState
 {
     PCIDevice dev;
+
     void *display;
+
+    struct work_queue *render_queue;
+
     struct winsys_interface *wsi;
+
     MemoryRegion iomem;
     struct yagl_server_state *ss;
     struct yagl_user users[YAGL_MAX_USERS];
@@ -157,15 +164,15 @@ out:
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-static void yagl_device_trigger(YaGLState *s, int user_index, uint32_t offset)
+static void yagl_device_trigger(YaGLState *s, int user_index, bool sync)
 {
-    YAGL_LOG_FUNC_ENTER(yagl_device_trigger, "%d, %u", user_index, offset);
+    YAGL_LOG_FUNC_ENTER(yagl_device_trigger, "%d, %d", user_index, sync);
 
     if (s->users[user_index].activated) {
         yagl_server_dispatch_batch(s->ss,
                                    s->users[user_index].process_id,
                                    s->users[user_index].thread_id,
-                                   offset);
+                                   sync);
     } else {
         YAGL_LOG_CRITICAL("user %d not activated", user_index);
     }
@@ -262,7 +269,8 @@ static int yagl_device_init(PCIDevice *dev)
      */
     egl_driver = NULL;
 
-    s->ss = yagl_server_state_create(egl_backend, gles_driver);
+    s->ss = yagl_server_state_create(egl_backend, gles_driver,
+                                     s->render_queue, s->wsi);
 
     /*
      * Owned/destroyed by server state.
@@ -342,6 +350,11 @@ static Property yagl_properties[] = {
         .name   = "display",
         .info   = &qdev_prop_ptr,
         .offset = offsetof(YaGLState, display),
+    },
+    {
+        .name   = "render_queue",
+        .info   = &qdev_prop_ptr,
+        .offset = offsetof(YaGLState, render_queue),
     },
     {
         .name   = "winsys_gl_interface",

@@ -1,5 +1,5 @@
 /*
- * yagl
+ * vigs
  *
  * Copyright (c) 2000 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -27,14 +27,42 @@
  *
  */
 
-#ifndef _QEMU_YAGL_VERSION_H
-#define _QEMU_YAGL_VERSION_H
+#ifndef _QEMU_VIGS_FENCEMAN_H
+#define _QEMU_VIGS_FENCEMAN_H
 
-#include "qemu-common.h"
+#include "vigs_types.h"
+#include "qemu/queue.h"
+#include "qemu/thread.h"
 
-/*
- * Whenever protocol changes be sure to bump this.
- */
-#define YAGL_VERSION 22
+struct vigs_fence_ack
+{
+    QTAILQ_ENTRY(vigs_fence_ack) entry;
+
+    uint32_t lower;
+    uint32_t upper;
+};
+
+struct vigs_fenceman
+{
+    QemuMutex mutex;
+
+    QTAILQ_HEAD(, vigs_fence_ack) acks;
+
+    uint32_t last_upper;
+};
+
+struct vigs_fenceman *vigs_fenceman_create(void);
+
+void vigs_fenceman_destroy(struct vigs_fenceman *fenceman);
+
+void vigs_fenceman_reset(struct vigs_fenceman *fenceman);
+
+void vigs_fenceman_ack(struct vigs_fenceman *fenceman, uint32_t fence_seq);
+
+uint32_t vigs_fenceman_get_lower(struct vigs_fenceman *fenceman);
+
+uint32_t vigs_fenceman_get_upper(struct vigs_fenceman *fenceman);
+
+bool vigs_fenceman_pending(struct vigs_fenceman *fenceman);
 
 #endif

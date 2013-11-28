@@ -88,12 +88,10 @@ EGLBoolean yagl_host_eglQueryContext(yagl_host_handle dpy,
     EGLint attribute,
     EGLint *value,
     EGLint *error);
-EGLBoolean yagl_host_eglSwapBuffers(yagl_host_handle dpy,
-    yagl_host_handle surface,
-    EGLint *error);
-EGLBoolean yagl_host_eglCopyBuffers(yagl_host_handle dpy,
-    yagl_host_handle surface,
-    EGLint *error);
+void yagl_host_eglSwapBuffers(yagl_host_handle dpy,
+    yagl_host_handle surface);
+void yagl_host_eglCopyBuffers(yagl_host_handle dpy,
+    yagl_host_handle surface);
 yagl_host_handle yagl_host_eglCreateWindowSurfaceOffscreenYAGL(yagl_host_handle dpy,
     yagl_host_handle config,
     uint32_t width,
