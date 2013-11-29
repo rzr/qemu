@@ -41,6 +41,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.MenuItemType;
 import org.tizen.emulator.skin.dbi.PopupMenuType;
@@ -55,7 +56,7 @@ public class PopupMenu {
 	public static final String TOPMOST_MENUITEM_NAME = "&Always On Top";
 	public static final String ROTATE_MENUITEM_NAME = "&Rotate";
 	public static final String SCALE_MENUITEM_NAME = "&Scale";
-	public static final String INTERPOLATION_MENUITEM_NAME = "&Interpolation";
+	public static final String INTERPOLATION_MENUITEM_NAME = "&Quality";
 	public static final String KEYWINDOW_MENUITEM_NAME = "&Key Window";
 	public static final String ADVANCED_MENUITEM_NAME = "Ad&vanced";
 	public static final String SCREENSHOT_MENUITEM_NAME = "&Screen Shot";
@@ -149,6 +150,9 @@ public class PopupMenu {
 			if (rotationMenuType.isVisible() == true) {
 				createRotateItem(menu, (rotationMenuType.getItemName().isEmpty()) ?
 						ROTATE_MENUITEM_NAME : rotationMenuType.getItemName());
+			} else {
+				skin.getEmulatorSkinState().setCurrentRotationId(
+						RotationInfo.PORTRAIT.id());
 			}
 		}
 
@@ -171,6 +175,8 @@ public class PopupMenu {
 
 					createScaleItem(menu, menuName, factors);
 				}
+			} else {
+				skin.getEmulatorSkinState().setCurrentScale(100);
 			}
 		}
 
