@@ -89,6 +89,11 @@ void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_sta
 {
     TouchEventEntry *entry = NULL;
 
+    if (unlikely(!virtio_queue_ready(ts->vq))) {
+        ERR("virtio queue is not ready\n");
+        return;
+    }
+
     if (unlikely(event_queue_cnt >= MAX_TOUCH_EVENT_CNT)) {
         INFO("full touch event queue, lose event\n", event_queue_cnt);
 
@@ -317,20 +322,6 @@ static int virtio_touchscreen_device_init(VirtIODevice *vdev)
     ts->vq = virtio_add_queue(&ts->vdev, 64, maru_virtio_touchscreen_handle);
     ts->qdev = qdev;
 
-    /* reset the counters */
-    pthread_mutex_lock(&event_mutex);
-    event_queue_cnt = 0;
-    pthread_mutex_unlock(&event_mutex);
-
-    event_ringbuf_cnt = 0;
-    elem_ringbuf_cnt = 0;
-
-    pthread_mutex_lock(&elem_mutex);
-    elem_queue_cnt = 0;
-
-    ts->waitBuf = false;
-    pthread_mutex_unlock(&elem_mutex);
-
     /* bottom halves */
     ts->bh = qemu_bh_new(maru_touchscreen_bh, ts);
 
@@ -371,6 +362,25 @@ static Property virtio_touchscreen_properties[] = {
     DEFINE_PROP_END_OF_LIST(),
 };
 
+static void virtio_touchscreen_device_reset(VirtIODevice *vdev)
+{
+    INFO("reset the touchscreen device\n");
+
+    /* reset the counters */
+    pthread_mutex_lock(&event_mutex);
+    event_queue_cnt = 0;
+    pthread_mutex_unlock(&event_mutex);
+
+    event_ringbuf_cnt = 0;
+    elem_ringbuf_cnt = 0;
+
+    pthread_mutex_lock(&elem_mutex);
+    elem_queue_cnt = 0;
+
+    ts->waitBuf = false;
+    pthread_mutex_unlock(&elem_mutex);
+}
+
 static void virtio_touchscreen_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -378,6 +388,7 @@ static void virtio_touchscreen_class_init(ObjectClass *klass, void *data)
     dc->exit = virtio_touchscreen_device_exit;
     dc->props = virtio_touchscreen_properties;
     vdc->init = virtio_touchscreen_device_init;
+    vdc->reset = virtio_touchscreen_device_reset;
     vdc->get_config = virtio_touchscreen_get_config;
     vdc->set_config = virtio_touchscreen_set_config;
     vdc->get_features = virtio_touchscreen_get_features;
