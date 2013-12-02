@@ -131,6 +131,7 @@ public class EmulatorSkinMain {
 
 			/* startup arguments parsing */
 			Map<String, String> argsMap = parseArgs(args);
+			EmulatorConfig.validateArgs(argsMap);
 
 			/* get skin path from startup argument */
 			String argSkinPath = (String) argsMap.get(ArgsConstants.SKIN_PATH);
@@ -192,14 +193,13 @@ public class EmulatorSkinMain {
 			String configPropFilePath =
 					vmPath + File.separator + CONFIG_PROPERTIES_FILE_NAME;
 			Properties configProperties = loadProperties(configPropFilePath, false);
+			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
 			/* able to use log file after loading properties */
 			initLog(argsMap, configProperties);
 
 			/* validation check */
-			EmulatorConfig.validateArgs(argsMap);
 			EmulatorConfig.validateSkinProperties(skinProperties);
-			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
 			/* determine the layout */
 			boolean isGeneralSkin = false;

@@ -41,6 +41,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
+import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.MenuItemType;
 import org.tizen.emulator.skin.dbi.PopupMenuType;
@@ -55,10 +56,11 @@ public class PopupMenu {
 	public static final String TOPMOST_MENUITEM_NAME = "&Always On Top";
 	public static final String ROTATE_MENUITEM_NAME = "&Rotate";
 	public static final String SCALE_MENUITEM_NAME = "&Scale";
+	public static final String INTERPOLATION_MENUITEM_NAME = "&Quality";
 	public static final String KEYWINDOW_MENUITEM_NAME = "&Key Window";
 	public static final String ADVANCED_MENUITEM_NAME = "Ad&vanced";
 	public static final String SCREENSHOT_MENUITEM_NAME = "&Screen Shot";
-	public static final String HOSTKEYBOARD_MENUITEM_NAME = "&Host Keyboard";
+	public static final String HOSTKBD_MENUITEM_NAME = "&Host Keyboard";
 	public static final String DIAGNOSIS_MENUITEM_NAME = "&Diagnosis";
 	public static final String RAMDUMP_MENUITEM_NAME = "&Ram Dump";
 	public static final String ABOUT_MENUITEM_NAME = "&About";
@@ -81,12 +83,15 @@ public class PopupMenu {
 	public MenuItem onTopItem;
 	public MenuItem rotateItem;
 	public MenuItem scaleItem;
+	public MenuItem interpolationItem;
+	public MenuItem interpolationHighItem;
+	public MenuItem interpolationLowItem;
 	public MenuItem keyWindowItem; /* key window menu */
 	public MenuItem advancedItem; /* advanced menu */
 	public MenuItem screenshotItem;
-	public MenuItem hostKeyboardItem;
-	public MenuItem kbdOnItem;
-	public MenuItem kbdOffItem;
+	public MenuItem hostKbdItem;
+	public MenuItem hostKbdOnItem;
+	public MenuItem hostKbdOffItem;
 	public MenuItem diagnosisItem;
 	public MenuItem ramdumpItem;
 	public MenuItem aboutItem;
@@ -145,6 +150,9 @@ public class PopupMenu {
 			if (rotationMenuType.isVisible() == true) {
 				createRotateItem(menu, (rotationMenuType.getItemName().isEmpty()) ?
 						ROTATE_MENUITEM_NAME : rotationMenuType.getItemName());
+			} else {
+				skin.getEmulatorSkinState().setCurrentRotationId(
+						RotationInfo.PORTRAIT.id());
 			}
 		}
 
@@ -167,6 +175,8 @@ public class PopupMenu {
 
 					createScaleItem(menu, menuName, factors);
 				}
+			} else {
+				skin.getEmulatorSkinState().setCurrentScale(100);
 			}
 		}
 
@@ -197,13 +207,13 @@ public class PopupMenu {
 
 			/* VirtIO Keyboard menu */
 			if (itemProperties == null || itemProperties.getHostKeyboardItem() == null) {
-				createHostKeyboardItem(advancedSubMenu, HOSTKEYBOARD_MENUITEM_NAME);
+				createHostKbdItem(advancedSubMenu, HOSTKBD_MENUITEM_NAME);
 			} else {
-				MenuItemType hostKeyboardMenuType = itemProperties.getHostKeyboardItem();
-				if (hostKeyboardMenuType.isVisible() == true) {
-					createHostKeyboardItem(advancedSubMenu,
-							(hostKeyboardMenuType.getItemName().isEmpty()) ?
-							HOSTKEYBOARD_MENUITEM_NAME : hostKeyboardMenuType.getItemName());
+				MenuItemType hostKbdMenuType = itemProperties.getHostKeyboardItem();
+				if (hostKbdMenuType.isVisible() == true) {
+					createHostKbdItem(advancedSubMenu,
+							(hostKbdMenuType.getItemName().isEmpty()) ?
+							HOSTKBD_MENUITEM_NAME : hostKbdMenuType.getItemName());
 				}
 			}
 
@@ -330,14 +340,45 @@ public class PopupMenu {
 
 			if (matchedItem == null) {
 				matchedItem = scaleSubMenu.getItem(0);
+				if (matchedItem == null) {
+					return;
+				}
 				skin.getEmulatorSkinState().setCurrentScale(
 						(Integer) matchedItem.getData());
 			}
 
 			matchedItem.setSelection(true);
+
+			/* interpolation menu */
+			createInterpolationItem(scaleSubMenu, INTERPOLATION_MENUITEM_NAME);
 		}
 
 		scaleItem.setMenu(scaleSubMenu);
+	}
+
+	private void createInterpolationItem(Menu menu, String name) {
+		interpolationItem = new MenuItem(menu, SWT.CASCADE);
+		interpolationItem.setText(name);
+
+		Menu interpolationSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
+		{
+			createInterpolationHighLowItem(interpolationSubMenu);
+		}
+		interpolationItem.setMenu(interpolationSubMenu);
+	}
+
+	private void createInterpolationHighLowItem(Menu menu) {
+		interpolationHighItem = new MenuItem(menu, SWT.RADIO);
+		interpolationHighItem.setText("High");
+		interpolationHighItem.setSelection(skin.isOnInterpolation);
+
+		interpolationLowItem = new MenuItem(menu, SWT.RADIO);
+		interpolationLowItem.setText("Low");
+		interpolationLowItem.setSelection(!skin.isOnInterpolation);
+
+		SelectionAdapter interpolationListener = skin.createInterpolationMenuListener();
+		interpolationHighItem.addSelectionListener(interpolationListener);
+		interpolationLowItem.addSelectionListener(interpolationListener);
 	}
 
 	private void createKeyWindowItem(Menu menu, String name) {
@@ -388,30 +429,30 @@ public class PopupMenu {
 		screenshotItem.addSelectionListener(screenshotListener);
 	}
 
-	private void createHostKeyboardItem(Menu menu, String name) {
-		hostKeyboardItem = new MenuItem(menu, SWT.CASCADE);
-		hostKeyboardItem.setText(name);
-		hostKeyboardItem.setImage(imageRegistry.getIcon(IconName.HOST_KEYBOARD));
+	private void createHostKbdItem(Menu menu, String name) {
+		hostKbdItem = new MenuItem(menu, SWT.CASCADE);
+		hostKbdItem.setText(name);
+		hostKbdItem.setImage(imageRegistry.getIcon(IconName.HOST_KBD));
 
-		Menu hostKeyboardSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
+		Menu hostKbdSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
 		{
-			createKeyboardOnOffItem(hostKeyboardSubMenu);
+			createKbdOnOffItem(hostKbdSubMenu);
 		}
-		hostKeyboardItem.setMenu(hostKeyboardSubMenu);
+		hostKbdItem.setMenu(hostKbdSubMenu);
 	}
 
-	private void createKeyboardOnOffItem(Menu menu) {
-		kbdOnItem = new MenuItem(menu, SWT.RADIO);
-		kbdOnItem.setText("On");
-		kbdOnItem.setSelection(skin.isOnKbd);
+	private void createKbdOnOffItem(Menu menu) {
+		hostKbdOnItem = new MenuItem(menu, SWT.RADIO);
+		hostKbdOnItem.setText("On");
+		hostKbdOnItem.setSelection(skin.isOnKbd);
 
-		kbdOffItem = new MenuItem(menu, SWT.RADIO);
-		kbdOffItem.setText("Off");
-		kbdOffItem.setSelection(!skin.isOnKbd);
+		hostKbdOffItem = new MenuItem(menu, SWT.RADIO);
+		hostKbdOffItem.setText("Off");
+		hostKbdOffItem.setSelection(!skin.isOnKbd);
 
-		SelectionAdapter hostKeyboardListener = skin.createHostKeyboardMenuListener();
-		kbdOnItem.addSelectionListener(hostKeyboardListener);
-		kbdOffItem.addSelectionListener(hostKeyboardListener);
+		SelectionAdapter hostKbdListener = skin.createHostKbdMenuListener();
+		hostKbdOnItem.addSelectionListener(hostKbdListener);
+		hostKbdOffItem.addSelectionListener(hostKbdListener);
 	}
 
 	private void createRamDumpItem(Menu menu, String name) {

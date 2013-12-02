@@ -96,7 +96,7 @@ public class SpecialKeyWindow extends SkinWindow {
 	private boolean isTouch;
 
 	public SpecialKeyWindow(EmulatorSkin skin, String layoutName) {
-		super(skin.getShell(), SWT.RIGHT | SWT.CENTER);
+		super(skin.getShell(), KeyWindowKeeper.DEFAULT_DOCK_POSITION);
 
 		this.parent = skin.getShell();
 		this.shell = new Shell(parent.getDisplay() /* for Mac & Always on Top */,

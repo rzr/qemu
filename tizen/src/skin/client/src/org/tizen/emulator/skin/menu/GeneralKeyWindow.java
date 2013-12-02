@@ -100,7 +100,7 @@ public class GeneralKeyWindow extends SkinWindow {
 
 	public GeneralKeyWindow(EmulatorSkin skin,
 			GeneralKeyWindowImageRegistry imageRegstry, List<KeyMapType> keyMapList) {
-		super(skin.getShell(), SWT.RIGHT | SWT.CENTER);
+		super(skin.getShell(), KeyWindowKeeper.DEFAULT_DOCK_POSITION);
 
 		this.skin = skin;
 		this.parent = skin.getShell();

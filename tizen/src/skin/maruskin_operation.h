@@ -66,6 +66,7 @@ void free_screenshot_info(QemuSurfaceInfo *);
 
 void do_open_shell(void);
 void do_host_kbd_enable(bool on);
+void do_interpolation_enable(bool on);
 void do_ram_dump(void);
 void do_guestmemory_dump(void);
 

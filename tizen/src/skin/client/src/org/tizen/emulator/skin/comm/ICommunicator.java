@@ -203,6 +203,7 @@ public interface ICommunicator extends Runnable {
 		SEND_RAM_DUMP((short) 18),
 		SEND_GUEST_DUMP((short) 19),
 		SEND_ECP_PORT_REQ((short) 20),
+		SEND_INTERPOLATION_STATE((short) 21),
 
 		RESPONSE_HEART_BEAT((short) 900),
 		RESPONSE_DRAW_FRAME((short) 901),
@@ -257,7 +258,8 @@ public interface ICommunicator extends Runnable {
 		RECV_ECS_STARTED((short) 802),
 		RECV_DRAW_FRAME((short) 900),
 		RECV_DRAW_BLANK_GUIDE((short) 901),
-		RECV_SHUTDOWN((short) 999);
+		RECV_EMUL_RESET((short) 998),
+		RECV_EMUL_SHUTDOWN((short) 999);
 
 		private short value;
 

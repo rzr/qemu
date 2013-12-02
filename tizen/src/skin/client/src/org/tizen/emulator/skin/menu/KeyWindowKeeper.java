@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.custom.SkinWindow;
@@ -41,6 +42,8 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinUtil;
 
 public class KeyWindowKeeper {
+	public static final int DEFAULT_DOCK_POSITION = (SWT.RIGHT | SWT.CENTER);
+
 	private static Logger logger =
 			SkinLogger.getSkinLogger(KeyWindowKeeper.class).getLogger();
 
@@ -82,8 +85,7 @@ public class KeyWindowKeeper {
 		/* create a Key Window */
 		determineLayout();
 
-		if (isGeneralKeyWindow() == true
-				|| skin.getPopupMenu().keyWindowItem.getMenu() == null) {
+		if (isGeneralKeyWindow() == true) {
 			if (imageRegstry == null) {
 				logger.warning("GeneralKeyWindowImageRegistry is null");
 				return;
@@ -106,9 +108,14 @@ public class KeyWindowKeeper {
 
 			keyWindow = new GeneralKeyWindow(skin, imageRegstry, keyMapList);
 		} else {
-			// TODO:
-			String layoutName =
-					skin.getPopupMenu().keyWindowItem.getMenu().getItem(indexLayout).getText();
+			Menu keywindowMenu = skin.getPopupMenu().keyWindowItem.getMenu();
+			MenuItem layout = keywindowMenu.getItem(indexLayout);
+			if (layout == null) {
+				layout = keywindowMenu.getItem(0);
+				layout.setSelection(true);
+			}
+
+			String layoutName = layout.getText();
 			logger.info("generate a \'" + layoutName + "\' key window!");
 
 			keyWindow = new SpecialKeyWindow(skin, layoutName);
@@ -161,6 +168,8 @@ public class KeyWindowKeeper {
 		if (keywindowItem != null && keywindowItem.getMenu() != null) {
 			logger.info("key window has a special layout");
 
+			indexLayout = 0;
+
 			MenuItem[] layouts = keywindowItem.getMenu().getItems();
 			for (int i = 0; i < layouts.length; i++) {
 				MenuItem layout = layouts[i];
@@ -195,13 +204,9 @@ public class KeyWindowKeeper {
 			if (isGeneralKeyWindow() == true) {
 				return keywindowMenu.getSelection();
 			} else {
-				if (keywindowMenu.getMenu() == null) {
-					logger.info("Special KeyWindow menu item is null");
-				} else {
-					for (MenuItem layout : keywindowMenu.getMenu().getItems()) {
-						if (layout.getSelection() == true) {
-							return true;
-						}
+				for (MenuItem layout : keywindowMenu.getMenu().getItems()) {
+					if (layout.getSelection() == true) {
+						return true;
 					}
 				}
 			}
@@ -217,10 +222,9 @@ public class KeyWindowKeeper {
 			if (isGeneralKeyWindow() == true) {
 				keywindowMenu.setSelection(on);
 			} else {
-				if (keywindowMenu.getMenu() == null) {
-					logger.info("Special KeyWindow menu item is null");
-				} else {
-					keywindowMenu.getMenu().getItem(indexLayout).setSelection(on);
+				MenuItem layout = keywindowMenu.getMenu().getItem(indexLayout);
+				if (layout != null) {
+					layout.setSelection(on);
 				}
 			}
 		}

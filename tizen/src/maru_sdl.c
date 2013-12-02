@@ -57,6 +57,7 @@ static SDL_Surface *surface_guide; /* blank guide image */
 
 static double current_scale_factor = 1.0;
 static double current_screen_degree;
+static pixman_filter_t sdl_pixman_filter;
 
 static int sdl_alteration;
 
@@ -109,7 +110,8 @@ static void maru_do_pixman_dpy_surface(pixman_image_t *dst_image)
 }
 
 static SDL_Surface *maru_do_pixman_scale(SDL_Surface *rz_src,
-                                         SDL_Surface *rz_dst)
+                                         SDL_Surface *rz_dst,
+                                         pixman_filter_t filter)
 {
     pixman_image_t *src = NULL;
     pixman_image_t *dst = NULL;
@@ -132,7 +134,7 @@ static SDL_Surface *maru_do_pixman_scale(SDL_Surface *rz_src,
     pixman_f_transform_scale(&matrix_f, NULL, sx, sy);
     pixman_transform_from_pixman_f_transform(&matrix, &matrix_f);
     pixman_image_set_transform(src, &matrix);
-    pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
+    pixman_image_set_filter(src, filter, NULL, 0);
     pixman_image_composite(PIXMAN_OP_SRC, src, NULL, dst,
                            0, 0, 0, 0, 0, 0,
                            rz_dst->w, rz_dst->h);
@@ -190,7 +192,7 @@ static SDL_Surface *maru_do_pixman_rotate(SDL_Surface *rz_src,
     }
     pixman_transform_from_pixman_f_transform(&matrix, &matrix_f);
     pixman_image_set_transform(src, &matrix);
-    pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
+    //pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
     pixman_image_composite(PIXMAN_OP_SRC, src, NULL, dst,
                            0, 0, 0, 0, 0, 0,
                            rz_dst->w, rz_dst->h);
@@ -515,7 +517,8 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
                             guide->format->Rmask, guide->format->Gmask,
                             guide->format->Bmask, guide->format->Amask);
 
-                        scaled_guide = maru_do_pixman_scale(guide, scaled_guide);
+                        scaled_guide = maru_do_pixman_scale(
+                            guide, scaled_guide, PIXMAN_FILTER_BEST);
 
                         dst_x = (surface_screen->w - dst_w) / 2;
                         dst_y = (surface_screen->h - dst_h) / 2;
@@ -594,6 +597,21 @@ DisplayChangeListenerOps maru_dcl_ops = {
     .dpy_refresh       = qemu_ds_sdl_refresh,
 };
 
+void maruskin_sdl_interpolation(bool on)
+{
+    if (on == true) {
+        INFO("set PIXMAN_FILTER_BEST filter for image processing\n");
+
+        /* PIXMAN_FILTER_BILINEAR */
+        sdl_pixman_filter = PIXMAN_FILTER_BEST;
+    } else {
+        INFO("set PIXMAN_FILTER_FAST filter for image processing\n");
+
+        /* PIXMAN_FILTER_NEAREST */
+        sdl_pixman_filter = PIXMAN_FILTER_FAST;
+    }
+}
+
 static void qemu_update(void)
 {
     if (sdl_alteration == -1) {
@@ -616,7 +634,7 @@ static void qemu_update(void)
                 surface_qemu, rotated_screen,
                 (int)current_screen_degree);
             scaled_screen = maru_do_pixman_scale(
-                rotated_screen, scaled_screen);
+                rotated_screen, scaled_screen, sdl_pixman_filter);
 
             SDL_BlitSurface(scaled_screen, NULL, surface_screen, NULL);
         }
@@ -821,6 +839,7 @@ void maruskin_sdl_init(uint64 swt_handle,
 
     set_emul_resolution(display_width, display_height);
     set_emul_sdl_bpp(SDL_BPP);
+    maruskin_sdl_interpolation(false);
     init_multi_touch_state();
 
     if (blank_guide_enable == true) {

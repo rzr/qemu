@@ -74,6 +74,15 @@ void maru_display_fini(void)
 #endif
 }
 
+void maru_display_interpolation(bool on)
+{
+#ifndef CONFIG_USE_SHM
+    maruskin_sdl_interpolation(on);
+#else
+    /* do nothing */
+#endif
+}
+
 void maruskin_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide)

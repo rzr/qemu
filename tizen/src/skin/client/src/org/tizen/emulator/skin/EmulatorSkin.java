@@ -151,6 +151,7 @@ public class EmulatorSkin {
 	protected Point shellGrabPosition;
 	protected boolean isShutdownRequested;
 	public boolean isOnTop;
+	public boolean isOnInterpolation;
 	public boolean isKeyWindow;
 	public boolean isOnKbd;
 	private PopupMenu popupMenu;
@@ -189,6 +190,7 @@ public class EmulatorSkin {
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		this.isOnTop = isOnTop;
+		this.isOnInterpolation = false;
 		this.isOnKbd = false;
 		this.isKeyWindow = false;
 
@@ -423,6 +425,9 @@ public class EmulatorSkin {
 					config.setSkinProperty(
 							SkinPropertiesConstants.WINDOW_ONTOP,
 							Boolean.toString(isOnTop));
+					config.setSkinProperty(
+							SkinPropertiesConstants.WINDOW_INTERPOLATION,
+							Boolean.toString(isOnInterpolation));
 
 					int dockValue = 0;
 					SkinWindow keyWindow = getKeyWindowKeeper().getKeyWindow();
@@ -1257,8 +1262,8 @@ public class EmulatorSkin {
 		getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				getPopupMenu().kbdOnItem.setSelection(isOnKbd);
-				getPopupMenu().kbdOffItem.setSelection(!isOnKbd);
+				getPopupMenu().hostKbdOnItem.setSelection(isOnKbd);
+				getPopupMenu().hostKbdOffItem.setSelection(!isOnKbd);
 			}
 		});
 	}
@@ -1484,6 +1489,26 @@ public class EmulatorSkin {
 		return listener;
 	}
 
+	public SelectionAdapter createInterpolationMenuListener() {
+		SelectionAdapter listener = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				MenuItem item = (MenuItem) e.getSource();
+				if (item.getSelection()) {
+					boolean on = item.equals(popupMenu.interpolationHighItem);
+					isOnInterpolation = on;
+					logger.info("Scale interpolation : " + isOnInterpolation);
+
+					communicator.sendToQEMU(SendCommand.SEND_INTERPOLATION_STATE,
+							new BooleanData(on, SendCommand.SEND_INTERPOLATION_STATE.toString()),
+							false);
+				}
+			}
+		};
+
+		return listener;
+	}
+
 	public SelectionAdapter createKeyWindowMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
@@ -1516,14 +1541,13 @@ public class EmulatorSkin {
 					if (getKeyWindowKeeper().getKeyWindow() == null) {
 						if (getKeyWindowKeeper().getRecentlyDocked() != SWT.NONE) {
 							getKeyWindowKeeper().openKeyWindow(
-									getKeyWindowKeeper().getRecentlyDocked(),
-									false);
+									getKeyWindowKeeper().getRecentlyDocked(), false);
 
 							getKeyWindowKeeper().setRecentlyDocked(SWT.NONE);
 						} else {
 							/* opening for first time */
 							getKeyWindowKeeper().openKeyWindow(
-									SWT.RIGHT | SWT.CENTER, false);
+									KeyWindowKeeper.DEFAULT_DOCK_POSITION, false);
 						}
 					} else {
 						getKeyWindowKeeper().openKeyWindow(
@@ -1583,7 +1607,7 @@ public class EmulatorSkin {
 		return listener;
 	}
 
-	public SelectionAdapter createHostKeyboardMenuListener() {
+	public SelectionAdapter createHostKbdMenuListener() {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1592,17 +1616,17 @@ public class EmulatorSkin {
 							"Host Keyboard is not ready.\n"
 									+ "Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
-					popupMenu.kbdOnItem.setSelection(isOnKbd);
-					popupMenu.kbdOffItem.setSelection(!isOnKbd);
+					popupMenu.hostKbdOnItem.setSelection(isOnKbd);
+					popupMenu.hostKbdOffItem.setSelection(!isOnKbd);
 
 					return;
 				}
 
 				MenuItem item = (MenuItem) e.getSource();
 				if (item.getSelection()) {
-					boolean on = item.equals(popupMenu.kbdOnItem);
+					boolean on = item.equals(popupMenu.hostKbdOnItem);
 					isOnKbd = on;
-					logger.info("Host Keyboard " + isOnKbd);
+					logger.info("Host Keyboard : " + isOnKbd);
 
 					communicator.sendToQEMU(SendCommand.SEND_HOST_KBD_STATE,
 							new BooleanData(on, SendCommand.SEND_HOST_KBD_STATE.toString()), false);
