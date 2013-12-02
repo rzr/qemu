@@ -138,7 +138,8 @@ enum {
     SEND_ECS_STARTED = 802,
     SEND_DRAW_FRAME = 900,
     SEND_DRAW_BLANK_GUIDE = 901,
-    SEND_SHUTDOWN = 999,
+    SEND_EMUL_RESET = 998,
+    SEND_EMUL_SHUTDOWN = 999,
 };
 
 static int seq_req_id = 0;
@@ -227,7 +228,7 @@ void shutdown_skin_server(void)
 
     if (client_sock) {
         INFO("send shutdown to skin.\n");
-        if (0 > send_skin_header_only(client_sock, SEND_SHUTDOWN, 1)) {
+        if (0 > send_skin_header_only(client_sock, SEND_EMUL_SHUTDOWN, 1)) {
             ERR("fail to send SEND_SHUTDOWN to skin.\n");
             close_server_socket = 1;
         } else {
@@ -448,6 +449,21 @@ void notify_host_kbd_state(bool on)
             (unsigned char *)kbd_state_data, HOSTKBD_DATA_LENGTH, 0)) {
 
             ERR("fail to send SEND_HOST_KBD_STATE to skin\n");
+        }
+    } else {
+        INFO("skin client socket is not connected yet\n");
+    }
+}
+
+void notify_emul_reset(void)
+{
+    INFO("notify_emul_reset\n");
+
+    if (client_sock) {
+        if (0 > send_skin_header_only(
+            client_sock, SEND_EMUL_RESET, 1)) {
+
+            ERR("fail to send SEND_EMUL_RESET to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");

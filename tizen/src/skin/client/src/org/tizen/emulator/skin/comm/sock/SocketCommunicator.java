@@ -463,8 +463,15 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case RECV_SHUTDOWN: {
-					logger.info("received SHUTDOWN from QEMU");
+				case RECV_EMUL_RESET: {
+					logger.info("received EMUL_RESET from QEMU");
+
+					// TODO:
+
+					break;
+				}
+				case RECV_EMUL_SHUTDOWN: {
+					logger.info("received EMUL_SHUTDOWN from QEMU");
 
 					sendToQEMU(SendCommand.RESPONSE_SHUTDOWN, null, false);
 					terminate();

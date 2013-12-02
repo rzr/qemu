@@ -40,6 +40,7 @@
 enum {
     BOOTING = 0,
     BOOT_COMPLETED = 1,
+    RESET = 2,
 };
 
 /* keep it consistent with emulator-skin definition */

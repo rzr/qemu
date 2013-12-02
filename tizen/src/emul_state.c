@@ -31,6 +31,7 @@
 
 #include "maru_common.h"
 #include "emul_state.h"
+#include "skin/maruskin_server.h"
 #include "debug_ch.h"
 
 #if defined(CONFIG_LINUX)
@@ -166,6 +167,11 @@ void set_emulator_condition(int state)
 {
     if (state == BOOT_COMPLETED) {
         INFO("boot completed!\n");
+        // TODO:
+    } else if (state == RESET) {
+        INFO("reset emulator!\n");
+
+        notify_emul_reset();
     }
 
     _emul_state.emulator_condition = state;
