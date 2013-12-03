@@ -54,6 +54,7 @@
 #include "maru_common.h"
 #include "hw/maru_virtio_hwkey.h"
 #include "hw/maru_pm.h"
+#include "ecs/ecs.h"
 
 MULTI_DEBUG_CHANNEL(qemu, guest_server);
 
@@ -92,7 +93,7 @@ static void remove_sdb_client(GS_Client* client)
     pthread_mutex_unlock(&mutex_clilist);
 }
 
-static void send_to_client(GS_Client* client, int state)
+static void send_to_sdb_client(GS_Client* client, int state)
 {
     struct sockaddr_in sock_addr;
     int s, slen = sizeof(sock_addr);
@@ -143,7 +144,7 @@ void notify_all_sdb_clients(int state)
 
     QTAILQ_FOREACH(client, &clients, next)
     {
-        send_to_client(client, state);
+        send_to_sdb_client(client, state);
     }
     pthread_mutex_unlock(&mutex_clilist);
 
@@ -191,7 +192,7 @@ static void add_sdb_client(struct sockaddr_in* addr, int port, const char* seria
 
     INFO("Added new sdb client. ip: %s, port: %d, serial: %s\n", inet_ntoa((client->addr).sin_addr), client->port, client->serial);
 
-    send_to_client(client, runstate_check(RUN_STATE_SUSPENDED));
+    send_to_sdb_client(client, runstate_check(RUN_STATE_SUSPENDED));
 }
 
 static int parse_val(char* buff, unsigned char data, char* parsbuf)
@@ -461,6 +462,11 @@ static void wakeup_guest(void)
     maru_hwkey_event(RELEASE, POWER_KEY);
 }
 
+static void suspend_lock_state(int state)
+{
+    ecs_suspend_lock_state(state);
+}
+
 static void command_handler(char* readbuf, struct sockaddr_in* client_addr)
 {
     char command[RECV_BUF_SIZE];
@@ -481,6 +487,10 @@ static void command_handler(char* readbuf, struct sockaddr_in* client_addr)
         register_sdb_server(readbuf, client_addr);
     } else if (strcmp(command, "6\n") == 0) {
         wakeup_guest();
+    } else if (strcmp(command, "7\n") == 0) {
+        suspend_lock_state(SUSPEND_LOCK);
+    } else if (strcmp(command, "8\n") == 0) {
+        suspend_lock_state(SUSPEND_UNLOCK);
     } else {
         INFO("!!! unknown command : %s\n", command);
     }

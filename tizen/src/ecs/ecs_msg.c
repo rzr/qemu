@@ -142,6 +142,9 @@ static bool send_to_single_client(ECS__Master* master, ECS_Client *ccli)
 #endif
 static void msgproc_injector_ans(ECS_Client* ccli, const char* category, bool succeed)
 {
+    if (ccli == NULL) {
+        return;
+    }
     int catlen = 0;
     ECS__Master master = ECS__MASTER__INIT;
     ECS__InjectorAns ans = ECS__INJECTOR_ANS__INIT;
@@ -223,6 +226,24 @@ injector_req_fail:
     msgproc_injector_ans(ccli, cmd, ret);
     return false;
 }
+
+void ecs_suspend_lock_state(int state)
+{
+    int catlen;
+
+    ECS__InjectorReq msg = ECS__INJECTOR_REQ__INIT;
+    const char* category = "suspend";
+
+    catlen = strlen(category);
+    msg.category = (char*) g_malloc0(catlen + 1);
+    memcpy(msg.category, category, catlen);
+
+    msg.group = 5;
+    msg.action = state;
+
+    msgproc_injector_req(NULL, &msg);
+}
+
 #if 0
 void msgproc_checkversion_req(ECS_Client* ccli, ECS__CheckVersionReq* msg)
 {
@@ -438,6 +459,16 @@ bool ntf_to_injector(const char* data, const int len) {
     return true;
 }
 
+static bool injector_req_handle(const char* cat)
+{
+    if (!strncmp(cat, "suspend", 7)) {
+        ecs_suspend_lock_state(ecs_get_suspend_state());
+        return true;
+    }
+
+    return false;
+}
+
 bool send_injector_ntf(const char* data, const int len)
 {
     type_length length = 0;
@@ -453,6 +484,9 @@ bool send_injector_ntf(const char* data, const int len)
     read_val_char(data + catsize + 2, &group);
     read_val_char(data + catsize + 2 + 1, &action);
 
+    if (injector_req_handle(cat)) {
+        return true;
+    }
 
     const char* ijdata = (data + catsize + 2 + 1 + 1);
 
@@ -463,7 +497,6 @@ bool send_injector_ntf(const char* data, const int len)
 
     ntf.category = (char*) g_malloc(catsize + 1);
     strncpy(ntf.category, cat, 10);
-
 
     ntf.length = length;
     ntf.group = group;

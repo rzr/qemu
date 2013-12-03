@@ -3125,6 +3125,13 @@ STEXI
 @findex -disable-skin
 ETEXI
 
+DEF("ignore-suspend-lock", 0, QEMU_OPTION_ignore_suspend_lock, "", QEMU_ARCH_ALL)
+STEXI
+@item -ignore-suspend-lock
+@findex -ignore-suspend-lock
+Disable suspend lock statement in order to reach suspend power state
+ETEXI
+
 HXCOMM Internal use
 DEF("qtest", HAS_ARG, QEMU_OPTION_qtest, "", QEMU_ARCH_ALL)
 DEF("qtest-log", HAS_ARG, QEMU_OPTION_qtest_log, "", QEMU_ARCH_ALL)

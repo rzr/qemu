@@ -75,6 +75,18 @@ static int g_client_id = 1;
 
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
 
+static int suspend_state = 1;
+
+void ecs_set_suspend_state(int state)
+{
+    suspend_state = state;
+}
+
+int ecs_get_suspend_state(void)
+{
+    return suspend_state;
+}
+
 static char* get_emulator_ecs_log_path(void)
 {
     gchar *emulator_ecs_log_path = NULL;

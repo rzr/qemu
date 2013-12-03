@@ -125,7 +125,6 @@ struct Monitor {
     int suspend_cnt;
     uint8_t outbuf[OUT_BUF_SIZE];
     int outbuf_index;
-    CPUArchState *mon_cpu;
     void *password_opaque;
     QError *error;
     QLIST_HEAD(,mon_fd_t) fds;
@@ -217,6 +216,13 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg);
 
 /* version check  */
 //void send_ecs_version_check(ECS_Client* ccli);
+
+/* Suspend/resume */
+#define SUSPEND_LOCK   1
+#define SUSPEND_UNLOCK 0
+int ecs_get_suspend_state(void);
+void ecs_set_suspend_state(int state);
+void ecs_suspend_lock_state(int state);
 
 /* request */
 int accel_min_max(double value);

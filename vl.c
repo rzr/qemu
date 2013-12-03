@@ -189,6 +189,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "tizen/src/emul_state.h"
 #include "tizen/src/maru_display.h"
 #include "tizen/src/skin/maruskin_operation.h"
+#include "tizen/src/ecs/ecs.h"
 #endif
 
 //#define DEBUG_NET
@@ -3996,6 +3997,11 @@ int main(int argc, char **argv, char **envp)
                 exit(1);
 #endif
                 break;
+#ifdef CONFIG_MARU
+            case QEMU_OPTION_ignore_suspend_lock:
+                ecs_set_suspend_state(SUSPEND_UNLOCK);
+                break;
+#endif
             case QEMU_OPTION_object:
                 opts = qemu_opts_parse(qemu_find_opts("object"), optarg, 1);
                 if (!opts) {
