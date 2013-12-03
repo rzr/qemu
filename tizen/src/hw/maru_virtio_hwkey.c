@@ -233,8 +233,8 @@ static int virtio_hwkey_device_exit(DeviceState *qdev)
 
 static void virtio_hwkey_device_reset(VirtIODevice *vdev)
 {
-	INFO("reset hwkey device\n");
-	vqidx = 0;
+    INFO("reset hwkey device\n");
+    vqidx = 0;
 }
 
 static void virtio_hwkey_class_init(ObjectClass *klass, void *data)
@@ -243,7 +243,7 @@ static void virtio_hwkey_class_init(ObjectClass *klass, void *data)
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
     dc->exit = virtio_hwkey_device_exit;
     vdc->init = virtio_hwkey_device_init;
-	vdc->reset = virtio_hwkey_device_reset;
+    vdc->reset = virtio_hwkey_device_reset;
     vdc->get_features = virtio_hwkey_get_features;
 }
 

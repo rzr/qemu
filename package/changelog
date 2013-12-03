@@ -1,3 +1,7 @@
+* 1.7.2
+- added reset function for host keyboard
+- deleted blank in maru_virtio_hwkey.c
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-03
 * 1.7.1
 - method for initial scale factor value determining
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-11-26
