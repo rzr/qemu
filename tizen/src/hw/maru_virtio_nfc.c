@@ -77,9 +77,15 @@ static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const uint32_t len)
 {
-    MsgInfo* _msg = (MsgInfo*) malloc(sizeof(MsgInfo));
-    if (!_msg)
+    if (unlikely(!virtio_queue_ready(vio_nfc->rvq))) {
+        ERR("virtio queue is not ready\n");
         return false;
+    }
+
+    MsgInfo* _msg = (MsgInfo*) malloc(sizeof(MsgInfo));
+    if (!_msg) {
+        return false;
+    }
 
     memset(&_msg->info, 0, sizeof(nfc_msg_info));
 
@@ -119,8 +125,9 @@ static void flush_nfc_recv_queue(void)
     while (!QTAILQ_EMPTY(&nfc_recv_msg_queue))
     {
         MsgInfo* msginfo = QTAILQ_FIRST(&nfc_recv_msg_queue);
-        if (!msginfo)
+        if (!msginfo) {
             break;
+        }
 
         VirtQueueElement elem;
         index = virtqueue_pop(vio_nfc->rvq, &elem);
