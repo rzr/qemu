@@ -52,11 +52,6 @@ public class EmulatorFingers {
 	private static final int FINGER_POINT_SIZE = 32;
 	private static final int FINGER_POINT_ALPHA = 0x7E;
 
-	private static final int RED_MASK = 0x0000FF00;
-	private static final int GREEN_MASK = 0x00FF0000;
-	private static final int BLUE_MASK = 0xFF000000;
-	private static final int COLOR_DEPTH = 32;
-
 	private Logger logger =
 			SkinLogger.getSkinLogger(EmulatorFingers.class).getLogger();
 
@@ -77,12 +72,12 @@ public class EmulatorFingers {
 	/**
 	 *  Constructor
 	 */
-	EmulatorFingers(int maximum,
-			EmulatorSkinState currentState, SocketCommunicator communicator) {
+	EmulatorFingers(int maximum, EmulatorSkinState currentState,
+			SocketCommunicator communicator, PaletteData palette) {
 		this.currentState = currentState;
 		this.communicator = communicator;
 
-		initMultiTouchState(maximum);
+		initMultiTouchState(maximum, palette);
 	}
 
 	static class FingerPoint {
@@ -138,7 +133,7 @@ public class EmulatorFingers {
 		return null;
 	}
 
-	private void initMultiTouchState(int maximum) {
+	private void initMultiTouchState(int maximum, PaletteData palette) {
 		multiTouchEnable = 0;
 
 		int fingerCntMax = maximum;
@@ -160,10 +155,9 @@ public class EmulatorFingers {
 
 		Color pointOutlineColor = new Color(Display.getCurrent(), 0xDD, 0xDD, 0xDD);
 		Color pointColor = new Color(Display.getCurrent(), 0x0F, 0x0F, 0x0F);
-		PaletteData palette = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
 
 		ImageData imageData = new ImageData(
-				fingerPointSize + 4, fingerPointSize + 4, COLOR_DEPTH, palette);
+				fingerPointSize + 4, fingerPointSize + 4, 32, palette);
 		imageData.transparentPixel = 0;
 		this.fingerPointImage = new Image(Display.getCurrent(), imageData);
 

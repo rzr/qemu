@@ -61,10 +61,7 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class EmulatorShmSkin extends EmulatorSkin {
-	public static final int RED_MASK = 0x00FF0000;
-	public static final int GREEN_MASK = 0x0000FF00;
-	public static final int BLUE_MASK = 0x000000FF;
-	public static final int COLOR_DEPTH = 24; /* no need to Alpha channel */
+	public static final int DISPLAY_COLOR_DEPTH = 24; /* no need to Alpha channel */
 
 	/* touch values */
 	protected static int pressingX = -1, pressingY = -1;
@@ -97,7 +94,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public native int shmdt();
 	public native int getPixels(int[] array);
 
-	private PaletteData paletteData;
+	private PaletteData palette;
 	private PollFBThread pollThread;
 	private Image imageGuide;
 
@@ -120,7 +117,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private Runnable runnable;
 		private int intervalWait;
 
-		public PollFBThread(int widthFB, int heightFB) {
+		/**
+		 *  Constructor
+		 */
+		public PollFBThread(PaletteData paletteDisplay, int widthFB, int heightFB) {
 			this.display = Display.getDefault();
 			this.widthFB = widthFB;
 			this.heightFB = heightFB;
@@ -128,7 +128,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.arrayFramebuffer = new int[sizeFramebuffer];
 
 			this.dataFramebuffer =
-					new ImageData(widthFB, heightFB, COLOR_DEPTH, paletteData);
+					new ImageData(widthFB, heightFB, DISPLAY_COLOR_DEPTH, paletteDisplay);
 			this.imageFramebuffer =
 					new Image(Display.getDefault(), dataFramebuffer);
 
@@ -217,13 +217,12 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			SkinInformation skinInfo, boolean isOnTop) {
 		super(config, skinInfo, SWT.NONE, isOnTop);
 
-		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
+		/* ARGB */
+		this.palette = new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF);
 
 		/* get MaxTouchPoint from startup argument */
 		this.maxTouchPoint = config.getArgInt(
 				ArgsConstants.INPUT_TOUCH_MAXPOINT);
-
-		this.imageGuide = null;
 	}
 
 	@Override
@@ -241,7 +240,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public StartData initSkin() {
 		initLayout();
 
-		finger = new EmulatorFingers(maxTouchPoint, currentState, communicator);
+		finger = new EmulatorFingers(maxTouchPoint,
+				currentState, communicator, palette);
+
 		if (SwtUtil.isMacPlatform() == true) {
 			multiTouchKey = SWT.COMMAND;
 		} else {
@@ -302,7 +303,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		}
 
 		/* display updater thread */
-		pollThread = new PollFBThread(
+		pollThread = new PollFBThread(palette,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight());
 
@@ -628,11 +629,11 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			return;
 		}
 
-		try {
-			screenShotDialog = new ShmScreenShotWindow(shell, this, config,
-					imageRegistry.getIcon(IconName.SCREENSHOT));
-			screenShotDialog.open();
+		screenShotDialog = new ShmScreenShotWindow(this, config,
+				palette, imageRegistry.getIcon(IconName.SCREENSHOT));
 
+		try {
+			screenShotDialog.open();
 		} catch (ScreenShotException ex) {
 			screenShotDialog = null;
 			logger.log(Level.SEVERE, ex.getMessage(), ex);

@@ -33,6 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.PaletteData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.OptionType;
@@ -45,8 +46,12 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class EmulatorSdlSkin extends EmulatorSkin {
+	public static final int DISPLAY_COLOR_DEPTH = 32;
+
 	private Logger logger = SkinLogger.getSkinLogger(
 			EmulatorSdlSkin.class).getLogger();
+
+	private PaletteData palette;
 
 	/**
 	 *  Constructor
@@ -54,6 +59,9 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	public EmulatorSdlSkin(EmulatorConfig config,
 			SkinInformation skinInfo, boolean isOnTop) {
 		super(config, skinInfo, SWT.EMBEDDED, isOnTop);
+
+		/* BGRA */
+		this.palette = new PaletteData(0x0000FF00, 0x00FF0000, 0xFF000000);
 	}
 
 	@Override
@@ -149,11 +157,11 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 			return;
 		}
 
-		try {
-			screenShotDialog = new SdlScreenShotWindow(shell, this, config,
-					imageRegistry.getIcon(IconName.SCREENSHOT));
-			screenShotDialog.open();
+		screenShotDialog = new SdlScreenShotWindow(this, config,
+				palette, imageRegistry.getIcon(IconName.SCREENSHOT));
 
+		try {
+			screenShotDialog.open();
 		} catch (ScreenShotException ex) {
 			screenShotDialog = null;
 			logger.log(Level.SEVERE, ex.getMessage(), ex);
@@ -169,5 +177,4 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 					SWT.ICON_WARNING, config);
 		}
 	}
-
 }

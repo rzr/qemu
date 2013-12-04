@@ -1,5 +1,5 @@
 /**
- * Capture a screenshot of the Emulator framebuffer
+ * Screenshot Window
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -32,14 +32,13 @@ import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSdlSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.log.SkinLogger;
 
@@ -47,41 +46,44 @@ public class SdlScreenShotWindow extends ScreenShotDialog {
 	private static Logger logger = SkinLogger.getSkinLogger(
 			SdlScreenShotWindow.class).getLogger();
 
+	private PaletteData palette;
+
 	/**
 	 * @brief constructor
 	 * @param Image icon : screenshot window icon resource
 	*/
-	public SdlScreenShotWindow(Shell parent,
-			EmulatorSdlSkin emulatorSkin, EmulatorConfig config,
-			Image icon) throws ScreenShotException {
-		super(parent, emulatorSkin, config, icon);
+	public SdlScreenShotWindow(EmulatorSdlSkin emulatorSkin,
+			EmulatorConfig config, PaletteData palette, Image icon) {
+		super(emulatorSkin, config, icon);
+
+		this.palette = palette;
 	}
 
 	protected void capture() throws ScreenShotException {
 		logger.info("screenshot capture");
 
-		DataTranfer dataTranfer = emulatorSkin.communicator.sendDataToQEMU(
+		DataTranfer dataTranfer = skin.communicator.sendDataToQEMU(
 				SendCommand.SEND_SCREENSHOT_REQ, null, true);
 		byte[] receivedData =
-				emulatorSkin.communicator.getReceivedData(dataTranfer);
+				skin.communicator.getReceivedData(dataTranfer);
 
 		if (null != receivedData) {
-			int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
-			int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
-			ImageData imageData = new ImageData(
-					width, height, 32, paletteData_BGRA, 1, receivedData);
+			int width = skin.getEmulatorSkinState().getCurrentResolutionWidth();
+			int height = skin.getEmulatorSkinState().getCurrentResolutionHeight();
+			ImageData imageData = new ImageData(width, height,
+					EmulatorSdlSkin.DISPLAY_COLOR_DEPTH, palette, 1, receivedData);
 
 			RotationInfo rotation = getCurrentRotation();
 			imageData = rotateImageData(imageData, rotation);
-			
-			Image tempImage = image;
-			image = new Image(Display.getDefault(), imageData);
+
+			Image tempImage = imageFrame;
+			imageFrame = new Image(Display.getDefault(), imageData);
 
 			if (tempImage != null) {
 				tempImage.dispose();
 			}
 
-			imageCanvas.redraw();
+			canvasFrame.redraw();
 		} else {
 			throw new ScreenShotException("Fail to get image data.");
 		}

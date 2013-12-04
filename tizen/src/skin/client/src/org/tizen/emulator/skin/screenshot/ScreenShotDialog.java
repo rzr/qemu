@@ -1,5 +1,5 @@
 /**
- * Capture a screenshot of the Emulator framebuffer
+ * Screenshot Window
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -53,11 +53,12 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Canvas;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
@@ -69,7 +70,6 @@ import org.eclipse.swt.widgets.ToolItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
@@ -80,50 +80,51 @@ import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class ScreenShotDialog {
-	public final static String DEFAULT_FILE_EXTENSION = "png";
-	public static final int CANVAS_MARGIN = 30;
-	public static final int TOOLITEM_COOLTIME = 200;
+	private final static String DETAIL_SCREENSHOT_WINDOW_TITLE = "Screen Shot";
+
+	private final static String DEFAULT_FILE_EXTENSION = "png";
+	private static final int CANVAS_MARGIN = 30;
+	private static final int TOOLITEM_COOLTIME = 200;
+	private static final double MIN_SCALE_FACTOR = 12.5;
+	private static final double MAX_SCALE_FACTOR = 800;
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(ScreenShotDialog.class).getLogger();
 
-	protected PaletteData paletteData_ARGB;
-	protected PaletteData paletteData_BGRA;
-	protected PaletteData paletteData_RGBA;
-	protected Image image;
-	protected Canvas imageCanvas;
-	private Shell shell;
-	private ScrolledComposite scrollComposite;
-	private Label label;
-
-	protected EmulatorSkin emulatorSkin;
+	protected EmulatorSkin skin;
 	protected EmulatorConfig config;
 
-	private RotationInfo currentRotation;
-	private boolean reserveImage;
+	private Shell shell;
+	private ScrolledComposite scrollComposite;
+	protected Canvas canvasFrame;
+	protected Image imageFrame;
+	private Composite statusComposite;
+	private Label labelResolution;
+	private Label labelScale;
+
 	private ToolItem refreshItem;
 	private ToolItem copyItem;
-	private ToolItem increaseScaleItem;
-	private ToolItem decreaseScaleItem;
+	private ToolItem zoomInItem;
+	private ToolItem zoomOutItem;
 	private double scaleLevel;
 
 	/**
 	 * @brief constructor
 	 * @param Image icon : screenshot window icon resource
 	*/
-	public ScreenShotDialog(Shell parent,
-			final EmulatorSkin emulatorSkin, EmulatorConfig config,
-			Image icon) throws ScreenShotException {
-		this.emulatorSkin = emulatorSkin;
+	public ScreenShotDialog(final EmulatorSkin skin,
+			EmulatorConfig config, Image icon) {
+		this.skin = skin;
 		this.config = config;
-		this.scaleLevel = 100d;
+		this.scaleLevel = 100;
 
 		if (SwtUtil.isMacPlatform() == false) {
-			shell = new Shell(parent, SWT.SHELL_TRIM);
+			shell = new Shell(skin.getShell(), SWT.SHELL_TRIM);
 		} else {
-			shell = new Shell(parent.getDisplay(), SWT.SHELL_TRIM);
+			shell = new Shell(skin.getShell().getDisplay(), SWT.SHELL_TRIM);
 		}
-		shell.setText("Screen Shot - " + SkinUtil.makeEmulatorName(config));
+		shell.setText(DETAIL_SCREENSHOT_WINDOW_TITLE
+				+ " - " + SkinUtil.makeEmulatorName(config));
 
 		/* To prevent the icon switching on Mac */
 		if (SwtUtil.isMacPlatform() == false) {
@@ -137,15 +138,13 @@ public class ScreenShotDialog {
 			public void handleEvent(Event event) {
 				logger.info("ScreenShot Window is closed");
 
-				if (null != image) {
-					if (!reserveImage) {
-						image.dispose();
-					}
+				if (null != imageFrame) {
+					imageFrame.dispose();
 				}
 
-				emulatorSkin.screenShotDialog = null;
+				skin.screenShotDialog = null;
 			}
-		} );
+		});
 
 		GridLayout gridLayout = new GridLayout();
 		gridLayout.marginWidth = 0;
@@ -154,63 +153,44 @@ public class ScreenShotDialog {
 		gridLayout.verticalSpacing = 0;
 		shell.setLayout(gridLayout);
 
-		makeMenuBar(shell);
+		/* tool bar */
+		createToolBar(shell);
 
-		scrollComposite = new ScrolledComposite( shell, SWT.V_SCROLL | SWT.H_SCROLL );
-		GridData gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
-		scrollComposite.setLayoutData( gridData );
+		/* screenshot canvas */
+		scrollComposite = new ScrolledComposite(shell, SWT.V_SCROLL | SWT.H_SCROLL);
+		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		scrollComposite.setLayoutData(gridData);
 
-		scrollComposite.setExpandHorizontal( true );
-		scrollComposite.setExpandVertical( true );
+		scrollComposite.setExpandHorizontal(true);
+		scrollComposite.setExpandVertical(true);
 
-		currentRotation = getCurrentRotation();
+		canvasFrame = new Canvas(scrollComposite, SWT.NONE);
+		canvasFrame.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
 
-		imageCanvas = new Canvas( scrollComposite, SWT.NONE );
-		imageCanvas.setBackground( shell.getDisplay().getSystemColor( SWT.COLOR_DARK_GRAY ) );
-		imageCanvas.addPaintListener( new PaintListener() {
+		canvasFrame.addPaintListener(new PaintListener() {
 			@Override
-			public void paintControl( PaintEvent e ) {
+			public void paintControl(PaintEvent e) {
+				logger.fine("draw frame");
 
-				logger.fine( "paint image." );
+				if (null != imageFrame && !imageFrame.isDisposed()) {
+					e.gc.setInterpolation(SWT.NONE);
 
-				if ( null != image && !image.isDisposed() ) {
-					//e.gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-					Rectangle r = image.getBounds();
+					Rectangle r = imageFrame.getBounds();
 					//logger.info("r.width: " +r.width +", r.height " + r.height);
-
-					e.gc.drawImage(image, 0, 0, r.width, r.height,
+					e.gc.drawImage(imageFrame, 0, 0, r.width, r.height,
 							CANVAS_MARGIN, CANVAS_MARGIN,
 							(int)(r.width  * scaleLevel / 100),
 							(int)(r.height * scaleLevel / 100));
 				}
 			}
-		} );
+		});
 
-		paletteData_ARGB = new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF);
+		scrollComposite.setContent(canvasFrame);
 
-		/* for Endian */
-		paletteData_BGRA = new PaletteData(0x0000FF00, 0x00FF0000, 0xFF000000);
-		/* for clipboard on Windows */
-		paletteData_RGBA = new PaletteData(0xFF000000, 0x00FF0000, 0x0000FF00);
-
-		scrollComposite.setContent(imageCanvas);
-
-		try {
-			clickShutter();
-		} catch ( ScreenShotException e ) {
-			if ( !shell.isDisposed() ) {
-				shell.close();
-			}
-			throw e;
-		}
+		/* status bar */
+		createStatusBar(shell);
 
 		shell.pack();
-
-		label = new Label(shell, SWT.NORMAL);
-		label.setText(" Resolution : " +
-				config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) + "x" +
-				config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " +
-				scaleLevel + "%");
 
 //		imageCanvas.addMouseMoveListener(new MouseMoveListener() {
 //		      public void mouseMove(MouseEvent e) {
@@ -234,12 +214,12 @@ public class ScreenShotDialog {
 //		      		}
 //		 });
 
-		Rectangle monitorBounds = Display.getDefault().getBounds();
+		final Rectangle monitorBounds = Display.getDefault().getBounds();
 		logger.info("host monitor display bounds : " + monitorBounds);
-		Rectangle emulatorBounds = parent.getBounds();
+		final Rectangle emulatorBounds = skin.getShell().getBounds();
 		logger.info("current Emulator window bounds : " + emulatorBounds);
 		Rectangle dialogBounds = shell.getBounds();
-		logger.info("current ScreenShot Dialog bounds : " + dialogBounds);
+		logger.info("current ScreenShot window bounds : " + dialogBounds);
 
 		/* size correction */
 		shell.setSize(emulatorBounds.width, emulatorBounds.height);
@@ -259,35 +239,21 @@ public class ScreenShotDialog {
 		}
 		shell.setLocation(x, y);
 
-		dialogBounds = shell.getBounds();
-		logger.info("current ScreenShot Dialog bounds : " + dialogBounds);
+		logger.info("ScreenShot window bounds : " + shell.getBounds());
 	}
-
-//	private void drawRotatedImage( GC gc, int width, int height ) {
-//
-//		Transform transform = new Transform( shell.getDisplay() );
-//
-//		float angle = currentRotation.angle();
-//		transform.rotate( angle );
-//
-//		if ( RotationInfo.LANDSCAPE.equals( currentRotation ) ) {
-//			transform.translate( -width - ( 2 * CANVAS_MARGIN ), 0 );
-//		} else if ( RotationInfo.REVERSE_PORTRAIT.equals( currentRotation ) ) {
-//			transform.translate( -width - ( 2 * CANVAS_MARGIN ), -height - ( 2 * CANVAS_MARGIN ) );
-//		} else if ( RotationInfo.REVERSE_LANDSCAPE.equals( currentRotation ) ) {
-//			transform.translate( 0, -height - ( 2 * CANVAS_MARGIN ) );
-//		}
-//		gc.setTransform( transform );
-//
-//		gc.drawImage( image, CANVAS_MARGIN, CANVAS_MARGIN );
-//
-//		transform.dispose();
-//
-//	}
 
 	private void clickShutter() throws ScreenShotException {
 		capture();
-		arrageImageLayout();
+
+		/* set as 100% view */
+		setScaleLevel(100);
+
+		shell.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				updateWindow();
+			}
+		});
 	}
 
 	protected void capture() throws ScreenShotException {
@@ -300,63 +266,57 @@ public class ScreenShotDialog {
 
 	private void setScaleLevel(double level) {
 		scaleLevel = level;
+		logger.info("set scaling level : " + scaleLevel);
 	}
-	
+
 	private void downScaleLevel() {
 		scaleLevel /= 2;
 		logger.info("down scaling level : " + scaleLevel);
 	}
-	
+
 	private void upScaleLevel() {
 		scaleLevel *= 2;
 		logger.info("up scaling level : " + scaleLevel);
 	}
-	
-	private void arrageImageLayout() {
 
-		ImageData imageData = image.getImageData();
-		scaleLevel = 100d;
-		int width = imageData.width + ( 2 * CANVAS_MARGIN );
-		int height = imageData.height + ( 2 * CANVAS_MARGIN );
-		logger.info("arrageImageLayout width:" + width + ", height: "+ height);
-		scrollComposite.setMinSize( width, height );
-		
-		RotationInfo rotation = getCurrentRotation();
-		if ( !currentRotation.equals( rotation ) ) { // reserve changed shell size by user
-			shell.pack();
+	private void updateWindow() {
+		logger.info("update");
+
+		if (imageFrame != null) {
+			ImageData imageData = imageFrame.getImageData();
+			int width = (int)(imageData.width * scaleLevel / 100) + (2 * CANVAS_MARGIN);
+			int height = (int)(imageData.height * scaleLevel / 100) + (2 * CANVAS_MARGIN);
+			logger.info("update composite width : " + width + ", height : " + height);
+
+			scrollComposite.setMinSize(width, height);
 		}
 
-		currentRotation = rotation;
-
-	}
-	
-	private void scaledImageLayout() {
-
-		ImageData imageData = image.getImageData();
-
-		int width = imageData.width + ( 2 * CANVAS_MARGIN );
-		int height = imageData.height + ( 2 * CANVAS_MARGIN );
-		logger.info("arrageImageLayout2 width:" + width + ", height: "+ height);
-		int reWidth = (int)(width * scaleLevel * 1/100);
-		int reHeight = (int)(height * scaleLevel * 1/100);
-		logger.info("arrageImageLayout2 Rewidth:" + reWidth + ", Reheight: "+ reHeight);
-		scrollComposite.setMinSize( (int)(imageData.width * scaleLevel * 1/100) + ( 2 * CANVAS_MARGIN ), (int)(imageData.height * scaleLevel * 1/100) + ( 2 * CANVAS_MARGIN ));
-		
-		RotationInfo rotation = getCurrentRotation();
-		if ( !currentRotation.equals( rotation ) ) { // reserve changed shell size by user
-			shell.pack();
+		/* update tool bar */
+		if (getScaleLevel() >= MAX_SCALE_FACTOR) {
+			zoomInItem.setEnabled(false);
+			zoomOutItem.setEnabled(true);
+		} else if (getScaleLevel() <= MIN_SCALE_FACTOR) {
+			zoomOutItem.setEnabled(false);
+			zoomInItem.setEnabled(true);
+		} else {
+			zoomInItem.setEnabled(true);
+			zoomOutItem.setEnabled(true);
 		}
 
-		currentRotation = rotation;
+		/* update image */
+		canvasFrame.redraw();
 
+		/* update status bar */
+		if (labelScale != null) {
+			labelScale.setText(" " + scaleLevel + "% ");
+			labelScale.update();
+		}
 	}
-	
 
-	protected ImageData rotateImageData( ImageData srcData, RotationInfo rotation ) {
-
+	protected ImageData rotateImageData(ImageData srcData, RotationInfo rotation) {
 		int direction = SWT.NONE;
 
-		switch ( rotation ) {
+		switch (rotation) {
 		case PORTRAIT:
 			return srcData;
 		case LANDSCAPE:
@@ -372,123 +332,126 @@ public class ScreenShotDialog {
 			return srcData;
 		}
 
-		ImageData rotatedData = rotateImageData( srcData, direction );
+		ImageData rotatedData = rotateImageData(srcData, direction);
 		return rotatedData;
-
 	}
 
 	/*
 	 * refrence web page : http://www.java2s.com/Code/Java/SWT-JFace-Eclipse/Rotateandflipanimage.htm
 	 */
-	private ImageData rotateImageData( ImageData srcData, int direction ) {
+	private ImageData rotateImageData(ImageData srcData, int direction) {
 		int bytesPerPixel = srcData.bytesPerLine / srcData.width;
-		int destBytesPerLine = ( direction == SWT.DOWN ) ? srcData.width * bytesPerPixel : srcData.height
-				* bytesPerPixel;
+		int destBytesPerLine = (direction == SWT.DOWN) ?
+				srcData.width * bytesPerPixel : srcData.height * bytesPerPixel;
+
 		byte[] newData = new byte[srcData.data.length];
-		int width = 0, height = 0;
-		for ( int srcY = 0; srcY < srcData.height; srcY++ ) {
-			for ( int srcX = 0; srcX < srcData.width; srcX++ ) {
-				int destX = 0, destY = 0, destIndex = 0, srcIndex = 0;
-				switch ( direction ) {
-				case SWT.LEFT: // left 90 degrees
+		int srcWidth = 0, srcHeight = 0;
+
+		int destX = 0, destY = 0, destIndex = 0, srcIndex = 0;
+		for (int srcY = 0; srcY < srcData.height; srcY++) {
+			for (int srcX = 0; srcX < srcData.width; srcX++) {
+				switch (direction) {
+				case SWT.LEFT: /* left 90 degrees */
 					destX = srcY;
 					destY = srcData.width - srcX - 1;
-					width = srcData.height;
-					height = srcData.width;
+					srcWidth = srcData.height;
+					srcHeight = srcData.width;
 					break;
-				case SWT.RIGHT: // right 90 degrees
+				case SWT.RIGHT: /* right 90 degrees */
 					destX = srcData.height - srcY - 1;
 					destY = srcX;
-					width = srcData.height;
-					height = srcData.width;
+					srcWidth = srcData.height;
+					srcHeight = srcData.width;
 					break;
-				case SWT.DOWN: // 180 degrees
+				case SWT.DOWN: /* 180 degrees */
 					destX = srcData.width - srcX - 1;
 					destY = srcData.height - srcY - 1;
-					width = srcData.width;
-					height = srcData.height;
+					srcWidth = srcData.width;
+					srcHeight = srcData.height;
 					break;
 				}
-				destIndex = ( destY * destBytesPerLine ) + ( destX * bytesPerPixel );
-				srcIndex = ( srcY * srcData.bytesPerLine ) + ( srcX * bytesPerPixel );
-				System.arraycopy( srcData.data, srcIndex, newData, destIndex, bytesPerPixel );
+
+				destIndex = (destY * destBytesPerLine) + (destX * bytesPerPixel);
+				srcIndex = (srcY * srcData.bytesPerLine) + (srcX * bytesPerPixel);
+				System.arraycopy(srcData.data, srcIndex, newData, destIndex, bytesPerPixel);
 			}
 		}
-		// destBytesPerLine is used as scanlinePad to ensure that no padding is
-		// required
-		return new ImageData( width, height, srcData.depth, srcData.palette, destBytesPerLine, newData );
 
+		/* destBytesPerLine is used as scanlinePad
+		 * to ensure that no padding is required */
+		return new ImageData(srcWidth, srcHeight,
+				srcData.depth, srcData.palette, destBytesPerLine, newData);
 	}
 
 	protected RotationInfo getCurrentRotation() {
 		short currentRotationId =
-				emulatorSkin.getEmulatorSkinState().getCurrentRotationId();
+				skin.getEmulatorSkinState().getCurrentRotationId();
 		RotationInfo rotationInfo = RotationInfo.getValue(currentRotationId);
 
 		return rotationInfo;
 	}
 
-	private void makeMenuBar(final Shell shell) {
-		ToolBar toolBar = new ToolBar(shell, SWT.HORIZONTAL);
+	private void createToolBar(final Shell parent) {
+		ImageRegistry imageRegistry = skin.getImageRegistry();
+
+		ToolBar toolBar = new ToolBar(parent, SWT.HORIZONTAL | SWT.BORDER);
 		GridData gridData = new GridData(
 				GridData.FILL_HORIZONTAL, GridData.CENTER, true, false);
 		toolBar.setLayoutData(gridData);
 
 		/* save */
-		ToolItem saveItem = new ToolItem( toolBar, SWT.FLAT );
-		saveItem.setImage( ImageRegistry.getInstance().getIcon( IconName.SAVE_SCREEN_SHOT ) );
-		saveItem.setToolTipText( "Save to file" );
+		ToolItem saveItem = new ToolItem(toolBar, SWT.FLAT);
+		saveItem.setImage(imageRegistry.getIcon(IconName.SAVE_SCREEN_SHOT));
+		saveItem.setToolTipText("Save to file");
 
-		saveItem.addSelectionListener( new SelectionAdapter() {
+		saveItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
-
-				FileDialog fileDialog = new FileDialog( shell, SWT.SAVE );
-				fileDialog.setText( "Save Image" );
+			public void widgetSelected(SelectionEvent e) {
+				FileDialog fileDialog = new FileDialog(parent, SWT.SAVE);
+				fileDialog.setText("Save Image");
 
 				String[] filter = { "*.png;*.PNG;*.jpg;*.JPG;*.jpeg;*.JPEG;*.bmp;*.BMP" };
-				fileDialog.setFilterExtensions( filter );
+				fileDialog.setFilterExtensions(filter);
 
 				String[] filterName = { "Image files (*.png *.jpg *.jpeg *.bmp)" };
-				fileDialog.setFilterNames( filterName );
+				fileDialog.setFilterNames(filterName);
 
-				String vmName = SkinUtil.getVmName( config );
-				SimpleDateFormat formatter = new SimpleDateFormat( "yyyy-MM-dd-hhmmss" );
-				String dateString = formatter.format( new Date( System.currentTimeMillis() ) );
+				String vmName = SkinUtil.getVmName(config);
+				SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-hhmmss");
+				String dateString = formatter.format(new Date(System.currentTimeMillis()));
 
-				fileDialog.setFileName( vmName + "-" + dateString + "." + DEFAULT_FILE_EXTENSION );
+				fileDialog.setFileName(vmName + "-" + dateString + "." + DEFAULT_FILE_EXTENSION);
 
-				String userHome = System.getProperty( "user.home" );
-				if ( !StringUtil.isEmpty( userHome ) ) {
-					fileDialog.setFilterPath( userHome );
+				String userHome = System.getProperty("user.home");
+				if (!StringUtil.isEmpty(userHome)) {
+					fileDialog.setFilterPath(userHome);
 				} else {
-					logger.warning( "Cannot find user home path int java System properties." );
+					logger.warning("Cannot find user home path in java System properties.");
 				}
 
 				fileDialog.setOverwrite(true);
 				String filePath = fileDialog.open();
-				saveFile( filePath, fileDialog );
-
+				saveFile(filePath, fileDialog);
 			}
-
-		} );
+		});
 
 		/* copy to clipboard */
-		copyItem = new ToolItem( toolBar, SWT.FLAT );
-		copyItem.setImage( ImageRegistry.getInstance().getIcon( IconName.COPY_SCREEN_SHOT ) );
-		copyItem.setToolTipText( "Copy to clipboard" );
+		copyItem = new ToolItem(toolBar, SWT.FLAT);
+		copyItem.setImage(imageRegistry.getIcon(IconName.COPY_SCREEN_SHOT));
+		copyItem.setToolTipText("Copy to clipboard");
 
-		copyItem.addSelectionListener( new SelectionAdapter() {
+		copyItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
-				if (null == image || image.isDisposed()) {
-					SkinUtil.openMessage(shell, null,
+			public void widgetSelected(SelectionEvent e) {
+				if (null == imageFrame || imageFrame.isDisposed()) {
+					SkinUtil.openMessage(parent, null,
 							"Fail to copy to clipboard.", SWT.ICON_ERROR, config);
 					return;
 				}
 
 				copyItem.setEnabled(false);
-				shell.getDisplay().asyncExec(new Runnable() {
+				parent.getDisplay().asyncExec(new Runnable() {
+					@Override
 					public void run() {
 						try {
 							Thread.sleep(TOOLITEM_COOLTIME);
@@ -500,51 +463,43 @@ public class ScreenShotDialog {
 				});
 
 				ImageLoader loader = new ImageLoader();
-				ImageData data = null;
+				ImageData frameData = imageFrame.getImageData();
 
 				if (SwtUtil.isWindowsPlatform()) {
-					/* change RGB mask */
-					ImageData imageData = image.getImageData();
-					data = new ImageData(imageData.width, imageData.height,
-							imageData.depth, paletteData_RGBA,
-							imageData.bytesPerLine, imageData.data);
-				} else {
-					data = image.getImageData();
+					/* convert to RGBA */
+					frameData.palette =
+							new PaletteData(0xFF000000, 0x00FF0000, 0x0000FF00);
 				}
 
-				loader.data = new ImageData[] { data };
+				loader.data = new ImageData[] { frameData };
 
 				ByteArrayOutputStream bao = new ByteArrayOutputStream();
-				loader.save( bao, SWT.IMAGE_PNG );
+				loader.save(bao, SWT.IMAGE_PNG);
 
-				ImageData imageData = new ImageData( new ByteArrayInputStream( bao.toByteArray() ) );
-				Object[] imageObject = new Object[] { imageData };
+				ImageData pngData = new ImageData(
+						new ByteArrayInputStream(bao.toByteArray()));
+				Object[] imageObject = new Object[] { pngData };
 
 				Transfer[] transfer = new Transfer[] { ImageTransfer.getInstance() };
-
-				Clipboard clipboard = new Clipboard( shell.getDisplay() );
-				clipboard.setContents( imageObject, transfer );
-
+				Clipboard clipboard = new Clipboard(parent.getDisplay());
+				clipboard.setContents(imageObject, transfer);
 			}
+		});
 
-		} );
+		new ToolItem(toolBar, SWT.SEPARATOR);
 
 		/* refresh */
-		refreshItem = new ToolItem( toolBar, SWT.FLAT );
-		refreshItem.setImage( ImageRegistry.getInstance().getIcon( IconName.REFRESH_SCREEN_SHOT ) );
-		refreshItem.setToolTipText( "Refresh image" );
+		refreshItem = new ToolItem(toolBar, SWT.FLAT);
+		refreshItem.setImage(imageRegistry.getIcon(IconName.REFRESH_SCREEN_SHOT));
+		refreshItem.setToolTipText("Refresh image");
 
-		refreshItem.addSelectionListener( new SelectionAdapter() {
+		refreshItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected( SelectionEvent e ) {
-
+			public void widgetSelected(SelectionEvent e) {
 				refreshItem.setEnabled(false);
-				/* set as 100% view */
-				setScaleLevel(100d);
-				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
-						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
-				label.update();
-				shell.getDisplay().asyncExec(new Runnable() {
+
+				parent.getDisplay().asyncExec(new Runnable() {
+					@Override
 					public void run() {
 						try {
 							Thread.sleep(TOOLITEM_COOLTIME);
@@ -555,126 +510,89 @@ public class ScreenShotDialog {
 					}
 				});
 
-				Point dialogSize = shell.getSize();
-
 				try {
 					clickShutter();
 				} catch (ScreenShotException ex) {
 					logger.log(Level.SEVERE, "Fail to create a screen shot.", ex);
-					SkinUtil.openMessage(shell, null,
+					SkinUtil.openMessage(parent, null,
 							"Fail to create a screen shot.", SWT.ERROR, config);
 				}
-
-				/* restoration */
-				if (shell.getSize() != dialogSize) {
-					shell.setSize(dialogSize);
-				}
 			}
+		});
 
-		} );
+		new ToolItem(toolBar, SWT.SEPARATOR);
 
 		/* zoom in */
-		increaseScaleItem = new ToolItem(toolBar, SWT.FLAT);
-		increaseScaleItem.setImage(ImageRegistry.getInstance().getIcon(IconName.INCREASE_SCALE));
-		increaseScaleItem.setToolTipText("Increase view size");
+		zoomInItem = new ToolItem(toolBar, SWT.FLAT);
+		zoomInItem.setImage(imageRegistry.getIcon(IconName.INCREASE_SCALE));
+		zoomInItem.setToolTipText("Zoom in");
 
-		increaseScaleItem.addSelectionListener(new SelectionAdapter() {
+		zoomInItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				double level = getScaleLevel();
-				Point dialogSize = shell.getSize();
-				
 				upScaleLevel();
 
-				imageCanvas.redraw();
-				scaledImageLayout();
-				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
-						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
-				label.update();
-				
-				if (level >= 400d) {
-					increaseScaleItem.setEnabled(false);
-					decreaseScaleItem.setEnabled(true);
-				} else {
-					increaseScaleItem.setEnabled(true);
-					decreaseScaleItem.setEnabled(true);
-				}
-				
-				/* restoration */
-				if (shell.getSize() != dialogSize) {
-					shell.setSize(dialogSize);
-				}
+				updateWindow();
 			}
-
-		} );
+		});
 
 		/* zoom out */
-		decreaseScaleItem = new ToolItem(toolBar, SWT.FLAT);
-		decreaseScaleItem.setImage(ImageRegistry.getInstance().getIcon(IconName.DECREASE_SCALE));
-		decreaseScaleItem.setToolTipText("Decrease view size");
+		zoomOutItem = new ToolItem(toolBar, SWT.FLAT);
+		zoomOutItem.setImage(imageRegistry.getIcon(IconName.DECREASE_SCALE));
+		zoomOutItem.setToolTipText("Zoom out");
 
-		decreaseScaleItem.addSelectionListener(new SelectionAdapter() {
+		zoomOutItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				double level = getScaleLevel();
-				Point dialogSize = shell.getSize();
-				
 				downScaleLevel();
 
-				imageCanvas.redraw();
-				scaledImageLayout();
-				label.setText(" Resolution : " + config.getArgInt(ArgsConstants.RESOLUTION_WIDTH) +
-						"x" + config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT) + " " + scaleLevel + "%");
-				label.update();
-			
-				if (level <= 25) {
-					decreaseScaleItem.setEnabled(false);
-					increaseScaleItem.setEnabled(true);
-				} else {
-					decreaseScaleItem.setEnabled(true);
-					increaseScaleItem.setEnabled(true);
-				}
-					
-				/* restoration */
-				if (shell.getSize() != dialogSize) {
-					shell.setSize(dialogSize);
-				}
+				updateWindow();
 			}
-
-		} );
-
-		
+		});
 	}
 
-	private void saveFile( String fileFullPath, FileDialog fileDialog ) {
+	private void createStatusBar(final Shell parent) {
+		statusComposite = new Composite(parent, SWT.NONE);
+		RowLayout row = new RowLayout(SWT.HORIZONTAL);
+		row.marginLeft = 0;
+		row.marginTop = row.marginBottom = 0;
+		statusComposite.setLayout(row);
 
-		if ( null == fileFullPath ) {
+		labelResolution = new Label(statusComposite, SWT.BORDER | SWT.SHADOW_IN);
+		labelResolution.setText(" Resolution : " +
+				skin.getEmulatorSkinState().getCurrentResolutionWidth() + "x" +
+				skin.getEmulatorSkinState().getCurrentResolutionHeight() + " ");
+
+		labelScale = new Label(statusComposite, SWT.BORDER | SWT.SHADOW_IN);
+		labelScale.setText(" " + scaleLevel + "% ");
+	}
+
+	private void saveFile(String fileFullPath, FileDialog fileDialog) {
+		if (null == fileFullPath) {
 			return;
 		}
 
 		String format = "";
-		String[] split = fileFullPath.split( "\\." );
+		String[] split = fileFullPath.split("\\.");
 
-		if ( 1 < split.length ) {
-
+		if (1 < split.length) {
 			format = split[split.length - 1];
 
-			if ( new File( split[split.length - 2] ).isDirectory() ) {
-				// There is no file name.
-				SkinUtil.openMessage( shell, null, "Use correct file name.", SWT.ICON_WARNING, config );
+			if (new File(split[split.length - 2]).isDirectory()) {
+				/* There is no file name */
+				SkinUtil.openMessage(shell, null,
+						"Use correct file name.", SWT.ICON_WARNING, config);
+
 				String path = fileDialog.open();
-				saveFile( path, fileDialog );
-
+				saveFile(path, fileDialog);
 			}
-
 		}
 
 		FileOutputStream fos = null;
 
 		try {
-
-			if ( StringUtil.isEmpty( format ) ) {
-				if ( fileFullPath.endsWith( "." ) ) {
+			if (StringUtil.isEmpty(format)) {
+				if (fileFullPath.endsWith(".")) {
 					fileFullPath += DEFAULT_FILE_EXTENSION;
 				} else {
 					fileFullPath += "." + DEFAULT_FILE_EXTENSION;
@@ -682,77 +600,59 @@ public class ScreenShotDialog {
 			}
 
 			ImageLoader loader = new ImageLoader();
-			loader.data = new ImageData[] { image.getImageData() };
+			loader.data = new ImageData[] { imageFrame.getImageData() };
 
-			if ( StringUtil.isEmpty( format ) || format.equalsIgnoreCase( "png" ) ) {
-				fos = new FileOutputStream( fileFullPath, false );
-				loader.save( fos, SWT.IMAGE_PNG );
-			} else if ( format.equalsIgnoreCase( "jpg" ) || format.equalsIgnoreCase( "jpeg" ) ) {
-				fos = new FileOutputStream( fileFullPath, false );
-				loader.save( fos, SWT.IMAGE_JPEG );
-			} else if ( format.equalsIgnoreCase( "bmp" ) ) {
-				fos = new FileOutputStream( fileFullPath, false );
-				loader.save( fos, SWT.IMAGE_BMP );
+			if (StringUtil.isEmpty(format) || format.equalsIgnoreCase("png")) {
+				fos = new FileOutputStream(fileFullPath, false);
+				loader.save(fos, SWT.IMAGE_PNG);
+			} else if (format.equalsIgnoreCase("jpg") || format.equalsIgnoreCase("jpeg")) {
+				fos = new FileOutputStream(fileFullPath, false);
+				loader.save(fos, SWT.IMAGE_JPEG);
+			} else if (format.equalsIgnoreCase("bmp")) {
+				fos = new FileOutputStream(fileFullPath, false);
+				loader.save(fos, SWT.IMAGE_BMP);
 			} else {
+				SkinUtil.openMessage(shell, null,
+						"Use the specified image formats. (PNG / JPG / JPEG / BMP)",
+						SWT.ICON_WARNING, config);
 
-				SkinUtil.openMessage( shell, null,
-						"Use the specified image formats. ( PNG / JPG / JPEG / BMP )",
-						SWT.ICON_WARNING, config );
 				String path = fileDialog.open();
-				saveFile( path, fileDialog );
-
+				saveFile(path, fileDialog);
 			}
+		} catch (FileNotFoundException ex) {
+			logger.log(Level.WARNING, "Use correct file name.", ex);
+			SkinUtil.openMessage(shell, null, "Use correct file name.", SWT.ICON_WARNING, config);
 
-		} catch ( FileNotFoundException ex ) {
-
-			logger.log( Level.WARNING, "Use correct file name.", ex );
-			SkinUtil.openMessage( shell, null, "Use correct file name.", SWT.ICON_WARNING, config );
 			String path = fileDialog.open();
-			saveFile( path, fileDialog );
+			saveFile(path, fileDialog);
+		} catch (Exception ex) {
+			logger.log(Level.SEVERE, "Fail to save this image file.", ex);
+			SkinUtil.openMessage(shell, null, "Fail to save this image file.", SWT.ERROR, config);
 
-		} catch ( Exception ex ) {
-
-			logger.log( Level.SEVERE, "Fail to save this image file.", ex );
-			SkinUtil.openMessage( shell, null, "Fail to save this image file.", SWT.ERROR, config );
 			String path = fileDialog.open();
-			saveFile( path, fileDialog );
-
+			saveFile(path, fileDialog);
 		} finally {
-			IOUtil.close( fos );
+			IOUtil.close(fos);
 		}
-
 	}
 
-	public void open() {
-
-		if ( shell.isDisposed() ) {
+	public void open() throws ScreenShotException {
+		if (shell.isDisposed()) {
 			return;
 		}
 
+		try {
+			clickShutter();
+		} catch (ScreenShotException e) {
+			shell.close();
+
+			throw e;
+		}
+
 		shell.open();
-
-		/* while ( !shell.isDisposed() ) {
-			if ( !shell.getDisplay().readAndDispatch() ) {
-				if ( reserveImage ) {
-					break;
-				} else {
-					shell.getDisplay().sleep();
-				}
-			}
-		} */
-
-	}
-
-	public void setEmulatorSkin( EmulatorSkin emulatorSkin ) {
-		this.emulatorSkin = emulatorSkin;
-	}
-
-	public void setReserveImage( boolean reserveImage ) {
-		this.reserveImage = reserveImage;
 	}
 
 	public Shell getShell() {
 		return shell;
 	}
-
 }
