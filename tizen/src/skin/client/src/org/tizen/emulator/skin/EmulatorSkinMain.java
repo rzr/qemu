@@ -59,6 +59,7 @@ import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
+import org.tizen.emulator.skin.util.CocoaUtil;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.SkinRotation;
@@ -84,10 +85,17 @@ public class EmulatorSkinMain {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		/* make vm name and remove unused menu for macos-x */
 		if (SwtUtil.isMacPlatform()) {
-			//TODO: event handling of about dialog 
 			System.setProperty("apple.laf.useScreenMenuBar", "true");
-			System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Emulator"); 
+			System.setProperty("com.apple.mrj.application.apple.menu.about.name",
+					"Emulator");
+			Display display = Display.getDefault();
+			display.syncExec(new Runnable() {
+				public void run() {
+					new CocoaUtil().removeTopMenuItems();
+				}
+			});
 		}
 
 		String simpleMsg = getSimpleMsg(args);

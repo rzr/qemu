@@ -67,7 +67,6 @@ QTAILQ_HEAD_INITIALIZER(nfc_send_msg_queue);
 
 typedef struct NFCBuf {
     VirtQueueElement elem;
-
     QTAILQ_ENTRY(NFCBuf) next;
 } NFCBuf;
 
@@ -99,9 +98,6 @@ bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const u
 
     return true;
 }
-
-
-static int g_cnt = 0;
 
 static void flush_nfc_recv_queue(void)
 {
@@ -138,8 +134,8 @@ static void flush_nfc_recv_queue(void)
 
         memcpy(elem.in_sg[0].iov_base, &msginfo->info, sizeof(struct nfc_msg_info));
 
-        INFO(">> send to guest count = %d, use = %d, msg = %s, iov_len = %d \n",
-                ++g_cnt, msginfo->info.use, msginfo->info.buf, elem.in_sg[0].iov_len);
+        INFO(">> send to guest use = %d, msg = %s, iov_len = %d \n",
+                msginfo->info.use, msginfo->info.buf, elem.in_sg[0].iov_len);
 
         virtqueue_push(vio_nfc->rvq, &elem, sizeof(nfc_msg_info));
         virtio_notify(&vio_nfc->vdev, vio_nfc->rvq);
