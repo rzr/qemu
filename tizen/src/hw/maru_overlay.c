@@ -222,8 +222,36 @@ static int overlay_initfn(PCIDevice *dev)
     /* memory #1 memory-mapped I/O */
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->mem_addr);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
+    INFO("<%s>\n", __func__);
 
     return 0;
+}
+
+static void overlay_reset(DeviceState *d)
+{
+    memset(overlay_ptr, 0x00, OVERLAY_MEM_SIZE);
+
+    overlay0_power = overlay1_power = 0;
+    overlay0_left = overlay0_top = overlay0_width = overlay0_height = 0;
+    overlay1_left = overlay1_top = overlay1_width = overlay1_height = 0;
+    if (overlay0_image) {
+        pixman_image_unref(overlay0_image);
+        overlay0_image = NULL;
+    }
+    if (overlay1_image) {
+        pixman_image_unref(overlay1_image);
+        overlay1_image = NULL;
+    }
+    INFO("<%s>\n", __func__);
+}
+
+static void overlay_exitfn(PCIDevice *dev)
+{
+    OverlayState *s = DO_UPCAST(OverlayState, dev, dev);
+
+    memory_region_destroy(&s->mem_addr);
+    memory_region_destroy(&s->mmio_addr);
+    INFO("<%s>\n", __func__);
 }
 
 DeviceState *pci_maru_overlay_init(PCIBus *bus)
@@ -234,10 +262,13 @@ DeviceState *pci_maru_overlay_init(PCIBus *bus)
 
 static void overlay_classinit(ObjectClass *klass, void *data)
 {
+    DeviceClass *dc = DEVICE_CLASS(klass);
     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
 
     k->no_hotplug = 1;
     k->init = overlay_initfn;
+    k->exit = overlay_exitfn;
+    dc->reset = overlay_reset;
 }
 
 static TypeInfo overlay_info = {
