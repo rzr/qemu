@@ -3998,7 +3998,7 @@ int main(int argc, char **argv, char **envp)
 #endif
                 break;
 #ifdef CONFIG_MARU
-            case QEMU_OPTION_ignore_suspend_lock:
+            case QEMU_OPTION_enable_suspend:
                 ecs_set_suspend_state(SUSPEND_UNLOCK);
                 break;
 #endif
