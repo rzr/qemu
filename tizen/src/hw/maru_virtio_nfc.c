@@ -58,20 +58,10 @@ typedef struct MsgInfo
 static QTAILQ_HEAD(MsgInfoRecvHead , MsgInfo) nfc_recv_msg_queue =
 QTAILQ_HEAD_INITIALIZER(nfc_recv_msg_queue);
 
-
-static QTAILQ_HEAD(MsgInfoSendHead , MsgInfo) nfc_send_msg_queue =
-QTAILQ_HEAD_INITIALIZER(nfc_send_msg_queue);
-
-
-//
-
 typedef struct NFCBuf {
     VirtQueueElement elem;
     QTAILQ_ENTRY(NFCBuf) next;
 } NFCBuf;
-
-static QTAILQ_HEAD(NFCMsgHead , NFCBuf) nfc_in_queue =
-QTAILQ_HEAD_INITIALIZER(nfc_in_queue);
 
 static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -84,6 +74,11 @@ bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const u
 
     MsgInfo* _msg = (MsgInfo*) malloc(sizeof(MsgInfo));
     if (!_msg) {
+        return false;
+    }
+
+    if(len > MAX_BUF_SIZE) {
+        ERR("the length of data is longer than max buffer size");
         return false;
     }
 
