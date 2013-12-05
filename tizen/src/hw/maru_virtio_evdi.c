@@ -83,7 +83,7 @@ bool send_to_evdi(const uint32_t route, char* data, const uint32_t len)
     int count = 0;
     char* readptr = data;
 
-    if (unlikely(!virtio_queue_ready(vio_nfc->rvq))) {
+    if (unlikely(!virtio_queue_ready(vio_evdi->rvq))) {
         ERR("virtio queue is not ready\n");
         return false;
     }
