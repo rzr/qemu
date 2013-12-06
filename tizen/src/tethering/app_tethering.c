@@ -394,7 +394,7 @@ static void set_sensor_data(Injector__SensorData *data)
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%d\n%d\n%s\n", level_light, 1, data->x);
+        sprintf(tmp, "%d\n%d\n%s%s\n", level_light, 2, data->x, data->y);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
         TRACE("sensor_light x: %s\n", data->x);
