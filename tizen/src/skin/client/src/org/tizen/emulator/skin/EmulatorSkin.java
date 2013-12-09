@@ -1611,7 +1611,8 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (!communicator.isSensorDaemonStarted()) {
+				// TODO:
+				/* if (!communicator.isSensorDaemonStarted()) {
 					SkinUtil.openMessage(shell, null,
 							"Host Keyboard is not ready.\n"
 									+ "Please wait until the emulator is completely boot up.",
@@ -1620,7 +1621,7 @@ public class EmulatorSkin {
 					popupMenu.hostKbdOffItem.setSelection(!isOnKbd);
 
 					return;
-				}
+				} */
 
 				MenuItem item = (MenuItem) e.getSource();
 				if (item.getSelection()) {
