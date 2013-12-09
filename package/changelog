@@ -1,3 +1,6 @@
+* 1.7.3
+- remove temporary code
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-12-09
 * 1.7.2
 - added reset function for host keyboard
 - deleted blank in maru_virtio_hwkey.c
