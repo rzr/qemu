@@ -224,6 +224,8 @@ int ecs_get_suspend_state(void);
 void ecs_set_suspend_state(int state);
 void ecs_suspend_lock_state(int state);
 
+void send_host_keyboard_ntf(int on);
+
 /* request */
 int accel_min_max(double value);
 void req_set_sensor_accel(int x, int y, int z);
