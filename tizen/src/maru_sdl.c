@@ -33,6 +33,7 @@
 #include <math.h>
 #include <png.h>
 #include "ui/console.h"
+#include "qemu/main-loop.h"
 #include "maru_sdl.h"
 #include "maru_display.h"
 #include "emul_state.h"

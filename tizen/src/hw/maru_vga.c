@@ -246,7 +246,7 @@ static uint8_t vga_precise_retrace(VGACommonState *s)
         int cur_line, cur_line_char, cur_char;
         int64_t cur_tick;
 
-        cur_tick = qemu_get_clock_ns(vm_clock);
+        cur_tick = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
 
         cur_char = (cur_tick / r->ticks_per_char) % r->total_chars;
         cur_line = cur_char / r->htotal;
@@ -601,7 +601,7 @@ static void vga_draw_text(VGACommonState *s, int full_update)
     uint32_t *ch_attr_ptr;
     maru_vga_draw_glyph8_func *maru_vga_draw_glyph8;
     maru_vga_draw_glyph9_func *maru_vga_draw_glyph9;
-    int64_t now = qemu_get_clock_ms(vm_clock);
+    int64_t now = qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL);
 
     /* compute font data address (in plane 2) */
     v = s->sr[VGA_SEQ_CHARACTER_MAP];
@@ -1185,7 +1185,7 @@ static void vga_update_display(void *opaque)
         }
         if (graphic_mode != s->graphic_mode) {
             s->graphic_mode = graphic_mode;
-            s->cursor_blink_time = qemu_get_clock_ms(vm_clock);
+            s->cursor_blink_time = qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL);
             full_update = 1;
         }
         switch(graphic_mode) {

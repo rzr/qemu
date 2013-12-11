@@ -1586,7 +1586,7 @@ static void maru_brill_codec_bh_callback(void *opaque)
         qemu_mutex_unlock(&s->context_queue_mutex);
 
         TRACE("raise irq\n");
-        qemu_irq_raise(s->dev.irq[0]);
+        pci_set_irq(&s->dev, 1);
         s->irq_raised = 1;
     } else {
         qemu_mutex_unlock(&s->context_queue_mutex);
@@ -1611,7 +1611,7 @@ static uint64_t maru_brill_codec_read(void *opaque,
         qemu_mutex_lock(&s->context_queue_mutex);
         if (s->irq_raised) {
             ret = CODEC_TASK_END;
-            qemu_irq_lower(s->dev.irq[0]);
+            pci_set_irq(&s->dev, 0);
             s->irq_raised = 0;
         }
         qemu_mutex_unlock(&s->context_queue_mutex);

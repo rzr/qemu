@@ -33,6 +33,7 @@
 
 #include "hw/hw.h"
 #include "sysemu/kvm.h"
+#include "qemu/main-loop.h"
 #include "hw/pci/pci.h"
 #include "hw/pci/pci_ids.h"
 #include "qemu-common.h"

@@ -71,14 +71,14 @@ extern const char *vigs_backend;
 static void vigs_update_irq(VIGSState *s)
 {
     if ((s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) == 0) {
-        qemu_irq_lower(s->dev.pci_dev.irq[0]);
+        pci_set_irq(&s->dev.pci_dev, 0);
         return;
     }
 
     if (s->reg_int & VIGS_REG_INT_VBLANK_PENDING) {
-        qemu_irq_raise(s->dev.pci_dev.irq[0]);
+        pci_set_irq(&s->dev.pci_dev, 1);
     } else {
-        qemu_irq_lower(s->dev.pci_dev.irq[0]);
+        pci_set_irq(&s->dev.pci_dev, 0);
     }
 }
 
