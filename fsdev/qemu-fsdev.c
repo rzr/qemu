@@ -26,8 +26,10 @@ static FsDriverTable FsDrivers[] = {
 #ifdef CONFIG_OPEN_BY_HANDLE
     { .name = "handle", .ops = &handle_ops},
 #endif
+#ifdef CONFIG_LINUX
     { .name = "synth", .ops = &synth_ops},
     { .name = "proxy", .ops = &proxy_ops},
+#endif
 };
 
 int qemu_fsdev_add(QemuOpts *opts)

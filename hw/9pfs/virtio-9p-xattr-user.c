@@ -33,7 +33,7 @@ static ssize_t mp_user_getxattr(FsContext *ctx, const char *path,
 #ifdef CONFIG_LINUX
     return lgetxattr(rpath(ctx, path, buffer), name, value, size);
 #else
-	return getxattr(rpath(ctx, path, buffer), name, value, size, 0, XATTR_NOFOLLOW);
+    return getxattr(rpath(ctx, path, buffer), name, value, size, 0, XATTR_NOFOLLOW);
 #endif
 }
 
@@ -85,7 +85,7 @@ static int mp_user_setxattr(FsContext *ctx, const char *path, const char *name,
 #ifdef CONFIG_LINUX
     return lsetxattr(rpath(ctx, path, buffer), name, value, size, flags);
 #else
-	return setxattr(rpath(ctx, path, buffer), name, value, size, 0, flags | XATTR_NOFOLLOW);
+    return setxattr(rpath(ctx, path, buffer), name, value, size, 0, flags | XATTR_NOFOLLOW);
 #endif
 }
 
@@ -104,7 +104,7 @@ static int mp_user_removexattr(FsContext *ctx,
 #ifdef CONFIG_LINUX
     return lremovexattr(rpath(ctx, path, buffer), name);
 #else
-	return removexattr(rpath(ctx, path, buffer), name, XATTR_NOFOLLOW);
+    return removexattr(rpath(ctx, path, buffer), name, XATTR_NOFOLLOW);
 #endif
 }
 

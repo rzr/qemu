@@ -18,7 +18,6 @@
 #include <utime.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
-#include <sys/vfs.h>
 #ifdef CONFIG_LINUX
 #include <sys/vfs.h>
 #endif

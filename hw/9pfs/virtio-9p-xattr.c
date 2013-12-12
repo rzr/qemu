@@ -77,7 +77,7 @@ ssize_t v9fs_list_xattr(FsContext *ctx, const char *path,
 #ifdef CONFIG_LINUX
     xattr_len = llistxattr(rpath(ctx, path, buffer), value, 0);
 #else
-	xattr_len = listxattr(rpath(ctx, path, buffer), value, 0, XATTR_NOFOLLOW);
+    xattr_len = listxattr(rpath(ctx, path, buffer), value, 0, XATTR_NOFOLLOW);
 #endif
     if (xattr_len <= 0) {
         return xattr_len;
@@ -88,7 +88,7 @@ ssize_t v9fs_list_xattr(FsContext *ctx, const char *path,
 #ifdef CONFIG_LINUX
     xattr_len = llistxattr(rpath(ctx, path, buffer), orig_value, xattr_len);
 #else
-	xattr_len = listxattr(rpath(ctx, path, buffer), orig_value, xattr_len, XATTR_NOFOLLOW);
+    xattr_len = listxattr(rpath(ctx, path, buffer), orig_value, xattr_len, XATTR_NOFOLLOW);
 #endif
 
     /* store the orig pointer */
