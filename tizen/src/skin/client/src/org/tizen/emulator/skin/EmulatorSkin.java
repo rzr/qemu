@@ -1753,13 +1753,13 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (communicator.isEcsServerStarted() == false) {
+				/* if (communicator.isEcsServerStarted() == false) {
 					SkinUtil.openMessage(shell, null,
 							"Control Panel is not ready.\n"
 							+ "Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
 					return;
-				}
+				} */
 
 				String ecpPath = SkinUtil.getEcpPath();
 
