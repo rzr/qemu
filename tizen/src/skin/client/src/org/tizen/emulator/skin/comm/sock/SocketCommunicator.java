@@ -466,6 +466,9 @@ public class SocketCommunicator implements ICommunicator {
 				case RECV_EMUL_RESET: {
 					logger.info("received EMUL_RESET from QEMU");
 
+					isSensorDaemonStarted = false;
+					isSdbDaemonStarted = false;
+					isEcsServerStarted = false;
 					// TODO:
 
 					break;
