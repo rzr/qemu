@@ -363,10 +363,41 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             do_host_kbd_enable(is_on);
             notify_host_kbd_state(is_on);
         }
+    } else if (!strncmp(cmd, "gesture", strlen("gesture"))) {
+        // TODO: release multi-touch
+
+        LOG("%s\n", data);
+
+        char token[] = "#";
+
+        if (group == 1) { /* HW key event */
+            char *section = strtok(data, token);
+            int event_type = atoi(section);
+
+            section = strtok(NULL, token);
+            int keycode = atoi(section);
+
+            do_hw_key_event(event_type, keycode);
+        } else { /* touch event */
+            char *section = strtok(data, token);
+            int event_type = atoi(section);
+
+            section = strtok(NULL, token);
+            int xx = atoi(section);
+
+            section = strtok(NULL, token);
+            int yy = atoi(section);
+
+            section = strtok(NULL, token);
+            int zz = atoi(section);
+
+            do_mouse_event(1/* LEFT */, event_type, 0, 0, xx, yy, zz);
+        }
     }
 
-    if (data)
+    if (data) {
         g_free(data);
+    }
 
     return true;
 }
