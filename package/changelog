@@ -1,3 +1,6 @@
+* 1.7.5
+- Use wglMakeCurrent instead of wglMakeContextCurrentARB when possible
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-12-19
 * 1.7.3
 - remove temporary code
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-12-09
