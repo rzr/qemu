@@ -192,8 +192,8 @@ void do_keyboard_key_event(int event_type,
         event_type, keycode, state_mask, key_location);
 
 #ifndef CONFIG_USE_SHM
-    //is multi-touch mode ?
     if (get_emul_max_touch_point() > 1) {
+        /* multi-touch checking */
         int state_mask_temp = state_mask & ~JAVA_KEYCODE_NO_FOCUS;
 
         if ((keycode == JAVA_KEYCODE_BIT_SHIFT &&
@@ -215,7 +215,7 @@ void do_keyboard_key_event(int event_type,
                     pressing_origin_x = pressing_origin_y = -1;
                 }
 
-                INFO("enable multi-touch = mode2\n");
+                INFO("enable multi-touch = mode 2\n");
             }
         }
         else if (keycode == JAVA_KEYCODE_BIT_CTRL ||
@@ -235,14 +235,13 @@ void do_keyboard_key_event(int event_type,
                     pressing_origin_x = pressing_origin_y = -1;
                 }
 
-                INFO("enable multi-touch = mode1\n");
+                INFO("enable multi-touch = mode 1\n");
             } else if (KEY_RELEASED == event_type) {
                 if (state_mask_temp == (JAVA_KEYCODE_BIT_CTRL | JAVA_KEYCODE_BIT_SHIFT)) {
                     get_emul_multi_touch_state()->multitouch_enable = 1;
-                    INFO("enabled multi-touch = mode1\'\n");
+                    INFO("enabled multi-touch = mode 1\'\n");
                 } else {
-                    get_emul_multi_touch_state()->multitouch_enable = 0;
-                    clear_finger_slot();
+                    clear_finger_slot(false);
                     INFO("disable multi-touch\n");
                 }
             }

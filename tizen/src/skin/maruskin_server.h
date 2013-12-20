@@ -42,6 +42,7 @@ void notify_ramdump_completed(void);
 void notify_booting_progress(unsigned int layer, int progress_value);
 void notify_brightness_state(bool on);
 void notify_host_kbd_state(bool on);
+void notify_multi_touch_state(bool on);
 void notify_emul_reset(void);
 
 int is_ready_skin_server(void);

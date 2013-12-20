@@ -421,6 +421,32 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
+				case RECV_MULTI_TOUCH_STATE: {
+					logger.info("received MULTI_TOUCH_STATE from QEMU");
+
+					resetDataTransfer(miscDataTransfer);
+					receiveData(miscDataTransfer, length);
+
+					byte[] receivedData = getReceivedData(miscDataTransfer);
+					if (null != receivedData) {
+						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
+
+						int value = 1;
+						try {
+							value = Integer.parseInt(strValue);
+						} catch (NumberFormatException e) {
+							e.printStackTrace();
+						}
+
+						if (value == 0) {
+							//TODO:
+						} else {
+							//TODO:
+						}
+					}
+
+					break;
+				}
 				case RECV_SENSORD_STARTED: {
 					logger.info("received SENSORD_STARTED from QEMU");
 
@@ -466,9 +492,12 @@ public class SocketCommunicator implements ICommunicator {
 				case RECV_EMUL_RESET: {
 					logger.info("received EMUL_RESET from QEMU");
 
-					isSensorDaemonStarted = false;
-					isSdbDaemonStarted = false;
-					isEcsServerStarted = false;
+					synchronized (this) {
+						isSensorDaemonStarted = false;
+						isSdbDaemonStarted = false;
+						isEcsServerStarted = false;
+					}
+
 					// TODO:
 
 					break;

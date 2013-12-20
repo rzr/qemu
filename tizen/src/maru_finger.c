@@ -245,7 +245,7 @@ int add_finger_point(int origin_x, int origin_y, int x, int y)
     MultiTouchState *mts = get_emul_multi_touch_state();
 
     if (mts->finger_cnt == mts->finger_cnt_max) {
-        INFO("support multi-touch up to %d fingers\n", mts->finger_cnt_max);
+        WARN("support multi-touch up to %d fingers\n", mts->finger_cnt_max);
         return -1;
     }
 
@@ -542,13 +542,17 @@ int rearrange_finger_points(
     return count;
 }
 
-void clear_finger_slot(void)
+void clear_finger_slot(bool keep_enable)
 {
     int i = 0;
     MultiTouchState *mts = get_emul_multi_touch_state();
     FingerPoint *finger = NULL;
 
-    INFO("clear multi-touch\n");
+    if (keep_enable == false) {
+        set_multi_touch_enable(0);
+    }
+
+    INFO("clear multi-touch : %d\n", get_multi_touch_enable());
 
     for (i = 0; i < mts->finger_cnt; i++) {
         finger = get_finger_point_from_slot(i);
@@ -571,9 +575,7 @@ void cleanup_multi_touch_state(void)
     MultiTouchState *mts = get_emul_multi_touch_state();
     SDL_Surface *point = (SDL_Surface *)mts->finger_point_surface;
 
-    mts->multitouch_enable = 0;
-
-    clear_finger_slot();
+    clear_finger_slot(false);
     g_free(mts->finger_slot);
 
     mts->finger_point_surface = NULL;

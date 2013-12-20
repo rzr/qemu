@@ -252,6 +252,7 @@ public interface ICommunicator extends Runnable {
 		RECV_BRIGHTNESS_STATE((short) 6),
 		RECV_ECP_PORT_DATA((short) 7),
 		RECV_HOST_KBD_STATE((short) 8),
+		RECV_MULTI_TOUCH_STATE((short) 9),
 
 		RECV_SENSORD_STARTED((short) 800),
 		RECV_SDBD_STARTED((short) 801),
