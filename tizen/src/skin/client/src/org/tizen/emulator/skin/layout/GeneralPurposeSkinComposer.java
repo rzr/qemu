@@ -244,7 +244,9 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				frameMaker.getPatchedImage(displayBounds.width, displayBounds.height);
 
 		/* make window region */
-		Region region = getTrimmingRegion(shell.getDisplay(), generalSkin);
+		Region region = (SwtUtil.isLinuxPlatform() == false) ?
+				getTrimmingRegion(shell.getDisplay(), generalSkin) : /* color key */
+				SkinUtil.getTrimmingRegion(generalSkin);
 
 		/* update the skin state information */
 		currentState.setCurrentScale(scale);
