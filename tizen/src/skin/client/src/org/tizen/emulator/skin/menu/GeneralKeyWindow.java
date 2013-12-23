@@ -49,6 +49,7 @@ import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -62,6 +63,7 @@ import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry;
 import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry.GeneralKeyWindowImageName;
 import org.tizen.emulator.skin.layout.SkinPatches;
+import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class GeneralKeyWindow extends SkinWindow {
@@ -162,7 +164,15 @@ public class GeneralKeyWindow extends SkinWindow {
 		shell.setBackground(colorFrame);
 
 		createContents();
-		trimPatchedShell(shell, imageFrame);
+
+		/* make window region */
+		Region region = (SwtUtil.isLinuxPlatform() == false) ?
+				getTrimmingRegion(shell.getDisplay(), imageFrame) : /* color key */
+				SkinUtil.getTrimmingRegion(imageFrame);
+		/* custom window shape */
+		if (region != null) {
+			shell.setRegion(region);
+		}
 
 		addKeyWindowListener();
 
@@ -296,22 +306,22 @@ public class GeneralKeyWindow extends SkinWindow {
 		}
 	}
 
-	public static void trimPatchedShell(Shell shell, Image image) {
+	private static Region getTrimmingRegion(Display display, Image image) {
 		if (null == image) {
-			return;
+			return null;
 		}
-		ImageData imageData = image.getImageData();
 
+		ImageData imageData = image.getImageData();
 		int width = imageData.width;
 		int height = imageData.height;
 
 		Region region = new Region();
 		region.add(new Rectangle(0, 0, width, height));
 
-		int r = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getRed();
-		int g = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getGreen();
-		int b = shell.getDisplay().getSystemColor(SWT.COLOR_MAGENTA).getBlue();
-		int colorKey;
+		int r = display.getSystemColor(SWT.COLOR_MAGENTA).getRed();
+		int g = display.getSystemColor(SWT.COLOR_MAGENTA).getGreen();
+		int b = display.getSystemColor(SWT.COLOR_MAGENTA).getBlue();
+		int colorKey = 0;
 
 		if (SwtUtil.isWindowsPlatform()) {
 			colorKey = r << 24 | g << 16 | b << 8;
@@ -319,8 +329,9 @@ public class GeneralKeyWindow extends SkinWindow {
 			colorKey = r << 16 | g << 8 | b;
 		}
 
+		int j = 0;
 		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
+			for (j = 0; j < height; j++) {
 				int colorPixel = imageData.getPixel(i, j);
 				if (colorPixel == colorKey /* magenta */) {
 					region.subtract(i, j, 1, 1);
@@ -328,7 +339,7 @@ public class GeneralKeyWindow extends SkinWindow {
 			}
 		}
 
-		shell.setRegion(region);
+		return region;
 	}
 
 	private void addKeyWindowListener() {

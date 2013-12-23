@@ -338,7 +338,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		return displayBounds;
 	}
 
-	public static Region getTrimmingRegion(Display display, Image image) {
+	private static Region getTrimmingRegion(Display display, Image image) {
 		if (null == image) {
 			return null;
 		}
