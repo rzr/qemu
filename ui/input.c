@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#ifdef CONFIG_MARU && CONFIG_LINUX
+#if defined CONFIG_MARU && defined CONFIG_LINUX
 #include <pthread.h>
 #endif
 
@@ -34,7 +34,7 @@
 #include "qapi-types.h"
 #include "ui/keymaps.h"
 
-#ifdef CONFIG_MARU && CONFIG_LINUX
+#if defined CONFIG_MARU && defined CONFIG_LINUX
 extern void maru_hwkey_event(int event_type, int keycode);
 extern void do_rotation_event(int rotation_type);
 extern void do_host_kbd_enable(bool on);
@@ -537,7 +537,7 @@ int kbd_mouse_has_absolute(void)
     return 0;
 }
 
-#ifdef CONFIG_MARU && CONFIG_LINUX
+#if defined CONFIG_MARU && defined CONFIG_LINUX
 void hwkey_put_keycode(int type, int keycode)
 {
     if (!runstate_is_running() && !runstate_check(RUN_STATE_SUSPENDED)) {
