@@ -37,6 +37,10 @@
 #endif
 #endif
 
+#ifdef CONFIG_MARU
+#include <spice/enums.h>
+#endif
+
 #include "spice-widget.h"
 #include "spice-widget-priv.h"
 #include "spice-gtk-session-priv.h"

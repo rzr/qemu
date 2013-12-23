@@ -28,6 +28,10 @@
 #include <spice/vd_agent.h>
 #include <spice/protocol.h>
 
+#ifdef CONFIG_MARU
+#include <spice/enums.h>
+#endif
+
 #include "common/marshaller.h"
 #include "common/messages.h"
 #include "common/generated_server_marshallers.h"
