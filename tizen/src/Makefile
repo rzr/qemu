@@ -206,7 +206,9 @@ install_dibs: all_dibs
 	done
 
 	cp -pP ../../qemu-img$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+ifdef CONFIG_LINUX
 	cp -pPR $(EMUL_DIR)/remote/ $(DIBS_COMMON_DIR)/
+endif
 
 # resources and jar for skin
 	cp -pP skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin

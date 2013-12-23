@@ -51,6 +51,7 @@ cd ../../
 
 cd ${SPICE_GTK_PATH}
 dist_clean
+rm gtk/vncdisplaykeymap_*
 cd ../../
 
 cd ${VIRT_VIEWER_PATH}
