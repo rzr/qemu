@@ -1,3 +1,8 @@
+* 1.7.6
+- added remote server/client packages spice-gtk, virt-viewer, celt, spice etc.
+- modified spice input codes for tizen specific functions
+- modified build script and makefile
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-23
 * 1.7.5
 - Use wglMakeCurrent instead of wglMakeContextCurrentARB when possible
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-12-19

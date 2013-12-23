@@ -27,6 +27,10 @@
 #include "ui/qemu-spice.h"
 #include "ui/console.h"
 
+#ifdef CONFIG_MARU
+extern int get_emul_vm_base_port(void);
+#endif
+
 /* keyboard bits */
 
 typedef struct QemuSpiceKbd {
@@ -74,6 +78,110 @@ static void kbd_leds(void *opaque, int ledstate)
     }
     spice_server_kbd_leds(&kbd->sin, ledstate);
 }
+
+#ifdef CONFIG_MARU
+/* hwkey bits */
+
+typedef struct QemuSpiceHwkey {
+    SpiceHwkeyInstance sin;
+} QemuSpiceHwkey;
+
+static void hwkey_push_key(SpiceHwkeyInstance *sin, uint8_t type, uint8_t keycode);
+
+static const SpiceHwkeyInterface hwkey_interface = {
+    .base.type          = SPICE_INTERFACE_HWKEY,
+    .base.description   = "qemu hwkey",
+    .base.major_version = SPICE_INTERFACE_HWKEY_MAJOR,
+    .base.minor_version = SPICE_INTERFACE_HWKEY_MINOR,
+    .push_scan_freg     = hwkey_push_key,
+};
+
+static void hwkey_push_key(SpiceHwkeyInstance *sin, uint8_t type, uint8_t keycode)
+{
+    hwkey_put_keycode(type, keycode);
+}
+
+/* rotation bits */
+typedef struct QemuSpiceRotation {
+    SpiceRotationInstance sin;
+} QemuSpiceRotation;
+
+static void rotation_push_type(SpiceRotationInstance *sin, uint8_t type);
+
+static const SpiceRotationInterface rotation_interface = {
+    .base.type          = SPICE_INTERFACE_ROTATION,
+    .base.description   = "qemu rotation",
+    .base.major_version = SPICE_INTERFACE_ROTATION_MAJOR,
+    .base.minor_version = SPICE_INTERFACE_ROTATION_MINOR,
+    .push_scan_freg     = rotation_push_type,
+};
+
+static void rotation_push_type(SpiceRotationInstance *sin, uint8_t type)
+{
+    rotation_put_type(type);
+}
+
+/* hostkbd bits */
+typedef struct QemuSpiceHostkbd {
+    SpiceHostkbdInstance sin;
+} QemuSpiceHostkbd;
+
+static void hostkbd_push_type(SpiceHostkbdInstance *sin, uint8_t type);
+
+static const SpiceHostkbdInterface hostkbd_interface = {
+    .base.type          = SPICE_INTERFACE_HOSTKBD,
+    .base.description   = "qemu hostkbd onoff",
+    .base.major_version = SPICE_INTERFACE_HOSTKBD_MAJOR,
+    .base.minor_version = SPICE_INTERFACE_HOSTKBD_MINOR,
+    .push_scan_freg     = hostkbd_push_type,
+};
+
+static void hostkbd_push_type(SpiceHostkbdInstance *sin, uint8_t type)
+{
+    hostkbd_put_type(type);
+}
+
+/* tizen close bits */
+typedef struct QemuSpiceTizenClose {
+    SpiceTizenCloseInstance sin;
+} QemuSpiceTizenClose;
+
+static void tizen_close_push_type(SpiceTizenCloseInstance *sin, uint8_t type);
+
+static const SpiceTizenCloseInterface tizen_close_interface = {
+    .base.type          = SPICE_INTERFACE_TIZEN_CLOSE,
+    .base.description   = "qemu tizen close",
+    .base.major_version = SPICE_INTERFACE_TIZEN_CLOSE_MAJOR,
+    .base.minor_version = SPICE_INTERFACE_TIZEN_CLOSE_MINOR,
+    .push_scan_freg     = tizen_close_push_type,
+};
+
+static void tizen_close_push_type(SpiceTizenCloseInstance *sin, uint8_t type)
+{
+    tizen_close_put_type(type);
+}
+
+/* vmname bits */
+typedef struct QemuSpiceSdbPort {
+    SpiceSdbPortInstance sin;
+} QemuSpiceSdbPort;
+
+static void qemu_get_sdb_port(SpiceSdbPortInstance *sin, int* sdb_port);
+
+static const SpiceSdbPortInterface sdbport_interface = {
+    .base.type          = SPICE_INTERFACE_SDBPORT,
+    .base.description   = "qemu sdb port",
+    .base.major_version = SPICE_INTERFACE_SDBPORT_MAJOR,
+    .base.minor_version = SPICE_INTERFACE_SDBPORT_MINOR,
+    .push_scan_freg     = qemu_get_sdb_port,
+};
+
+static void qemu_get_sdb_port(SpiceSdbPortInstance *sin, int* sdb_port)
+{
+    printf("%d\n", get_emul_vm_base_port());
+    *sdb_port = get_emul_vm_base_port();
+}
+#endif
 
 /* mouse bits */
 
@@ -200,10 +308,40 @@ void qemu_spice_input_init(void)
     QemuSpiceKbd *kbd;
     QemuSpicePointer *pointer;
 
+#ifdef CONFIG_MARU
+    QemuSpiceHwkey *hwkey;
+    QemuSpiceRotation *rotation;
+    QemuSpiceHostkbd *hostkbd;
+    QemuSpiceTizenClose *close;
+    QemuSpiceSdbPort *sdb_port;
+#endif
+
     kbd = g_malloc0(sizeof(*kbd));
     kbd->sin.base.sif = &kbd_interface.base;
     qemu_spice_add_interface(&kbd->sin.base);
     qemu_add_led_event_handler(kbd_leds, kbd);
+
+#ifdef CONFIG_MARU
+    hwkey = g_malloc0(sizeof(*hwkey));
+    hwkey->sin.base.sif = &hwkey_interface.base;
+    qemu_spice_add_interface(&hwkey->sin.base);
+
+    rotation = g_malloc0(sizeof(*rotation));
+    rotation->sin.base.sif = &rotation_interface.base;
+    qemu_spice_add_interface(&rotation->sin.base);
+
+    hostkbd = g_malloc0(sizeof(*hostkbd));
+    hostkbd->sin.base.sif = &hostkbd_interface.base;
+    qemu_spice_add_interface(&hostkbd->sin.base);
+
+    close = g_malloc0(sizeof(*close));
+    close->sin.base.sif = &tizen_close_interface.base;
+    qemu_spice_add_interface(&close->sin.base);
+
+    sdb_port = g_malloc0(sizeof(*sdb_port));
+    sdb_port->sin.base.sif = &sdbport_interface.base;
+    qemu_spice_add_interface(&sdb_port->sin.base);
+#endif
 
     pointer = g_malloc0(sizeof(*pointer));
     pointer->mouse.base.sif  = &mouse_interface.base;
