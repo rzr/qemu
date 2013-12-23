@@ -54,6 +54,10 @@ QEMUPutKbdEntry *qemu_add_ps2kbd_event_handler(QEMUPutKBDEvent *func,
                                                void *opaque);
 void qemu_remove_ps2kbd_event_handler(QEMUPutKbdEntry *entry);
 void ps2kbd_put_keycode(int keycode);
+void hwkey_put_keycode(int type, int keycode);
+void rotation_put_type(int type);
+void hostkbd_put_type(int type);
+void tizen_close_put_type(int type);
 #endif
 
 
