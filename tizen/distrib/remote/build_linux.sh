@@ -1,7 +1,7 @@
 #!/bin/sh
 UNAME=`uname`
 
-PREFIX="${PWD}/output/"
+PREFIX="${PWD}/output"
 
 CELT_PATH="common/celt-0.5.1.3/"
 SPICE_COMMON_PATH="common/spice-common/"
