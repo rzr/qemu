@@ -36,8 +36,10 @@ cd $CELT_PATH
 cd ../../
 
 cd ${SPICE_COMMON_PATH}
-./configure --prefix=$PREFIX --exec_prefix=$PREFIX --enable-smartcard=no && make -j$NUMCPU
-cd ../../
+./configure --prefix=$PREFIX --exec_prefix=$PREFIX --enable-smartcard=no && make -j$NUMCPU && make install
+cd spice-protocol
+./configure --prefix=$PREFIX && make -j$NUMCPU && make install
+cd ../../../
 
 cd $SPICE_SERVER_PATH
 ./configure --prefix=$PREFIX --exec_prefix=$PREFIX && make -j$NUMCPU && make install
