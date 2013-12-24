@@ -232,6 +232,7 @@ echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
 export PKG_CONFIG_PATH=${PWD}/tizen/distrib/remote/output/lib/pkgconfig:${PKG_CONFIG_PATH}
+echo "PKG_CONFIG_PATH="${PKG_CONFIG_PATH}
 exec ./configure \
  --enable-werror \
  --audio-drv-list=alsa \

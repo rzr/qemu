@@ -48,7 +48,7 @@ cd ${SPICE_GTK_PATH}
 cd ../../
 
 cd ${VIRT_VIEWER_PATH}
-./configure --prefix=$PREFIX && make -j$NUMCPU && make install
+./configure --prefix=$PREFIX --with-gtk=3.0 && make -j$NUMCPU && make install
 cd ../../
 
 mkdir -p ../../emulator/remote/bin
