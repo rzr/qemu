@@ -56,6 +56,10 @@
 
 #include "ecs.h"
 #include "mloop_event.h"
+#ifndef CONFIG_USE_SHM
+#include "maru_finger.h"
+#endif
+
 #include "hw/maru_virtio_evdi.h"
 #include "hw/maru_virtio_sensor.h"
 #include "hw/maru_virtio_nfc.h"
@@ -364,7 +368,12 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             notify_host_kbd_state(is_on);
         }
     } else if (!strncmp(cmd, "gesture", strlen("gesture"))) {
-        // TODO: release multi-touch
+        /* release multi-touch */
+#ifndef CONFIG_USE_SHM
+        clear_finger_slot(false);
+#else
+        // TODO:
+#endif
 
         LOG("%s\n", data);
 
