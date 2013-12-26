@@ -76,14 +76,14 @@ public class SdlScreenShotWindow extends ScreenShotDialog {
 			RotationInfo rotation = getCurrentRotation();
 			imageData = rotateImageData(imageData, rotation);
 
-			Image tempImage = imageFrame;
-			imageFrame = new Image(Display.getDefault(), imageData);
+			Image tempImage = imageShot;
+			imageShot = new Image(Display.getDefault(), imageData);
 
 			if (tempImage != null) {
 				tempImage.dispose();
 			}
 
-			canvasFrame.redraw();
+			canvasShot.redraw();
 		} else {
 			throw new ScreenShotException("Fail to get image data.");
 		}

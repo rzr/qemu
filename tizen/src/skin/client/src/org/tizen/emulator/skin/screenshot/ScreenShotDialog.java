@@ -45,6 +45,9 @@ import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.ImageTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -53,6 +56,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -93,11 +97,14 @@ public class ScreenShotDialog {
 
 	protected EmulatorSkin skin;
 	protected EmulatorConfig config;
-
 	private Shell shell;
+
 	private ScrolledComposite scrollComposite;
-	protected Canvas canvasFrame;
-	protected Image imageFrame;
+	protected Canvas canvasShot;
+	protected Image imageShot;
+	protected boolean isCanvasDragging;
+	protected Point canvasGrabPosition;
+
 	private Composite statusComposite;
 	private Label labelResolution;
 	private Label labelScale;
@@ -116,6 +123,8 @@ public class ScreenShotDialog {
 			EmulatorConfig config, Image icon) {
 		this.skin = skin;
 		this.config = config;
+
+		this.canvasGrabPosition = new Point(-1, -1);
 		this.scaleLevel = 100;
 
 		if (SwtUtil.isMacPlatform() == false) {
@@ -133,25 +142,23 @@ public class ScreenShotDialog {
 			}
 		}
 
+		GridLayout gridLayout = new GridLayout();
+		gridLayout.marginWidth = gridLayout.marginHeight = 0;
+		gridLayout.horizontalSpacing = gridLayout.verticalSpacing = 0;
+		shell.setLayout(gridLayout);
+
 		shell.addListener(SWT.Close, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
 				logger.info("ScreenShot Window is closed");
 
-				if (null != imageFrame) {
-					imageFrame.dispose();
+				if (null != imageShot) {
+					imageShot.dispose();
 				}
 
 				skin.screenShotDialog = null;
 			}
 		});
-
-		GridLayout gridLayout = new GridLayout();
-		gridLayout.marginWidth = 0;
-		gridLayout.marginHeight = 0;
-		gridLayout.horizontalSpacing = 0;
-		gridLayout.verticalSpacing = 0;
-		shell.setLayout(gridLayout);
 
 		/* tool bar */
 		createToolBar(shell);
@@ -164,56 +171,21 @@ public class ScreenShotDialog {
 		scrollComposite.setExpandHorizontal(true);
 		scrollComposite.setExpandVertical(true);
 
-		canvasFrame = new Canvas(scrollComposite, SWT.NONE);
-		canvasFrame.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+		canvasShot = new Canvas(scrollComposite, SWT.FOCUSED);
+		canvasShot.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
 
-		canvasFrame.addPaintListener(new PaintListener() {
-			@Override
-			public void paintControl(PaintEvent e) {
-				logger.fine("draw frame");
-
-				if (null != imageFrame && !imageFrame.isDisposed()) {
-					e.gc.setInterpolation(SWT.NONE);
-
-					Rectangle r = imageFrame.getBounds();
-					//logger.info("r.width: " +r.width +", r.height " + r.height);
-					e.gc.drawImage(imageFrame, 0, 0, r.width, r.height,
-							CANVAS_MARGIN, CANVAS_MARGIN,
-							(int)(r.width  * scaleLevel / 100),
-							(int)(r.height * scaleLevel / 100));
-				}
-			}
-		});
-
-		scrollComposite.setContent(canvasFrame);
+		scrollComposite.setContent(canvasShot);
 
 		/* status bar */
 		createStatusBar(shell);
 
 		shell.pack();
+		adjustWindow(skin);
 
-//		imageCanvas.addMouseMoveListener(new MouseMoveListener() {
-//		      public void mouseMove(MouseEvent e) {
-//		    		  Rectangle rectangle = imageCanvas.getBounds();
-//		    		  if(rectangle.contains(e.x - CANVAS_MARGIN, e.y - CANVAS_MARGIN) == true ) {
-//		    			  ImageData imageData = image.getImageData();
-//		    			  
-//		    			  try {
-//		    				  int pixel = imageData.getPixel(e.x - CANVAS_MARGIN , e.y - CANVAS_MARGIN);
-//		    				  if(pixel != 0) {
-//				    		  PaletteData paletteData = new PaletteData( RED_MASK, GREEN_MASK, BLUE_MASK );
-//				    		  RGB rgb =  paletteData.getRGB(pixel);
-//				    		  label.setText("R: "+ rgb.red + " G: " + rgb.green + " B: " + rgb.blue);
-//				    		  label.update();
-//		    			  		}
-//		    			  		}catch (IllegalArgumentException e1) {
-//		    			  			logger.warning(e1.getMessage());
-//		    			  		}
-//		    			  
-//		    			  } 
-//		      		}
-//		 });
+		createCanvasListener(canvasShot);
+	}
 
+	private void adjustWindow(EmulatorSkin skin) {
 		final Rectangle monitorBounds = Display.getDefault().getBounds();
 		logger.info("host monitor display bounds : " + monitorBounds);
 		final Rectangle emulatorBounds = skin.getShell().getBounds();
@@ -240,6 +212,62 @@ public class ScreenShotDialog {
 		shell.setLocation(x, y);
 
 		logger.info("ScreenShot window bounds : " + shell.getBounds());
+	}
+
+	private void createCanvasListener(Canvas canvas) {
+		canvas.addPaintListener(new PaintListener() {
+			@Override
+			public void paintControl(PaintEvent e) {
+				logger.fine("draw shot");
+
+				if (null != imageShot && !imageShot.isDisposed()) {
+					e.gc.setInterpolation(SWT.NONE);
+
+					final Rectangle imageBounds = imageShot.getBounds();
+					e.gc.drawImage(imageShot, 0, 0, imageBounds.width, imageBounds.height,
+							CANVAS_MARGIN, CANVAS_MARGIN,
+							(int)(imageBounds.width  * scaleLevel / 100),
+							(int)(imageBounds.height * scaleLevel / 100));
+				}
+			}
+		});
+
+		canvas.addMouseMoveListener(new MouseMoveListener() {
+			@Override
+			public void mouseMove(MouseEvent e) {
+				if (isCanvasDragging == true) {
+					Point origin = scrollComposite.getOrigin();
+					origin.x += canvasGrabPosition.x - e.x;
+					origin.y += canvasGrabPosition.y - e.y;
+					scrollComposite.setOrigin(origin);
+				}
+			}
+		});
+
+		canvas.addMouseListener(new MouseListener() {
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (1/* left button */ == e.button) {
+					isCanvasDragging = true;
+					canvasGrabPosition.x = e.x;
+					canvasGrabPosition.y = e.y;
+				}
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (1/* left button */ == e.button) {
+					isCanvasDragging = false;
+					canvasGrabPosition.x = -1;
+					canvasGrabPosition.y = -1;
+				}
+			}
+		});
 	}
 
 	private void clickShutter() throws ScreenShotException {
@@ -282,8 +310,8 @@ public class ScreenShotDialog {
 	private void updateWindow() {
 		logger.info("update");
 
-		if (imageFrame != null) {
-			ImageData imageData = imageFrame.getImageData();
+		if (imageShot != null) {
+			ImageData imageData = imageShot.getImageData();
 			int width = (int)(imageData.width * scaleLevel / 100) + (2 * CANVAS_MARGIN);
 			int height = (int)(imageData.height * scaleLevel / 100) + (2 * CANVAS_MARGIN);
 			logger.info("update composite width : " + width + ", height : " + height);
@@ -292,19 +320,21 @@ public class ScreenShotDialog {
 		}
 
 		/* update tool bar */
-		if (getScaleLevel() >= MAX_SCALE_FACTOR) {
-			zoomInItem.setEnabled(false);
-			zoomOutItem.setEnabled(true);
-		} else if (getScaleLevel() <= MIN_SCALE_FACTOR) {
-			zoomOutItem.setEnabled(false);
-			zoomInItem.setEnabled(true);
-		} else {
-			zoomInItem.setEnabled(true);
-			zoomOutItem.setEnabled(true);
+		if (zoomInItem != null && zoomOutItem != null) {
+			if (getScaleLevel() >= MAX_SCALE_FACTOR) {
+				zoomInItem.setEnabled(false);
+				zoomOutItem.setEnabled(true);
+			} else if (getScaleLevel() <= MIN_SCALE_FACTOR) {
+				zoomOutItem.setEnabled(false);
+				zoomInItem.setEnabled(true);
+			} else {
+				zoomInItem.setEnabled(true);
+				zoomOutItem.setEnabled(true);
+			}
 		}
 
 		/* update image */
-		canvasFrame.redraw();
+		canvasShot.redraw();
 
 		/* update status bar */
 		if (labelScale != null) {
@@ -420,7 +450,8 @@ public class ScreenShotDialog {
 				SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-hhmmss");
 				String dateString = formatter.format(new Date(System.currentTimeMillis()));
 
-				fileDialog.setFileName(vmName + "-" + dateString + "." + DEFAULT_FILE_EXTENSION);
+				fileDialog.setFileName(vmName + "-" +
+						dateString + "." + DEFAULT_FILE_EXTENSION);
 
 				String userHome = System.getProperty("user.home");
 				if (!StringUtil.isEmpty(userHome)) {
@@ -443,7 +474,7 @@ public class ScreenShotDialog {
 		copyItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (null == imageFrame || imageFrame.isDisposed()) {
+				if (null == imageShot || imageShot.isDisposed()) {
 					SkinUtil.openMessage(parent, null,
 							"Fail to copy to clipboard.", SWT.ICON_ERROR, config);
 					return;
@@ -463,15 +494,15 @@ public class ScreenShotDialog {
 				});
 
 				ImageLoader loader = new ImageLoader();
-				ImageData frameData = imageFrame.getImageData();
+				ImageData shotData = imageShot.getImageData();
 
 				if (SwtUtil.isWindowsPlatform()) {
 					/* convert to RGBA */
-					frameData.palette =
+					shotData.palette =
 							new PaletteData(0xFF000000, 0x00FF0000, 0x0000FF00);
 				}
 
-				loader.data = new ImageData[] { frameData };
+				loader.data = new ImageData[] { shotData };
 
 				ByteArrayOutputStream bao = new ByteArrayOutputStream();
 				loader.save(bao, SWT.IMAGE_PNG);
@@ -600,7 +631,7 @@ public class ScreenShotDialog {
 			}
 
 			ImageLoader loader = new ImageLoader();
-			loader.data = new ImageData[] { imageFrame.getImageData() };
+			loader.data = new ImageData[] { imageShot.getImageData() };
 
 			if (StringUtil.isEmpty(format) || format.equalsIgnoreCase("png")) {
 				fos = new FileOutputStream(fileFullPath, false);
@@ -621,13 +652,15 @@ public class ScreenShotDialog {
 			}
 		} catch (FileNotFoundException ex) {
 			logger.log(Level.WARNING, "Use correct file name.", ex);
-			SkinUtil.openMessage(shell, null, "Use correct file name.", SWT.ICON_WARNING, config);
+			SkinUtil.openMessage(shell, null,
+					"Use correct file name.", SWT.ICON_WARNING, config);
 
 			String path = fileDialog.open();
 			saveFile(path, fileDialog);
 		} catch (Exception ex) {
 			logger.log(Level.SEVERE, "Fail to save this image file.", ex);
-			SkinUtil.openMessage(shell, null, "Fail to save this image file.", SWT.ERROR, config);
+			SkinUtil.openMessage(shell, null,
+					"Fail to save this image file.", SWT.ERROR, config);
 
 			String path = fileDialog.open();
 			saveFile(path, fileDialog);
