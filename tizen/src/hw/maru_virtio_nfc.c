@@ -79,6 +79,7 @@ bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const u
 
     if(len > MAX_BUF_SIZE) {
         ERR("the length of data is longer than max buffer size");
+        free(_msg);
         return false;
     }
 
