@@ -955,6 +955,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             }
             else {
                 LOG("unsupported category is found: %s", msg->category);
+                pthread_mutex_unlock(&mutex_clilist);
                 goto fail;
             }
         }

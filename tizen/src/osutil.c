@@ -61,6 +61,10 @@ inline void download_url(char *url)
     curl = curl_easy_init();
     if (curl) {
         fp = fopen(pac_tempfile, "wb");
+        if(fp == NULL) {
+            ERR("failed to fopen(): %s\n", pac_tempfile);
+            return;
+        }
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
         /* just in case network does not work */

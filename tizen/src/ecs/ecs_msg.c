@@ -431,10 +431,11 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
 
     if (data != NULL) {
         send_to_nfc(ccli->client_id, ccli->client_type, data, msg->data.len);
+        g_free(data);
         return true;
+    } else {
+        return false;
     }
-
-    return false;
 }
 
 bool ntf_to_injector(const char* data, const int len) {
