@@ -306,10 +306,6 @@ static void print_system_info(void)
 {
 #define DIV 1024
 
-    char timeinfo[64] = {0, };
-    struct tm *tm_time;
-    struct timeval tval;
-
     INFO("* Board name : %s\n", build_version);
     INFO("* Package %s\n", pkginfo_version);
     INFO("* Package %s\n", pkginfo_maintainer);
@@ -318,12 +314,18 @@ static void print_system_info(void)
     INFO("* User name : %s\n", g_get_real_name());
     INFO("* Host name : %s\n", g_get_host_name());
 
-    /* timestamp */
+    /* time stamp */
     INFO("* Build date : %s\n", build_date);
-    gettimeofday(&tval, NULL);
-    tm_time = localtime(&(tval.tv_sec));
-    strftime(timeinfo, sizeof(timeinfo), "%Y/%m/%d %H:%M:%S", tm_time);
-    INFO("* Current time : %s\n", timeinfo);
+
+    qemu_timeval tval = { 0, };
+    if (qemu_gettimeofday(&tval) == 0) {
+        char timeinfo[64] = {0, };
+
+        time_t ti = tval.tv_sec;
+        struct tm *tm_time = localtime(&ti);
+        strftime(timeinfo, sizeof(timeinfo), "%Y-%m-%d %H:%M:%S", tm_time);
+        INFO("* Current time : %s\n", timeinfo);
+    }
 
 #ifdef CONFIG_SDL
     /* Gets the version of the dynamically linked SDL library */
