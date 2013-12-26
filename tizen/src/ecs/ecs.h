@@ -152,7 +152,7 @@ typedef struct ECS_State {
 #define TYPE_SIMUL_NFC  0x02
 
 typedef struct ECS_Client {
-    unsigned char client_fd;
+    int client_fd;
     unsigned char client_id;
     unsigned char client_type;
     int keep_alive;
