@@ -239,6 +239,7 @@ exec ./configure \
  --disable-vnc \
  --disable-pie $1 \
  --enable-virtfs \
+ --disable-xen \
  $CONFIGURE_APPEND \
 ;;
 MINGW*)
