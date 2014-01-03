@@ -229,8 +229,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	protected void skinFinalize() {
 		pollThread.stopRequest();
 
-		finger.setMultiTouchEnable(0);
-		finger.clearFingerSlot();
+		/* remove multi-touch finger points */
 		finger.cleanupMultiTouchState();
 
 		super.skinFinalize();
@@ -557,10 +556,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			if (tempStateMask == (multiTouchKeySub | multiTouchKey)) {
 				finger.setMultiTouchEnable(1);
 
-				logger.info("enable multi-touch = mode1");
+				logger.info("enable multi-touch = mode 1");
 			} else {
-				finger.setMultiTouchEnable(0);
-				finger.clearFingerSlot();
+				finger.clearFingerSlot(false);
 
 				logger.info("disable multi-touch");
 			}
@@ -596,7 +594,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				pressingOriginX = pressingOriginY = -1;
 			}
 
-			logger.info("enable multi-touch = mode2");
+			logger.info("enable multi-touch = mode 2");
 		} else if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
 			finger.setMultiTouchEnable(1);
 
@@ -611,7 +609,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				pressingOriginX = pressingOriginY = -1;
 			}
 
-			logger.info("enable multi-touch = mode1");
+			logger.info("enable multi-touch = mode 1");
 		}
 
 		KeyEventData keyEventData = new KeyEventData(

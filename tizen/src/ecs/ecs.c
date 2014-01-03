@@ -170,16 +170,42 @@ static inline void start_logging(void) {
 
     stdout[0] = flog[0];
     stderr[0] = flog[0];
+
+    g_free(path);
 #else
     log_fd = open("/dev/null", O_RDONLY);
-    dup2(log_fd, 0);
+    if(log_fd < 0) {
+        fprintf(stderr, "failed to open() /dev/null\n");
+        return;
+    }
+    if(dup2(log_fd, 0) < 0) {
+        fprintf(stderr, "failed to dup2(log_fd, 0)\n");
+        return;
+    }
 
     log_fd = creat(path, 0640);
     if (log_fd < 0) {
         log_fd = open("/dev/null", O_WRONLY);
+        if(log_fd < 0) {
+            fprintf(stderr, "failed to open(/dev/null, O_WRONLY)\n");
+            g_free(path);
+            return;
+        }
     }
-    dup2(log_fd, 1);
-    dup2(log_fd, 2);
+
+    if(dup2(log_fd, 1) < 0) {
+        fprintf(stderr, "failed to dup2(log_fd, 1)\n");
+        g_free(path);
+        return;
+    }
+
+    if(dup2(log_fd, 2) < 0) {
+        fprintf(stderr, "failed to dup2(log_fd, 2)\n");
+        g_free(path);
+        return;
+    }
+
+    g_free(path);
 #endif
 }
 
@@ -955,6 +981,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             }
             else {
                 LOG("unsupported category is found: %s", msg->category);
+                pthread_mutex_unlock(&mutex_clilist);
                 goto fail;
             }
         }

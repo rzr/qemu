@@ -27,7 +27,8 @@ prepare()
 
 	REQUIRED_PKG="ant python zlib1g-dev libglib2.0-dev libsdl1.2-dev libasound2-dev \
 	 libx11-dev libv4l-dev libxcomposite-dev libpixman-1-dev libcurl4-gnutls-dev \
-	 libcap-dev libattr1-dev"
+	 libcap-dev libattr1-dev intltool libxml2 python-pyparsing libgtk-3-dev libogg-dev \
+	 openssl libsasl2-dev libjpeg8-dev libtext-csv-perl libvirt-dev"
 
 	echo "Checking required packages before compling!!"
 	for pkg in ${REQUIRED_PKG}
@@ -46,6 +47,9 @@ prepare()
 # build
 build()
 {
+	cd $SRCDIR/tizen/distrib/remote/
+	./build_linux.sh
+
 	cd $SRCDIR/tizen/
 	./emulator_configure.sh x86
 	make all_dibs

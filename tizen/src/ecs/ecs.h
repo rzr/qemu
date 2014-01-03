@@ -152,7 +152,7 @@ typedef struct ECS_State {
 #define TYPE_SIMUL_NFC  0x02
 
 typedef struct ECS_Client {
-    unsigned char client_fd;
+    int client_fd;
     unsigned char client_id;
     unsigned char client_type;
     int keep_alive;
@@ -223,6 +223,8 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg);
 int ecs_get_suspend_state(void);
 void ecs_set_suspend_state(int state);
 void ecs_suspend_lock_state(int state);
+
+void send_host_keyboard_ntf(int on);
 
 /* request */
 int accel_min_max(double value);

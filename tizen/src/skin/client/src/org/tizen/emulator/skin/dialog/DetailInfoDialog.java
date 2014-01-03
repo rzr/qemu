@@ -65,36 +65,39 @@ import org.tizen.emulator.skin.util.SwtUtil;
  *
  */
 public class DetailInfoDialog extends SkinDialog {
-	public final static String DETAIL_INFO_DIALOG_TITLE = "Detail Info";
+	private final static String DETAIL_INFO_DIALOG_TITLE = "Detail Info";
 
-	public final static String TABLE_COLUMN_NAME_0 = "Feature";
-	public final static String TABLE_COLUMN_NAME_1 = "Value";
+	private final static String TABLE_COLUMN_NAME_0 = "Feature";
+	private final static String TABLE_COLUMN_NAME_1 = "Value";
 
-	public final static String DATA_DELIMITER = "#";
-	public final static String QEMU_PARAMETER_KVM = "-enable-kvm";
-	public final static String QEMU_PARAMETER_HAX = "-enable-hax";
-	public final static String QEMU_PARAMETER_GL = "-enable-gl";
-	public final static String QEMU_PARAMETER_RAM = "-m";
-	public final static String QEMU_PARAMETER_DRIVE = "-drive";
+	private final static String DATA_DELIMITER = "#";
+	private final static String QEMU_PARAMETER_APPEND = "-append";
+	private final static String QEMU_PARAMETER_KVM = "-enable-kvm";
+	private final static String QEMU_PARAMETER_HAX = "-enable-hax";
+	private final static String QEMU_PARAMETER_VIRTFS = "-virtfs";
+	private final static String QEMU_PARAMETER_VIRTGL = "-enable-gl";
+	private final static String QEMU_PARAMETER_YAGL = "-enable-yagl";
+	private final static String QEMU_PARAMETER_RAM = "-m";
+	private final static String QEMU_PARAMETER_DRIVE = "-drive";
 
-	public final static String KEY_VM_NAME = "VM Name";
-	public final static String KEY_SKIN_NAME = "Skin Name";
-	public final static String KEY_CPU_ARCH = "CPU";
-	public final static String KEY_RAM_SIZE = "RAM Size";
-	public final static String KEY_DISPLAY_RESOLUTION = "Display Resolution";
-	public final static String KEY_DISPLAY_DENSITY = "Display Density";
-	public final static String KEY_FILESHARING = "File Sharing";
-	public final static String KEY_FILESHARED_PATH = "File Shared Path";
-	public final static String KEY_CPU_VIRTUALIZATION = "CPU Virtualization";
-	public final static String KEY_GPU_VIRTUALIZATION = "GPU Virtualization";
-	public final static String KEY_IMAGE_PATH = "Image Path";
-	public final static String KEY_LOG_PATH = "Log Path";
+	private final static String KEY_VM_NAME = "VM Name";
+	private final static String KEY_SKIN_NAME = "Skin Name";
+	private final static String KEY_CPU_ARCH = "CPU";
+	private final static String KEY_RAM_SIZE = "RAM Size";
+	private final static String KEY_DISPLAY_RESOLUTION = "Display Resolution";
+	private final static String KEY_DISPLAY_DENSITY = "Display Density";
+	private final static String KEY_FILESHARING = "File Sharing";
+	private final static String KEY_FILESHARED_PATH = "File Shared Path";
+	private final static String KEY_CPU_VIRTUALIZATION = "CPU Virtualization";
+	private final static String KEY_GPU_VIRTUALIZATION = "GPU Virtualization";
+	private final static String KEY_IMAGE_PATH = "Image Path";
+	private final static String KEY_LOG_PATH = "Log Path";
 
-	public final static String VALUE_NONE = "None";
-	public final static String VALUE_SUPPORTED = "Supported";
-	public final static String VALUE_NOTSUPPORTED = "Not Supported";
-	public final static String VALUE_ENABLED = "Enabled";
-	public final static String VALUE_DISABLED = "Disabled";
+	private final static String VALUE_NONE = "None";
+	private final static String VALUE_SUPPORTED = "Supported";
+	private final static String VALUE_NOTSUPPORTED = "Not Supported";
+	private final static String VALUE_ENABLED = "Enabled";
+	private final static String VALUE_DISABLED = "Disabled";
 
 	private Logger logger =
 			SkinLogger.getSkinLogger(DetailInfoDialog.class).getLogger();
@@ -266,7 +269,6 @@ public class DetailInfoDialog extends SkinDialog {
 		boolean isCpuVirtual = false;
 		boolean isGpuVirtual = false;
 		String cpuVirtualCompare = "";
-		String gpuVirtualCompare = "";
 		String logPath = "";
 		boolean isHaxError = false;
 
@@ -275,7 +277,6 @@ public class DetailInfoDialog extends SkinDialog {
 		} else {
 			cpuVirtualCompare = QEMU_PARAMETER_HAX;
 		}
-		gpuVirtualCompare = QEMU_PARAMETER_GL;
 
 		String[] split = infoData.split(DATA_DELIMITER);
 
@@ -317,7 +318,7 @@ public class DetailInfoDialog extends SkinDialog {
 							imagePathList.add(drivePath);
 						}
 					}
-					else if ("-virtfs".equals(arg))
+					else if (QEMU_PARAMETER_VIRTFS.equals(arg))
 					{
 						/* arg : local,path=/path,... */
 						arg = split[i + 1].trim();
@@ -328,7 +329,7 @@ public class DetailInfoDialog extends SkinDialog {
 							sharedPath = sp[1].substring(spIndex + 1, sp[1].length());
 						}
 					}
-					else if ("-append".equals(arg)) /* kernel parameters */
+					else if (QEMU_PARAMETER_APPEND.equals(arg)) /* kernel parameters */
 					{
 						arg = split[i + 1].trim();
 						String[] splitSub = arg.split(" ");
@@ -349,7 +350,8 @@ public class DetailInfoDialog extends SkinDialog {
 					{
 						isCpuVirtual = true;
 					}
-					else if (gpuVirtualCompare.equals(arg))
+					else if (QEMU_PARAMETER_VIRTGL.equals(arg) ||
+							QEMU_PARAMETER_YAGL.equals(arg))
 					{
 						isGpuVirtual = true;
 					}

@@ -1,0 +1,1079 @@
+  0 virt-viewer-display-spice.c   56 g_object_unref(spice->priv->display);
+  1 virt-viewer-display-spice.c   57 g_object_unref(spice->priv->channel);
+  2 virt-viewer-display-spice.c   92 g_return_if_fail(self->priv->display != NULL);
+  3 virt-viewer-display-spice.c   94 spice_display_send_keys(self->priv->display, keyva
+                                     ls, nkeyvals, SPICE_DISPLAY_KEY_EVENT_CLICK);
+  4 virt-viewer-display-spice.c  103 g_return_val_if_fail(self->priv->display != NULL, 
+                                     NULL);
+  5 virt-viewer-display-spice.c  105 return spice_display_get_pixbuf(self->priv->displa
+                                     y);
+  6 virt-viewer-display-spice.c  177 g_object_get(self->priv->channel, "channel-id", &c
+                                     hannelid, NULL);
+  7 virt-viewer-display-spice.c  193 spice_display_set_grab_keys(self->priv->display,
+  8 virt-viewer-display-spice.c  196 spice_display_set_grab_keys(self->priv->display, N
+                                     ULL);
+  9 virt-viewer-display-spice.c  218 self->priv->channel = g_object_ref(channel);
+ 10 virt-viewer-display-spice.c  219 self->priv->display = g_object_ref(display);
+ 11 virt-viewer-display-spice.c  226 gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(
+                                     self->priv->display));
+ 12 virt-viewer-display-spice.c  227 gtk_widget_show(GTK_WIDGET(self->priv->display));
+ 13 virt-viewer-display-spice.c  228 g_object_set(self->priv->display,
+ 14 virt-viewer-display-spice.c  235 g_signal_connect(self->priv->display,
+ 15 virt-viewer-display-spice.c  238 g_signal_connect(self->priv->display,
+ 16 virt-viewer-display-spice.c  258 spice_display_mouse_ungrab(self->priv->display);
+ 17 virt-viewer-session.c         56 GList *tmp = session->priv->displays;
+ 18 virt-viewer-session.c         62 g_list_free(session->priv->displays);
+ 19 virt-viewer-session.c         64 g_free(session->priv->uri);
+ 20 virt-viewer-session.c         83 self->priv->app = g_value_get_object(value);
+ 21 virt-viewer-session.c        106 g_value_set_object(value, self->priv->app);
+ 22 virt-viewer-session.c        285 session->priv->displays = g_list_append(session->p
+                                     riv->displays, display);
+ 23 virt-viewer-session.c        294 if (!g_list_find(session->priv->displays, display)
+                                     )
+ 24 virt-viewer-session.c        297 session->priv->displays = g_list_remove(session->p
+                                     riv->displays, display);
+ 25 virt-viewer-session.c        304 GList *tmp = session->priv->displays;
+ 26 virt-viewer-session.c        313 g_list_free(session->priv->displays);
+ 27 virt-viewer-session.c        314 session->priv->displays = NULL;
+ 28 virt-viewer-session.c        352 session->priv->uri = g_strdup(uri);
+ 29 virt-viewer-session.c        369 if (self->priv->auto_usbredir == auto_usbredir)
+ 30 virt-viewer-session.c        372 self->priv->auto_usbredir = auto_usbredir;
+ 31 virt-viewer-session.c        380 return self->priv->auto_usbredir;
+ 32 virt-viewer-session.c        443 return self->priv->app;
+ 33 virt-viewer-session.c        450 return g_strdup(self->priv->uri);
+ 34 virt-viewer-notebook.c        86 priv->status = gtk_label_new("");
+ 35 virt-viewer-notebook.c        89 gtk_notebook_append_page(GTK_NOTEBOOK(self), priv-
+                                     >status, NULL);
+ 36 virt-viewer-notebook.c        91 gtk_widget_modify_fg(priv->status, GTK_STATE_NORMA
+                                     L, &color);
+ 37 virt-viewer-notebook.c       105 gtk_label_set_text(GTK_LABEL(priv->status), text);
+ 38 remote-viewer.c               82 g_value_set_object(value, priv->controller);
+ 39 remote-viewer.c               85 g_value_set_object(value, priv->ctrl_foreign_menu)
+                                     ;
+ 40 remote-viewer.c              101 g_return_if_fail(priv->controller == NULL);
+ 41 remote-viewer.c              102 priv->controller = g_value_dup_object(value);
+ 42 remote-viewer.c              105 g_return_if_fail(priv->ctrl_foreign_menu == NULL);
+ 43 remote-viewer.c              106 priv->ctrl_foreign_menu = g_value_dup_object(value
+                                     );
+ 44 remote-viewer.c              119 if (priv->controller) {
+ 45 remote-viewer.c              120 g_object_unref(priv->controller);
+ 46 remote-viewer.c              121 priv->controller = NULL;
+ 47 remote-viewer.c              124 if (priv->ctrl_foreign_menu) {
+ 48 remote-viewer.c              125 g_object_unref(priv->ctrl_foreign_menu);
+ 49 remote-viewer.c              126 priv->ctrl_foreign_menu = NULL;
+ 50 remote-viewer.c              205 spice_ctrl_foreign_menu_app_activated_msg(self->pr
+                                     iv->ctrl_foreign_menu, has_focus);
+ 51 remote-viewer.c              328 if (self->priv->controller == NULL)
+ 52 remote-viewer.c              341 g_object_get(self->priv->controller, "menu", &menu
+                                     , NULL);
+ 53 remote-viewer.c              346 ctrlmenu_to_gtkmenu(self, menu, G_OBJECT(self->pri
+                                     v->controller)));
+ 54 remote-viewer.c              378 if (self->priv->ctrl_foreign_menu == NULL)
+ 55 remote-viewer.c              386 const gchar *title = spice_ctrl_foreign_menu_get_t
+                                     itle(self->priv->ctrl_foreign_menu);
+ 56 remote-viewer.c              392 g_object_get(self->priv->ctrl_foreign_menu, "menu"
+                                     , &menu, NULL);
+ 57 remote-viewer.c              397 ctrlmenu_to_gtkmenu(self, menu, G_OBJECT(self->pri
+                                     v->ctrl_foreign_menu)));
+ 58 remote-viewer.c              561 if (self->priv->ctrl_foreign_menu)
+ 59 remote-viewer.c              562 spice_ctrl_foreign_menu_app_activated_msg(self->pr
+                                     iv->ctrl_foreign_menu, g_value_get_boolean(&value)
+                                     );
+ 60 remote-viewer.c              712 if (self->priv->controller) {
+ 61 remote-viewer.c              748 if (priv->controller) {
+ 62 remote-viewer.c              754 g_signal_connect(priv->controller, "notify", G_CAL
+                                     LBACK(spice_ctrl_notified), self);
+ 63 remote-viewer.c              755 g_signal_connect(priv->controller, "do_connect", G
+                                     _CALLBACK(spice_ctrl_do_connect), self);
+ 64 remote-viewer.c              756 g_signal_connect(priv->controller, "show", G_CALLB
+                                     ACK(spice_ctrl_show), self);
+ 65 remote-viewer.c              757 g_signal_connect(priv->controller, "hide", G_CALLB
+                                     ACK(spice_ctrl_hide), self);
+ 66 remote-viewer.c              759 spice_ctrl_controller_listen(priv->controller, NUL
+                                     L, spice_ctrl_listen_async_cb, self);
+ 67 remote-viewer.c              761 g_signal_connect(priv->ctrl_foreign_menu, "notify"
+                                     , G_CALLBACK(spice_ctrl_foreign_menu_notified), se
+                                     lf);
+ 68 remote-viewer.c              762 spice_ctrl_foreign_menu_listen(priv->ctrl_foreign_
+                                     menu, NULL, spice_ctrl_listen_async_cb, self);
+ 69 virt-viewer-app.c            195 GtkWindow *window = GTK_WINDOW(virt_viewer_window_
+                                     get_window(self->priv->main_window));
+ 70 virt-viewer-app.c            227 if (priv->session) {
+ 71 virt-viewer-app.c            228 virt_viewer_session_close(VIRT_VIEWER_SESSION(priv
+                                     ->session));
+ 72 virt-viewer-app.c            229 if (priv->connected) {
+ 73 virt-viewer-app.c            230 priv->quiting = TRUE;
+ 74 virt-viewer-app.c            253 g_hash_table_foreach(self->priv->windows, count_wi
+                                     ndow_visible, &n);
+ 75 virt-viewer-app.c            260 return g_hash_table_size(self->priv->windows);
+ 76 virt-viewer-app.c            430 if (priv->verbose) {
+ 77 virt-viewer-app.c            444 if (app->priv->title != NULL) {
+ 78 virt-viewer-app.c            445 gchar *d = strstr(app->priv->title, "%d");
+ 79 virt-viewer-app.c            448 subtitle = g_strdup_printf("%s%d%s", app->priv->ti
+                                     tle, nth + 1, d + 2);
+ 80 virt-viewer-app.c            451 subtitle = g_strdup_printf("%s (%d)", app->priv->t
+                                     itle, nth + 1);
+ 81 virt-viewer-app.c            472 g_hash_table_foreach(app->priv->windows, set_title
+                                     , app);
+ 82 virt-viewer-app.c            485 g_hash_table_foreach(self->priv->windows, update_t
+                                     itle, NULL);
+ 83 virt-viewer-app.c            499 g_hash_table_foreach(self->priv->windows, set_usb_
+                                     options_sensitive,
+ 84 virt-viewer-app.c            506 return g_hash_table_lookup(self->priv->windows, &n
+                                     th);
+ 85 virt-viewer-app.c            521 removed = g_hash_table_steal(self->priv->windows, 
+                                     &nth);
+ 86 virt-viewer-app.c            541 g_hash_table_insert(self->priv->windows, key, win)
+                                     ;
+ 87 virt-viewer-app.c            559 self->priv->focused += 1;
+ 88 virt-viewer-app.c            561 if (self->priv->focused == 1)
+ 89 virt-viewer-app.c            572 self->priv->focused -= 1;
+ 90 virt-viewer-app.c            573 g_warn_if_fail(self->priv->focused >= 0);
+ 91 virt-viewer-app.c            575 if (self->priv->focused <= 0)
+ 92 virt-viewer-app.c            591 if (self->priv->main_window)
+ 93 virt-viewer-app.c            592 virt_viewer_window_set_zoom_level(window, virt_vie
+                                     wer_window_get_zoom_level(self->priv->main_window)
+                                     );
+ 94 virt-viewer-app.c            597 virt_viewer_app_set_fullscreen(self, self->priv->f
+                                     ullscreen);
+ 95 virt-viewer-app.c            623 if (win != self->priv->main_window &&
+ 96 virt-viewer-app.c            647 window = priv->main_window;
+ 97 virt-viewer-app.c            649 if (priv->container) {
+ 98 virt-viewer-app.c            687 g_return_val_if_fail(priv->session == NULL, -1);
+ 99 virt-viewer-app.c            692 GtkWindow *window = virt_viewer_window_get_window(
+                                     priv->main_window);
+100 virt-viewer-app.c            694 priv->guest_name, type);
+101 virt-viewer-app.c            695 priv->session = virt_viewer_session_vnc_new(window
+                                     );
+102 virt-viewer-app.c            700 GtkWindow *window = virt_viewer_window_get_window(
+                                     priv->main_window);
+103 virt-viewer-app.c            702 priv->guest_name, type);
+104 virt-viewer-app.c            703 priv->session = virt_viewer_session_spice_new(self
+                                     , window);
+105 virt-viewer-app.c            708 priv->guest_name, type);
+106 virt-viewer-app.c            710 priv->guest_name);
+107 virt-viewer-app.c            714 g_signal_connect(priv->session, "session-initializ
+                                     ed",
+108 virt-viewer-app.c            716 g_signal_connect(priv->session, "session-connected
+                                     ",
+109 virt-viewer-app.c            718 g_signal_connect(priv->session, "session-disconnec
+                                     ted",
+110 virt-viewer-app.c            720 g_signal_connect(priv->session, "session-channel-o
+                                     pen",
+111 virt-viewer-app.c            722 g_signal_connect(priv->session, "session-auth-refu
+                                     sed",
+112 virt-viewer-app.c            724 g_signal_connect(priv->session, "session-auth-fail
+                                     ed",
+113 virt-viewer-app.c            726 g_signal_connect(priv->session, "session-usb-faile
+                                     d",
+114 virt-viewer-app.c            728 g_signal_connect(priv->session, "session-display-a
+                                     dded",
+115 virt-viewer-app.c            730 g_signal_connect(priv->session, "session-display-r
+                                     emoved",
+116 virt-viewer-app.c            733 g_signal_connect(priv->session, "session-cut-text"
+                                     ,
+117 virt-viewer-app.c            735 g_signal_connect(priv->session, "session-bell",
+118 virt-viewer-app.c            737 g_signal_connect(priv->session, "session-cancelled
+                                     ",
+119 virt-viewer-app.c            780 if (priv->transport && g_ascii_strcasecmp(priv->tr
+                                     ansport, "ssh") == 0 &&
+120 virt-viewer-app.c            781 !priv->direct && fd == -1) {
+121 virt-viewer-app.c            782 if ((fd = virt_viewer_app_open_tunnel_ssh(priv->ho
+                                     st, priv->port, priv->user,
+122 virt-viewer-app.c            783 priv->ghost, priv->gport, NULL)) < 0)
+123 virt-viewer-app.c            814 if (priv->transport &&
+124 virt-viewer-app.c            815 g_ascii_strcasecmp(priv->transport, "ssh") == 0 &&
+125 virt-viewer-app.c            816 !priv->direct &&
+126 virt-viewer-app.c            820 if (priv->gport) {
+127 virt-viewer-app.c            822 priv->ghost, priv->gport);
+128 virt-viewer-app.c            825 priv->unixsock);
+129 virt-viewer-app.c            827 if (priv->port)
+130 virt-viewer-app.c            828 p = g_strdup_printf(":%d", priv->port);
+131 virt-viewer-app.c            831 priv->user ? priv->user : "",
+132 virt-viewer-app.c            832 priv->user ? "@" : "",
+133 virt-viewer-app.c            833 priv->host, p ? p : "");
+134 virt-viewer-app.c            836 if ((fd = virt_viewer_app_open_tunnel_ssh(priv->ho
+                                     st, priv->port,
+135 virt-viewer-app.c            837 priv->user, priv->ghost,
+136 virt-viewer-app.c            838 priv->gport, priv->unixsock)) < 0)
+137 virt-viewer-app.c            840 } else if (priv->unixsock && fd == -1) {
+138 virt-viewer-app.c            842 priv->unixsock);
+139 virt-viewer-app.c            843 if ((fd = virt_viewer_app_open_unix_sock(priv->uni
+                                     xsock)) < 0)
+140 virt-viewer-app.c            849 return virt_viewer_session_open_fd(VIRT_VIEWER_SES
+                                     SION(priv->session), fd);
+141 virt-viewer-app.c            850 } else if (priv->guri) {
+142 virt-viewer-app.c            851 virt_viewer_app_trace(self, "Opening connection to
+                                      display at %s\n", priv->guri);
+143 virt-viewer-app.c            852 return virt_viewer_session_open_uri(VIRT_VIEWER_SE
+                                     SSION(priv->session), priv->guri);
+144 virt-viewer-app.c            855 priv->ghost, priv->gport, priv->gtlsport ? priv->g
+                                     tlsport : "-1");
+145 virt-viewer-app.c            856 return virt_viewer_session_open_host(VIRT_VIEWER_S
+                                     ESSION(priv->session),
+146 virt-viewer-app.c            857 priv->ghost, priv->gport, priv->gtlsport);
+147 virt-viewer-app.c            872 if (priv->active)
+148 virt-viewer-app.c            879 priv->connected = FALSE;
+149 virt-viewer-app.c            880 priv->cancelled = FALSE;
+150 virt-viewer-app.c            881 priv->active = TRUE;
+151 virt-viewer-app.c            882 priv->grabbed = FALSE;
+152 virt-viewer-app.c            898 gtk_selection_data_set_text(data, priv->clipboard,
+                                      -1);
+153 virt-viewer-app.c            919 g_free (priv->clipboard);
+154 virt-viewer-app.c            920 priv->clipboard = g_convert (text, -1, "utf-8", "i
+                                     so8859-1", &a, &b, NULL);
+155 virt-viewer-app.c            922 if (priv->clipboard) {
+156 virt-viewer-app.c            940 gdk_window_beep(gtk_widget_get_window(GTK_WIDGET(v
+                                     irt_viewer_window_get_window(priv->main_window))))
+                                     ;
+157 virt-viewer-app.c            979 if (!priv->active &&
+158 virt-viewer-app.c            983 if (priv->active) {
+159 virt-viewer-app.c            984 priv->reconnect_poll = 0;
+160 virt-viewer-app.c            997 if (priv->reconnect_poll != 0)
+161 virt-viewer-app.c           1000 priv->reconnect_poll = g_timeout_add(500, virt_vie
+                                     wer_app_connect_timer, self);
+162 virt-viewer-app.c           1010 priv->guest_name);
+163 virt-viewer-app.c           1028 if (!priv->active)
+164 virt-viewer-app.c           1031 if (priv->session)
+165 virt-viewer-app.c           1032 virt_viewer_session_close(VIRT_VIEWER_SESSION(priv
+                                     ->session));
+166 virt-viewer-app.c           1034 priv->connected = FALSE;
+167 virt-viewer-app.c           1035 priv->active = FALSE;
+168 virt-viewer-app.c           1037 g_free(priv->pretty_address);
+169 virt-viewer-app.c           1038 priv->pretty_address = NULL;
+170 virt-viewer-app.c           1040 priv->grabbed = FALSE;
+171 virt-viewer-app.c           1043 if (priv->authretry) {
+172 virt-viewer-app.c           1044 priv->authretry = FALSE;
+173 virt-viewer-app.c           1057 priv->connected = TRUE;
+174 virt-viewer-app.c           1067 gboolean has_usb = virt_viewer_session_has_usb(sel
+                                     f->priv->session);
+175 virt-viewer-app.c           1079 if (priv->quiting)
+176 virt-viewer-app.c           1082 if (!priv->connected && !priv->cancelled) {
+177 virt-viewer-app.c           1085 priv->pretty_address);
+178 virt-viewer-app.c           1095 priv->cancelled = TRUE;
+179 virt-viewer-app.c           1108 dialog = gtk_message_dialog_new(virt_viewer_window
+                                     _get_window(priv->main_window),
+180 virt-viewer-app.c           1115 priv->pretty_address, msg);
+181 virt-viewer-app.c           1122 priv->authretry = TRUE;
+182 virt-viewer-app.c           1124 priv->authretry = FALSE;
+183 virt-viewer-app.c           1154 g_value_set_boolean(value, priv->verbose);
+184 virt-viewer-app.c           1158 g_value_set_object(value, priv->container);
+185 virt-viewer-app.c           1162 g_value_set_object(value, priv->session);
+186 virt-viewer-app.c           1166 g_value_set_string(value, priv->guest_name);
+187 virt-viewer-app.c           1170 g_value_set_string(value, priv->guri);
+188 virt-viewer-app.c           1174 g_value_set_boolean(value, priv->fullscreen);
+189 virt-viewer-app.c           1178 g_value_set_string(value, priv->title);
+190 virt-viewer-app.c           1186 g_value_set_boolean(value, priv->focused > 0);
+191 virt-viewer-app.c           1190 g_value_set_boolean(value, priv->fullscreen_auto_c
+                                     onf);
+192 virt-viewer-app.c           1208 priv->verbose = g_value_get_boolean(value);
+193 virt-viewer-app.c           1212 g_return_if_fail(priv->container == NULL);
+194 virt-viewer-app.c           1213 priv->container = g_value_dup_object(value);
+195 virt-viewer-app.c           1217 g_free(priv->guest_name);
+196 virt-viewer-app.c           1218 priv->guest_name = g_value_dup_string(value);
+197 virt-viewer-app.c           1222 g_free(priv->guri);
+198 virt-viewer-app.c           1223 priv->guri = g_value_dup_string(value);
+199 virt-viewer-app.c           1232 g_free(priv->title);
+200 virt-viewer-app.c           1233 priv->title = g_value_dup_string(value);
+201 virt-viewer-app.c           1238 priv->enable_accel = g_value_get_boolean(value);
+202 virt-viewer-app.c           1242 priv->fullscreen_auto_conf = g_value_get_boolean(v
+                                     alue);
+203 virt-viewer-app.c           1256 if (priv->windows) {
+204 virt-viewer-app.c           1257 GHashTable *tmp = priv->windows;
+205 virt-viewer-app.c           1259 * to prevent callbacks using priv->windows
+206 virt-viewer-app.c           1261 priv->windows = NULL;
+207 virt-viewer-app.c           1262 priv->main_window = NULL;
+208 virt-viewer-app.c           1266 if (priv->container) {
+209 virt-viewer-app.c           1267 g_object_unref(priv->container);
+210 virt-viewer-app.c           1268 priv->container = NULL;
+211 virt-viewer-app.c           1271 if (priv->session) {
+212 virt-viewer-app.c           1272 g_object_unref(priv->session);
+213 virt-viewer-app.c           1273 priv->session = NULL;
+214 virt-viewer-app.c           1275 g_free(priv->title);
+215 virt-viewer-app.c           1285 virt_viewer_window_show(self->priv->main_window);
+216 virt-viewer-app.c           1296 g_return_val_if_fail(!self->priv->started, TRUE);
+217 virt-viewer-app.c           1298 self->priv->started = klass->start(self);
+218 virt-viewer-app.c           1299 return self->priv->started;
+219 virt-viewer-app.c           1306 self->priv->windows = g_hash_table_new_full(g_int_
+                                     hash, g_int_equal, g_free, g_object_unref);
+220 virt-viewer-app.c           1322 priv->main_window = virt_viewer_app_window_new(sel
+                                     f, priv->container, 0);
+221 virt-viewer-app.c           1323 priv->main_notebook = GTK_WIDGET(virt_viewer_windo
+                                     w_get_notebook(priv->main_window));
+222 virt-viewer-app.c           1477 self->priv->direct = direct;
+223 virt-viewer-app.c           1485 self->priv->attach = attach;
+224 virt-viewer-app.c           1493 return self->priv->attach;
+225 virt-viewer-app.c           1501 return self->priv->active;
+226 virt-viewer-app.c           1509 return self->priv->session != NULL;
+227 virt-viewer-app.c           1518 g_free(priv->pretty_address);
+228 virt-viewer-app.c           1519 if (priv->guri)
+229 virt-viewer-app.c           1520 priv->pretty_address = g_strdup(priv->guri);
+230 virt-viewer-app.c           1521 else if (priv->gport)
+231 virt-viewer-app.c           1522 priv->pretty_address = g_strdup_printf("%s:%s", pr
+                                     iv->ghost, priv->gport);
+232 virt-viewer-app.c           1524 priv->pretty_address = g_strdup_printf("%s:%s", pr
+                                     iv->host, priv->unixsock);
+233 virt-viewer-app.c           1561 .move = virt_viewer_app_get_n_windows_visible(self
+                                     ) > 1 || self->priv->fullscreen_auto_conf,
+234 virt-viewer-app.c           1565 priv->fullscreen = fullscreen;
+235 virt-viewer-app.c           1566 g_hash_table_foreach(priv->windows, fullscreen_cb,
+                                      &options);
+236 virt-viewer-app.c           1614 GList *keys = g_hash_table_get_keys(self->priv->wi
+                                     ndows);
+237 virt-viewer-app.c           1622 VirtViewerWindow *vwin = VIRT_VIEWER_WINDOW(g_hash
+                                     _table_lookup(self->priv->windows, nth));
+238 virt-viewer-app.c           1643 if (!self->priv->windows)
+239 virt-viewer-app.c           1645 g_hash_table_foreach(self->priv->windows, window_u
+                                     pdate_menu_displays_cb, self);
+240 virt-viewer-app.c           1666 g_free(priv->host);
+241 virt-viewer-app.c           1667 g_free(priv->ghost);
+242 virt-viewer-app.c           1668 g_free(priv->gport);
+243 virt-viewer-app.c           1669 g_free(priv->gtlsport);
+244 virt-viewer-app.c           1670 g_free(priv->transport);
+245 virt-viewer-app.c           1671 g_free(priv->unixsock);
+246 virt-viewer-app.c           1672 g_free(priv->user);
+247 virt-viewer-app.c           1673 g_free(priv->guri);
+248 virt-viewer-app.c           1675 priv->host = g_strdup(host);
+249 virt-viewer-app.c           1676 priv->ghost = g_strdup(ghost);
+250 virt-viewer-app.c           1677 priv->gport = g_strdup(gport);
+251 virt-viewer-app.c           1678 priv->gtlsport = gtlsport ? g_strdup(gtlsport) : N
+                                     ULL;
+252 virt-viewer-app.c           1679 priv->transport = g_strdup(transport);
+253 virt-viewer-app.c           1680 priv->unixsock = g_strdup(unixsock);
+254 virt-viewer-app.c           1681 priv->user = g_strdup(user);
+255 virt-viewer-app.c           1682 priv->guri = g_strdup(guri);
+256 virt-viewer-app.c           1683 priv->port = port;
+257 virt-viewer-app.c           1701 return self->priv->main_window;
+258 virt-viewer-app.c           1728 g_hash_table_foreach(self->priv->windows, show_sta
+                                     tus_cb, text);
+259 virt-viewer-app.c           1746 g_hash_table_foreach(self->priv->windows, show_dis
+                                     play_cb, self);
+260 virt-viewer-app.c           1754 return self->priv->enable_accel;
+261 virt-viewer-app.c           1762 return self->priv->session;
+262 virt-viewer-app.c           1769 return self->priv->windows;
+263 virt-viewer-window.c         119 g_value_set_string(value, priv->subtitle);
+264 virt-viewer-window.c         123 g_value_set_object(value, priv->window);
+265 virt-viewer-window.c         127 g_value_set_object(value, priv->display);
+266 virt-viewer-window.c         131 g_value_set_object(value, priv->container);
+267 virt-viewer-window.c         135 g_value_set_object(value, priv->app);
+268 virt-viewer-window.c         151 g_free(priv->subtitle);
+269 virt-viewer-window.c         152 priv->subtitle = g_value_dup_string(value);
+270 virt-viewer-window.c         157 g_return_if_fail(priv->container == NULL);
+271 virt-viewer-window.c         158 priv->container = g_value_dup_object(value);
+272 virt-viewer-window.c         162 g_return_if_fail(priv->app == NULL);
+273 virt-viewer-window.c         163 priv->app = g_value_get_object(value);
+274 virt-viewer-window.c         177 if (priv->display) {
+275 virt-viewer-window.c         178 g_object_unref(priv->display);
+276 virt-viewer-window.c         179 priv->display = NULL;
+277 virt-viewer-window.c         184 if (priv->window) {
+278 virt-viewer-window.c         185 gtk_widget_destroy(priv->window);
+279 virt-viewer-window.c         186 priv->window = NULL;
+280 virt-viewer-window.c         188 if (priv->builder) {
+281 virt-viewer-window.c         189 g_object_unref(priv->builder);
+282 virt-viewer-window.c         190 priv->builder = NULL;
+283 virt-viewer-window.c         193 g_free(priv->subtitle);
+284 virt-viewer-window.c         194 priv->subtitle = NULL;
+285 virt-viewer-window.c         279 priv->auto_resize = TRUE;
+286 virt-viewer-window.c         280 g_value_init(&priv->accel_setting, G_TYPE_STRING);
+287 virt-viewer-window.c         282 priv->notebook = virt_viewer_notebook_new();
+288 virt-viewer-window.c         283 priv->builder = virt_viewer_util_load_ui("virt-vie
+                                     wer.xml");
+289 virt-viewer-window.c         285 menu = GTK_WIDGET(gtk_builder_get_object(priv->bui
+                                     lder, "menu-view-resize"));
+290 virt-viewer-window.c         287 gtk_widget_set_sensitive(GTK_WIDGET(gtk_builder_ge
+                                     t_object(self->priv->builder, "menu-send")), FALSE
+                                     );
+291 virt-viewer-window.c         288 gtk_widget_set_sensitive(GTK_WIDGET(gtk_builder_ge
+                                     t_object(self->priv->builder, "menu-file-screensho
+                                     t")), FALSE);
+292 virt-viewer-window.c         290 gtk_builder_connect_signals(priv->builder, self);
+293 virt-viewer-window.c         292 priv->accel_group = GTK_ACCEL_GROUP(gtk_builder_ge
+                                     t_object(priv->builder, "accelgroup"));
+294 virt-viewer-window.c         295 g_signal_connect(gtk_builder_get_object(priv->buil
+                                     der, "menu-view-fullscreen"),
+295 virt-viewer-window.c         297 g_signal_connect(gtk_builder_get_object(priv->buil
+                                     der, "menu-file-smartcard-insert"),
+296 virt-viewer-window.c         299 g_signal_connect(gtk_builder_get_object(priv->buil
+                                     der, "menu-file-smartcard-remove"),
+297 virt-viewer-window.c         301 g_signal_connect(gtk_builder_get_object(priv->buil
+                                     der, "menu-view-release-cursor"),
+298 virt-viewer-window.c         304 vbox = GTK_WIDGET(gtk_builder_get_object(priv->bui
+                                     lder, "viewer-box"));
+299 virt-viewer-window.c         307 gtk_box_pack_end(GTK_BOX(vbox), priv->layout, TRUE
+                                     , TRUE, 0);
+300 virt-viewer-window.c         309 gtk_widget_modify_bg(priv->layout, GTK_STATE_NORMA
+                                     L, &color);
+301 virt-viewer-window.c         311 priv->window = GTK_WIDGET(gtk_builder_get_object(p
+                                     riv->builder, "viewer"));
+302 virt-viewer-window.c         312 gtk_window_add_accel_group(GTK_WINDOW(priv->window
+                                     ), priv->accel_group);
+303 virt-viewer-window.c         315 gtk_window_set_resizable(GTK_WINDOW(priv->window),
+                                      TRUE);
+304 virt-viewer-window.c         317 gtk_window_set_has_resize_grip(GTK_WINDOW(priv->wi
+                                     ndow), FALSE);
+305 virt-viewer-window.c         319 priv->accel_enabled = TRUE;
+306 virt-viewer-window.c         321 accels = gtk_accel_groups_from_object(G_OBJECT(pri
+                                     v->window));
+307 virt-viewer-window.c         323 priv->accel_list = g_slist_append(priv->accel_list
+                                     , accels->data);
+308 virt-viewer-window.c         327 priv->zoomlevel = 100;
+309 virt-viewer-window.c         334 if (!gtk_widget_get_visible(self->priv->window)) {
+310 virt-viewer-window.c         335 self->priv->desktop_resize_pending = TRUE;
+311 virt-viewer-window.c         348 if (priv->zoomlevel > 10)
+312 virt-viewer-window.c         349 priv->zoomlevel -= 10;
+313 virt-viewer-window.c         351 if (!priv->display)
+314 virt-viewer-window.c         354 gtk_window_resize(GTK_WINDOW(priv->window), 1, 1);
+315 virt-viewer-window.c         355 if (priv->display)
+316 virt-viewer-window.c         356 virt_viewer_display_set_zoom_level(VIRT_VIEWER_DIS
+                                     PLAY(priv->display), priv->zoomlevel);
+317 virt-viewer-window.c         365 if (priv->zoomlevel < 400)
+318 virt-viewer-window.c         366 priv->zoomlevel += 10;
+319 virt-viewer-window.c         368 if (!priv->display)
+320 virt-viewer-window.c         371 gtk_window_resize(GTK_WINDOW(priv->window), 1, 1);
+321 virt-viewer-window.c         372 if (priv->display)
+322 virt-viewer-window.c         373 virt_viewer_display_set_zoom_level(VIRT_VIEWER_DIS
+                                     PLAY(priv->display), priv->zoomlevel);
+323 virt-viewer-window.c         381 gtk_window_resize(GTK_WINDOW(priv->window), 1, 1);
+324 virt-viewer-window.c         382 priv->zoomlevel = 100;
+325 virt-viewer-window.c         384 if (priv->display)
+326 virt-viewer-window.c         385 virt_viewer_display_set_zoom_level(VIRT_VIEWER_DIS
+                                     PLAY(priv->display), priv->zoomlevel);
+327 virt-viewer-window.c         406 if (!priv->auto_resize || priv->fullscreen)
+328 virt-viewer-window.c         410 if (!priv->display) {
+329 virt-viewer-window.c         415 gtk_window_resize(GTK_WINDOW(priv->window), 1, 1);
+330 virt-viewer-window.c         417 virt_viewer_display_get_desktop_size(VIRT_VIEWER_D
+                                     ISPLAY(priv->display),
+331 virt-viewer-window.c         420 screen = gtk_widget_get_screen(priv->window);
+332 virt-viewer-window.c         423 (screen, gtk_widget_get_window(priv->window)),
+333 virt-viewer-window.c         449 virt_viewer_display_set_desktop_size(VIRT_VIEWER_D
+                                     ISPLAY(priv->display),
+334 virt-viewer-window.c         457 GtkWidget *menu = GTK_WIDGET(gtk_builder_get_objec
+                                     t(priv->builder, "top-menu"));
+335 virt-viewer-window.c         458 GtkCheckMenuItem *check = GTK_CHECK_MENU_ITEM(gtk_
+                                     builder_get_object(priv->builder, "menu-view-fulls
+                                     creen"));
+336 virt-viewer-window.c         460 if (!priv->fullscreen)
+337 virt-viewer-window.c         464 priv->fullscreen = FALSE;
+338 virt-viewer-window.c         465 ViewAutoDrawer_SetActive(VIEW_AUTODRAWER(priv->lay
+                                     out), FALSE);
+339 virt-viewer-window.c         467 gtk_widget_hide(priv->toolbar);
+340 virt-viewer-window.c         469 gtk_widget_set_size_request(GTK_WIDGET(priv->windo
+                                     w), -1, -1);
+341 virt-viewer-window.c         471 gtk_window_unfullscreen(GTK_WINDOW(priv->window));
+342 virt-viewer-window.c         473 if (priv->before_saved) {
+343 virt-viewer-window.c         474 gtk_window_move(GTK_WINDOW(priv->window),
+344 virt-viewer-window.c         475 priv->before_fullscreen.x,
+345 virt-viewer-window.c         476 priv->before_fullscreen.y);
+346 virt-viewer-window.c         477 gtk_window_resize(GTK_WINDOW(priv->window),
+347 virt-viewer-window.c         478 priv->before_fullscreen.width,
+348 virt-viewer-window.c         479 priv->before_fullscreen.height);
+349 virt-viewer-window.c         480 priv->before_saved = FALSE;
+350 virt-viewer-window.c         488 GtkWidget *menu = GTK_WIDGET(gtk_builder_get_objec
+                                     t(priv->builder, "top-menu"));
+351 virt-viewer-window.c         489 GtkCheckMenuItem *check = GTK_CHECK_MENU_ITEM(gtk_
+                                     builder_get_object(priv->builder, "menu-view-fulls
+                                     creen"));
+352 virt-viewer-window.c         491 if (!priv->before_saved) {
+353 virt-viewer-window.c         492 gtk_window_get_position(GTK_WINDOW(priv->window),
+354 virt-viewer-window.c         493 &priv->before_fullscreen.x,
+355 virt-viewer-window.c         494 &priv->before_fullscreen.y);
+356 virt-viewer-window.c         495 gtk_window_get_size(GTK_WINDOW(priv->window),
+357 virt-viewer-window.c         496 &priv->before_fullscreen.width,
+358 virt-viewer-window.c         497 &priv->before_fullscreen.height);
+359 virt-viewer-window.c         498 priv->before_saved = TRUE;
+360 virt-viewer-window.c         501 if (priv->fullscreen)
+361 virt-viewer-window.c         503 priv->fullscreen = TRUE;
+362 virt-viewer-window.c         507 gtk_widget_show(priv->toolbar);
+363 virt-viewer-window.c         508 ViewAutoDrawer_SetActive(VIEW_AUTODRAWER(priv->lay
+                                     out), TRUE);
+364 virt-viewer-window.c         509 ViewAutoDrawer_Close(VIEW_AUTODRAWER(priv->layout)
+                                     );
+365 virt-viewer-window.c         513 gtk_window_move(GTK_WINDOW(priv->window), x, y);
+366 virt-viewer-window.c         515 gtk_window_fullscreen(GTK_WINDOW(priv->window));
+367 virt-viewer-window.c         519 gtk_widget_set_size_request(GTK_WIDGET(priv->windo
+                                     w),
+368 virt-viewer-window.c         564 virt_viewer_display_send_keys(VIRT_VIEWER_DISPLAY(
+                                     priv->display),
+369 virt-viewer-window.c         602 if (!priv->accel_enabled)
+370 virt-viewer-window.c         608 g_object_get_property(G_OBJECT(settings), "gtk-men
+                                     u-bar-accel", &priv->accel_setting);
+371 virt-viewer-window.c         612 for (accels = priv->accel_list ; accels ; accels =
+                                      accels->next) {
+372 virt-viewer-window.c         613 if (virt_viewer_app_get_enable_accel(priv->app) &&
+373 virt-viewer-window.c         614 priv->accel_group == accels->data)
+374 virt-viewer-window.c         616 gtk_window_remove_accel_group(GTK_WINDOW(priv->win
+                                     dow), accels->data);
+375 virt-viewer-window.c         621 "gtk-enable-mnemonics", &priv->enable_mnemonics_sa
+                                     ve,
+376 virt-viewer-window.c         627 priv->accel_enabled = FALSE;
+377 virt-viewer-window.c         637 if (priv->accel_enabled)
+378 virt-viewer-window.c         641 g_object_set_property(G_OBJECT(settings), "gtk-men
+                                     u-bar-accel", &priv->accel_setting);
+379 virt-viewer-window.c         644 for (accels = priv->accel_list ; accels ; accels =
+                                      accels->next) {
+380 virt-viewer-window.c         645 if (virt_viewer_app_get_enable_accel(priv->app) &&
+381 virt-viewer-window.c         646 priv->accel_group == accels->data)
+382 virt-viewer-window.c         648 gtk_window_add_accel_group(GTK_WINDOW(priv->window
+                                     ), accels->data);
+383 virt-viewer-window.c         653 "gtk-enable-mnemonics", priv->enable_mnemonics_sav
+                                     e,
+384 virt-viewer-window.c         656 priv->accel_enabled = TRUE;
+385 virt-viewer-window.c         666 virt_viewer_app_window_set_visible(self->priv->app
+                                     , self, FALSE);
+386 virt-viewer-window.c         675 virt_viewer_app_quit(self->priv->app);
+387 virt-viewer-window.c         683 g_object_set(self->priv->app, "fullscreen", FALSE,
+                                      NULL);
+388 virt-viewer-window.c         693 gdk_window_get_origin(gtk_widget_get_window(self->
+                                     priv->toolbar_send_key), x, y);
+389 virt-viewer-window.c         694 gtk_widget_translate_coordinates(self->priv->toolb
+                                     ar_send_key, gtk_widget_get_toplevel(self->priv->t
+                                     oolbar_send_key),
+390 virt-viewer-window.c         696 gtk_widget_get_allocation(self->priv->toolbar_send
+                                     _key, &allocation);
+391 virt-viewer-window.c         717 g_object_set(self->priv->app, "fullscreen", fullsc
+                                     reen, NULL);
+392 virt-viewer-window.c         727 priv->auto_resize = TRUE;
+393 virt-viewer-window.c         730 priv->auto_resize = FALSE;
+394 virt-viewer-window.c         733 virt_viewer_display_set_auto_resize(priv->display,
+                                      priv->auto_resize);
+395 virt-viewer-window.c         741 GdkPixbuf *pix = virt_viewer_display_get_pixbuf(VI
+                                     RT_VIEWER_DISPLAY(priv->display));
+396 virt-viewer-window.c         755 g_return_if_fail(priv->display != NULL);
+397 virt-viewer-window.c         765 GTK_WINDOW(self->priv->window));
+398 virt-viewer-window.c         785 virt_viewer_session_usb_device_selection(virt_view
+                                     er_app_get_session(self->priv->app),
+399 virt-viewer-window.c         786 GTK_WINDOW(self->priv->window));
+400 virt-viewer-window.c         793 virt_viewer_session_smartcard_insert(virt_viewer_a
+                                     pp_get_session(self->priv->app));
+401 virt-viewer-window.c         800 virt_viewer_session_smartcard_remove(virt_viewer_a
+                                     pp_get_session(self->priv->app));
+402 virt-viewer-window.c         807 virt_viewer_display_release_cursor(VIRT_VIEWER_DIS
+                                     PLAY(self->priv->display));
+403 virt-viewer-window.c         820 GTK_WINDOW(self->priv->window));
+404 virt-viewer-window.c         836 priv->toolbar = gtk_toolbar_new();
+405 virt-viewer-window.c         837 gtk_toolbar_set_show_arrow(GTK_TOOLBAR(priv->toolb
+                                     ar), FALSE);
+406 virt-viewer-window.c         838 gtk_widget_set_no_show_all(priv->toolbar, TRUE);
+407 virt-viewer-window.c         839 gtk_toolbar_set_style(GTK_TOOLBAR(priv->toolbar), 
+                                     GTK_TOOLBAR_BOTH_HORIZ);
+408 virt-viewer-window.c         845 gtk_toolbar_insert(GTK_TOOLBAR(priv->toolbar), GTK
+                                     _TOOL_ITEM (button), 0);
+409 virt-viewer-window.c         852 gtk_toolbar_insert(GTK_TOOLBAR(priv->toolbar), GTK
+                                     _TOOL_ITEM(button), 0);
+410 virt-viewer-window.c         854 priv->toolbar_usb_device_selection = button;
+411 virt-viewer-window.c         861 gtk_toolbar_insert(GTK_TOOLBAR(priv->toolbar), GTK
+                                     _TOOL_ITEM(button), 0);
+412 virt-viewer-window.c         864 priv->toolbar_send_key = button;
+413 virt-viewer-window.c         872 gtk_toolbar_insert(GTK_TOOLBAR(priv->toolbar), GTK
+                                     _TOOL_ITEM(button), 0);
+414 virt-viewer-window.c         875 priv->layout = ViewAutoDrawer_New();
+415 virt-viewer-window.c         877 ViewAutoDrawer_SetActive(VIEW_AUTODRAWER(priv->lay
+                                     out), FALSE);
+416 virt-viewer-window.c         878 ViewOvBox_SetOver(VIEW_OV_BOX(priv->layout), priv-
+                                     >toolbar);
+417 virt-viewer-window.c         879 ViewOvBox_SetUnder(VIEW_OV_BOX(priv->layout), GTK_
+                                     WIDGET(priv->notebook));
+418 virt-viewer-window.c         880 ViewAutoDrawer_SetOffset(VIEW_AUTODRAWER(priv->lay
+                                     out), -1);
+419 virt-viewer-window.c         881 ViewAutoDrawer_SetFill(VIEW_AUTODRAWER(priv->layou
+                                     t), FALSE);
+420 virt-viewer-window.c         882 ViewAutoDrawer_SetOverlapPixels(VIEW_AUTODRAWER(pr
+                                     iv->layout), 1);
+421 virt-viewer-window.c         883 ViewAutoDrawer_SetNoOverlapPixels(VIEW_AUTODRAWER(
+                                     priv->layout), 0);
+422 virt-viewer-window.c         884 gtk_widget_show(priv->layout);
+423 virt-viewer-window.c         890 return VIRT_VIEWER_NOTEBOOK(self->priv->notebook);
+424 virt-viewer-window.c         896 return GTK_WINDOW(self->priv->window);
+425 virt-viewer-window.c         905 priv->grabbed = TRUE;
+426 virt-viewer-window.c         915 priv->grabbed = FALSE;
+427 virt-viewer-window.c         940 if (priv->grabbed) {
+428 virt-viewer-window.c         943 if (virt_viewer_app_get_enable_accel(priv->app)) {
+429 virt-viewer-window.c         955 if (!ungrab && !priv->subtitle)
+430 virt-viewer-window.c         966 ungrab && priv->subtitle ? _(" ") : "",
+431 virt-viewer-window.c         967 priv->subtitle,
+432 virt-viewer-window.c         970 gtk_window_set_title(GTK_WINDOW(priv->window), tit
+                                     le);
+433 virt-viewer-window.c         985 menu = GTK_WIDGET(gtk_builder_get_object(priv->bui
+                                     lder, "menu-file-usb-device-selection"));
+434 virt-viewer-window.c         987 gtk_widget_set_visible(priv->toolbar_usb_device_se
+                                     lection, sensitive);
+435 virt-viewer-window.c         998 gtk_widget_set_sensitive(GTK_WIDGET(gtk_builder_ge
+                                     t_object(self->priv->builder, "menu-send")), hint)
+                                     ;
+436 virt-viewer-window.c         999 gtk_widget_set_sensitive(GTK_WIDGET(gtk_builder_ge
+                                     t_object(self->priv->builder, "menu-file-screensho
+                                     t")), hint);
+437 virt-viewer-window.c        1000 gtk_widget_set_sensitive(self->priv->toolbar_send_
+                                     key, hint);
+438 virt-viewer-window.c        1012 if (priv->display) {
+439 virt-viewer-window.c        1013 gtk_notebook_remove_page(GTK_NOTEBOOK(priv->notebo
+                                     ok), 1);
+440 virt-viewer-window.c        1014 g_object_unref(priv->display);
+441 virt-viewer-window.c        1015 priv->display = NULL;
+442 virt-viewer-window.c        1019 priv->display = g_object_ref(display);
+443 virt-viewer-window.c        1021 virt_viewer_display_set_zoom_level(VIRT_VIEWER_DIS
+                                     PLAY(priv->display), priv->zoomlevel);
+444 virt-viewer-window.c        1022 virt_viewer_display_set_auto_resize(VIRT_VIEWER_DI
+                                     SPLAY(priv->display), priv->auto_resize);
+445 virt-viewer-window.c        1024 gtk_notebook_append_page(GTK_NOTEBOOK(priv->notebo
+                                     ok), GTK_WIDGET(display), NULL);
+446 virt-viewer-window.c        1045 gtk_widget_show(self->priv->window);
+447 virt-viewer-window.c        1047 if (self->priv->desktop_resize_pending) {
+448 virt-viewer-window.c        1049 self->priv->desktop_resize_pending = FALSE;
+449 virt-viewer-window.c        1056 gtk_widget_hide(self->priv->window);
+450 virt-viewer-window.c        1065 self->priv->zoomlevel = zoom_level;
+451 virt-viewer-window.c        1071 return self->priv->zoomlevel;
+452 virt-viewer-window.c        1079 return GTK_MENU_ITEM(gtk_builder_get_object(self->
+                                     priv->builder, "menu-displays"));
+453 virt-viewer-window.c        1087 return self->priv->builder;
+454 virt-viewer-display-vnc.c     49 g_object_unref(vnc->priv->vnc);
+455 virt-viewer-display-vnc.c    115 g_return_if_fail(self->priv->vnc != NULL);
+456 virt-viewer-display-vnc.c    117 vnc_display_send_keys(self->priv->vnc, keyvals, nk
+                                     eyvals);
+457 virt-viewer-display-vnc.c    127 g_return_val_if_fail(self->priv->vnc != NULL, NULL
+                                     );
+458 virt-viewer-display-vnc.c    129 return vnc_display_get_pixbuf(self->priv->vnc);
+459 virt-viewer-display-vnc.c    158 display->priv->vnc = vnc;
+460 virt-viewer-display-vnc.c    160 gtk_container_add(GTK_CONTAINER(display), GTK_WIDG
+                                     ET(display->priv->vnc));
+461 virt-viewer-display-vnc.c    161 vnc_display_set_keyboard_grab(display->priv->vnc, 
+                                     TRUE);
+462 virt-viewer-display-vnc.c    162 vnc_display_set_pointer_grab(display->priv->vnc, T
+                                     RUE);
+463 virt-viewer-display-vnc.c    173 vnc_display_set_force_size(display->priv->vnc, FAL
+                                     SE);
+464 virt-viewer-display-vnc.c    174 vnc_display_set_scaling(display->priv->vnc, TRUE);
+465 virt-viewer-display-vnc.c    177 g_signal_connect(display->priv->vnc, "vnc-desktop-
+                                     resize",
+466 virt-viewer-display-vnc.c    180 g_signal_connect(display->priv->vnc, "vnc-pointer-
+                                     grab",
+467 virt-viewer-display-vnc.c    182 g_signal_connect(display->priv->vnc, "vnc-pointer-
+                                     ungrab",
+468 virt-viewer-display-vnc.c    184 g_signal_connect(display->priv->vnc, "vnc-keyboard
+                                     -grab",
+469 virt-viewer-display-vnc.c    186 g_signal_connect(display->priv->vnc, "vnc-keyboard
+                                     -ungrab",
+470 virt-viewer-display-vnc.c    202 gtk_container_remove(GTK_CONTAINER(display), GTK_W
+                                     IDGET(vnc->priv->vnc));
+471 virt-viewer.c                 96 if (priv->dom)
+472 virt-viewer.c                 97 virDomainFree(priv->dom);
+473 virt-viewer.c                 98 if (priv->conn)
+474 virt-viewer.c                 99 virConnectClose(priv->conn);
+475 virt-viewer.c                133 if (priv->dom) {
+476 virt-viewer.c                134 virDomainFree(priv->dom);
+477 virt-viewer.c                135 priv->dom = NULL;
+478 virt-viewer.c                138 if (priv->reconnect) {
+479 virt-viewer.c                139 if (!priv->withEvents) {
+480 virt-viewer.c                145 virt_viewer_app_trace(app, "Guest %s display has d
+                                     isconnected, waiting to reconnect", priv->domkey);
+481 virt-viewer.c                199 int id = strtol(priv->domkey, &end, 10);
+482 virt-viewer.c                204 dom = virDomainLookupByID(priv->conn, id);
+483 virt-viewer.c                206 if (!dom && virt_viewer_parse_uuid(priv->domkey, u
+                                     uid) == 0) {
+484 virt-viewer.c                207 dom = virDomainLookupByUUID(priv->conn, uuid);
+485 virt-viewer.c                210 dom = virDomainLookupByName(priv->conn, priv->domk
+                                     ey);
+486 virt-viewer.c                222 int id = strtol(priv->domkey, &end, 10);
+487 virt-viewer.c                230 if (virt_viewer_parse_uuid(priv->domkey, wantuuid)
+                                      == 0) {
+488 virt-viewer.c                237 if (strcmp(name, priv->domkey) == 0)
+489 virt-viewer.c                309 priv->domkey);
+490 virt-viewer.c                322 priv->domkey);
+491 virt-viewer.c                342 uri = virConnectGetURI(priv->conn);
+492 virt-viewer.c                345 priv->domkey);
+493 virt-viewer.c                388 if (priv->dom)
+494 virt-viewer.c                389 virDomainFree(priv->dom);
+495 virt-viewer.c                390 priv->dom = dom;
+496 virt-viewer.c                391 virDomainRef(priv->dom);
+497 virt-viewer.c                394 priv->domkey);
+498 virt-viewer.c                416 if (!priv->dom)
+499 virt-viewer.c                422 if (virDomainOpenGraphics(priv->dom, 0, pair[0],
+500 virt-viewer.c                477 if (priv->waitvm) {
+501 virt-viewer.c                480 priv->domkey);
+502 virt-viewer.c                484 priv->domkey);
+503 virt-viewer.c                485 DEBUG_LOG("Cannot find guest %s", priv->domkey);
+504 virt-viewer.c                503 if (priv->waitvm) {
+505 virt-viewer.c                506 priv->domkey);
+506 virt-viewer.c                567 app->priv->uri,
+507 virt-viewer.c                618 priv->uri ? priv->uri : "<null>");
+508 virt-viewer.c                619 priv->conn = virConnectOpenAuth(priv->uri,
+509 virt-viewer.c                623 if (!priv->conn) {
+510 virt-viewer.c                625 priv->uri ? priv->uri : _("[none]"));
+511 virt-viewer.c                632 if (virConnectDomainEventRegister(priv->conn,
+512 virt-viewer.c                636 priv->withEvents = FALSE;
+513 virt-viewer.c                638 priv->withEvents = TRUE;
+514 virt-viewer.c                640 if (!priv->withEvents &&
+515 virt-viewer.c                681 priv->uri = g_strdup(uri);
+516 virt-viewer.c                682 priv->domkey = g_strdup(name);
+517 virt-viewer.c                683 priv->waitvm = waitvm;
+518 virt-viewer.c                684 priv->reconnect = reconnect;
+519 virt-viewer-session-vnc.c     57 if (vnc->priv->vnc) {
+520 virt-viewer-session-vnc.c     58 vnc_display_close(vnc->priv->vnc);
+521 virt-viewer-session-vnc.c     59 g_object_unref(vnc->priv->vnc);
+522 virt-viewer-session-vnc.c     61 if (vnc->priv->main_window)
+523 virt-viewer-session-vnc.c     62 g_object_unref(vnc->priv->main_window);
+524 virt-viewer-session-vnc.c     95 GtkWidget *display = virt_viewer_display_vnc_new(s
+                                     ession->priv->vnc);
+525 virt-viewer-session-vnc.c    110 /* virt_viewer_display_set_show_hint(VIRT_VIEWER_D
+                                     ISPLAY(session->priv->vnc), */
+526 virt-viewer-session-vnc.c    165 g_return_val_if_fail(self->priv->vnc != NULL, FALS
+                                     E);
+527 virt-viewer-session-vnc.c    167 return vnc_display_open_fd(self->priv->vnc, fd);
+528 virt-viewer-session-vnc.c    188 g_return_val_if_fail(self->priv->vnc != NULL, FALS
+                                     E);
+529 virt-viewer-session-vnc.c    190 return vnc_display_open_host(self->priv->vnc, host
+                                     , port);
+530 virt-viewer-session-vnc.c    204 g_return_val_if_fail(self->priv->vnc != NULL, FALS
+                                     E);
+531 virt-viewer-session-vnc.c    222 ret = vnc_display_open_host(self->priv->vnc,
+532 virt-viewer-session-vnc.c    239 virt_viewer_auth_vnc_credentials(self->priv->main_
+                                     window,
+533 virt-viewer-session-vnc.c    253 DEBUG_LOG("close vnc=%p", self->priv->vnc);
+534 virt-viewer-session-vnc.c    254 if (self->priv->vnc != NULL) {
+535 virt-viewer-session-vnc.c    256 vnc_display_close(self->priv->vnc);
+536 virt-viewer-session-vnc.c    257 g_object_unref(self->priv->vnc);
+537 virt-viewer-session-vnc.c    260 self->priv->vnc = VNC_DISPLAY(vnc_display_new());
+538 virt-viewer-session-vnc.c    261 g_object_ref_sink(self->priv->vnc);
+539 virt-viewer-session-vnc.c    263 g_signal_connect(self->priv->vnc, "vnc-connected",
+540 virt-viewer-session-vnc.c    265 g_signal_connect(self->priv->vnc, "vnc-initialized
+                                     ",
+541 virt-viewer-session-vnc.c    267 g_signal_connect(self->priv->vnc, "vnc-disconnecte
+                                     d",
+542 virt-viewer-session-vnc.c    270 g_signal_connect(self->priv->vnc, "vnc-bell",
+543 virt-viewer-session-vnc.c    272 g_signal_connect(self->priv->vnc, "vnc-auth-failur
+                                     e",
+544 virt-viewer-session-vnc.c    274 g_signal_connect(self->priv->vnc, "vnc-auth-unsupp
+                                     orted",
+545 virt-viewer-session-vnc.c    276 g_signal_connect(self->priv->vnc, "vnc-server-cut-
+                                     text",
+546 virt-viewer-session-vnc.c    279 g_signal_connect(self->priv->vnc, "vnc-auth-creden
+                                     tial",
+547 virt-viewer-session-vnc.c    291 session->priv->vnc = VNC_DISPLAY(vnc_display_new()
+                                     );
+548 virt-viewer-session-vnc.c    292 g_object_ref_sink(session->priv->vnc);
+549 virt-viewer-session-vnc.c    293 session->priv->main_window = g_object_ref(main_win
+                                     dow);
+550 virt-viewer-session-vnc.c    295 g_signal_connect(session->priv->vnc, "vnc-connecte
+                                     d",
+551 virt-viewer-session-vnc.c    297 g_signal_connect(session->priv->vnc, "vnc-initiali
+                                     zed",
+552 virt-viewer-session-vnc.c    299 g_signal_connect(session->priv->vnc, "vnc-disconne
+                                     cted",
+553 virt-viewer-session-vnc.c    302 g_signal_connect(session->priv->vnc, "vnc-bell",
+554 virt-viewer-session-vnc.c    304 g_signal_connect(session->priv->vnc, "vnc-auth-fai
+                                     lure",
+555 virt-viewer-session-vnc.c    306 g_signal_connect(session->priv->vnc, "vnc-auth-uns
+                                     upported",
+556 virt-viewer-session-vnc.c    308 g_signal_connect(session->priv->vnc, "vnc-server-c
+                                     ut-text",
+557 virt-viewer-session-vnc.c    311 g_signal_connect(session->priv->vnc, "vnc-auth-cre
+                                     dential",
+558 virt-viewer-display.c        233 display->priv->desktopWidth = 100;
+559 virt-viewer-display.c        234 display->priv->desktopHeight = 100;
+560 virt-viewer-display.c        235 display->priv->zoom_level = 100;
+561 virt-viewer-display.c        236 display->priv->zoom = TRUE;
+562 virt-viewer-display.c        237 display->priv->dirty = TRUE;
+563 virt-viewer-display.c        238 display->priv->auto_resize = TRUE;
+564 virt-viewer-display.c        260 priv->desktopHeight);
+565 virt-viewer-display.c        264 priv->desktopWidth,
+566 virt-viewer-display.c        268 priv->nth_display = g_value_get_int(value);
+567 virt-viewer-display.c        271 g_warn_if_fail(priv->session == NULL);
+568 virt-viewer-display.c        272 priv->session = g_value_get_object(value);
+569 virt-viewer-display.c        292 g_value_set_int(value, priv->desktopWidth);
+570 virt-viewer-display.c        295 g_value_set_int(value, priv->desktopHeight);
+571 virt-viewer-display.c        298 g_value_set_int(value, priv->nth_display);
+572 virt-viewer-display.c        301 g_value_set_int(value, priv->show_hint);
+573 virt-viewer-display.c        328 if (!priv->dirty)
+574 virt-viewer-display.c        345 if (priv->dirty) {
+575 virt-viewer-display.c        346 if (priv->zoom) {
+576 virt-viewer-display.c        347 requisition->width += priv->desktopWidth * priv->z
+                                     oom_level / 100;
+577 virt-viewer-display.c        348 requisition->height += priv->desktopHeight * priv-
+                                     >zoom_level / 100;
+578 virt-viewer-display.c        350 requisition->width += priv->desktopWidth;
+579 virt-viewer-display.c        351 requisition->height += priv->desktopHeight;
+580 virt-viewer-display.c        360 priv->desktopWidth, priv->desktopHeight);
+581 virt-viewer-display.c        407 desktopAspect = (double)priv->desktopWidth / (doub
+                                     le)priv->desktopHeight;
+582 virt-viewer-display.c        435 if (priv->dirty) {
+583 virt-viewer-display.c        437 priv->dirty = FALSE;
+584 virt-viewer-display.c        448 if (width == priv->desktopWidth && height == priv-
+                                     >desktopHeight)
+585 virt-viewer-display.c        451 priv->desktopWidth = width;
+586 virt-viewer-display.c        452 priv->desktopHeight = height;
+587 virt-viewer-display.c        453 priv->dirty = TRUE;
+588 virt-viewer-display.c        466 *width = priv->desktopWidth;
+589 virt-viewer-display.c        467 *height = priv->desktopHeight;
+590 virt-viewer-display.c        481 priv->zoom_level = zoom;
+591 virt-viewer-display.c        484 priv->dirty = TRUE;
+592 virt-viewer-display.c        493 return priv->zoom_level;
+593 virt-viewer-display.c        503 priv->zoom = zoom;
+594 virt-viewer-display.c        505 priv->dirty = TRUE;
+595 virt-viewer-display.c        514 return priv->zoom;
+596 virt-viewer-display.c        539 if (priv->show_hint == hint)
+597 virt-viewer-display.c        542 priv->show_hint = hint;
+598 virt-viewer-display.c        550 return self->priv->session;
+599 virt-viewer-display.c        557 self->priv->auto_resize = auto_resize;
+600 virt-viewer-display.c        564 return self->priv->auto_resize;
+601 virt-viewer-session-spice.c  101 g_value_set_object(value, priv->session);
+602 virt-viewer-session-spice.c  123 if (spice->priv->session) {
+603 virt-viewer-session-spice.c  124 spice_session_disconnect(spice->priv->session);
+604 virt-viewer-session-spice.c  125 g_object_unref(spice->priv->session);
+605 virt-viewer-session-spice.c  126 spice->priv->session = NULL;
+606 virt-viewer-session-spice.c  129 spice->priv->audio = NULL;
+607 virt-viewer-session-spice.c  131 if (spice->priv->main_window)
+608 virt-viewer-session-spice.c  132 g_object_unref(spice->priv->main_window);
+609 virt-viewer-session-spice.c  193 g_return_if_fail(self->priv->session == NULL);
+610 virt-viewer-session-spice.c  195 self->priv->session = spice_session_new();
+611 virt-viewer-session-spice.c  196 spice_set_session_option(self->priv->session);
+612 virt-viewer-session-spice.c  198 self->priv->gtk_session = spice_gtk_session_get(se
+                                     lf->priv->session);
+613 virt-viewer-session-spice.c  199 g_object_set(self->priv->gtk_session, "auto-clipbo
+                                     ard", TRUE, NULL);
+614 virt-viewer-session-spice.c  201 g_signal_connect(self->priv->session, "channel-new
+                                     ",
+615 virt-viewer-session-spice.c  203 g_signal_connect(self->priv->session, "channel-des
+                                     troy",
+616 virt-viewer-session-spice.c  206 manager = spice_usb_device_manager_get(self->priv-
+                                     >session, NULL);
+617 virt-viewer-session-spice.c  215 self->priv->gtk_session, "auto-usbredir",
+618 virt-viewer-session-spice.c  228 if (self->priv->session) {
+619 virt-viewer-session-spice.c  229 spice_session_disconnect(self->priv->session);
+620 virt-viewer-session-spice.c  230 g_object_unref(self->priv->session);
+621 virt-viewer-session-spice.c  231 self->priv->session = NULL;
+622 virt-viewer-session-spice.c  232 self->priv->gtk_session = NULL;
+623 virt-viewer-session-spice.c  233 self->priv->audio = NULL;
+624 virt-viewer-session-spice.c  249 g_return_val_if_fail(self->priv->session != NULL, 
+                                     FALSE);
+625 virt-viewer-session-spice.c  251 g_object_set(self->priv->session,
+626 virt-viewer-session-spice.c  257 return spice_session_connect(self->priv->session);
+627 virt-viewer-session-spice.c  267 g_return_val_if_fail(self->priv->session != NULL, 
+                                     FALSE);
+628 virt-viewer-session-spice.c  269 g_object_set(self->priv->session, "uri", uri, NULL
+                                     );
+629 virt-viewer-session-spice.c  271 return spice_session_connect(self->priv->session);
+630 virt-viewer-session-spice.c  282 return spice_session_open_fd(self->priv->session, 
+                                     fd);
+631 virt-viewer-session-spice.c  323 if (self->priv->session)
+632 virt-viewer-session-spice.c  324 spice_session_disconnect(self->priv->session);
+633 virt-viewer-session-spice.c  331 int ret = virt_viewer_auth_collect_credentials(sel
+                                     f->priv->main_window,
+634 virt-viewer-session-spice.c  340 g_object_set(self->priv->session, "password", pass
+                                     word, NULL);
+635 virt-viewer-session-spice.c  341 g_object_get(self->priv->session, "client-sockets"
+                                     , &openfd, NULL);
+636 virt-viewer-session-spice.c  344 spice_session_open_fd(self->priv->session, -1);
+637 virt-viewer-session-spice.c  346 spice_session_connect(self->priv->session);
+638 virt-viewer-session-spice.c  372 return spice_usb_device_manager_get(priv->session,
+                                      NULL) &&
+639 virt-viewer-session-spice.c  373 spice_session_has_channel_type(priv->session,
+640 virt-viewer-session-spice.c  403 usb_device_widget = spice_usb_device_widget_new(pr
+                                     iv->session,
+641 virt-viewer-session-spice.c  446 if (self->priv->main_channel != NULL)
+642 virt-viewer-session-spice.c  447 g_signal_handlers_disconnect_by_func(self->priv->m
+                                     ain_channel,
+643 virt-viewer-session-spice.c  452 self->priv->main_channel = SPICE_MAIN_CHANNEL(chan
+                                     nel);
+644 virt-viewer-session-spice.c  480 if (self->priv->audio == NULL)
+645 virt-viewer-session-spice.c  481 self->priv->audio = spice_audio_get(s, NULL);
+646 virt-viewer-session-spice.c  486 if (self->priv->mouse_cursor == NULL)
+647 virt-viewer-session-spice.c  487 self->priv->mouse_cursor = get_blank_cursor();
+648 virt-viewer-session-spice.c  490 self->priv->channel_count++;
+649 virt-viewer-session-spice.c  555 if (channel == SPICE_CHANNEL(self->priv->main_chan
+                                     nel))
+650 virt-viewer-session-spice.c  556 self->priv->main_channel = NULL;
+651 virt-viewer-session-spice.c  563 if (SPICE_IS_PLAYBACK_CHANNEL(channel) && self->pr
+                                     iv->audio) {
+652 virt-viewer-session-spice.c  565 self->priv->audio = NULL;
+653 virt-viewer-session-spice.c  568 self->priv->channel_count--;
+654 virt-viewer-session-spice.c  569 if (self->priv->channel_count == 0)
+655 virt-viewer-session-spice.c  589 self->priv->main_window = g_object_ref(main_window
+                                     );
+656 virt-viewer-session-spice.c  601 return self->priv->main_channel;
+657 view/autoDrawer.c             89 if (!priv->active) {
+658 view/autoDrawer.c             95 g_assert(priv->over != NULL);
+659 view/autoDrawer.c             96 g_assert(GTK_IS_WIDGET(priv->over));
+660 view/autoDrawer.c             98 ViewOvBox_SetMin(VIEW_OV_BOX(that), priv->noOverla
+                                     pPixels);
+661 view/autoDrawer.c            101 if (priv->opened && !priv->forceClosing) {
+662 view/autoDrawer.c            104 gtk_widget_get_allocation (priv->over, &allocation
+                                     );
+663 view/autoDrawer.c            105 fraction = ((double)priv->overlapPixels / allocati
+                                     on.height);
+664 view/autoDrawer.c            134 that->priv->delayConnection = 0;
+665 view/autoDrawer.c            161 that->priv->closeConnection = 0;
+666 view/autoDrawer.c            162 that->priv->forceClosing = FALSE;
+667 view/autoDrawer.c            206 priv->opened = FALSE;
+668 view/autoDrawer.c            210 if (priv->pinned) {
+669 view/autoDrawer.c            213 priv->opened = TRUE;
+670 view/autoDrawer.c            218 if (gtk_widget_get_window(priv->evBox)) {
+671 view/autoDrawer.c            225 devmgr = gdk_display_get_device_manager(gtk_widget
+                                     _get_display(priv->evBox));
+672 view/autoDrawer.c            228 gdk_window_get_device_position(gtk_widget_get_wind
+                                     ow(priv->evBox),
+673 view/autoDrawer.c            231 gtk_widget_get_pointer(priv->evBox, &x, &y);
+674 view/autoDrawer.c            234 gtk_widget_get_allocation(priv->evBox, &allocation
+                                     );
+675 view/autoDrawer.c            235 g_assert(gtk_container_get_border_width(   GTK_CON
+                                     TAINER(priv->evBox))
+676 view/autoDrawer.c            239 priv->opened = TRUE;
+677 view/autoDrawer.c            249 if (focus && gtk_widget_is_ancestor(focus, priv->e
+                                     vBox)) {
+678 view/autoDrawer.c            256 priv->opened = TRUE;
+679 view/autoDrawer.c            262 if (!priv->inputUngrabbed) {
+680 view/autoDrawer.c            314 if (grabbed && gtk_widget_is_ancestor(grabbed, pri
+                                     v->evBox)) {
+681 view/autoDrawer.c            322 priv->opened = TRUE;
+682 view/autoDrawer.c            326 if (priv->delayConnection) {
+683 view/autoDrawer.c            327 g_source_remove(priv->delayConnection);
+684 view/autoDrawer.c            330 if (priv->forceClosing) {
+685 view/autoDrawer.c            335 priv->delayConnection = g_timeout_add(priv->delayV
+                                     alue,
+686 view/autoDrawer.c            396 priv->inputUngrabbed = ungrabbed;
+687 view/autoDrawer.c            498 GtkWidget *oldChild = gtk_bin_get_child(GTK_BIN(pr
+                                     iv->evBox));
+688 view/autoDrawer.c            502 gtk_container_remove(GTK_CONTAINER(priv->evBox), o
+                                     ldChild);
+689 view/autoDrawer.c            506 gtk_container_add(GTK_CONTAINER(priv->evBox), widg
+                                     et);
+690 view/autoDrawer.c            513 priv->over = widget;
+691 view/autoDrawer.c            541 expand = (that->priv->fill || (that->priv->offset 
+                                     < 0));
+692 view/autoDrawer.c            542 fill = that->priv->fill;
+693 view/autoDrawer.c            543 padding = (expand || fill) ? 0 : that->priv->offse
+                                     t;
+694 view/autoDrawer.c            545 gtk_box_set_child_packing(GTK_BOX(that), that->pri
+                                     v->evBox,
+695 view/autoDrawer.c            577 priv->active = TRUE;
+696 view/autoDrawer.c            578 priv->pinned = FALSE;
+697 view/autoDrawer.c            579 priv->forceClosing = FALSE;
+698 view/autoDrawer.c            580 priv->inputUngrabbed = TRUE;
+699 view/autoDrawer.c            581 priv->delayConnection = 0;
+700 view/autoDrawer.c            582 priv->delayValue = 250;
+701 view/autoDrawer.c            583 priv->overlapPixels = 0;
+702 view/autoDrawer.c            584 priv->noOverlapPixels = 1;
+703 view/autoDrawer.c            586 priv->fill = TRUE;
+704 view/autoDrawer.c            587 priv->offset = -1;
+705 view/autoDrawer.c            589 priv->evBox = gtk_event_box_new();
+706 view/autoDrawer.c            590 gtk_widget_show(priv->evBox);
+707 view/autoDrawer.c            591 VIEW_OV_BOX_CLASS(parentClass)->set_over(VIEW_OV_B
+                                     OX(that), priv->evBox);
+708 view/autoDrawer.c            593 g_signal_connect(priv->evBox, "enter-notify-event"
+                                     ,
+709 view/autoDrawer.c            595 g_signal_connect(priv->evBox, "leave-notify-event"
+                                     ,
+710 view/autoDrawer.c            597 g_signal_connect(priv->evBox, "grab-notify",
+711 view/autoDrawer.c            632 if (that->priv->delayConnection) {
+712 view/autoDrawer.c            633 g_source_remove(that->priv->delayConnection);
+713 view/autoDrawer.c            768 that->priv->delayValue = delay;
+714 view/autoDrawer.c            795 that->priv->overlapPixels = overlapPixels;
+715 view/autoDrawer.c            825 that->priv->noOverlapPixels = noOverlapPixels;
+716 view/autoDrawer.c            856 that->priv->active = active;
+717 view/autoDrawer.c            886 that->priv->pinned = pinned;
+718 view/autoDrawer.c            920 that->priv->fill = fill;
+719 view/autoDrawer.c            949 that->priv->offset = offset;
+720 view/autoDrawer.c            988 if (focus && gtk_widget_is_ancestor(focus, that->p
+                                     riv->evBox)) {
+721 view/autoDrawer.c            992 that->priv->forceClosing = TRUE;
+722 view/autoDrawer.c            993 that->priv->closeConnection =
+723 view/autoDrawer.c            995 that->priv->delayValue,
+724 view/ovBox.c                 134 priv->underWin = NULL;
+725 view/ovBox.c                 135 priv->under = NULL;
+726 view/ovBox.c                 136 priv->overWin = NULL;
+727 view/ovBox.c                 137 priv->over = NULL;
+728 view/ovBox.c                 138 priv->overR.height = -1;
+729 view/ovBox.c                 139 priv->overR.width = -1;
+730 view/ovBox.c                 140 priv->min = 0;
+731 view/ovBox.c                 141 priv->fraction = 0;
+732 view/ovBox.c                 142 priv->verticalOffset = 0;
+733 view/ovBox.c                 214 return MIN(that->priv->min, that->priv->overR.heig
+                                     ht);
+734 view/ovBox.c                 286 if (priv->over) {
+735 view/ovBox.c                 291 gtk_container_child_get(GTK_CONTAINER(that), priv-
+                                     >over,
+736 view/ovBox.c                 306 *width = MIN(priv->overR.width, boxWidth - padding
+                                     );
+737 view/ovBox.c                 309 *width = MIN(priv->overR.width, boxWidth);
+738 view/ovBox.c                 316 *y =   (priv->overR.height - ViewOvBoxGetActualMin
+                                     (that))
+739 view/ovBox.c                 317 * (priv->fraction - 1) + priv->verticalOffset;
+740 view/ovBox.c                 318 *height = priv->overR.height;
+741 view/ovBox.c                 348 gtk_style_context_set_background(stylecontext, tha
+                                     t->priv->underWin);
+742 view/ovBox.c                 349 gtk_style_context_set_background(stylecontext, tha
+                                     t->priv->overWin);
+743 view/ovBox.c                 355 gtk_style_set_background(style, that->priv->underW
+                                     in, GTK_STATE_NORMAL);
+744 view/ovBox.c                 356 gtk_style_set_background(style, that->priv->overWi
+                                     n, GTK_STATE_NORMAL);
+745 view/ovBox.c                 391 priv->mouse_cursor = gdk_cursor_new(GDK_ARROW);
+746 view/ovBox.c                 419 priv->underWin = gdk_window_new(window, &attribute
+                                     s, mask);
+747 view/ovBox.c                 420 gdk_window_set_user_data(priv->underWin, that);
+748 view/ovBox.c                 421 if (priv->under) {
+749 view/ovBox.c                 422 gtk_widget_set_parent_window(priv->under, priv->un
+                                     derWin);
+750 view/ovBox.c                 424 gdk_window_show(priv->underWin);
+751 view/ovBox.c                 428 priv->overWin = gdk_window_new(window, &attributes
+                                     , mask);
+752 view/ovBox.c                 429 gdk_window_set_user_data(priv->overWin, that);
+753 view/ovBox.c                 430 if (priv->over) {
+754 view/ovBox.c                 431 gtk_widget_set_parent_window(priv->over, priv->ove
+                                     rWin);
+755 view/ovBox.c                 433 gdk_window_show(priv->overWin);
+756 view/ovBox.c                 434 gdk_window_set_cursor(window, priv->mouse_cursor);
+757 view/ovBox.c                 473 gdk_window_set_user_data(priv->underWin, NULL);
+758 view/ovBox.c                 474 gdk_window_destroy(priv->underWin);
+759 view/ovBox.c                 475 priv->underWin = NULL;
+760 view/ovBox.c                 477 gdk_window_set_user_data(priv->overWin, NULL);
+761 view/ovBox.c                 478 gdk_window_destroy(priv->overWin);
+762 view/ovBox.c                 479 priv->overWin = NULL;
+763 view/ovBox.c                 515 gtk_widget_get_preferred_size(priv->under, NULL, &
+                                     underR);
+764 view/ovBox.c                 516 gtk_widget_get_preferred_size(priv->over, NULL, &p
+                                     riv->overR);
+765 view/ovBox.c                 518 gtk_widget_size_request(priv->under, &underR);
+766 view/ovBox.c                 519 gtk_widget_size_request(priv->over, &priv->overR);
+767 view/ovBox.c                 522 gtk_container_child_get(GTK_CONTAINER(that), priv-
+                                     >over,
+768 view/ovBox.c                 528 priv->overR.width + ((expand || fill) ? 0 : paddin
+                                     g));
+769 view/ovBox.c                 530 requisition->height = MAX(underR.height + min, pri
+                                     v->overR.height);
+770 view/ovBox.c                 598 gdk_window_move_resize(priv->underWin, under.x, un
+                                     der.y, under.width,
+771 view/ovBox.c                 600 gdk_window_move_resize(priv->overWin, over.x, over
+                                     .y, over.width,
+772 view/ovBox.c                 606 gtk_widget_size_allocate(priv->under, &under);
+773 view/ovBox.c                 609 gtk_widget_size_allocate(priv->over, &over);
+774 view/ovBox.c                 706 ViewOvBoxSetChild(that, &that->priv->over, that->p
+                                     riv->overWin, widget);
+775 view/ovBox.c                 845 ViewOvBoxSetChild(that, &that->priv->under, that->
+                                     priv->underWin, widget);
+776 view/ovBox.c                 901 that->priv->min = min;
+777 view/ovBox.c                 930 that->priv->fraction = fraction;
+778 view/ovBox.c                 938 gdk_window_move(that->priv->overWin, x, y);
+779 view/ovBox.c                 964 return that->priv->fraction;
+780 view/drawer.c                 78 that->priv->period = 10;
+781 view/drawer.c                 79 that->priv->step = 0.2;
+782 view/drawer.c                 80 that->priv->timer.pending = FALSE;
+783 view/drawer.c                109 if (priv->timer.pending) {
+784 view/drawer.c                110 g_source_remove(priv->timer.id);
+785 view/drawer.c                111 priv->timer.pending = FALSE;
+786 view/drawer.c                252 if (priv->goal == fraction) {
+787 view/drawer.c                253 return priv->timer.pending = FALSE;
+788 view/drawer.c                257 priv->goal > fraction
+789 view/drawer.c                258 ? MIN(fraction + priv->step, priv->goal)
+790 view/drawer.c                259 : MAX(fraction - priv->step, priv->goal));
+791 view/drawer.c                292 priv->period = period;
+792 view/drawer.c                293 if (priv->timer.pending) {
+793 view/drawer.c                294 g_source_remove(priv->timer.id);
+794 view/drawer.c                295 priv->timer.id = g_timeout_add(priv->period, ViewD
+                                     rawerOnTimer, that);
+795 view/drawer.c                297 priv->step = step;
+796 view/drawer.c                329 priv->goal = goal;
+797 view/drawer.c                330 if (priv->timer.pending == FALSE) {
+798 view/drawer.c                331 priv->timer.id = g_timeout_add(priv->period, ViewD
+                                     rawerOnTimer, that);
+799 view/drawer.c                332 priv->timer.pending = TRUE;
+800 view/drawer.c                365 return priv->period * ((int)(1/priv->step) + 1);

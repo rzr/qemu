@@ -38,9 +38,8 @@
 #include "maru_finger.h"
 
 enum {
-    BOOTING = 0,
+    RESET = 0,
     BOOT_COMPLETED = 1,
-    RESET = 2,
 };
 
 /* keep it consistent with emulator-skin definition */

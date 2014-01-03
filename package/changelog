@@ -1,3 +1,23 @@
+* 1.7.10
+- disabled unstable spice
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-24
+* 1.7.9
+- removed reconfigure code in virt-viewer
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-24
+* 1.7.8
+- added required package libvirt-dev to build
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-24
+* 1.7.7
+- added execute permission spice_codegen.py for build
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-23
+* 1.7.6
+- added remote server/client packages spice-gtk, virt-viewer, celt, spice etc.
+- modified spice input codes for tizen specific functions
+- modified build script and makefile
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-23
+* 1.7.5
+- Use wglMakeCurrent instead of wglMakeContextCurrentARB when possible
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-12-19
 * 1.7.3
 - remove temporary code
 == GiWoong Kim <giwoong.kim@samsung.com> 2013-12-09

@@ -22,6 +22,10 @@
  * THE SOFTWARE.
  */
 
+#if defined CONFIG_MARU && defined CONFIG_LINUX
+#include <pthread.h>
+#endif
+
 #include "sysemu/sysemu.h"
 #include "monitor/monitor.h"
 #include "ui/console.h"
@@ -29,6 +33,15 @@
 #include "qmp-commands.h"
 #include "qapi-types.h"
 #include "ui/keymaps.h"
+
+#if defined CONFIG_MARU && defined CONFIG_LINUX
+extern void maru_hwkey_event(int event_type, int keycode);
+extern void do_rotation_event(int rotation_type);
+extern void do_host_kbd_enable(bool on);
+extern void shutdown_qemu_gracefully(void);
+extern void request_close(void);
+void* tizen_close_thread(void* data);
+#endif
 
 //#include "tizen/src/debug_ch.h"
 
@@ -523,6 +536,61 @@ int kbd_mouse_has_absolute(void)
 
     return 0;
 }
+
+#if defined CONFIG_MARU && defined CONFIG_LINUX
+void hwkey_put_keycode(int type, int keycode)
+{
+    if (!runstate_is_running() && !runstate_check(RUN_STATE_SUSPENDED)) {
+        return;
+    }
+    maru_hwkey_event(type, keycode);
+}
+
+void rotation_put_type(int type)
+{
+    if (!runstate_is_running() && !runstate_check(RUN_STATE_SUSPENDED)) {
+        return;
+    }
+    do_rotation_event(type);
+}
+
+void hostkbd_put_type(int type)
+{
+    if (!runstate_is_running() && !runstate_check(RUN_STATE_SUSPENDED)) {
+        return;
+    }
+    do_host_kbd_enable(type);
+}
+
+void* tizen_close_thread(void* type)
+{
+    int data = *(int*)type;
+
+    if (data == 1) {
+        /* force close */
+        shutdown_qemu_gracefully();
+    } else {
+        request_close();
+    }
+
+    pthread_exit((void*)0);
+}
+
+void tizen_close_put_type(int type)
+{
+    pthread_t thread_id;
+
+    if (!runstate_is_running() && !runstate_check(RUN_STATE_SUSPENDED)) {
+        return;
+    }
+
+    if (0 != pthread_create(&thread_id, NULL, tizen_close_thread, (void*)&type)) {
+        error_report("fail to create tizen_close pthread.\n");
+    } else {
+        printf("created tizen_close thread\n");
+    }
+}
+#endif
 
 MouseInfoList *qmp_query_mice(Error **errp)
 {

@@ -80,6 +80,7 @@ public class EmulatorFingers {
 		initMultiTouchState(maximum, palette);
 	}
 
+	/* one finger */
 	static class FingerPoint {
 		private int id;
 		private int originX;
@@ -492,19 +493,20 @@ public class EmulatorFingers {
 		return count;
 	}
 
-	public void clearFingerSlot() {
+	public void clearFingerSlot(boolean keepEnable) {
 		int i = 0;
 		FingerPoint finger = null;
 
-		logger.info("clear multi-touch slot");
+		if (keepEnable == false) {
+			setMultiTouchEnable(0);
+		}
+
+		logger.info("clear multi-touch : " + getMultiTouchEnable());
 
 		for (i = 0; i < fingerCnt; i++) {
 			finger = getFingerPointFromSlot(i);
 			if (finger != null) {
 				if (finger.id > 0) {
-					logger.info(String.format(
-							"clear %d, %d, %d", finger.x, finger.y, finger.id - 1));
-
 					MouseEventData mouseEventData = new MouseEventData(
 							MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 							0, 0, finger.x, finger.y, finger.id - 1);
@@ -522,8 +524,7 @@ public class EmulatorFingers {
 	}
 
 	public void cleanupMultiTouchState() {
-		multiTouchEnable = 0;
-		clearFingerSlot();
+		clearFingerSlot(false);
 
 		fingerPointImage.dispose();
 	}

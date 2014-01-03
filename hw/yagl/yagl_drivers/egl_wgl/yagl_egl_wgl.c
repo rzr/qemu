@@ -89,6 +89,11 @@ typedef struct YaglEglWglDpy {
     GHashTable *dc_table;
 } YaglEglWglDpy;
 
+typedef struct YaglEglWglSurface {
+    HPBUFFERARB pbuffer;
+    HDC dc;
+} YaglEglWglSurface;
+
 typedef struct YaglEglWglDriver {
     struct yagl_egl_driver base;
 
@@ -544,8 +549,10 @@ static bool yagl_egl_wgl_make_current(struct yagl_egl_driver *driver,
                                       EGLContext egl_glc)
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
-    HDC draw_dc = NULL, read_dc = NULL;
+    YaglEglWglSurface *egl_draw_sfc = egl_draw_surf;
+    YaglEglWglSurface *egl_read_sfc = egl_read_surf;
     HGLRC glc = NULL;
+    BOOL res;
 
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_make_current,
                        "dpy = %p, draw = %p, read = %p, ctx = %p",
@@ -558,27 +565,15 @@ static bool yagl_egl_wgl_make_current(struct yagl_egl_driver *driver,
         glc = (HGLRC)egl_glc;
     }
 
-    if (egl_draw_surf != EGL_NO_SURFACE) {
-        draw_dc = egl_wgl->wglGetPbufferDCARB((HPBUFFERARB)egl_draw_surf);
-
-        if (!draw_dc) {
-            goto fail;
-        }
+    if (egl_draw_sfc != egl_read_sfc) {
+        res = egl_wgl->wglMakeContextCurrentARB((egl_draw_sfc ? egl_draw_sfc->dc : NULL),
+                                                (egl_read_sfc ? egl_read_sfc->dc : NULL),
+                                                glc);
+    } else {
+        res = egl_wgl->wglMakeCurrent((egl_draw_sfc ? egl_draw_sfc->dc : NULL), glc);
     }
 
-    if (egl_read_surf != EGL_NO_SURFACE) {
-        if (egl_read_surf == egl_draw_surf) {
-            read_dc = draw_dc;
-        } else {
-            read_dc = egl_wgl->wglGetPbufferDCARB((HPBUFFERARB)egl_read_surf);
-
-            if (!read_dc) {
-                goto fail;
-            }
-        }
-    }
-
-    if (egl_wgl->wglMakeContextCurrentARB(draw_dc, read_dc, glc) == FALSE) {
+    if (!res) {
         goto fail;
     }
 
@@ -588,14 +583,6 @@ static bool yagl_egl_wgl_make_current(struct yagl_egl_driver *driver,
 
 fail:
     YAGL_LOG_ERROR_WIN();
-
-    if (draw_dc) {
-        egl_wgl->wglReleasePbufferDCARB((HPBUFFERARB)egl_draw_surf, draw_dc);
-    }
-
-    if (read_dc && (egl_read_surf != egl_draw_surf)) {
-        egl_wgl->wglReleasePbufferDCARB((HPBUFFERARB)egl_read_surf, read_dc);
-    }
 
     YAGL_LOG_FUNC_EXIT("Failed to make context %p current", glc);
 
@@ -629,7 +616,7 @@ static EGLSurface yagl_egl_wgl_pbuffer_surface_create(struct yagl_egl_driver *dr
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     HDC dc = NULL;
     YaglEglWglDpy * dpy = (YaglEglWglDpy *)egl_dpy;
-    HPBUFFERARB pbuffer;
+    YaglEglWglSurface * sfc = NULL;
     int pbuff_attribs[] = {
         WGL_PBUFFER_LARGEST_ARB, FALSE,
         WGL_TEXTURE_TARGET_ARB, WGL_NO_TEXTURE_ARB,
@@ -667,21 +654,34 @@ static EGLSurface yagl_egl_wgl_pbuffer_surface_create(struct yagl_egl_driver *dr
         goto fail;
     }
 
-    pbuffer = egl_wgl->wglCreatePbufferARB(dc, cfg->config_id,
-             width, height, pbuff_attribs);
+    sfc = g_new0(YaglEglWglSurface, 1);
 
-    if (!pbuffer) {
+    sfc->pbuffer = egl_wgl->wglCreatePbufferARB(dc, cfg->config_id,
+        width, height, pbuff_attribs);
+
+    if (!sfc->pbuffer) {
         goto fail;
     }
 
-    YAGL_LOG_FUNC_EXIT("Surface created: %p", pbuffer);
+    sfc->dc = egl_wgl->wglGetPbufferDCARB(sfc->pbuffer);
 
-    return (EGLSurface)pbuffer;
+    if (!sfc->dc) {
+        egl_wgl->wglDestroyPbufferARB(sfc->pbuffer);
+        goto fail;
+    }
+
+    YAGL_LOG_FUNC_EXIT("Surface created: %p", sfc);
+
+    return (EGLSurface)sfc;
 
 fail:
     YAGL_LOG_ERROR_WIN();
 
     YAGL_LOG_FUNC_EXIT("Surface creation failed");
+
+    if (sfc) {
+        g_free(sfc);
+    }
 
     return EGL_NO_SURFACE;
 }
@@ -691,26 +691,20 @@ static void yagl_egl_wgl_pbuffer_surface_destroy(struct yagl_egl_driver *driver,
                                                  EGLSurface surf)
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
-    HDC pbuf_dc = NULL;
+    YaglEglWglSurface *egl_sfc = surf;
 
     YAGL_EGL_WGL_ENTER(yagl_egl_wgl_pbuffer_surface_destroy,
                        "dpy = %p, sfc = %p",
                        egl_dpy,
                        surf);
 
-    pbuf_dc = egl_wgl->wglGetPbufferDCARB((HPBUFFERARB)surf);
+    egl_wgl->wglReleasePbufferDCARB(egl_sfc->pbuffer, egl_sfc->dc);
 
-    if (!pbuf_dc ||
-        egl_wgl->wglReleasePbufferDCARB((HPBUFFERARB)surf, pbuf_dc) != 1) {
-        YAGL_LOG_ERROR_WIN();
-    }
+    egl_wgl->wglDestroyPbufferARB(egl_sfc->pbuffer);
 
-    if (egl_wgl->wglDestroyPbufferARB((HPBUFFERARB)surf) == FALSE) {
-        YAGL_LOG_ERROR_WIN();
-        YAGL_LOG_FUNC_EXIT("Failed to destroy surface");
-    } else {
-        YAGL_LOG_FUNC_EXIT("Surface destroyed");
-    }
+    g_free(egl_sfc);
+
+    YAGL_LOG_FUNC_EXIT("Surface destroyed");
 }
 
 static void yagl_egl_wgl_destroy(struct yagl_egl_driver *driver)

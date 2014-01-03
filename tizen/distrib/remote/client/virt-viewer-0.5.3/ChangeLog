@@ -1,0 +1,1767 @@
+2012-05-15  Daniel P. Berrange  <berrange@redhat.com>
+
+	Avoid use of deprecated GTK3 pointer APIs
+	The gtk_widget_get_pointer() API is deprecated in GTK3 since it
+	is not aware of multiple pointers. Replace its usage in autoDrawer.c
+	with GdkDeviceManager and friends
+
+	Adapt to avoid use of deprecated GTK3 style & size APIs
+	The GtkStyle API has been deprecated in favour of GtkStyleContext.
+	Update ovBox.c to use the latter if building with GtK3. Also replace
+	use of the gtk_widget_size_request API with gtk_widget_get_preferred_size.
+
+2012-05-15  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Release v0.5.3
+
+	nsis: fix .nsis file paths
+	- look up for icons under the DESTDIR directory
+	- don't ship gstaudiofx, unneeded
+	- add missing libtasn
+
+2012-05-14  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	dist: ship .ico in tarball
+	Some distros (a 4-letters) don't have icotool.
+	Let's ship the .ico in the tarball.
+
+	The build will fail if icoutil is not installed when
+	building from git or when the .ico is absent. The error
+	should be explicit.
+
+	nsis: IE policy to launch silentely remote-viewer
+	Add IE ElevationPolicy for the remote-viewer client.
+
+	http://msdn.microsoft.com/en-us/library/bb250462%28v=vs.85%29.aspx
+
+	nsis: fix removal of start menu directory
+
+2012-05-08  Daniel P. Berrange  <berrange@redhat.com>
+
+	Avoid race condition when disposing of app
+	When disposing of the VirtViewerApp, we free the hash table
+	containing the windows. This causes each window to be freed,
+	which in turn causes the visibility callback to be invoked.
+	This can then get NULL pointers from the self->priv->windows
+	usage.
+
+	Blank out priv->windows before unrefing the hashs and add
+	a check to ensure priv->windows is non-NULL.
+
+2012-05-04  Daniel P. Berrange  <berrange@redhat.com>
+
+	Ensure windows are destroyed when display closes
+	When running virt-viewer with the --reconnect argument, when
+	the session closes, the VirtViewerWindow instances were being
+	freed, but not the GtkWindow itself. So the orphaned window
+	stayed around doing nothing. The GtkBuilder instance was also
+	leaked.
+
+	Fix these two leaks & also add some debugging to help future
+	troubleshooting
+
+2012-05-02  Daniel P. Berrange  <berrange@redhat.com>
+
+	Change 'OK' button to 'Close' button in USB device selection
+	The USB device selection applies immediately, so the dialog
+	should be using 'Close' instead of 'OK' for its primary button
+
+2012-04-27  Christophe Fergeau  <cfergeau@redhat.com>
+
+	g_getenv returns a const string
+	When switching from getenv to g_getenv, 'doms' declaration
+	wasn't changed from char * to const char *, which causes
+	a gcc warning.
+
+2012-04-26  Daniel P. Berrange  <berrange@redhat.com>
+
+	Replace getenv/setenv with g_getenv/g_setenv for Win32 portability
+
+2012-04-25  Daniel P. Berrange  <berrange@redhat.com>
+
+	Add debugging when performing fullscreen auto-configuration
+
+	Refresh translations from transifex
+
+	Really fix debug output on glib >= 2.31
+
+	Fix debug output on glib >= 2.31
+
+2012-04-23  Daniel P. Berrange  <berrange@redhat.com>
+
+	Set the remote-viewer binary application name
+	Currently the window titles for remote-view have 'remote-viewer'
+	appended them. This is based off the argv[0] name. We should be
+	setting the GLib application name though, so we can get a localized
+	'Remote Viewer' string in the titlebar
+
+	Add support for raw IPv6 addresses in VNC & libvirt URIs
+	Support   vnc://[x:y:z:]:5901/  for raw IPv6 addresses in URIs,
+	and qemu+ssh://root@[x:y:x:]:22/ for raw IPv6 addresses in
+	libvirt URIs
+
+2012-04-19  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix scaling of window to avoid integer truncation
+	Use round() instead of integer truncation when scaling the window,
+	to avoid floating point precision problems on i386
+
+2012-04-18  Daniel P. Berrange  <berrange@redhat.com>
+
+	Add a desktop file for launching remote-viewer
+	Enable automagic handling of spice:// URLs in firefox by
+	registering a desktop handler for remote-viewer with the
+	SPICE URI scheme
+
+2012-04-17  Daniel P. Berrange  <berrange@redhat.com>
+
+	Give remote-viewer priority over spicec for spice-xpi-client
+
+	Add manpage docs for the --attach option
+
+	Fix manpage to s/--fullscreen/--full-screen/
+
+2012-04-17  Christophe Fergeau  <cfergeau@redhat.com>
+
+	Fix automatic usb redir through controller
+	remote-viewer is currently trying to use
+	SpiceUsbDeviceManager::auto-connect to control whether USB devices
+	should be automatically connected or not. However, this property
+	is more or less an internal spice-gtk property which is toggled
+	by SpiceGtkSession when the SPICE widget gets/loses focus.
+
+	SpiceGtkSession has an "auto-usbredir" property which can be used
+	by applications to enable/disable automatic usb redirection through
+	SPICE. Since this property is helpfully bound to
+	VirtViewerSession::auto-usbredir, use this when the controller
+	is told to enable/disable USB redirection.
+
+	Without this change, automatic USB redirection will always get reenabled
+	as soon as there's a focus change since SpiceGtkSession::auto-usbredir
+	defaults to be enabled in spice-gtk.
+
+2012-04-05  Daniel P. Berrange  <berrange@redhat.com>
+
+	Ensure windres & icotool are present on Win32 builds
+	Builds are failing with an obscure error message
+
+	make[3]: Entering directory `/var/lib/builder/source-root/virt-viewer/build/icons'
+	  GEN    virt-viewer.ico
+	/bin/sh: -c: command not found
+	make[3]: *** [virt-viewer.ico] Error 127
+
+	This is because configure.ac does not enforce that icotool
+	is present on Win32.
+
+	* configure.ac: Mandate windres & icotool on Win32
+
+	Require F17 for spice in RPM builds
+
+	Exclude windows-cmdline-wrapper.c from some syntax check rules
+
+	Add Yonit to authors file
+
+	Fix some syntax violations in git.mk
+
+2012-04-05  Zeeshan Ali (Khattak)  <zeeshanak@gnome.org>
+
+	Minor simplification/optimization of VirtViewerDisplay
+
+2012-04-04  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix typo in variable names for Win32 command helper
+
+	Fix close of VNC displays
+	When clicking the close button on a virt-viewer window with
+	a VNC session open, while the VNC session terminates, the
+	window does not go away.
+
+	The problem is that the virt_viewer_session_vnc_disconnected
+	method never gets invoked. The close button triggers a call
+	to virt_viewer_session_clear_displays which unrefs the
+	VirtViewerDisplayVnc instance. This in turn triggers a call
+	to gtk_container_destroy, which destroys all widgets it
+	contains, ie the VncDisplay * object.
+
+	With the VncDisplay object in its dispose phase, no signals
+	will ever be emitted, thus the 'vnc-disconnected' signal
+	never gets seen.
+
+	The design issue is that VirtViewerDisplayVnc is assuming
+	it owns the VncDisplay, whereas in fact the real owner is
+	the VirtViewerSessionVnc object.
+
+	The solution is to introduce a new virt_viewer_display_close
+	method which can be used to de-parent the widget before
+	VirtViewerDisplay is unref'd.
+
+	The VirtViewerSessionVnc object also needs to hold a full ref
+	on the VncDisplay object, not merely a floating reference
+
+	* virt-viewer-display-spice.c, virt-viewer-display.c,
+	  virt-viewer-display.h: Add virt_viewer_display_close
+	* virt-viewer-display-vnc.c: Deparent VNC widget in
+	  virt_viewer_display_close impl
+	* virt-viewer-session-vnc.c: Improve logging
+	* virt-viewer-session.c: Call virt_viewer_display_close
+	  before unrefing display
+	* virt-viewer-window.c: Improve logging
+
+2012-04-04  Christophe Fergeau  <cfergeau@redhat.com>
+
+	Propagate USB redirection controller messages
+
+2012-04-03  Yonit Halperin  <yhalperi@redhat.com>
+
+	Add support for the SPICE properties disable-effects & color-depth
+
+2012-04-03  Christophe Fergeau  <cfergeau@redhat.com>
+
+	build-sys: fix Windows specific LDFLAGS on non-mingw
+
+2012-04-02  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	nsis: fix a few missing icons
+
+	nsis: add the remote-viewer cmdline wrapper
+
+	remote-viewer: make it a GUI/windows application with hybrid console
+	If the application can attach to its parent console, redirect
+	input/output. So that will work nicely with the command line wrapper.
+
+	Add a Windows command line wrapper
+	Add a small command line wrapper, to be able to call GUI/windows application from the console
+
+2012-04-01  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Disable mnemonics via gtk-enable-mnemonics settings
+	This has 2 advantages, and I can't figure any drawback:
+	- it fixes the issue of mnemonic hints being draw when pressing Alt
+	  key (character underlined), even when they were disabled.
+	- it simplifies the code :)
+
+	Disable menu items that would fail when there is no display
+
+	build-sys: simplify autogen.sh
+	It should support NOCONFIGURE=1 ./autogen.sh && mingw32-configure
+
+2012-03-30  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	build-sys: use git.mk to generate gitignore
+	This makefile is just fantastic, it forces you into good practices,
+	support various build targets (my windows builddir ignore the right
+	files etc..)
+
+	The more I use it, the more I like it.
+
+	win32: add a few Windows sepecific data
+	Add application icon and manifest
+
+	win32: clean-up the NSIS installer, allow user install
+
+	Fix recent --spice-controller regression, add error message
+	The current code will attempt to dereference args if
+	--spice-controller, even if args is NULL.
+
+	Let's not accept any extra argument/uri on the command line if using
+	the controller. Beside, the conditionnal block looks better outside of
+	the if condition.
+
+2012-03-29  Hans de Goede  <hdegoede@redhat.com>
+
+	usbredir: listen for device-error signal
+
+2012-03-29  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	remote-viewer: press Enter to connect in dialog
+
+	Remove unused variable i
+
+	remote-viewer: add a simple connection dialog
+	If the user doesn't provide URI, let's show a simple dialog to enter it.
+
+	Also save & list recently used URLs in that dialog.
+
+	Fix g_thread_init deprecation warning
+	Although the doc says it is only deprecated since >2.32, it's actually
+	>2.31 according to glib git log.
+
+2012-03-21  Marc-Andre Lureau  <marcandre.lureau@redhat.com>
+
+	Do not warn if the display is shown and not ready
+	Lower warning message to debug level. There are various racy ways it
+	ends up calling show_display although the display is not yet
+	ready. This is not such a big problem, although it would be nice to
+	handle this case better
+
+	Notify focus state when the foreign menu title is set
+	The current code only inform of focus state when the listener is ready.
+	spice-gtk controller code lacks signal when a client connects, but a
+	client will set the title when connected and send a notify signal.
+	Use this event to notify of application focus state.
+
+	Do not try to unref NULL menu
+
+	Don't leak foreign menu
+	The RemoveViewer object will have its own ref.
+
+2012-03-21  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	spice: handle switch-host event
+	Do not disconnect session when switching host (non-seamless migration
+	method).
+
+	Also, handle a bit better main channel events and do not disconnect on
+	unknown events, however raise unhandled event message to warning
+	level.
+
+	spice: remove usage of deprecated audio api
+
+	Display correct key bindings to release cursor
+	If the accels are enabled (with Spice controller custom bindings),
+	show the configured keybinding in the title bar.
+
+	spice: implement --fullscreen=auto-conf
+	- auto-conf is an optionnal argument to --fullscreen:
+	it will set the guest display configuration to match the client
+	display configuration, by sending the client monitors size and
+	position to capable guests.
+
+2012-03-18  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Fix indentation
+
+2012-03-16  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Do not crash so easily when given invalid uri
+	'remote-viewer foobar' shouldn't crash
+
+2012-03-13  Daniel P. Berrange  <berrange@redhat.com>
+
+	Updated translations
+
+2012-03-09  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Make sure we call g_thread_init()
+	GThread is needed by spice-gtk
+
+	Notify of focus state when a client connects
+	The current code notifies the controller when the remote-viewer
+	application starts, but not when the client is connected. We should do
+	the later instead
+
+2012-03-09  Daniel P. Berrange  <berrange@redhat.com>
+
+	Update NEWS for 0.5.2 release
+
+	Import newer translations from transifex
+
+	Fix libvirt/SPICE min versions
+	We require libvirt >= 0.9.7 to get virDomainOpenGraphics
+
+	We require spice-gtk >= 0.11 to get the fix for dealing with
+	authentication over an SSH tunnel
+
+	We requires spice-protocol >= 0.10.1 to get a constant
+	required by USB redirection
+
+2012-03-08  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Add a send-key menu in fullscreen
+
+2012-03-07  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	build: fix autogen message
+	When running ./autogen.sh on a pristine git checkout, I got:
+
+	libtoolize: Consider adding `AC_CONFIG_MACRO_DIR([m4])' to configure.ac and
+	libtoolize: rerunning libtoolize, to keep the correct libtool macros in-tree.
+	You should add the contents of '/usr/share/aclocal/intltool.m4' to 'aclocal.m4'.
+
+2012-03-07  Hans de Goede  <hdegoede@redhat.com>
+
+	virt-viewer-window: Don't try to resize non visible windows
+	Trying to resize not visible windows leads to the following being printed
+	to the console:
+	Gdk-CRITICAL **: IA__gdk_window_get_origin: assertion `GDK_IS_WINDOW (window)'
+
+	This gets triggered by the gdk_screen_get_monitor_geometry() call in
+	virt_viewer_window_resize()
+
+	virt-viewer-window: Add show / hide utility functions
+
+	virt-viewer-window: Move checks before resize to virt_viewer_window_resize
+
+	virt-viewer-window: Remove useless tests for priv->window != NULL
+	priv->window gets set on init and never unset, so there is no need to check
+	for it.
+
+2012-03-07  Daniel P. Berrange  <berrange@redhat.com>
+
+	Update AUTHORS file
+
+	Refresh translations
+
+2012-03-06  Hans de Goede  <hdegoede@redhat.com>
+
+	virt-viewer-window: Add a USB device selection to the fullscreen menu (v2)
+	Note this button only gets shown on USB redir capable virtual machines.
+
+	Changes in v2:
+	-Use gtk_widget_set_visible for simpler code
+
+	window: Call virt_viewer_app_quit instead of gtk_main_quit
+	When quiting from the fullscreen menu call virt_viewer_app_quit instead of
+	gtk_main_quit so that the session gets properly disconnected before quiting.
+
+	virt_viewer_app_quit: Cleanly close the connection before quiting
+	Even though the previous patches in this series ensure that the session
+	gets properly finalized, we still need to wait for the disconnect signal,
+	as spice-glib uses co-routines which need some time to cleanly close the
+	connection / session.
+
+	session-spice: Delay the disconnected signal till all channels are closed
+	Before this patch session-spice would emit the disconnected signal as soon
+	as the main channel is closed, but other channels may still be open at
+	that time and raising the disconnected signal usally leads to the app class
+	calling gtk_main_quit, at which point the other channels never get properly
+	finalized (as there co-routines still hold a reference to them).
+
+	This is esp. bad for usbredir channels as these re-attach the kernel driver
+	for redirected devices when finalized. So exiting without properly finalizing
+	them leads to the formerly redirected devices not being usuable until the
+	driver is manually reloaded or the device is unplugged and re-plugged
+	(the kernel does not automatically re-bind kernel drivers when userspace
+	 closes a usbfs node).
+
+	This patch fixes this by delaying the emitting of the disconnect signal
+	until the last channel has been destroyed.
+
+	virt-viewer-app: unref the session on dispose
+	With this patch combined with the previous patches in this series, the
+	VirtViewerSession (finally) gets properly finalized on exit.
+
+	virt-viewer-display: Use a borrowed reference to session
+	Before this patch there was a cyclic reference between VirtViewerSesion and
+	VirtViewerDisplay, since all VirtViewerDisplays are created / destroyed by
+	VirtViewerSession it is safe to assume that lifetime of VirtViewerSession >=
+	VirtViewerDisplay, so VirtViewerDisplay can take a borrowed reference
+	breaking the circle, and allowing proper cleanup on exit.
+
+	Note that there is no g_object_unref removed from virt-viewer-display, this
+	because there is no finalize / dispose and before this patch
+	VirtViewerDisplay never unref-ed the reference it hold to the session.
+
+	virt-viewer-window: Use a borrowed reference to app
+	Before this patch there was a cyclic reference between VirtViewerApp and
+	VirtViewerWindow, since all VirtViewerWindows are created / destroyed by
+	VirtViewerApp it is safe to assume that lifetime of VirtViewerApp >=
+	VirtViewerWindow, so VirtViewerWindow can take a borrowed reference
+	breaking the circle, and allowing proper cleanup on exit.
+
+	virt-viewer-app: main_window is part of our windows hashtable
+	This means that:
+	1) There is no need to explictly set its title separately
+	2) It is unref-ed when we do g_hash_table_unref(priv->windows), so it
+	   should not be unref-ed separately otherwise it is unref-ed twice!
+
+	Notice that 2 was never a problem because of circular references
+	between VirtViewerApp and VirtViewerWindow, but once the follow
+	up patch to this one breaks the circle 2 becomes an issue.
+
+	session-spice: dispose should chain up to dispose not finalize!!
+
+	usbredir: Gnome HIG-ify USB device selection dialog
+	These changes match the changes already made to the spice-gtk
+	usb device selection widget to match the spacing advised by the Gnome HIG.
+
+	usbredir: Shrink the usb device selection dialog when devices are unplugged
+
+2012-03-05  Christophe Fergeau  <cfergeau@redhat.com>
+
+	Don't attempt to translate ""
+	The empty string has a magic meaning for gettext, it's used to
+	store a translation header with all kind of information about the
+	po file. This is not something we want to use as a window title, so
+	change to _("") to "" when we want an empty string.
+
+	Fix path to spice-controller.h
+
+2012-03-01  Daniel P. Berrange  <berrange@redhat.com>
+
+	Remove trailing blank line
+
+2012-03-01  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	fix make distcheck
+
+	Prepare for release 0.5.2
+
+	update .mailmap
+
+2012-03-01  Marc-Andre Lureau  <marcandre.lureau@redhat.com>
+
+	remote-viewer: support spice foreign menu
+
+2012-03-01  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Add property app:has-focus
+
+	Fix compilation with gtk 2.18
+
+	spice: fix connecting via ssh to a password-protected server
+	spice_session_connect() will attempt to connect directly to the
+	server, we need to continue calling spice_session_open_fd() for ssh
+	tunnel to work.
+
+	spice: fix double unref of main channel
+	When doing unref() on a channel, channel-destroy signal may be emitted
+	during object dispose time, and it will attempt to unref() the channel
+	again likely leading to a crash.
+
+	It may be that spice-gtk should have a different/simpler object
+	life-cycle model, but it's also a good assumption to not take strong
+	references on the channels, but just keep a weak reference as the
+	session is really the channel life-cycle manager.
+
+	https://bugzilla.redhat.com/show_bug.cgi?id=797082
+
+2012-02-27  Daniel P. Berrange  <berrange@redhat.com>
+
+	Import translations
+
+2012-02-23  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	nsis: set HKCU "Software\spice-space.org\spicex\client"
+	With recent RHEV portal plugin, the Spice client is chosen according
+	to this key.
+
+2012-02-22  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	remote-viewer: add smartcard controller message
+
+	spice: teach customizable key bindings with controller
+	Tested with RHEVM 3.0 instance with custom bindings for fullscreen &
+	ungrab.
+
+	Small code simplification
+
+	Use the accelgroup to define key bindings
+	With accelgroups, we can redefine the keybindings
+
+	Add hidden menu smartcard remove/insert and release-cursor
+
+	Add virt_viewer_app_get_session()
+
+	spice: implement smartcard-{insert,remove} virtual methods
+
+	Add smartcard-{insert,remove} and release-cursor virtual methods
+
+	Do not disable accelgroup if accels are enabled
+
+	Add VirtViewerApp:enable-accel property
+
+	Require an accel group for full-screen menu
+	Bump Gtk depedency to 2.18, since we already use symbols from it.
+
+2012-02-17  Daniel P. Berrange  <berrange@redhat.com>
+
+	Prepare for release 0.5.1
+
+2012-02-16  Daniel P. Berrange  <berrange@redhat.com>
+
+	Remove virt-viewer.pot from git, as it is generated dynamically
+
+	Add back compat for GObject 2.22 which lacks GBinding
+
+	Relax GTK-VNC version again
+	A previous commit needlessly increased the min required GTK-VNC
+
+	Only link remote-viewer program against SPICE controller
+
+	Remove use of a libtool convenience library
+	The use of a libtool convenience library causes some platforms to
+	loose the ability to use the GNU_RELRO security feature in the
+	resulting binary. Refactor the makefile to simply compile the
+	common files twice, once for virt-viewer & once for remote-viewer
+
+	Import latest translations from transifex
+
+2012-02-15  Daniel P. Berrange  <berrange@redhat.com>
+
+	Adjust POTFILES.in check to strip type prefix
+
+	Add transifex configuration file
+
+2012-02-14  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix inclusion of GtkBuilder files in virt-viewer.pot
+
+	Refresh translation files
+
+	Update for release 0.5.0
+
+2012-02-14  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	First %d in controller title should be substituted with window nth
+
+	Add libp11-kit-0.dll to nsis script
+
+2012-02-14  Daniel P. Berrange  <berrange@redhat.com>
+
+	Set pretty icon for remote-viewer windows too
+
+	Don't hardcode 'localhost' in no @listen parameter is given
+	If no @listen parameter is given, we must not hardcode 'localhost'
+	since we can't assume we are running on the same host. Instead use
+	the hostname from the connection URI
+
+	Extract tlsPort for SPICE and use it to enable secure connections
+
+2012-02-08  Daniel P. Berrange  <berrange@redhat.com>
+
+	Don't do whitespace checks on icons
+
+	Set transient parent for screenshot dialog
+
+	Ensure auth popup windows have correct transient parent
+
+2012-02-08  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Make the password field activates default widget
+	When pressing "Enter", the default auth dialog action isn't activated.
+	Setting activates_default to TRUE fixes this issue.
+
+	Do not resize guest desktop if !auto-resize
+	If auto-resize is enabled, the guest desktop size will be resized to
+	match current window*zoom size.
+
+	This can be a problem if the user explicitely set the desktop size to
+	a different resolution and want to keep it. Disabling auto-resize
+	sounds like a simple way to allow that.
+
+	Resize Spice guest display to the container size
+	The SpiceDisplay doesn't receive the full allocation, because
+	VirtViewerDisplay maintains current aspect ratio. However, the guest
+	display can be resize up to its container size.
+
+	This fixes going full-screen and not getting native resolution for
+	instance.
+
+2012-02-08  Daniel P. Berrange  <berrange@redhat.com>
+
+	Ensure About dialog has transient hints setup
+
+	Import a pretty icon for virt-viewer application
+
+	Re-added GtkBuilder XML files to POTFILES.in
+	Adapt syntax-check  rule to allow XML files in POTFILES.in and
+	re-add the GtkBuilder XML files
+
+	Implement SPICE desktop resizing that takes account of zoom level
+	The standard SPICE widget guest resize implementation does not
+	take into account the zoom level settings in virt-viewer, because
+	it has no knowledge of this functionality. The guest resize can,
+	however, be done by calling spice_main_set_display() directly.
+	This allows virt-viewer to resize the guest taking into account
+	zoom levels.
+
+	 ie, if virt-viewer is run with --zoom 50 and the window
+	     is resized to 400x300, then the guest agent should
+	     be told to set its resolution to 800x600
+
+2012-02-07  Daniel P. Berrange  <berrange@redhat.com>
+
+	Revert support for resizing guest desktop
+	The SpiceDisplay widget has built-in support for resizing the
+	guest desktop, but this does not know that virt-viewer has a
+	zoom level setting. This makes the virt-viewer zoom completely
+	inoperable. Revert use of the 'resize-guest' property.
+
+2012-02-06  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Add spice-xpi-client-remote-viewer alternative
+
+	man: add remote-viewer man page
+
+2012-02-06  Daniel P. Berrange  <berrange@redhat.com>
+
+	Import GNULIB rules for syntax checking code
+
+	Add config.h to every source file
+
+	Use exit() constants
+
+	copyright fix
+
+	End of file whitespace cleanup
+
+	Update POTFILES.in
+
+	Replace @FOO@ with $(FOO) in all Makefile.am
+
+	Update copyright headers
+
+	Remove useless if() before free()
+
+	Update AUTHORS file
+
+	Simplify no-op debug macro & fix plugin header
+
+	Fix makefile.am subsitutions for plugin
+
+	Convert TABS to spaces & reindent everywhere
+
+2012-02-06  Hans de Goede  <hdegoede@redhat.com>
+
+	Only make the USB device selection sensitive when the vm is USB capable
+
+	Add a menu entry for USB device selection
+
+2012-02-06  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Grab the focus when showing the display
+	Override the grab_focus() method in the display class. Since both VNC
+	and Spice displays are the direct child, let's just grab the child.
+	It can be that this behaviour need to be overriden if Spice or VNC
+	display become more complex (using sub-childs or different objects)
+
+2012-01-31  Daniel P. Berrange  <berrange@redhat.com>
+
+	Ignore more generated files
+
+2012-01-31  Guannan Ren  <gren@redhat.com>
+
+	Disconnect virt-viewer when receiving signal session-cancelled
+
+	Register a new signal session-cancelled
+
+	Tune the first argument in calls to g_type_class_add_private()
+
+2012-01-31  Daniel P. Berrange  <berrange@redhat.com>
+
+	Support for virDomainOpenGraphics API
+	Add a new flag --attach, which instructs virt-viewer to attach
+	to the target display using virDomainOpenGraphics, instead of
+	initiating a VNC/SPICE connection directly.
+
+	Make VNC support opening connections based on URI
+
+	Adapt remote-viewer so that it builds without SPICE
+
+2012-01-31  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	Add virt-viewer.nsis
+	Use ${DESTDIR} variable and @prefix@ to look for files.
+	Can't easily be generated, it has too much customization.
+
+2012-01-31  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Enable spice auto-usbredir
+
+	Remove usage of deprecated property
+
+	Add error dialog for USB redirection failure
+
+	Resize guest desktop with SPICE
+	This is the method we prefer, even though we can't keep aspect ratio.
+	We could eventually support aspect ration in spice-gtk.
+
+2012-01-31  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	build: make libvirt optionnal
+
+2012-01-31  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Use a first letter capital in help
+	The GLib/GNOME convention seems to have first letter as capital for
+	option description strings.
+
+2012-01-31  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	Add spice_get_option_group()
+
+	Add spice controller support in remote-viewer
+	Usage is simply "remote-viewer --spice-controller"
+
+	Add remote-viewer program
+	This program is meant for direct URI connections.
+	ex: remote-viewer vnc://uri
+
+2012-01-30  Marc-André Lureau  <marcandre.lureau@gmail.com>
+
+	Add a few property getters, used by controller
+	- virt_viewer_app_get_windows()
+	- virt_viewer_window_get_builder()
+	- "VirtViewerSessionSpice:spice-session" property
+
+	build: use AM_GLIB_GNU_GETTEXT
+	Using intltool macro only causes build issues on exotic platforms,
+	such as MinGW.
+
+	As long as this bug isn't fixed, we should use AM_GLIB_GNU_GETTEXT
+	https://bugs.launchpad.net/intltool/+bug/398571
+
+	NB this partially reverts
+
+	  3473c4bb49adc0caca58dc1a8b6ce81c6870558a
+
+	The difference is the ordering of the rules. With AM_GLIB_GNU_GETTEXT
+	appearing after IT_PROG_INTLTOOL, the --disable-nls arg to configure
+	is broken. Thus AM_GLIB_GNU_GETTEXT is called first in this change.
+
+2012-01-30  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	Make virt_viewer_activate() a vfunc
+	since other equivalent methods are already overridable.
+
+	Add window-added & window-removed signals
+
+	Use graphical URI for connection
+	If specified, use URI for connection details
+
+	Add virt_viewer_session_open_uri
+
+	build: replace deprecated functions
+
+2012-01-30  Daniel P. Berrange  <berrange@redhat.com>
+
+	Add support for --system arg to autogen.sh
+
+2011-11-09  Daniel P. Berrange  <berrange@redhat.com>
+
+	Prep for 0.4.2 release
+
+2011-11-07  Daniel P. Berrange  <berrange@redhat.com>
+
+	Automatically generate changelog from GIT history during make dist
+
+2011-11-07  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	Update POTFILES.in, fix make distcheck
+
+2011-11-07  Daniel P. Berrange  <berrange@redhat.com>
+
+	Ignore some more generated files
+
+2011-11-07  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	build: make gtk-vnc optional
+
+2011-11-07  Daniel P. Berrange  <berrange@redhat.com>
+
+	Require GTK-VNC 0.4.3 and remove redundant realize() call
+	Remove call to gtk_widget_realize for the GTK-VNC widget. Requires
+	GTK-VNC >= 0.4.3
+
+2011-11-07  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	Emit display-desktop-resize from set_desktop_size()
+
+2011-11-07  Daniel P. Berrange  <berrange@redhat.com>
+
+	Don't include INSTALL file in GIT
+
+	Revert 1a56de3acad6a19fd958fae9278cf1c97fdabb18
+	The GLIB2 check previously removed was misleading because it in
+	fact checked for gmodule-export-2.0 which is needed to export
+	the signal handlers. Revert the previous commit, but rename the
+	var to GMODULE2 to make it clearer
+
+	Always use canonical URI from libvirt connection
+	The URI we feed into libvirt may be an alias, so always query the
+	actual URI used internally
+
+2011-11-04  Daniel P. Berrange  <berrange@redhat.com>
+
+	Update automated build to test both GTK2 and GTK3 builds
+
+	Update mingw32 RPM specfile to use GTK3 on F15 or later
+
+	Remove pkgconfig check for GLIB2 since it is implied by GTK2/3
+
+2011-11-03  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix configure arg for disabling spice
+
+	Print configuration summary
+
+2011-10-11  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix broken keycombos for F9->F12 menu
+	The table for sending C-A-Fn to guests had messed up mappings
+	for F9->F12
+
+	Wire up SpiceDisplay grab signals
+	To ensure that we can put the key release sequence message in the
+	title bar, wire up VirtViewerDisplaySpice to the grab signals
+	in SpiceDisplay
+
+	Fix setting of window title with --wait
+	When waiting for a VM to appear or start, set the initial window
+	title to the command line arg. When the VM actually appears then
+	update it to the real VM name
+
+2011-09-28  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix crash from previous commit when using UNIX sockets
+	Code in the previous commit would use 'ghost' even when it was
+	NULL, as with UNIX domain socket based connections.
+
+2011-09-19  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix hostname when XML gives a wildcard address
+	When the guest XML contains a wildcard address like 0.0.0.0 or ::,
+	we can't directly use connect() on it. Instead we have to use the
+	hostname/IP from the libvirt URI.
+
+2011-09-16  Daniel P. Berrange  <berrange@redhat.com>
+
+	Propagate primary window zoom level to secondary windows
+	Ensure that all windows get a default zoom level of 100. Propagate
+	the primary window's zoom level to all secondary windows  when
+	initially creating them
+
+	Fix setting of window title with domain name
+
+2011-08-16  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix setting of initial zoom level on display
+
+2011-08-16  Guido Günther  <agx@sigxcpu.org>
+
+	ff callbacks must be invoked from a clean stack
+	If 'ff' callbacks are invoked directly from the remove
+	callback they will likely deadlock in libvirt. They must
+	be invoked from a clean stack, so switch to using a
+	glib idle callback.
+
+2011-08-14  Guido Günther  <agx@sigxcpu.org>
+
+	Don't print (null) as user
+
+	Don't print incorrect port numbers
+	The port isn't 22 when we connect to an alternate port given in
+	.ssh/config.
+
+	Don't hardcode ssh port to 0
+	Many thanks to Luca Capello <luca@pca.it> for debugging this.
+
+2011-08-12  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix inverted sshport test that broke SSH tunnelling
+
+2011-08-04  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	Return if xmlParseURI() failed, instead of crashing
+
+	Lookup UI file correctly, to fix Windows support
+
+	Mark exported function for gtkbuild to lookup on Windows
+
+	Make title more translatable and using application name
+
+	Use g_printerr for errors instead of fprintf(stderr,..)
+
+	Lower severity of unhandled Spice events
+
+	Add virt_viewer_app_show_display()
+	Similar to previous virt_viewer_app_show_status().
+	Used later on by Spice controller to switch between display and status.
+
+	Fix fullscreen should hide taskbar on Windows
+
+2011-08-04  Daniel P. Berrange  <berrange@redhat.com>
+
+	Update for 0.4.1 release
+
+	Update authors & copyright dates
+
+	Fix sort order of displays submenu
+
+2011-08-03  Guido Günther  <agx@sigxcpu.org>
+
+	Don't hardcode SSH port to 22
+	To allow $HOME/.ssh/config to override the default SSH port,
+	don't hardcode '-p 22' in the command line.
+
+2011-08-03  Pavel Raiskup  <praiskup@redhat.com>
+
+	Remove unreachable condition in authentication dialog
+
+2011-07-26  Daniel P. Berrange  <berrange@redhat.com>
+
+	Remove duplicated struct definition
+
+2011-07-26  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	If only one display, fullscreen should be on the current display
+
+	Show status on all open windows
+	The split virt_viewer_notebook_show_status() to
+	virt_viewer_notebook_show_status_va() is unnecessary
+	in the end, but it's more future-proof.
+
+	Add a "Displays" submenu, and warn when closing last display
+
+	Don't ignore creation of secondary displays
+
+	Use app fullscreen property instead of app.start() argument
+
+	Implement app_set_fullscreen() to go over existing windows
+
+	Show display and rise its window when we have the display show hint
+	Track event for Spice, and imitate it for VNC.
+
+	Change enter/leave fullscreen to take/restore position
+	That allow positionning windows in multi-head.
+
+	Also, get rid of window_state_cb, since it's impossible to
+	properly catch the event to do the right thing, ie move to a different
+	screen before go full-screen, or disallow it in case nb physical
+	monitors < nb virtual monitors.
+
+	Add nth window to virt_viewer_app_window_new()
+
+	Introduce fullscreen property and virt_viewer_app_set_fullscreen()
+
+	Let virt_viewer_notebook_show_status take varags
+
+	Status messages can be translated
+
+	Add show-hint property to display
+
+	Split VirtViewerApp window into VirtViewerWindow
+
+2011-07-22  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	Inherit from VirtViewerApp for VirtViewer
+	Make it a real GObject.
+
+	The parts specific to virt should go in virt-viewer.c
+
+	Turn VirtViewer into a VirtViewerApp object
+
+	Split virt_viewer_start() and virt_viewer_new()
+
+	Split virt_viewer_activate() and virt_viewer_set_domain()
+
+	Split virt_viewer_create_session() out of virt_viewer_extract_connect_info()
+	For future reusability
+
+	Reorder _VirtViewer to make it easier to split with RemoteViewer
+
+	Extract scheme in virt_viewer_extract_host()
+	Needed for remote-viewer.
+
+2011-07-18  Daniel P. Berrange  <berrange@redhat.com>
+
+	Remove use of AM_GLIB_GNU_GETTEXT
+	Since we already invoke the intltool macros, also invoking
+	AM_GLIB_GNU_GETTEXT is wrong and causes problems with the
+	later makefile rules
+
+2011-07-12  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix build requirements for GTK3
+
+	Remove bogus hardcoded check for GTK2
+
+	Disable SPICE unless on x86 architectures
+
+	Fix compat with GTK 2.18.0
+
+	Updates for 0.4.0 release
+
+	Remove virt-viewer-priv.h from sources, since it is gone
+
+	Remove duplicated typedefs
+
+	Annotate unused variables
+
+	Fix leak of graphics type attribute from XML
+
+	Fix leak of command line arguments
+
+2011-07-11  Daniel P. Berrange  <berrange@redhat.com>
+
+	Split pull part of VirtViewerDisplay out into VirtViewerSession
+	To facilitate introduction of multi-head support, pull some of
+	the VirtViewerDisplay class out into a new VirtViewerSession
+	class.
+
+	Avoid (null) in titlebar
+
+	Fix colour of status label to show up on black background
+
+	Fix reconnecting of SPICE display
+
+2011-07-11  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	Fill space on the display alignment with black
+
+	Add support for --fullscreen option
+
+	Skip non-primary monitors in SPICE
+
+2011-07-11  Daniel P. Berrange  <berrange@redhat.com>
+
+	Remove circular dependancy between VirtViewerDisplay and VirtViewer
+	Add many signals to VirtViewerDisplay which are emitted when various
+	events occur. This lets us remove all the code in the VirtViewerDisplay
+	subclasses which call back into VirtViewer methods. Instead VirtViewer
+	can simply connect signals to the display
+
+	Turn VirtViewerDisplay into a proper Gtk widget
+	Turn VirtViewerDisplay into a Gtk widget instead of just a GObject,
+	by merging the functionality from VirtViewerAlign
+
+2011-07-11  Daniel P. Berrange  <dan@berrange.com>
+
+	Update to optionally build with GTK3
+
+2011-07-01  Daniel P. Berrange  <dan@berrange.com>
+
+	Replace use of GtkAlignment with a custom align widget
+	To use the GtkAlignment we have to play evil tricks overriding
+	its size request, to make it reallocate the child to the preferred
+	size we desire based on the virtual desktop size + zoom level.
+
+	By replacing the GtkAlignment with a custom widget we can
+	directly implement the layout/sizing semantics we want without
+	playing stupid games
+
+	Introduce standard naming convention to files & methods
+	All source files must be named
+
+	  virt-viewer-XXXX
+
+	All methods named
+
+	  virt_viewer_XXX
+
+2011-07-01  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix some compile warnings
+
+	Convert from Glade to GtkBuilder
+
+	Refactor configure.ac to pull out required version
+
+	Enable use of scaling from spice >= 0.6
+	Make the SPICE widget operate in the same way as the VNC widget
+	with display scaling, and auto-resize, but preserving guest
+	aspect ratio
+
+	Hide menu bar on fullscreen & add a hiding toolbar
+	* src/Makefile.am, src/view/autoDrawer.c, src/view/autoDrawer.c
+	  src/view/drawer.c, src/view/drawer.h, src/view/ovBox.c,
+	  src/view/ovBox.c: Import auto-drawer from vinagre
+	* src/viewer-priv.h, src/viewer.c, src/viewer.glade,
+	  src/display-vnc.c: Insert an auto-drawer above the
+	  notebook and display an auto-hiding toolbar when fullscreen
+
+2011-06-30  Daniel P. Berrange  <berrange@redhat.com>
+
+	Add message about whether it is VNC or SPICE display
+
+	Add some useful data for the --verbose flag
+
+2011-05-23  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix re-connect after authentication failure
+	viewer->display will be non-NULL if we have already attempted a
+	connection. So, remove the check for it being NULL, and instead
+	skip the widget setup step.
+
+2011-05-23  Jiri Denemark  <Jiri.Denemark@gmail.com>
+
+	Add support for listen attribute
+	Virt-viewer now parses listen attribute from graphics element to be able
+	to connect to domains configured with explicit listen address:
+
+	    <graphics type='vnc' port='-1' autoport='yes' listen='123.45.67.89'/>
+
+2011-05-23  Daniel P. Berrange  <berrange@redhat.com>
+
+	Replace .hgignore with .gitignore
+
+2011-02-21  Daniel P. Berrange  <dan@berrange.com>
+
+	Added tag release-0.3.1 for changeset f71b32a6a583
+
+	Updates for 0.3.1 release
+
+	Fix typo in SPICE configure setup
+
+	Added tag release-0.3.0 for changeset 807203083e74
+
+	Updates for 0.3.0 release
+
+	Fix misc RPM specfile bugs
+
+2011-02-11  Daniel P. Berrange  <dan@berrange.com>
+
+	Merge heads
+
+	Disable mozilla plugin since it doesn't build currently
+
+	Enable SPICE in Fedora 15 or later
+
+2011-02-08  yurchor  <yurchor@fedoraproject.org>
+
+	l10n: Updates to Ukrainian (uk) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2011-02-08  elsupergomez  <elsupergomez@fedoraproject.org>
+
+	l10n: Updates to Spanish (Castilian) (es) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2011-02-07  Daniel P. Berrange  <dan@berrange.com>
+
+	Update pkg-config check for spice-gtk library
+
+2011-02-04  warrink  <warrink@fedoraproject.org>
+
+	l10n: Updates to Dutch (Flemish) (nl) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2011-02-04  raven  <raven@fedoraproject.org>
+
+	l10n: Updates to Polish (pl) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+	l10n: Updates to Polish (pl) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2011-02-03  Daniel P. Berrange  <dan@berrange.com>
+
+	Fix waiting for VM based on UUID
+
+	Support connections over UNIX sockets
+
+	Avoid fetching XML document multiple times when extracting graphics
+
+2011-01-29  fdaluisio  <fdaluisio@fedoraproject.org>
+
+	l10n: Updates to Italian (it) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2011-01-28  tomspur  <tomspur@fedoraproject.org>
+
+	l10n: Updates to German (de) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2011-01-12  andreyjktl  <andreyjktl@fedoraproject.org>
+
+	l10n: Updates to Russian (ru) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2011-01-10  elsupergomez  <elsupergomez@fedoraproject.org>
+
+	l10n: Updates to Spanish (Castilian) (es) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-12-21  jassy  <jassy@fedoraproject.org>
+
+	l10n: Updates to Panjabi (Punjabi) (pa) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-12-16  warrink  <warrink@fedoraproject.org>
+
+	l10n: Updates to Dutch (Flemish) (nl) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-12-15  raven  <raven@fedoraproject.org>
+
+	l10n: Updates to Polish (pl) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-12-10  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	build: make spice-gtk dependency optional
+
+2010-11-30  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	viewer: add support for spice resize-guest
+	And also turn on clipboard sharing.
+
+	viewer: Add support for Spice
+
+2010-11-19  Marc-André Lureau  <marcandre.lureau@redhat.com>
+
+	viewer: generalize extract_port() into viewer_extract_xpath_string()
+
+	viewer: silence a few warnings of unused variables
+
+	viewer: split vnc display creation out of viewer_activate()
+
+2010-12-14  Daniel P. Berrange  <dan@berrange.com>
+
+	Improve auth dialog message when no address is available
+
+2010-11-17  tombo  <tombo@fedoraproject.org>
+
+	l10n: Updates to Italian (it) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-10-04  giallu  <giallu@fedoraproject.org>
+
+	l10n: Updates to Italian (it) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-09-30  aron  <aron@fedoraproject.org>
+
+	l10n: Updates to Chinese (China) (zh_CN) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-08-10  bozzo  <bozzo@fedoraproject.org>
+
+	l10n: Updates to French (fr) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-08-03  warrink  <warrink@fedoraproject.org>
+
+	l10n: First Dutch translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-07-22  ankit  <ankit@fedoraproject.org>
+
+	l10n: Updates to Gujarati (gu) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-07-09  Daniel P. Berrange  <dan@berrange.com>
+
+	Merge heads
+
+2010-07-09  Ronnie Sahlberg  <ronniesahlberg@gmail.com>
+
+	Misc fixes to command line args in virt-viewer manpage
+	Fix three issues with the manpage for virt-viewer :
+
+	* Short option for --reconnect is -r, not -w
+	* Show that the short option for zoom takes an argument
+	* Add the --debug argument.
+
+2010-07-06  raven  <raven@fedoraproject.org>
+
+	l10n: Updates to Polish (pl) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-07-06  elsupergomez  <elsupergomez@fedoraproject.org>
+
+	l10n: Updates to Spanish (Castilian) (es) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-07-05  Ronnie Sahlberg  <ronniesahlberg@gmail.com>
+
+	Add support for zoom levels
+	Add a menu for zooming in/out of the virtual desktop.
+
+	Add a --zoom command line to set the initial zoom level.
+
+	Defaults to 100% zoom at startup
+
+2010-07-05  Daniel P. Berrange  <dan@berrange.com>
+
+	Add all current languages to LINGUAS file
+	No locale files were being installed since all the
+	languages were missing in LINGUAS
+
+2010-06-27  zoltanh721  <zoltanh721@fedoraproject.org>
+
+	l10n: Updates to Hungarian (hu) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-06-25  htaira  <htaira@fedoraproject.org>
+
+	l10n: Updates to Japanese (ja) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-06-09  htaira  <htaira@fedoraproject.org>
+
+	l10n: Updates to Japanese (ja) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-04-14  mvdz  <mvdz@fedoraproject.org>
+
+	l10n: Updates to Ukrainian (uk) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-04-01  enshahar  <enshahar@fedoraproject.org>
+
+	l10n: Updates to Korean (ko) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-03-30  webappz  <webappz@fedoraproject.org>
+
+	l10n: Updates to Hungarian (hu) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+	l10n: Updates to Hungarian (hu) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+	l10n: Updates to Hungarian (hu) translation
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-03-22  mvdz  <mvdz@fedoraproject.org>
+
+	l10n: Added Ukrainian translation.
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-03-14  amitakhya  <amitakhya@fedoraproject.org>
+
+	l10n: Adding Assamese translations.
+	Transmitted-via: Transifex (translate.fedoraproject.org)
+
+2010-02-26  runab  <runab@fedoraproject.org>
+
+	Sending translation for po/bn_IN.po
+
+2010-02-24  rajesh  <rajesh@fedoraproject.org>
+
+	Sending translation for po/hi.po
+
+2010-02-20  snicore  <snicore@fedoraproject.org>
+
+	Sending translation for po/hu.po
+
+2010-02-08  anipeter  <anipeter@fedoraproject.org>
+
+	Sending translation for po/ml.po
+
+2010-02-01  mgiri  <mgiri@fedoraproject.org>
+
+	Sending translation for po/or.po
+
+2010-01-29  ifelix  <ifelix@fedoraproject.org>
+
+	Sending translation for po/ta.po
+
+2010-01-29  jassy  <jassy@fedoraproject.org>
+
+	Sending translation for Punjabi
+
+2010-01-28  sandeeps  <sandeeps@fedoraproject.org>
+
+	Sending translation for po/mr.po
+
+2010-01-28  shanky  <shanky@fedoraproject.org>
+
+	Sending translation for po/kn.po
+
+2010-01-28  giallu  <giallu@fedoraproject.org>
+
+	Sending translation for Italian
+
+2010-01-28  jassy  <jassy@fedoraproject.org>
+
+	Sending translation for po/pa.po
+
+2010-01-28  kkrothap  <kkrothap@fedoraproject.org>
+
+	Sending translation for po/te.po
+
+2010-01-28  mospina  <mospina@fedoraproject.org>
+
+	Sending translation for Korean
+
+2010-01-25  Daniel P. Berrange  <berrange@redhat.com>
+
+	Remove bogus it_IT.po file, correct name was it.po
+
+2010-01-24  tchuang  <tchuang@fedoraproject.org>
+
+	Sending translation for po/zh_TW.po
+
+2010-01-24  raven  <raven@fedoraproject.org>
+
+	Sending translation for po/it.po
+
+2010-01-23  giallu  <giallu@fedoraproject.org>
+
+	Sending translation for po/it_IT.po
+
+2010-01-22  hedda  <hedda@fedoraproject.org>
+
+	Sending translation for German
+
+2010-01-22  leahliu  <leahliu@fedoraproject.org>
+
+	Sending translation for Chinese (Simplified)
+
+2010-01-22  khasida  <khasida@fedoraproject.org>
+
+	Sending translation for po/ja.po
+
+2010-01-22  mospina  <mospina@fedoraproject.org>
+
+	Sending translation for po/ko.po
+
+	Sending translation for Spanish
+
+2010-01-22  ypoyarko  <ypoyarko@fedoraproject.org>
+
+	Sending translation for Russian
+
+2010-01-22  gcintra  <gcintra@fedoraproject.org>
+
+	Sending translation for po/pt_BR.po
+
+2010-01-22  samfreemanz  <samfreemanz@fedoraproject.org>
+
+	Sending translation for French
+
+2010-01-22  hedda  <hedda@fedoraproject.org>
+
+	Sending translation for po/de.po
+
+2010-01-22  leahliu  <leahliu@fedoraproject.org>
+
+	Sending translation for Chinese (Simplified)
+
+2010-01-21  leahliu  <leahliu@fedoraproject.org>
+
+	Sending translation for po/zh_CN.po
+
+2010-01-21  ypoyarko  <ypoyarko@fedoraproject.org>
+
+	Sending translation for po/ru.po
+
+2010-01-21  mospina  <mospina@fedoraproject.org>
+
+	Sending translation for po/es.po
+
+2010-01-21  swkothar  <swkothar@fedoraproject.org>
+
+	Sending translation for po/gu.po
+
+2010-01-18  renault  <renault@fedoraproject.org>
+
+	Sending translation for po/fr.po
+
+2010-01-15  Daniel P. Berrange  <berrange@redhat.com>
+
+	Added tag release-0.2.1 for changeset 13bcca43c859
+
+	Updates for 0.2.1 release
+
+2010-01-13  raven  <raven@fedoraproject.org>
+
+	Sending translation for Polish
+
+2010-01-12  Daniel P. Berrange  <berrange@redhat.com>
+
+	Add message dialog displays for important error scenarios
+
+	Fix warning with default widget focus in auth dialog
+
+	Add dialog to alert user to unsuccessful authentication & retry Alert user if VNC server has no compatible auth methods Support VNC bell & cut text events
+
+	Turn on automake's silent build rules if available
+
+	Various cleanups for Glib/GTK and BZ 474213
+
+2010-01-11  raven  <raven@fedoraproject.org>
+
+	Sending translation for Polish
+
+2010-01-11  Daniel P. Berrange  <berrange@redhat.com>
+
+	Add 'pl' to LINGUAS. Remove accidentally committed .pot file and add it to .hgignore. Add RPM specfile magic for translations. Fix typo in about.glade URL
+
+2010-01-11  raven  <raven@fedoraproject.org>
+
+	Sending translation for po/pl.po
+
+2010-01-11  Daniel P. Berrange  <berrange@redhat.com>
+
+	Add support for i18n of the UI
+	Add all the boilerplate code required for doing i18n of the UI.
+	No translations available yet though
+
+2009-08-15  Yann E. MORIN"  <yann.morin.1998@anciens.enib.fr>
+
+	viewer: fix build on 'old' GTK2
+	Debian lenny has gtk2 2.12.12, which is missing gtk_widget_get_window.
+	Provide our own function if GTK2 <= 2.12 .
+
+	Highly inspired from: http://osdir.com/ml/svn-commits-list/2009-08/msg00725.html
+
+2009-07-29  Daniel P. Berrange  <berrange@redhat.com>
+
+	Added tag release-0.2.0 for changeset b38a2c67ebfd
+
+	Update for 0.2.0 release
+
+	Disable compile errors in plugin till we figure out what's up with the header files
+
+	Update deps in rpm
+
+	Ensure VNC display is centered if being scaled
+
+	Ensure password is not echoed
+
+	Add support for libvirt graphical auth
+
+	Pull auth code out into separate file
+
+2009-07-28  Daniel P. Berrange  <berrange@redhat.com>
+
+	Make plugin work again
+
+	Add compatability logic for drivers without domain event support
+
+	Fix mouse / key grab vs modifier disabling mixup
+
+	Pull glib event loop integration into tree until libvirt-glib is more mature
+
+	Re-write the way scaling/resizing works
+	* Default to auto-resize mode where we try to fit the VNC widget 1:1 in the main window
+	* If local desktop is not large enough for VNC widget, scale down, maintaining aspect ratio
+	* Allow the user to turn off auto-resize and have total manual control over window size
+	* Always scale the display in fullscreen mode
+
+	Add a --debug command line flag
+
+	Fix waiting for a VM that does not initially exist
+
+	Move most of viewer code out into viewer.c
+
+2008-11-28  Daniel P. Berrange  <berrange@redhat.com>
+
+	Initial mingw32 build support
+
+	Use g_strdup & friends
+
+	Remove unused usleep code
+
+2008-11-26  Daniel P. Berrange  <berrange@redhat.com>
+
+	Re-write completely to use Glade, libvirt events, and libvirt-glib integration
+
+2008-11-03  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix rule to use DESTDIR on plugin install
+
+2008-10-10  Richard W.M. Jones  <rjones@redhat.com>
+
+		* configure.ac, src/Makefile.am, src/main.c, src/usleep.c: Support 	for building on Windows using MinGW compiler toolchain (or 	for cross-compiling using the same).
+		* .hgignore: Ignore some generated files.
+
+2008-06-17  Daniel P. Berrange  <berrange@redhat.com>
+
+	Add error message when conecting to inactive VM (Hiroyuki Kaguchi)
+
+2008-04-28  Daniel P. Berrange  <berrange@redhat.com>
+
+	Use GTK apis for option parsing (Guido G\374nther)
+
+2008-04-24  Daniel P. Berrange  <berrange@redhat.com>
+
+	Avoid caching inactive domain to workaround issues with older XenD (Hiroyuki Kaguchi)
+
+2008-04-22  Daniel P. Berrange  <berrange@redhat.com>
+
+	Call gtk_init early to ensure it grabs args like --sync
+
+2008-04-08  Daniel P. Berrange  <berrange@redhat.com>
+
+	Fix manpage typo
+
+2008-03-21  Daniel P. Berrange  <berrange@redhat.com>
+
+	Bump GTK dep to 2.10.0
+
+2008-03-10  Daniel P. Berrange  <berrange@redhat.com>
+
+	Added tag release-0.0.3 for changeset 05f9c167354b
+
+	Refresh news / changelog for release
+
+2008-03-09  Daniel P. Berrange  <berrange@redhat.com>
+
+	Added -plugin sub RPM, disabled by default, except for autobuild
+
+2008-03-08  Daniel P. Berrange  <berrange@redhat.com>
+
+	Relax firefox plugin version to 1.5.0
+
+2008-03-07  Daniel P. Berrange  <berrange@redhat.com>
+
+	Disable scaling by default if running on composited window
+
+	Block view menu accelerator & remove debug
+
+	Added support for desktop scaling with OpenGL
+
+2008-03-05  Daniel P. Berrange  <berrange@redhat.com>
+
+	Kill automake portability warnings. Use a config.h Cleanup misc build issues. Build with fatal compile warnings
+
+	Disable menu accelerators when keyboard is grabbed (Chris Lalancett)
+
+	Fix type in autogen.sh output (Chris Lalancett)
+
+2008-01-25  Daniel P. Berrange  <berrange@redhat.com>
+
+	Added browser plugin (Richard Jones)
+
+	Refactor main method for viewer to prepare for plugin (Richard Jones
+
+2008-01-11  Daniel P. Berrange  <berrange@redhat.com>
+
+	Whitespace fix
+
+	Hide chars in passwd field
+
+	Fix a few typos (Atsushi SAKAI)
+
+2007-11-29  Daniel P. Berrange  <berrange@redhat.com>
+
+	Use proper domain name in title bar, rather than VNC server title
+
+2007-08-29  Daniel P. Berrange  <berrange@redhat.com>
+
+	Added tag release-0.0.2 for changeset f3accb51c6f5
+
+	Fix crash with no transport
+
+	New release 0.0.2
+
+	Document the '--direct' option
+
+	Support TLS credentials & improved SSH tunnelling
+
+	Support for connecting over an SSH tunnel
+
+2007-08-28  Daniel P. Berrange  <berrange@redhat.com>
+
+	Merge
+
+	Added initial ability to connect remote hosts
+
+	Disable debug flag
+
+	Fixed delete-event handler args
+
+2007-08-16  Daniel P. Berrange  <berrange@redhat.com>
+
+	Added COPYING/INSTALL files
+
+	Added tag release-0.0.1 for changeset 2b78ab2d18ce
+
+	Fixed build requires & group. Removed exclusivearch
+
+	Fill out authors, news & readme
+
+2007-07-21  Daniel P. Berrange  <berrange@redhat.com>
+
+	Connected up  screenshot & about menus
+
+2007-07-20  Daniel P. Berrange  <berrange@redhat.com>
+
+	Added manual page
+
+	Initial commit

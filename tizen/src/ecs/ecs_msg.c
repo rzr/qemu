@@ -56,10 +56,15 @@
 
 #include "ecs.h"
 #include "mloop_event.h"
+#ifndef CONFIG_USE_SHM
+#include "maru_finger.h"
+#endif
+
 #include "hw/maru_virtio_evdi.h"
 #include "hw/maru_virtio_sensor.h"
 #include "hw/maru_virtio_nfc.h"
 #include "skin/maruskin_operation.h"
+#include "skin/maruskin_server.h"
 
 #define MAX_BUF_SIZE  255
 // utility functions
@@ -285,12 +290,11 @@ void msgproc_keepalive_ans (ECS_Client* ccli, ECS__KeepAliveAns* msg)
     ccli->keep_alive = 0;
 }
 
-static void send_host_keyboard_ntf (void)
+void send_host_keyboard_ntf (int on)
 {
     type_length length = (unsigned short)1;
     type_group group = GROUP_STATUS;
     type_action action = 122;
-    int is_on = mloop_evcmd_get_hostkbd_status();
 
     char* keyboard_msg = (char*) malloc(15);
     if(!keyboard_msg)
@@ -300,7 +304,7 @@ static void send_host_keyboard_ntf (void)
     memcpy(keyboard_msg + 10, &length, sizeof(unsigned short));
     memcpy(keyboard_msg + 12, &group, sizeof(unsigned char));
     memcpy(keyboard_msg + 13, &action, sizeof(unsigned char));
-    memcpy(keyboard_msg + 14, (is_on?"1":"0"), 1);
+    memcpy(keyboard_msg + 14, ((on == 1) ? "1":"0"), 1);
 
     send_device_ntf(keyboard_msg, 15);
 
@@ -355,17 +359,54 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         }
     } else if (!strncmp(cmd, "HKeyboard", 8)) {
         if (group == MSG_GROUP_STATUS) {
-            send_host_keyboard_ntf();
+            send_host_keyboard_ntf(mloop_evcmd_get_hostkbd_status());
         } else {
             if (!strncmp(data, "1", 1)) {
                 is_on = 1;
             }
             do_host_kbd_enable(is_on);
+            notify_host_kbd_state(is_on);
+        }
+    } else if (!strncmp(cmd, "gesture", strlen("gesture"))) {
+        /* release multi-touch */
+#ifndef CONFIG_USE_SHM
+        clear_finger_slot(false);
+#else
+        // TODO:
+#endif
+
+        LOG("%s\n", data);
+
+        char token[] = "#";
+
+        if (group == 1) { /* HW key event */
+            char *section = strtok(data, token);
+            int event_type = atoi(section);
+
+            section = strtok(NULL, token);
+            int keycode = atoi(section);
+
+            do_hw_key_event(event_type, keycode);
+        } else { /* touch event */
+            char *section = strtok(data, token);
+            int event_type = atoi(section);
+
+            section = strtok(NULL, token);
+            int xx = atoi(section);
+
+            section = strtok(NULL, token);
+            int yy = atoi(section);
+
+            section = strtok(NULL, token);
+            int zz = atoi(section);
+
+            do_mouse_event(1/* LEFT */, event_type, 0, 0, xx, yy, zz);
         }
     }
 
-    if (data)
+    if (data) {
         g_free(data);
+    }
 
     return true;
 }
@@ -390,10 +431,11 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
 
     if (data != NULL) {
         send_to_nfc(ccli->client_id, ccli->client_type, data, msg->data.len);
+        g_free(data);
         return true;
+    } else {
+        return false;
     }
-
-    return false;
 }
 
 bool ntf_to_injector(const char* data, const int len) {

@@ -112,6 +112,10 @@ public class KeyWindowKeeper {
 			MenuItem layout = keywindowMenu.getItem(indexLayout);
 			if (layout == null) {
 				layout = keywindowMenu.getItem(0);
+				if (layout == null) {
+					return;
+				}
+
 				layout.setSelection(true);
 			}
 

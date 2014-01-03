@@ -107,11 +107,11 @@ struct vigs_gl_backend_wgl
     PFNWGLGETPBUFFERDCARBPROC wglGetPbufferDCARB;
     PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB;
     PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB;
-    PFNWGLMAKECONTEXTCURRENTARBPROC wglMakeContextCurrentARB;
 
     HWND win;
     HDC dc;
     HPBUFFERARB sfc;
+    HDC sfc_dc;
     HGLRC ctx;
 };
 
@@ -180,6 +180,13 @@ static bool vigs_gl_backend_wgl_create_surface(struct vigs_gl_backend_wgl *gl_ba
         return false;
     }
 
+    gl_backend_wgl->sfc_dc = gl_backend_wgl->wglGetPbufferDCARB(gl_backend_wgl->sfc);
+
+    if (!gl_backend_wgl->sfc_dc) {
+        VIGS_LOG_CRITICAL("wglGetPbufferDCARB failed");
+        return false;
+    }
+
     return true;
 }
 
@@ -208,26 +215,17 @@ static bool vigs_gl_backend_wgl_make_current(struct vigs_gl_backend *gl_backend,
 {
     struct vigs_gl_backend_wgl *gl_backend_wgl =
         (struct vigs_gl_backend_wgl*)gl_backend;
-    HDC dc;
 
     if (enable) {
-        dc = gl_backend_wgl->wglGetPbufferDCARB(gl_backend_wgl->sfc);
-
-        if (!dc) {
-            VIGS_LOG_CRITICAL("wglGetPbufferDCARB failed");
-            return false;
-        }
-
-        if (!gl_backend_wgl->wglMakeContextCurrentARB(dc, dc, gl_backend_wgl->ctx)) {
-            VIGS_LOG_CRITICAL("wglMakeContextCurrentARB failed");
-            gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->sfc, dc);
+        if (!gl_backend_wgl->wglMakeCurrent(gl_backend_wgl->sfc_dc, gl_backend_wgl->ctx)) {
+            VIGS_LOG_CRITICAL("wglMakeCurrent failed");
             return false;
         }
     } else {
-        if (!gl_backend_wgl->wglMakeContextCurrentARB(NULL, NULL, NULL)) {
-             VIGS_LOG_CRITICAL("wglMakeContextCurrentARB failed");
-             return false;
-         }
+        if (!gl_backend_wgl->wglMakeCurrent(NULL, NULL)) {
+            VIGS_LOG_CRITICAL("wglMakeCurrent failed");
+            return false;
+        }
     }
 
     return true;
@@ -236,16 +234,11 @@ static bool vigs_gl_backend_wgl_make_current(struct vigs_gl_backend *gl_backend,
 static void vigs_gl_backend_wgl_destroy(struct vigs_backend *backend)
 {
     struct vigs_gl_backend_wgl *gl_backend_wgl = (struct vigs_gl_backend_wgl*)backend;
-    HDC dc;
 
     vigs_gl_backend_cleanup(&gl_backend_wgl->base);
 
     gl_backend_wgl->wglDeleteContext(gl_backend_wgl->ctx);
-
-    dc = gl_backend_wgl->wglGetPbufferDCARB(gl_backend_wgl->sfc);
-    if (dc) {
-        gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->sfc, dc);
-    }
+    gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->sfc, gl_backend_wgl->sfc_dc);
     gl_backend_wgl->wglDestroyPbufferARB(gl_backend_wgl->sfc);
 
     ReleaseDC(gl_backend_wgl->win, gl_backend_wgl->dc);
@@ -383,7 +376,6 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, PFNWGLRELEASEPBUFFERDCARBPROC, wglReleasePbufferDCARB);
     VIGS_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, PFNWGLDESTROYPBUFFERARBPROC, wglDestroyPbufferARB);
     VIGS_WGL_GET_EXT_PROC(WGL_ARB_pixel_format, PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB);
-    VIGS_WGL_GET_EXT_PROC(WGL_ARB_make_current_read, PFNWGLMAKECONTEXTCURRENTARBPROC, wglMakeContextCurrentARB);
 
     VIGS_GL_GET_PROC(GenTextures, glGenTextures);
     VIGS_GL_GET_PROC(DeleteTextures, glDeleteTextures);
@@ -493,11 +485,10 @@ fail:
     if (gl_backend_wgl->ctx) {
         gl_backend_wgl->wglDeleteContext(gl_backend_wgl->ctx);
     }
+    if (gl_backend_wgl->sfc_dc) {
+        gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->sfc, gl_backend_wgl->sfc_dc);
+    }
     if (gl_backend_wgl->sfc) {
-        HDC dc = gl_backend_wgl->wglGetPbufferDCARB(gl_backend_wgl->sfc);
-        if (dc) {
-            gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->sfc, dc);
-        }
         gl_backend_wgl->wglDestroyPbufferARB(gl_backend_wgl->sfc);
     }
     if (gl_backend_wgl->dc) {

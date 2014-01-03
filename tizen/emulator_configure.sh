@@ -231,6 +231,7 @@ cd ..
 echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
+#export PKG_CONFIG_PATH=${PWD}/tizen/distrib/remote/output/lib/pkgconfig:${PKG_CONFIG_PATH}
 exec ./configure \
  --enable-werror \
  --audio-drv-list=alsa \
@@ -238,6 +239,7 @@ exec ./configure \
  --disable-vnc \
  --disable-pie $1 \
  --enable-virtfs \
+ --disable-xen \
  $CONFIGURE_APPEND \
 ;;
 MINGW*)

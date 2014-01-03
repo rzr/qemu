@@ -132,6 +132,7 @@ enum {
     SEND_BRIGHTNESS_STATE = 6,
     SEND_ECP_PORT_DATA = 7,
     SEND_HOST_KBD_STATE = 8,
+    SEND_MULTI_TOUCH_STATE = 9,
 
     SEND_SENSORD_STARTED = 800,
     SEND_SDBD_STARTED = 801,
@@ -449,6 +450,31 @@ void notify_host_kbd_state(bool on)
             (unsigned char *)kbd_state_data, HOSTKBD_DATA_LENGTH, 0)) {
 
             ERR("fail to send SEND_HOST_KBD_STATE to skin\n");
+        }
+    } else {
+        INFO("skin client socket is not connected yet\n");
+    }
+}
+
+void notify_multi_touch_state(bool on)
+{
+#define MULTITOUCH_DATA_LENGTH 2
+    char mt_state_data[MULTITOUCH_DATA_LENGTH] = { 0, };
+
+    if (on == false) {
+        snprintf(mt_state_data, MULTITOUCH_DATA_LENGTH, "0");
+    } else {
+        snprintf(mt_state_data, MULTITOUCH_DATA_LENGTH, "1");
+    }
+
+    TRACE("notify multi touch state : %s\n", mt_state_data);
+
+    if (client_sock) {
+        if (0 > send_skin_data(client_sock,
+            SEND_MULTI_TOUCH_STATE,
+            (unsigned char *)mt_state_data, MULTITOUCH_DATA_LENGTH, 0)) {
+
+            ERR("fail to send SEND_MULTI_TOUCH_STATE to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -1107,6 +1133,8 @@ static void* run_skin_server(void* args)
                     } else {
                         do_host_kbd_enable(true);
                     }
+
+                    send_host_keyboard_ntf((on == 0) ? 0 : 1);
                     break;
                 }
                 case RECV_INTERPOLATION_STATE: {

@@ -310,7 +310,11 @@ static void debug_init(void)
             return;
         }
 
-        fseek(fp, 0, SEEK_SET);
+        if(fseek(fp, 0, SEEK_SET) != 0) {
+            fclose(fp);
+            fprintf(stderr, "failed to fseek()\n");
+            return;
+        }
         const char* str = fgets(tmp, 1024, fp);
         if (str) {
             tmp[strlen(tmp) - 1] = 0;
