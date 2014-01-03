@@ -40,6 +40,7 @@
 #include "ecs-json-streamer.h"
 #include "genmsg/ecs.pb-c.h"
 #include "genmsg/ecs_ids.pb-c.h"
+#include "../osutil.h"
 
 #define ECS_VERSION   "1.0"
 
@@ -48,7 +49,7 @@
 #ifdef ECS_DEBUG
 #define LOG(fmt, arg...)    \
     do {    \
-        fprintf(stdout,"[%s-%s:%d] "fmt"\n", __TIME__, __FUNCTION__, __LINE__, ##arg);  \
+        fprintf(stdout,"[%s-%s:%d] "fmt"\n", get_timeofday(), __FUNCTION__, __LINE__, ##arg);  \
     } while (0)
 #else
 #define LOG(fmt, arg...)
