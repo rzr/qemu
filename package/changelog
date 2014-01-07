@@ -1,3 +1,6 @@
+* 1.7.14
+- disabled unstable spice because runtime library dependency
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-01-07
 * 1.7.13
 - enabled spice
 == Sungmin Ha <sungmin82.ha@samsung.com> 2014-01-03
