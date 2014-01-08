@@ -352,7 +352,7 @@ static void ecs_close(ECS_State *cs) {
     }
 
     if (cs->alive_timer != NULL) {
-        qemu_del_timer(cs->alive_timer);
+        timer_del(cs->alive_timer);
         cs->alive_timer = NULL;
     }
 
@@ -666,8 +666,8 @@ static void alive_checker(void *opaque) {
         return;
     }
 
-    qemu_mod_timer(current_ecs->alive_timer,
-            qemu_get_clock_ns(vm_clock) + get_ticks_per_sec() * TIMER_ALIVE_S);
+    timer_mod(current_ecs->alive_timer,
+            qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + get_ticks_per_sec() * TIMER_ALIVE_S);
 
 }
 
@@ -697,10 +697,10 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
 
     make_keep_alive_msg();
 
-    cs->alive_timer = qemu_new_timer_ns(vm_clock, alive_checker, cs);
+    cs->alive_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, alive_checker, cs);
 
-    qemu_mod_timer(cs->alive_timer,
-            qemu_get_clock_ns(vm_clock) + get_ticks_per_sec() * TIMER_ALIVE_S);
+    timer_mod(cs->alive_timer,
+            qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + get_ticks_per_sec() * TIMER_ALIVE_S);
 
     return 0;
 }

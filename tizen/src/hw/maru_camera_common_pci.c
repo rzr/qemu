@@ -36,6 +36,7 @@
 #include <signal.h>
 
 #include "qemu-common.h"
+#include "qemu/main-loop.h"
 #include "exec/cpu-common.h"
 
 #include "maru_camera_common.h"
@@ -63,7 +64,7 @@ marucam_mmio_read(void *opaque, hwaddr offset)
         qemu_mutex_lock(&state->thread_mutex);
         ret = state->isr;
         if (ret != 0) {
-            qemu_irq_lower(state->dev.irq[2]);
+            pci_set_irq(&state->dev, 0);
             state->isr = 0;
         }
         qemu_mutex_unlock(&state->thread_mutex);
@@ -191,7 +192,7 @@ static void marucam_tx_bh(void *opaque)
 
     qemu_mutex_lock(&state->thread_mutex);
     if (state->isr) {
-        qemu_irq_raise(state->dev.irq[2]);
+        pci_set_irq(&state->dev, 1);
     }
     qemu_mutex_unlock(&state->thread_mutex);
 }

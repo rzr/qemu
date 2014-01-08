@@ -246,7 +246,7 @@ static void mloop_evhandle_usb_del(char *name)
         }
     } else if (strncmp(name, "disk:", 5) == 0) {
         if (usbdisk) {
-            qdev_free(&usbdisk->qdev);
+//            qdev_free(&usbdisk->qdev);
         }
     } else {
         WARN("There is no usb-device for %s.\n", name);
