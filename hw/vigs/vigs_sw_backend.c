@@ -112,35 +112,11 @@ static void vigs_sw_backend_batch_start(struct vigs_backend *backend)
  */
 
 static void vigs_sw_surface_read_pixels(struct vigs_surface *sfc,
-                                        uint32_t x,
-                                        uint32_t y,
-                                        uint32_t width,
-                                        uint32_t height,
                                         uint8_t *pixels)
 {
     struct vigs_sw_surface *sw_sfc = (struct vigs_sw_surface*)sfc;
-    uint32_t bpp = vigs_format_bpp(sfc->format);
-    uint32_t row_length = width * bpp;
-    const uint8_t *src;
-    uint8_t *dest;
-    uint32_t i;
 
-    VIGS_LOG_TRACE("x = %u, y = %u, width = %u, height = %u",
-                   x, y, width, height);
-
-    src = sw_sfc->data + y * sfc->stride + x * bpp;
-    dest = pixels + y * sfc->stride + x * bpp;
-
-    if (width == sfc->ws_sfc->width) {
-        row_length = sfc->stride * height;
-        height = 1;
-    }
-
-    for (i = 0; i < height; ++i) {
-        memcpy(dest, src, row_length);
-        src += sfc->stride;
-        dest += sfc->stride;
-    }
+    memcpy(pixels, sw_sfc->data, sfc->stride * sfc->ws_sfc->height);
 }
 
 static void vigs_sw_surface_draw_pixels(struct vigs_surface *sfc,
@@ -334,6 +310,17 @@ static struct vigs_surface *vigs_sw_backend_create_surface(struct vigs_backend *
     return &sw_sfc->base;
 }
 
+static void vigs_sw_backend_read_pixels(struct vigs_surface *surface,
+                                        uint8_t *pixels,
+                                        vigs_read_pixels_cb cb,
+                                        void *user_data)
+{
+    surface->read_pixels(surface, pixels);
+
+    cb(user_data, pixels, surface->ws_sfc->width, surface->ws_sfc->height,
+       surface->stride, surface->format);
+}
+
 static void vigs_sw_backend_batch_end(struct vigs_backend *backend)
 {
 }
@@ -354,6 +341,7 @@ struct vigs_backend *vigs_sw_backend_create(void)
 
     backend->batch_start = &vigs_sw_backend_batch_start;
     backend->create_surface = &vigs_sw_backend_create_surface;
+    backend->read_pixels = &vigs_sw_backend_read_pixels;
     backend->batch_end = &vigs_sw_backend_batch_end;
     backend->destroy = &vigs_sw_backend_destroy;
 

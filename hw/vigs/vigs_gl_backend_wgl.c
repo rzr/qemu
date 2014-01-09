@@ -98,6 +98,7 @@ struct vigs_gl_backend_wgl
     PFNWGLGETPROCADDRESSPROC wglGetProcAddress;
     PFNWGLMAKECURRENTPROC wglMakeCurrent;
     PFNWGLGETCURRENTCONTEXTPROC wglGetCurrentContext;
+    PFNWGLSHARELISTSPROC wglShareLists;
 
     /* WGL extensions */
     PFNWGLGETEXTENSIONSSTRINGEXTPROC wglGetExtensionsStringEXT;
@@ -113,6 +114,9 @@ struct vigs_gl_backend_wgl
     HPBUFFERARB sfc;
     HDC sfc_dc;
     HGLRC ctx;
+    HPBUFFERARB read_pixels_sfc;
+    HDC read_pixels_sfc_dc;
+    HGLRC read_pixels_ctx;
 };
 
 static int vigs_gl_backend_wgl_choose_config(struct vigs_gl_backend_wgl *gl_backend_wgl)
@@ -162,7 +166,9 @@ static int vigs_gl_backend_wgl_choose_config(struct vigs_gl_backend_wgl *gl_back
 }
 
 static bool vigs_gl_backend_wgl_create_surface(struct vigs_gl_backend_wgl *gl_backend_wgl,
-                                               int config_id)
+                                               int config_id,
+                                               HPBUFFERARB *sfc,
+                                               HDC *sfc_dc)
 {
     int surface_attribs[] = {
         WGL_PBUFFER_LARGEST_ARB, FALSE,
@@ -171,18 +177,17 @@ static bool vigs_gl_backend_wgl_create_surface(struct vigs_gl_backend_wgl *gl_ba
         0
     };
 
-    gl_backend_wgl->sfc =
-        gl_backend_wgl->wglCreatePbufferARB(gl_backend_wgl->dc, config_id,
-                                            1, 1, surface_attribs);
+    *sfc = gl_backend_wgl->wglCreatePbufferARB(gl_backend_wgl->dc, config_id,
+                                               1, 1, surface_attribs);
 
-    if (!gl_backend_wgl->sfc) {
+    if (!*sfc) {
         VIGS_LOG_CRITICAL("wglCreatePbufferARB failed");
         return false;
     }
 
-    gl_backend_wgl->sfc_dc = gl_backend_wgl->wglGetPbufferDCARB(gl_backend_wgl->sfc);
+    *sfc_dc = gl_backend_wgl->wglGetPbufferDCARB(*sfc);
 
-    if (!gl_backend_wgl->sfc_dc) {
+    if (!*sfc_dc) {
         VIGS_LOG_CRITICAL("wglGetPbufferDCARB failed");
         return false;
     }
@@ -190,13 +195,24 @@ static bool vigs_gl_backend_wgl_create_surface(struct vigs_gl_backend_wgl *gl_ba
     return true;
 }
 
-static bool vigs_gl_backend_wgl_create_context(struct vigs_gl_backend_wgl *gl_backend_wgl)
+static bool vigs_gl_backend_wgl_create_context(struct vigs_gl_backend_wgl *gl_backend_wgl,
+                                               HGLRC share_ctx,
+                                               HGLRC *ctx)
 {
-    gl_backend_wgl->ctx = gl_backend_wgl->wglCreateContext(gl_backend_wgl->dc);
+    *ctx = gl_backend_wgl->wglCreateContext(gl_backend_wgl->dc);
 
-    if (!gl_backend_wgl->ctx) {
+    if (!*ctx) {
         VIGS_LOG_CRITICAL("wglCreateContext failed");
         return false;
+    }
+
+    if (share_ctx) {
+        if (!gl_backend_wgl->wglShareLists(share_ctx, *ctx)) {
+            VIGS_LOG_CRITICAL("wglShareLists failed");
+            gl_backend_wgl->wglDeleteContext(*ctx);
+            *ctx = NULL;
+            return false;
+        }
     }
 
     return true;
@@ -231,6 +247,27 @@ static bool vigs_gl_backend_wgl_make_current(struct vigs_gl_backend *gl_backend,
     return true;
 }
 
+static bool vigs_gl_backend_wgl_read_pixels_make_current(struct vigs_gl_backend *gl_backend,
+                                                         bool enable)
+{
+    struct vigs_gl_backend_wgl *gl_backend_wgl =
+        (struct vigs_gl_backend_wgl*)gl_backend;
+
+    if (enable) {
+        if (!gl_backend_wgl->wglMakeCurrent(gl_backend_wgl->read_pixels_sfc_dc, gl_backend_wgl->read_pixels_ctx)) {
+            VIGS_LOG_CRITICAL("wglMakeCurrent failed");
+            return false;
+        }
+    } else {
+        if (!gl_backend_wgl->wglMakeCurrent(NULL, NULL)) {
+            VIGS_LOG_CRITICAL("wglMakeCurrent failed");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static void vigs_gl_backend_wgl_destroy(struct vigs_backend *backend)
 {
     struct vigs_gl_backend_wgl *gl_backend_wgl = (struct vigs_gl_backend_wgl*)backend;
@@ -238,8 +275,11 @@ static void vigs_gl_backend_wgl_destroy(struct vigs_backend *backend)
     vigs_gl_backend_cleanup(&gl_backend_wgl->base);
 
     gl_backend_wgl->wglDeleteContext(gl_backend_wgl->ctx);
+    gl_backend_wgl->wglDeleteContext(gl_backend_wgl->read_pixels_ctx);
     gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->sfc, gl_backend_wgl->sfc_dc);
     gl_backend_wgl->wglDestroyPbufferARB(gl_backend_wgl->sfc);
+    gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->read_pixels_sfc, gl_backend_wgl->read_pixels_sfc_dc);
+    gl_backend_wgl->wglDestroyPbufferARB(gl_backend_wgl->read_pixels_sfc);
 
     ReleaseDC(gl_backend_wgl->win, gl_backend_wgl->dc);
     DestroyWindow(gl_backend_wgl->win);
@@ -310,6 +350,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_WGL_GET_PROC(PFNWGLGETPROCADDRESSPROC, wglGetProcAddress, fail);
     VIGS_WGL_GET_PROC(PFNWGLMAKECURRENTPROC, wglMakeCurrent, fail);
     VIGS_WGL_GET_PROC(PFNWGLGETCURRENTCONTEXTPROC, wglGetCurrentContext, fail);
+    VIGS_WGL_GET_PROC(PFNWGLSHARELISTSPROC, wglShareLists, fail);
 
     tmp_win = CreateWindow(VIGS_WGL_WIN_CLASS, "VIGSWin",
                            WS_DISABLED | WS_POPUP,
@@ -429,6 +470,12 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(BlendFunc, glBlendFunc);
     VIGS_GL_GET_PROC(CopyTexImage2D, glCopyTexImage2D);
     VIGS_GL_GET_PROC(BlitFramebuffer, glBlitFramebufferEXT);
+    VIGS_GL_GET_PROC(GenBuffers, glGenBuffers);
+    VIGS_GL_GET_PROC(DeleteBuffers, glDeleteBuffers);
+    VIGS_GL_GET_PROC(BindBuffer, glBindBuffer);
+    VIGS_GL_GET_PROC(BufferData, glBufferData);
+    VIGS_GL_GET_PROC(MapBuffer, glMapBuffer);
+    VIGS_GL_GET_PROC(UnmapBuffer, glUnmapBuffer);
 
     gl_backend_wgl->wglMakeCurrent(NULL, NULL);
     gl_backend_wgl->wglDeleteContext(tmp_ctx);
@@ -460,17 +507,34 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
         goto fail;
     }
 
-    if (!vigs_gl_backend_wgl_create_surface(gl_backend_wgl, config_id)) {
+    if (!vigs_gl_backend_wgl_create_surface(gl_backend_wgl, config_id,
+                                            &gl_backend_wgl->sfc,
+                                            &gl_backend_wgl->sfc_dc)) {
         goto fail;
     }
 
-    if (!vigs_gl_backend_wgl_create_context(gl_backend_wgl)) {
+    if (!vigs_gl_backend_wgl_create_surface(gl_backend_wgl, config_id,
+                                            &gl_backend_wgl->read_pixels_sfc,
+                                            &gl_backend_wgl->read_pixels_sfc_dc)) {
+        goto fail;
+    }
+
+    if (!vigs_gl_backend_wgl_create_context(gl_backend_wgl,
+                                            NULL,
+                                            &gl_backend_wgl->ctx)) {
+        goto fail;
+    }
+
+    if (!vigs_gl_backend_wgl_create_context(gl_backend_wgl,
+                                            gl_backend_wgl->ctx,
+                                            &gl_backend_wgl->read_pixels_ctx)) {
         goto fail;
     }
 
     gl_backend_wgl->base.base.destroy = &vigs_gl_backend_wgl_destroy;
     gl_backend_wgl->base.has_current = &vigs_gl_backend_wgl_has_current;
     gl_backend_wgl->base.make_current = &vigs_gl_backend_wgl_make_current;
+    gl_backend_wgl->base.read_pixels_make_current = &vigs_gl_backend_wgl_read_pixels_make_current;
     gl_backend_wgl->base.ws_info.context = gl_backend_wgl->ctx;
 
     if (!vigs_gl_backend_init(&gl_backend_wgl->base)) {
@@ -485,11 +549,20 @@ fail:
     if (gl_backend_wgl->ctx) {
         gl_backend_wgl->wglDeleteContext(gl_backend_wgl->ctx);
     }
+    if (gl_backend_wgl->read_pixels_ctx) {
+        gl_backend_wgl->wglDeleteContext(gl_backend_wgl->read_pixels_ctx);
+    }
     if (gl_backend_wgl->sfc_dc) {
         gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->sfc, gl_backend_wgl->sfc_dc);
     }
     if (gl_backend_wgl->sfc) {
         gl_backend_wgl->wglDestroyPbufferARB(gl_backend_wgl->sfc);
+    }
+    if (gl_backend_wgl->read_pixels_sfc_dc) {
+        gl_backend_wgl->wglReleasePbufferDCARB(gl_backend_wgl->read_pixels_sfc, gl_backend_wgl->read_pixels_sfc_dc);
+    }
+    if (gl_backend_wgl->read_pixels_sfc) {
+        gl_backend_wgl->wglDestroyPbufferARB(gl_backend_wgl->read_pixels_sfc);
     }
     if (gl_backend_wgl->dc) {
         ReleaseDC(gl_backend_wgl->win, gl_backend_wgl->dc);

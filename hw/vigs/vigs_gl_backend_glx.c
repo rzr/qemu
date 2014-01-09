@@ -89,6 +89,8 @@ struct vigs_gl_backend_glx
     Display *dpy;
     GLXPbuffer sfc;
     GLXContext ctx;
+    GLXPbuffer read_pixels_sfc;
+    GLXContext read_pixels_ctx;
 };
 
 static GLXFBConfig vigs_gl_backend_glx_get_config(struct vigs_gl_backend_glx *gl_backend_glx)
@@ -145,7 +147,8 @@ static GLXFBConfig vigs_gl_backend_glx_get_config(struct vigs_gl_backend_glx *gl
 }
 
 static bool vigs_gl_backend_glx_create_surface(struct vigs_gl_backend_glx *gl_backend_glx,
-                                               GLXFBConfig config)
+                                               GLXFBConfig config,
+                                               GLXPbuffer *sfc)
 {
     int surface_attribs[] =
     {
@@ -155,11 +158,11 @@ static bool vigs_gl_backend_glx_create_surface(struct vigs_gl_backend_glx *gl_ba
         None
     };
 
-    gl_backend_glx->sfc = gl_backend_glx->glXCreatePbuffer(gl_backend_glx->dpy,
-                                                           config,
-                                                           surface_attribs);
+    *sfc = gl_backend_glx->glXCreatePbuffer(gl_backend_glx->dpy,
+                                            config,
+                                            surface_attribs);
 
-    if (!gl_backend_glx->sfc) {
+    if (!*sfc) {
         VIGS_LOG_CRITICAL("glXCreatePbuffer failed");
         return false;
     }
@@ -168,15 +171,17 @@ static bool vigs_gl_backend_glx_create_surface(struct vigs_gl_backend_glx *gl_ba
 }
 
 static bool vigs_gl_backend_glx_create_context(struct vigs_gl_backend_glx *gl_backend_glx,
-                                               GLXFBConfig config)
+                                               GLXFBConfig config,
+                                               GLXContext share_ctx,
+                                               GLXContext *ctx)
 {
-    gl_backend_glx->ctx = gl_backend_glx->glXCreateNewContext(gl_backend_glx->dpy,
-                                                              config,
-                                                              GLX_RGBA_TYPE,
-                                                              NULL,
-                                                              True);
+    *ctx = gl_backend_glx->glXCreateNewContext(gl_backend_glx->dpy,
+                                               config,
+                                               GLX_RGBA_TYPE,
+                                               share_ctx,
+                                               True);
 
-    if (!gl_backend_glx->ctx) {
+    if (!*ctx) {
         VIGS_LOG_CRITICAL("glXCreateNewContext failed");
         return false;
     }
@@ -212,6 +217,26 @@ static bool vigs_gl_backend_glx_make_current(struct vigs_gl_backend *gl_backend,
     return true;
 }
 
+static bool vigs_gl_backend_glx_read_pixels_make_current(struct vigs_gl_backend *gl_backend,
+                                                         bool enable)
+{
+    struct vigs_gl_backend_glx *gl_backend_glx =
+        (struct vigs_gl_backend_glx*)gl_backend;
+    Bool ret;
+
+    ret = gl_backend_glx->glXMakeContextCurrent(gl_backend_glx->dpy,
+                                                (enable ? gl_backend_glx->read_pixels_sfc : None),
+                                                (enable ? gl_backend_glx->read_pixels_sfc : None),
+                                                (enable ? gl_backend_glx->read_pixels_ctx : NULL));
+
+    if (!ret) {
+        VIGS_LOG_CRITICAL("glXMakeContextCurrent failed");
+        return false;
+    }
+
+    return true;
+}
+
 static void vigs_gl_backend_glx_destroy(struct vigs_backend *backend)
 {
     struct vigs_gl_backend_glx *gl_backend_glx = (struct vigs_gl_backend_glx*)backend;
@@ -219,7 +244,13 @@ static void vigs_gl_backend_glx_destroy(struct vigs_backend *backend)
     vigs_gl_backend_cleanup(&gl_backend_glx->base);
 
     gl_backend_glx->glXDestroyContext(gl_backend_glx->dpy,
+                                      gl_backend_glx->read_pixels_ctx);
+
+    gl_backend_glx->glXDestroyContext(gl_backend_glx->dpy,
                                       gl_backend_glx->ctx);
+
+    gl_backend_glx->glXDestroyPbuffer(gl_backend_glx->dpy,
+                                      gl_backend_glx->read_pixels_sfc);
 
     gl_backend_glx->glXDestroyPbuffer(gl_backend_glx->dpy,
                                       gl_backend_glx->sfc);
@@ -325,6 +356,12 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(BlendFunc, glBlendFunc);
     VIGS_GL_GET_PROC(CopyTexImage2D, glCopyTexImage2D);
     VIGS_GL_GET_PROC(BlitFramebuffer, glBlitFramebufferEXT);
+    VIGS_GL_GET_PROC(GenBuffers, glGenBuffers);
+    VIGS_GL_GET_PROC(DeleteBuffers, glDeleteBuffers);
+    VIGS_GL_GET_PROC(BindBuffer, glBindBuffer);
+    VIGS_GL_GET_PROC(BufferData, glBufferData);
+    VIGS_GL_GET_PROC(MapBuffer, glMapBuffer);
+    VIGS_GL_GET_PROC(UnmapBuffer, glUnmapBuffer);
 
     gl_backend_glx->dpy = x_display;
 
@@ -334,30 +371,55 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
         goto fail2;
     }
 
-    if (!vigs_gl_backend_glx_create_surface(gl_backend_glx, config)) {
+    if (!vigs_gl_backend_glx_create_surface(gl_backend_glx,
+                                            config,
+                                            &gl_backend_glx->sfc)) {
         goto fail2;
     }
 
-    if (!vigs_gl_backend_glx_create_context(gl_backend_glx, config)) {
+    if (!vigs_gl_backend_glx_create_surface(gl_backend_glx,
+                                            config,
+                                            &gl_backend_glx->read_pixels_sfc)) {
         goto fail3;
+    }
+
+    if (!vigs_gl_backend_glx_create_context(gl_backend_glx,
+                                            config,
+                                            NULL,
+                                            &gl_backend_glx->ctx)) {
+        goto fail4;
+    }
+
+    if (!vigs_gl_backend_glx_create_context(gl_backend_glx,
+                                            config,
+                                            gl_backend_glx->ctx,
+                                            &gl_backend_glx->read_pixels_ctx)) {
+        goto fail5;
     }
 
     gl_backend_glx->base.base.destroy = &vigs_gl_backend_glx_destroy;
     gl_backend_glx->base.has_current = &vigs_gl_backend_glx_has_current;
     gl_backend_glx->base.make_current = &vigs_gl_backend_glx_make_current;
+    gl_backend_glx->base.read_pixels_make_current = &vigs_gl_backend_glx_read_pixels_make_current;
     gl_backend_glx->base.ws_info.context = gl_backend_glx->ctx;
 
     if (!vigs_gl_backend_init(&gl_backend_glx->base)) {
-        goto fail4;
+        goto fail6;
     }
 
     VIGS_LOG_DEBUG("created");
 
     return &gl_backend_glx->base.base;
 
-fail4:
+fail6:
+    gl_backend_glx->glXDestroyContext(gl_backend_glx->dpy,
+                                      gl_backend_glx->read_pixels_ctx);
+fail5:
     gl_backend_glx->glXDestroyContext(gl_backend_glx->dpy,
                                       gl_backend_glx->ctx);
+fail4:
+    gl_backend_glx->glXDestroyPbuffer(gl_backend_glx->dpy,
+                                      gl_backend_glx->read_pixels_sfc);
 fail3:
     gl_backend_glx->glXDestroyPbuffer(gl_backend_glx->dpy,
                                       gl_backend_glx->sfc);

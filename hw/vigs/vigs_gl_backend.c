@@ -33,8 +33,24 @@
 #include "vigs_utils.h"
 #include "vigs_ref.h"
 #include "winsys_gl.h"
+#include "work_queue.h"
 
 struct vigs_gl_surface;
+
+struct vigs_gl_backend_read_pixels_work_item
+{
+    struct work_queue_item base;
+
+    struct vigs_gl_backend *backend;
+
+    vigs_read_pixels_cb cb;
+    void *user_data;
+    uint8_t *pixels;
+    uint32_t width;
+    uint32_t height;
+    uint32_t stride;
+    vigsp_surface_format format;
+};
 
 struct vigs_winsys_gl_surface
 {
@@ -334,10 +350,6 @@ static void vigs_gl_backend_batch_start(struct vigs_backend *backend)
  */
 
 static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
-                                        uint32_t x,
-                                        uint32_t y,
-                                        uint32_t width,
-                                        uint32_t height,
                                         uint8_t *pixels)
 {
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)sfc->backend;
@@ -346,9 +358,6 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
     GLfloat sfc_w, sfc_h;
     GLfloat *vert_coords;
     GLfloat *tex_coords;
-
-    VIGS_LOG_TRACE("x = %u, y = %u, width = %u, height = %u",
-                   x, y, width, height);
 
     if (!ws_sfc->tex) {
         VIGS_LOG_TRACE("skipping blank read");
@@ -421,7 +430,7 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
     gl_backend->PixelStorei(GL_PACK_ALIGNMENT, ws_sfc->tex_bpp);
-    gl_backend->ReadPixels(x, y, width, height,
+    gl_backend->ReadPixels(0, 0, sfc_w, sfc_h,
                            ws_sfc->tex_format, ws_sfc->tex_type,
                            pixels);
 
@@ -824,6 +833,93 @@ fail:
     return NULL;
 }
 
+static void vigs_gl_backend_read_pixels_work(struct work_queue_item *wq_item)
+{
+    struct vigs_gl_backend_read_pixels_work_item *item = (struct vigs_gl_backend_read_pixels_work_item*)wq_item;
+    struct vigs_gl_backend *backend = item->backend;
+
+    VIGS_LOG_TRACE("enter");
+
+    if (backend->read_pixels_make_current(backend, true)) {
+        uint8_t *pixels;
+
+        backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, backend->pbo);
+
+        pixels = backend->MapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+
+        if (pixels) {
+            memcpy(item->pixels, pixels, item->stride * item->height);
+
+            if (!backend->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB)) {
+                VIGS_LOG_CRITICAL("glUnmapBuffer failed");
+            }
+        } else {
+            VIGS_LOG_CRITICAL("glMapBuffer failed");
+        }
+
+        backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
+
+        backend->read_pixels_make_current(backend, false);
+    }
+
+    item->cb(item->user_data,
+             item->pixels, item->width, item->height,
+             item->stride, item->format);
+
+    g_free(item);
+}
+
+static void vigs_gl_backend_read_pixels(struct vigs_surface *surface,
+                                        uint8_t *pixels,
+                                        vigs_read_pixels_cb cb,
+                                        void *user_data)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)surface->backend;
+    uint32_t size = surface->stride * surface->ws_sfc->height;
+    struct vigs_gl_backend_read_pixels_work_item *item;
+
+    VIGS_LOG_TRACE("enter");
+
+    gl_backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, gl_backend->pbo);
+
+    if (size > gl_backend->pbo_size) {
+        gl_backend->pbo_size = size;
+        gl_backend->BufferData(GL_PIXEL_PACK_BUFFER_ARB,
+                               size,
+                               0,
+                               GL_STREAM_READ);
+    }
+
+    surface->read_pixels(surface, NULL);
+
+    gl_backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
+
+    /*
+     * That's a tricky one, if we don't do this then it's not
+     * guaranteed that PBO will actually be updated by the time
+     * 'vigs_gl_backend_read_pixels_work' runs and since
+     * 'vigs_gl_backend_read_pixels_work' uses another OpenGL context
+     * we might get old results.
+     */
+    gl_backend->Finish();
+
+    item = g_malloc(sizeof(*item));
+
+    work_queue_item_init(&item->base, &vigs_gl_backend_read_pixels_work);
+
+    item->backend = gl_backend;
+
+    item->cb = cb;
+    item->user_data = user_data;
+    item->pixels = pixels;
+    item->width = surface->ws_sfc->width;
+    item->height = surface->ws_sfc->height;
+    item->stride = surface->stride;
+    item->format = surface->format;
+
+    work_queue_add_item(gl_backend->read_pixels_queue, &item->base);
+}
+
 static void vigs_gl_backend_batch_end(struct vigs_backend *backend)
 {
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)backend;
@@ -857,14 +953,24 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
         goto fail;
     }
 
+    gl_backend->GenBuffers(1, &gl_backend->pbo);
+
+    if (!gl_backend->pbo) {
+        VIGS_LOG_CRITICAL("cannot create read_pixels PBO");
+        goto fail;
+    }
+
     gl_backend->base.batch_start = &vigs_gl_backend_batch_start;
     gl_backend->base.create_surface = &vigs_gl_backend_create_surface;
+    gl_backend->base.read_pixels = &vigs_gl_backend_read_pixels;
     gl_backend->base.batch_end = &vigs_gl_backend_batch_end;
 
     gl_backend->make_current(gl_backend, false);
 
     vigs_vector_init(&gl_backend->v1, 0);
     vigs_vector_init(&gl_backend->v2, 0);
+
+    gl_backend->read_pixels_queue = work_queue_create();
 
     return true;
 
@@ -876,6 +982,14 @@ fail:
 
 void vigs_gl_backend_cleanup(struct vigs_gl_backend *gl_backend)
 {
+    work_queue_destroy(gl_backend->read_pixels_queue);
+
+    if (gl_backend->make_current(gl_backend, true)) {
+        gl_backend->DeleteBuffers(1, &gl_backend->pbo);
+
+        gl_backend->make_current(gl_backend, false);
+    }
+
     vigs_vector_cleanup(&gl_backend->v2);
     vigs_vector_cleanup(&gl_backend->v1);
 }

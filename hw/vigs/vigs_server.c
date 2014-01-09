@@ -192,10 +192,6 @@ static void vigs_server_dispatch_update_vram(void *user_data,
     }
 
     vigs_sfc->read_pixels(vigs_sfc,
-                          0,
-                          0,
-                          vigs_sfc->ws_sfc->width,
-                          vigs_sfc->ws_sfc->height,
                           server->vram_ptr + offset);
 
     vigs_sfc->is_dirty = false;
@@ -365,49 +361,35 @@ out:
     g_free(item);
 }
 
-static void vigs_server_update_display_work(struct work_queue_item *wq_item)
+static void vigs_server_update_display_cb(void *user_data,
+                                          uint8_t *pixels,
+                                          uint32_t width,
+                                          uint32_t height,
+                                          uint32_t stride,
+                                          vigsp_surface_format format)
 {
-    struct vigs_server_work_item *item = (struct vigs_server_work_item*)wq_item;
-    struct vigs_server *server = item->server;
-    struct vigs_surface *root_sfc = server->root_sfc;
+    struct vigs_server *server = user_data;
     uint32_t capture_fence_seq;
-
-    if (!root_sfc) {
-        qemu_mutex_lock(&server->capture_mutex);
-        goto out;
-    }
-
-    if (root_sfc->is_dirty) {
-        server->backend->batch_start(server->backend);
-        root_sfc->read_pixels(root_sfc,
-                              0,
-                              0,
-                              root_sfc->ws_sfc->width,
-                              root_sfc->ws_sfc->height,
-                              server->root_sfc_ptr);
-        server->backend->batch_end(server->backend);
-        root_sfc->is_dirty = false;
-    }
 
     qemu_mutex_lock(&server->capture_mutex);
 
-    if ((server->captured.stride != root_sfc->stride) ||
-        (server->captured.height != root_sfc->ws_sfc->height)) {
-        g_free(server->captured.data);
-        server->captured.data = g_malloc(root_sfc->stride *
-                                         root_sfc->ws_sfc->height);
+    if (pixels) {
+        if ((server->captured.stride != stride) ||
+            (server->captured.height != height)) {
+            g_free(server->captured.data);
+            server->captured.data = g_malloc(stride * height);
+        }
+
+        memcpy(server->captured.data,
+               pixels,
+               stride * height);
+
+        server->captured.width = width;
+        server->captured.height = height;
+        server->captured.stride = stride;
+        server->captured.format = format;
     }
 
-    memcpy(server->captured.data,
-           server->root_sfc_ptr,
-           root_sfc->stride * root_sfc->ws_sfc->height);
-
-    server->captured.width = root_sfc->ws_sfc->width;
-    server->captured.height = root_sfc->ws_sfc->height;
-    server->captured.stride = root_sfc->stride;
-    server->captured.format = root_sfc->format;
-
-out:
     server->is_capturing = false;
     capture_fence_seq = server->capture_fence_seq;
     server->capture_fence_seq = 0;
@@ -418,7 +400,42 @@ out:
         server->display_ops->fence_ack(server->display_user_data,
                                        capture_fence_seq);
     }
+}
 
+static void vigs_server_update_display_work(struct work_queue_item *wq_item)
+{
+    struct vigs_server_work_item *item = (struct vigs_server_work_item*)wq_item;
+    struct vigs_server *server = item->server;
+    struct vigs_surface *root_sfc = server->root_sfc;
+
+    if (!root_sfc) {
+        vigs_server_update_display_cb(server,
+                                      NULL,
+                                      0,
+                                      0,
+                                      0,
+                                      vigsp_surface_bgrx8888);
+        goto out;
+    }
+
+    if (root_sfc->is_dirty) {
+        root_sfc->is_dirty = false;
+        server->backend->batch_start(server->backend);
+        server->backend->read_pixels(root_sfc,
+                                     server->root_sfc_ptr,
+                                     &vigs_server_update_display_cb,
+                                     server);
+        server->backend->batch_end(server->backend);
+    } else {
+        vigs_server_update_display_cb(server,
+                                      server->root_sfc_ptr,
+                                      root_sfc->ws_sfc->width,
+                                      root_sfc->ws_sfc->height,
+                                      root_sfc->stride,
+                                      root_sfc->format);
+    }
+
+out:
     g_free(item);
 }
 

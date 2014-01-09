@@ -50,6 +50,8 @@ struct vigs_gl_backend_agl {
     struct vigs_gl_backend base;
 
     void *handle;
+    AGLContext read_pixels_context;
+    AGLPbuffer read_pixels_surface;
     AGLContext context;
     AGLPbuffer surface;
     AGLPixelFormat pixfmt;
@@ -86,14 +88,13 @@ static int vigs_gl_backend_agl_choose_config(struct vigs_gl_backend_agl
 }
 
 static bool vigs_gl_backend_agl_create_surface(struct vigs_gl_backend_agl
-                                               *gl_backend_agl, int config_id)
+                                               *gl_backend_agl, int config_id,
+                                               AGLPbuffer *surface)
 {
-    gl_backend_agl->surface = NULL;
+    aglCreatePBuffer(1, 1, GL_TEXTURE_2D, GL_RGBA, 0,
+                     surface);
 
-    aglCreatePBuffer(2048, 2048, GL_TEXTURE_2D, GL_RGBA, 0,
-                     &gl_backend_agl->surface);
-
-    if (!gl_backend_agl->surface) {
+    if (!*surface) {
         VIGS_LOG_CRITICAL("aglCreatePBuffer failed");
         return false;
     }
@@ -102,11 +103,13 @@ static bool vigs_gl_backend_agl_create_surface(struct vigs_gl_backend_agl
 }
 
 static bool vigs_gl_backend_agl_create_context(struct vigs_gl_backend_agl
-                                               *gl_backend_agl)
+                                               *gl_backend_agl,
+                                               AGLContext share_context,
+                                               AGLContext *context)
 {
-    gl_backend_agl->context = aglCreateContext(gl_backend_agl->pixfmt, NULL);
+    *context = aglCreateContext(gl_backend_agl->pixfmt, share_context);
 
-    if (!gl_backend_agl->context) {
+    if (!*context) {
         VIGS_LOG_CRITICAL("aglCreateContext failed");
         return false;
     }
@@ -125,8 +128,16 @@ static void vigs_gl_backend_agl_destroy(struct vigs_backend *backend)
         aglDestroyPBuffer(gl_backend_agl->surface);
     }
 
+    if (gl_backend_agl->read_pixels_surface) {
+        aglDestroyPBuffer(gl_backend_agl->read_pixels_surface);
+    }
+
     if (gl_backend_agl->context) {
         aglDestroyContext(gl_backend_agl->context);
+    }
+
+    if (gl_backend_agl->read_pixels_context) {
+        aglDestroyContext(gl_backend_agl->read_pixels_context);
     }
 
     if (gl_backend_agl->handle) {
@@ -160,6 +171,37 @@ static bool vigs_gl_backend_agl_make_current(struct vigs_gl_backend *gl_backend,
             VIGS_LOG_CRITICAL("surface retrieval failed");
             return false;
         }
+
+        if (aglSetPBuffer(context, buf, 0, 0, 0) == GL_FALSE) {
+            VIGS_LOG_CRITICAL("aglSetPBuffer failed");
+            return false;
+        }
+
+        if (aglSetCurrentContext(context) == GL_FALSE) {
+            VIGS_LOG_CRITICAL("aglSetCurrentContext failed");
+            aglSetPBuffer(context, NULL, 0, 0, 0);
+            return false;
+        }
+    } else {
+        if (aglSetCurrentContext(NULL) == GL_FALSE) {
+            VIGS_LOG_CRITICAL("aglSetCurrentContext(NULL) failed");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool vigs_gl_backend_agl_read_pixels_make_current(struct vigs_gl_backend *gl_backend,
+                                                         bool enable)
+{
+    struct vigs_gl_backend_agl *gl_backend_agl =
+        (struct vigs_gl_backend_agl *)gl_backend;
+    AGLPbuffer buf = NULL;
+    AGLContext context = gl_backend_agl->read_pixels_context;
+
+    if (enable) {
+        buf = gl_backend_agl->read_pixels_surface;
 
         if (aglSetPBuffer(context, buf, 0, 0, 0) == GL_FALSE) {
             VIGS_LOG_CRITICAL("aglSetPBuffer failed");
@@ -245,6 +287,12 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(BlendFunc, glBlendFunc);
     VIGS_GL_GET_PROC(CopyTexImage2D, glCopyTexImage2D);
     VIGS_GL_GET_PROC(BlitFramebuffer, glBlitFramebufferEXT);
+    VIGS_GL_GET_PROC(GenBuffers, glGenBuffers);
+    VIGS_GL_GET_PROC(DeleteBuffers, glDeleteBuffers);
+    VIGS_GL_GET_PROC(BindBuffer, glBindBuffer);
+    VIGS_GL_GET_PROC(BufferData, glBufferData);
+    VIGS_GL_GET_PROC(MapBuffer, glMapBuffer);
+    VIGS_GL_GET_PROC(UnmapBuffer, glUnmapBuffer);
 
     config_id = vigs_gl_backend_agl_choose_config(gl_backend_agl);
 
@@ -252,17 +300,30 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
         goto fail;
     }
 
-    if (!vigs_gl_backend_agl_create_surface(gl_backend_agl, config_id)) {
+    if (!vigs_gl_backend_agl_create_surface(gl_backend_agl, config_id,
+                                            &gl_backend_agl->surface)) {
         goto fail;
     }
 
-    if (!vigs_gl_backend_agl_create_context(gl_backend_agl)) {
+    if (!vigs_gl_backend_agl_create_surface(gl_backend_agl, config_id,
+                                            &gl_backend_agl->read_pixels_surface)) {
+        goto fail;
+    }
+
+    if (!vigs_gl_backend_agl_create_context(gl_backend_agl, NULL,
+                                            &gl_backend_agl->context)) {
+        goto fail;
+    }
+
+    if (!vigs_gl_backend_agl_create_context(gl_backend_agl, gl_backend_agl->context,
+                                            &gl_backend_agl->read_pixels_context)) {
         goto fail;
     }
 
     gl_backend_agl->base.base.destroy = &vigs_gl_backend_agl_destroy;
     gl_backend_agl->base.has_current = &vigs_gl_backend_agl_has_current;
     gl_backend_agl->base.make_current = &vigs_gl_backend_agl_make_current;
+    gl_backend_agl->base.read_pixels_make_current = &vigs_gl_backend_agl_read_pixels_make_current;
     gl_backend_agl->base.ws_info.context = &gl_backend_agl->context;
 
     if (!vigs_gl_backend_init(&gl_backend_agl->base)) {
@@ -283,8 +344,16 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
         aglDestroyPBuffer(gl_backend_agl->surface);
     }
 
+    if (gl_backend_agl->read_pixels_surface) {
+        aglDestroyPBuffer(gl_backend_agl->read_pixels_surface);
+    }
+
     if (gl_backend_agl->context) {
         aglDestroyContext(gl_backend_agl->context);
+    }
+
+    if (gl_backend_agl->read_pixels_context) {
+        aglDestroyContext(gl_backend_agl->read_pixels_context);
     }
 
     vigs_backend_cleanup(&gl_backend_agl->base.base);

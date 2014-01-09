@@ -106,6 +106,7 @@ static void maru_device_init(void)
     PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
 
 #if defined(CONFIG_LINUX)
+    XInitThreads();
     Display *display = XOpenDisplay(0);
     if (!display && !enable_spice) {
         fprintf(stderr, "Cannot open X display\n");

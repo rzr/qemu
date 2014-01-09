@@ -37,6 +37,8 @@
 #include <GL/glext.h>
 #include "winsys_gl.h"
 
+struct work_queue;
+
 struct vigs_gl_backend
 {
     struct vigs_backend base;
@@ -47,6 +49,9 @@ struct vigs_gl_backend
 
     bool (*make_current)(struct vigs_gl_backend */*gl_backend*/,
                          bool /*enable*/);
+
+    bool (*read_pixels_make_current)(struct vigs_gl_backend */*gl_backend*/,
+                                     bool /*enable*/);
 
     /*
      * Mandatory GL functions and extensions.
@@ -105,6 +110,12 @@ struct vigs_gl_backend
     void (GLAPIENTRY *BlendFunc)(GLenum sfactor, GLenum dfactor);
     void (GLAPIENTRY *CopyTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
     void (GLAPIENTRY *BlitFramebuffer)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+    void (GLAPIENTRY *GenBuffers)(GLsizei n, GLuint *buffers);
+    void (GLAPIENTRY *DeleteBuffers)(GLsizei n, const GLuint *buffers);
+    void (GLAPIENTRY *BindBuffer)(GLenum target, GLuint buffer);
+    void (GLAPIENTRY *BufferData)(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+    GLvoid *(GLAPIENTRY *MapBuffer)(GLenum target, GLenum access);
+    GLboolean (GLAPIENTRY *UnmapBuffer)(GLenum target);
 
     /*
      * @}
@@ -121,6 +132,15 @@ struct vigs_gl_backend
     /*
      * @}
      */
+
+    /*
+     *
+     */
+
+    struct work_queue *read_pixels_queue;
+
+    GLuint pbo;
+    uint32_t pbo_size;
 };
 
 bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend);
