@@ -280,7 +280,6 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
 ./configure \
  --extra-cflags=-mmacosx-version-min=10.4 \
  --audio-drv-list=coreaudio \
- --enable-mixemu \
  --enable-maru \
  --enable-shm \
  --enable-hax \
