@@ -189,8 +189,7 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
 
     pop_attrib = true;
 
-    gles_driver->PixelStorei(GL_PACK_ALIGNMENT,
-                             ((bpp == 4) ? 4 : 1));
+    gles_driver->PixelStorei(GL_PACK_ALIGNMENT, 1);
 
     gles_driver->ReadPixels(0, 0,
                             width, height, format, GL_UNSIGNED_BYTE,

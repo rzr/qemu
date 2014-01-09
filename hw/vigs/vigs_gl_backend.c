@@ -73,7 +73,6 @@ struct vigs_winsys_gl_surface
     GLint tex_internalformat;
     GLenum tex_format;
     GLenum tex_type;
-    GLint tex_bpp;
 
     /*
      * @}
@@ -301,8 +300,7 @@ static struct vigs_winsys_gl_surface
                                    uint32_t height,
                                    GLint tex_internalformat,
                                    GLenum tex_format,
-                                   GLenum tex_type,
-                                   GLint tex_bpp)
+                                   GLenum tex_type)
 {
     struct vigs_winsys_gl_surface *ws_sfc;
 
@@ -317,7 +315,6 @@ static struct vigs_winsys_gl_surface
     ws_sfc->tex_internalformat = tex_internalformat;
     ws_sfc->tex_format = tex_format;
     ws_sfc->tex_type = tex_type;
-    ws_sfc->tex_bpp = tex_bpp;
     ws_sfc->backend = backend;
     ws_sfc->parent = parent;
 
@@ -429,7 +426,7 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
     gl_backend->DisableClientState(GL_TEXTURE_COORD_ARRAY);
     gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
-    gl_backend->PixelStorei(GL_PACK_ALIGNMENT, ws_sfc->tex_bpp);
+    gl_backend->PixelStorei(GL_PACK_ALIGNMENT, 1);
     gl_backend->ReadPixels(0, 0, sfc_w, sfc_h,
                            ws_sfc->tex_format, ws_sfc->tex_type,
                            pixels);
@@ -466,7 +463,7 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
                                      GL_TEXTURE_2D, ws_sfc->tex, 0);
 
     gl_backend->PixelZoom(1.0f, -1.0f);
-    gl_backend->PixelStorei(GL_UNPACK_ALIGNMENT, ws_sfc->tex_bpp);
+    gl_backend->PixelStorei(GL_UNPACK_ALIGNMENT, 1);
     gl_backend->PixelStorei(GL_UNPACK_ROW_LENGTH, ws_sfc->base.base.width);
 
     for (i = 0; i < num_entries; ++i) {
@@ -799,8 +796,7 @@ static struct vigs_surface *vigs_gl_backend_create_surface(struct vigs_backend *
                                            height,
                                            tex_internalformat,
                                            tex_format,
-                                           tex_type,
-                                           tex_bpp);
+                                           tex_type);
 
     vigs_surface_init(&gl_sfc->base,
                       &ws_sfc->base.base,
