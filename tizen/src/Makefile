@@ -212,9 +212,9 @@ endif
 
 # resources and jar for skin
 	cp -pP skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
-	cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
-	rm -rf $(DIBS_COMMON_DIR)/skins/mobile-480x800-3btn/
-	rm -rf $(DIBS_COMMON_DIR)/skins/mobile-720x1280-3btn/
+	#cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
+	#rm -rf $(DIBS_COMMON_DIR)/skins/mobile-480x800-3btn/
+	#rm -rf $(DIBS_COMMON_DIR)/skins/mobile-720x1280-3btn/
 ifndef CONFIG_USE_SHM
 	cp -pP skin/client/resource/images/blank-guide.png $(DIBS_COMMON_DIR)/images
 endif

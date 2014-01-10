@@ -72,7 +72,7 @@ import org.tizen.emulator.skin.util.SwtUtil;
  */
 public class EmulatorSkinMain {
 	public static final String SKINS_FOLDER = "skins";
-	public static final String DEFAULT_SKIN_FOLDER = "emul-general-3btn";
+	public static final String DEFAULT_SKIN_FOLDER = "mobile-general-3btn";
 
 	public static final String SKIN_INFO_FILE_NAME = "info.ini";
 	public static final String SKIN_PROPERTIES_FILE_NAME = ".skin.properties";
