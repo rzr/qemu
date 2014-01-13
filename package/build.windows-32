@@ -106,6 +106,7 @@ install()
 	mv common $COMMON_BIN_DIR/emulator
 
 	#profile skins
+	cp -pPR src/skin/client/skins/mobile-general-3btn $MOBILE_3_0_SKIN_RESOURCE_DIR/
 	cp -pPR src/skin/client/skins/mobile-480x800-3btn $MOBILE_3_0_SKIN_RESOURCE_DIR/
 	cp -pPR src/skin/client/skins/mobile-720x1280-3btn $MOBILE_3_0_SKIN_RESOURCE_DIR/
 }

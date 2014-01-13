@@ -1,3 +1,6 @@
+* 1.7.15
+- move General skin to mobile-specific path
+== GiWoong Kim <giwoong.kim@samsung.com> 2014-01-13
 * 1.7.14
 - disabled unstable spice because runtime library dependency
 == Sungmin Ha <sungmin82.ha@samsung.com> 2013-01-07
