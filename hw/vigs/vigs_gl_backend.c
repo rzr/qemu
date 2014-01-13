@@ -443,9 +443,16 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)sfc->backend;
     struct vigs_gl_surface *gl_sfc = (struct vigs_gl_surface*)sfc;
     struct vigs_winsys_gl_surface *ws_sfc = get_ws_sfc(gl_sfc);
+    GLfloat sfc_w, sfc_h;
+    GLfloat *vert_coords;
+    GLfloat *tex_coords;
     uint32_t i;
 
     if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
+        goto out;
+    }
+
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &gl_sfc->tmp_tex)) {
         goto out;
     }
 
@@ -453,18 +460,13 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
         goto out;
     }
 
-    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
+    sfc_w = ws_sfc->base.base.width;
+    sfc_h = ws_sfc->base.base.height;
 
-    vigs_gl_surface_setup_framebuffer(gl_sfc);
+    gl_backend->BindTexture(GL_TEXTURE_2D, gl_sfc->tmp_tex);
 
-    gl_backend->Disable(GL_TEXTURE_2D);
-
-    gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, ws_sfc->tex, 0);
-
-    gl_backend->PixelZoom(1.0f, -1.0f);
     gl_backend->PixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    gl_backend->PixelStorei(GL_UNPACK_ROW_LENGTH, ws_sfc->base.base.width);
+    gl_backend->PixelStorei(GL_UNPACK_ROW_LENGTH, sfc_w);
 
     for (i = 0; i < num_entries; ++i) {
         uint32_t x = entries[i].pos.x;
@@ -476,13 +478,64 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
                        width, height);
         gl_backend->PixelStorei(GL_UNPACK_SKIP_PIXELS, x);
         gl_backend->PixelStorei(GL_UNPACK_SKIP_ROWS, y);
-        gl_backend->WindowPos2f(x, ws_sfc->base.base.height - y);
-        gl_backend->DrawPixels(width,
-                               height,
-                               ws_sfc->tex_format,
-                               ws_sfc->tex_type,
-                               pixels);
+        gl_backend->TexSubImage2D(GL_TEXTURE_2D, 0, x, y,
+                                  width, height,
+                                  ws_sfc->tex_format,
+                                  ws_sfc->tex_type,
+                                  pixels);
     }
+
+    vigs_vector_resize(&gl_backend->v1, 0);
+    vigs_vector_resize(&gl_backend->v2, 0);
+
+    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
+
+    vigs_gl_surface_setup_framebuffer(gl_sfc);
+
+    gl_backend->Enable(GL_TEXTURE_2D);
+
+    gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                     GL_TEXTURE_2D, ws_sfc->tex, 0);
+
+    for (i = 0; i < num_entries; ++i) {
+        vert_coords = vigs_vector_append(&gl_backend->v1,
+                                         (8 * sizeof(GLfloat)));
+        tex_coords = vigs_vector_append(&gl_backend->v2,
+                                        (8 * sizeof(GLfloat)));
+
+        vert_coords[0] = entries[i].pos.x;
+        vert_coords[1] = sfc_h - entries[i].pos.y;
+        vert_coords[2] = entries[i].pos.x + entries[i].size.w;
+        vert_coords[3] = sfc_h - entries[i].pos.y;
+        vert_coords[4] = entries[i].pos.x + entries[i].size.w;
+        vert_coords[5] = sfc_h - (entries[i].pos.y + entries[i].size.h);
+        vert_coords[6] = entries[i].pos.x;
+        vert_coords[7] = sfc_h - (entries[i].pos.y + entries[i].size.h);
+
+        tex_coords[0] = (GLfloat)entries[i].pos.x / sfc_w;
+        tex_coords[1] = (GLfloat)entries[i].pos.y / sfc_h;
+        tex_coords[2] = (GLfloat)(entries[i].pos.x + entries[i].size.w) / sfc_w;
+        tex_coords[3] = (GLfloat)entries[i].pos.y / sfc_h;
+        tex_coords[4] = (GLfloat)(entries[i].pos.x + entries[i].size.w) / sfc_w;
+        tex_coords[5] = (GLfloat)(entries[i].pos.y + entries[i].size.h) / sfc_h;
+        tex_coords[6] = (GLfloat)entries[i].pos.x / sfc_w;
+        tex_coords[7] = (GLfloat)(entries[i].pos.y + entries[i].size.h) / sfc_h;
+    }
+
+    gl_backend->EnableClientState(GL_VERTEX_ARRAY);
+    gl_backend->EnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    gl_backend->BindTexture(GL_TEXTURE_2D, gl_sfc->tmp_tex);
+
+    gl_backend->Color4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    gl_backend->VertexPointer(2, GL_FLOAT, 0, vigs_vector_data(&gl_backend->v1));
+    gl_backend->TexCoordPointer(2, GL_FLOAT, 0, vigs_vector_data(&gl_backend->v2));
+
+    gl_backend->DrawArrays(GL_QUADS, 0, num_entries * 4);
+
+    gl_backend->DisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl_backend->DisableClientState(GL_VERTEX_ARRAY);
 
 out:
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
