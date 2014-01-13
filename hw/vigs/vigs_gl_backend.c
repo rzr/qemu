@@ -774,7 +774,7 @@ static struct vigs_surface *vigs_gl_backend_create_surface(struct vigs_backend *
     case vigsp_surface_bgra8888:
         tex_internalformat = GL_RGBA8;
         tex_format = GL_BGRA;
-        tex_type = GL_UNSIGNED_BYTE;
+        tex_type = GL_UNSIGNED_INT_8_8_8_8_REV;
         break;
     default:
         assert(false);

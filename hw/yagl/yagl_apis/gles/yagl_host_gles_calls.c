@@ -2013,7 +2013,7 @@ void yagl_host_glUpdateOffscreenImageYAGL(GLuint texture,
                                     height,
                                     0,
                                     format,
-                                    GL_UNSIGNED_BYTE,
+                                    GL_UNSIGNED_INT_8_8_8_8_REV,
                                     pixels);
 
     gles_api_ts->driver->PixelStorei(GL_UNPACK_ALIGNMENT,

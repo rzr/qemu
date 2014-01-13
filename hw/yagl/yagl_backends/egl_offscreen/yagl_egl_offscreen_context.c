@@ -192,7 +192,7 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
     gles_driver->PixelStorei(GL_PACK_ALIGNMENT, 1);
 
     gles_driver->ReadPixels(0, 0,
-                            width, height, format, GL_UNSIGNED_BYTE,
+                            width, height, format, GL_UNSIGNED_INT_8_8_8_8_REV,
                             NULL);
 
     mapped_pixels = gles_driver->MapBuffer(GL_PIXEL_PACK_BUFFER_ARB,
