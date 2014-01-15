@@ -1,5 +1,5 @@
 /**
- * communticate with Qemu
+ * Communicate With Qemu
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -46,18 +46,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.MenuItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.data.BooleanData;
 import org.tizen.emulator.skin.comm.sock.data.ISendData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.dbi.OptionType;
+import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.image.ImageRegistry.ResourceImageName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
-import org.tizen.emulator.skin.util.SkinUtil;
 
 
 /**
@@ -65,7 +66,7 @@ import org.tizen.emulator.skin.util.SkinUtil;
  * 
  */
 public class SocketCommunicator implements ICommunicator {
-	public class DataTranfer {
+	public static class DataTranfer {
 		private boolean isTransferState;
 		private byte[] receivedData;
 
@@ -87,10 +88,10 @@ public class SocketCommunicator implements ICommunicator {
 	public static final int HEART_BEAT_INTERVAL = 1; /* seconds */
 	public static final int HEART_BEAT_EXPIRE = 15;
 
-	public final static int LONG_WAIT_INTERVAL = 3; /* milli-seconds */
-	public final static int LONG_WAIT_LIMIT = 3000; /* milli-seconds */
-	public final static int SHORT_WAIT_INTERVAL = 1; /* milli-seconds */
-	public final static int SHORT_WAIT_LIMIT = 2000; /* milli-seconds */
+	public final static int LONG_WAIT_INTERVAL = 3; /* ms */
+	public final static int LONG_WAIT_LIMIT = 3000; /* ms */
+	public final static int SHORT_WAIT_INTERVAL = 1;
+	public final static int SHORT_WAIT_LIMIT = 2000;
 
 	public final static int MAX_SEND_QUEUE_SIZE = 100000;
 
@@ -101,7 +102,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	private EmulatorConfig config;
 	private int uId;
-	private long initialData;
+	private StartData startData;
 	private EmulatorSkin skin;
 
 	private Socket socket;
@@ -119,10 +120,9 @@ public class SocketCommunicator implements ICommunicator {
 
 	private DataTranfer screenShotDataTransfer;
 	private DataTranfer detailInfoTransfer;
-	private DataTranfer progressDataTransfer;
-	private DataTranfer brightnessDataTransfer;
+	private DataTranfer miscDataTransfer;
 	private DataTranfer ecpTransfer;
-	
+
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
 
@@ -145,18 +145,14 @@ public class SocketCommunicator implements ICommunicator {
 		this.detailInfoTransfer.sleep = SHORT_WAIT_INTERVAL;
 		this.detailInfoTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
 
-		this.progressDataTransfer = new DataTranfer();
-		this.progressDataTransfer.sleep = SHORT_WAIT_INTERVAL;
-		this.progressDataTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
-
-		this.brightnessDataTransfer = new DataTranfer();
-		this.brightnessDataTransfer.sleep = LONG_WAIT_INTERVAL;
-		this.brightnessDataTransfer.maxWaitTime = LONG_WAIT_LIMIT;
+		this.miscDataTransfer = new DataTranfer();
+		this.miscDataTransfer.sleep = SHORT_WAIT_INTERVAL;
+		this.miscDataTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
 
 		this.ecpTransfer = new DataTranfer();
 		this.ecpTransfer.sleep = LONG_WAIT_INTERVAL;
 		this.ecpTransfer.maxWaitTime = LONG_WAIT_LIMIT;
-		
+
 		this.heartbeatCount = new AtomicInteger(0);
 		//this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
 		this.heartbeatTimer = new Timer();
@@ -175,8 +171,38 @@ public class SocketCommunicator implements ICommunicator {
 		this.dataOutputStream = new DataOutputStream(bao);
 	}
 
-	public void setInitialData(long data) {
-		this.initialData = data;
+	public void setInitialData(StartData data) {
+		this.startData = data;
+	}
+
+	private void sendInitialData() {
+		logger.info("send startData");
+		sendToQEMU(SendCommand.SEND_SKIN_OPENED, startData, false);
+
+		/* default interpolation */
+		skin.getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				skin.isOnInterpolation = Boolean.parseBoolean(config.getSkinProperty(
+						SkinPropertiesConstants.WINDOW_INTERPOLATION,
+						Boolean.TRUE.toString()));
+
+				MenuItem item = skin.getPopupMenu().interpolationHighItem;
+				if (item != null) {
+					item.setSelection(skin.isOnInterpolation);
+				}
+
+				item = skin.getPopupMenu().interpolationLowItem;
+				if (item != null) {
+					item.setSelection(!skin.isOnInterpolation);
+				}
+
+				BooleanData dataInterpolation = new BooleanData(
+						skin.isOnInterpolation,
+						SendCommand.SEND_INTERPOLATION_STATE.toString());
+				sendToQEMU(SendCommand.SEND_INTERPOLATION_STATE, dataInterpolation, false);
+			}
+		});
 	}
 
 	@Override
@@ -235,23 +261,8 @@ public class SocketCommunicator implements ICommunicator {
 		sendThread.setDaemon(true);
 		sendThread.start();
 
-		int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
-		int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
-		int scale = SkinUtil.getValidScale(config);
-		short rotation = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
-
-		boolean isBlankGuide = true;
-		OptionType option = config.getDbiContents().getOption();
-		if (option != null) {
-			isBlankGuide = (option.getBlankGuide() == null) ?
-					true : option.getBlankGuide().isVisible();
-		}
-
-		StartData startData = new StartData(initialData,
-				width, height, scale, rotation, isBlankGuide);
-		logger.info("" + startData);
-
-		sendToQEMU(SendCommand.SEND_START, startData, false);
+		/* notify to Qemu */
+		sendInitialData();
 
 		boolean ignoreHeartbeat =
 				config.getArgBoolean(ArgsConstants.HEART_BEAT_IGNORE);
@@ -265,7 +276,7 @@ public class SocketCommunicator implements ICommunicator {
 					increaseHeartbeatCount();
 
 					if (isHeartbeatExpired()) {
-						logger.info("heartbeat was expired");
+						logger.info("heartbeat was expired!");
 						terminate();
 					}
 				}
@@ -299,43 +310,43 @@ public class SocketCommunicator implements ICommunicator {
 				}
 
 				switch (command) {
-				case HEART_BEAT: {
+				case RECV_HEART_BEAT: {
 					resetHeartbeatCount();
 
 					if (logger.isLoggable(Level.FINE)) {
-						logger.fine("received HEAR_BEAT from QEMU.");
+						logger.fine("received HEART_BEAT from QEMU");
 					}
 
 					sendToQEMU(SendCommand.RESPONSE_HEART_BEAT, null, true);
 					break;
 				}
-				case SCREEN_SHOT_DATA: {
-					logger.info("received SCREEN_SHOT_DATA from QEMU.");
-					receiveData(screenShotDataTransfer, length );
+				case RECV_SCREENSHOT_DATA: {
+					logger.info("received SCREENSHOT_DATA from QEMU");
+					receiveData(screenShotDataTransfer, length);
 
 					break;
 				}
-				case DETAIL_INFO_DATA: {
-					logger.info("received DETAIL_INFO_DATA from QEMU.");
-					receiveData( detailInfoTransfer, length);
+				case RECV_DETAIL_INFO_DATA: {
+					logger.info("received DETAIL_INFO_DATA from QEMU");
+					receiveData(detailInfoTransfer, length);
 
 					break;
 				}
-				case RAMDUMP_COMPLETE: {
-					logger.info("received RAMDUMP_COMPLETE from QEMU.");
+				case RECV_RAMDUMP_COMPLETED: {
+					logger.info("received RAMDUMP_COMPLETED from QEMU");
 					setRamdumpFlag(false);
 					break;
 				}
-				case BOOTING_PROGRESS: {
-					//logger.info("received BOOTING_PROGRESS from QEMU.");
+				case RECV_BOOTING_PROGRESS: {
+					//logger.info("received BOOTING_PROGRESS from QEMU");
 
-					resetDataTransfer(progressDataTransfer);
-					receiveData(progressDataTransfer, length);
+					resetDataTransfer(miscDataTransfer);
+					receiveData(miscDataTransfer, length);
 
-					byte[] receivedData = getReceivedData(progressDataTransfer);
+					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
-						String strLayer = new String(receivedData, 0, 1);
-						String strValue = new String(receivedData, 1, length - 2);
+						String strLayer = new String(receivedData, 0, 1, "UTF-8");
+						String strValue = new String(receivedData, 1, length - 2, "UTF-8");
 
 						int layer = 0;
 						int value = 0;
@@ -352,15 +363,15 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case BRIGHTNESS_VALUE: {
-					//logger.info("received BRIGHTNESS_VALUE from QEMU.");
+				case RECV_BRIGHTNESS_STATE: {
+					//logger.info("received BRIGHTNESS_STATE from QEMU");
 
-					resetDataTransfer(brightnessDataTransfer);
-					receiveData(brightnessDataTransfer, length);
+					resetDataTransfer(miscDataTransfer);
+					receiveData(miscDataTransfer, length);
 
-					byte[] receivedData = getReceivedData(brightnessDataTransfer);
+					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
-						String strValue = new String(receivedData, 0, length - 1);
+						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
 
 						int value = 1;
 						try {
@@ -378,44 +389,96 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case ECP_PORT: {
-					logger.info("received ECP_PORT from QEMU.");
+				case RECV_ECP_PORT_DATA: {
+					logger.info("received ECP_PORT_DATA from QEMU");
 					receiveData(ecpTransfer, length);
-					
+
 					break;
 				}
-				case SENSOR_DAEMON_START: {
-					logger.info("received SENSOR_DAEMON_START from QEMU.");
+				case RECV_HOST_KBD_STATE: {
+					logger.info("received HOST_KBD_STATE from QEMU");
+
+					resetDataTransfer(miscDataTransfer);
+					receiveData(miscDataTransfer, length);
+
+					byte[] receivedData = getReceivedData(miscDataTransfer);
+					if (null != receivedData) {
+						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
+
+						int value = 1;
+						try {
+							value = Integer.parseInt(strValue);
+						} catch (NumberFormatException e) {
+							e.printStackTrace();
+						}
+
+						if (value == 0) {
+							skin.updateHostKbdMenu(false);
+						} else {
+							skin.updateHostKbdMenu(true);
+						}
+					}
+
+					break;
+				}
+				case RECV_MULTI_TOUCH_STATE: {
+					logger.info("received MULTI_TOUCH_STATE from QEMU");
+
+					resetDataTransfer(miscDataTransfer);
+					receiveData(miscDataTransfer, length);
+
+					byte[] receivedData = getReceivedData(miscDataTransfer);
+					if (null != receivedData) {
+						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
+
+						int value = 1;
+						try {
+							value = Integer.parseInt(strValue);
+						} catch (NumberFormatException e) {
+							e.printStackTrace();
+						}
+
+						if (value == 0) {
+							//TODO:
+						} else {
+							//TODO:
+						}
+					}
+
+					break;
+				}
+				case RECV_SENSORD_STARTED: {
+					logger.info("received SENSORD_STARTED from QEMU");
 
 					synchronized (this) {
 						isSensorDaemonStarted = true;
 					}
 					break;
 				}
-				case SDB_DAEMON_START: {
-					logger.info("received SDB_DAEMON_START from QEMU.");
+				case RECV_SDBD_STARTED: {
+					logger.info("received SDBD_STARTED from QEMU");
 
 					synchronized (this) {
 						isSdbDaemonStarted = true;
 					}
 					break;
 				}
-				case ECS_SERVER_START: {
-					logger.info("received ECS_SERVER_START from QEMU.");
+				case RECV_ECS_STARTED: {
+					logger.info("received ECS_STARTED from QEMU");
 
 					synchronized (this) {
 						isEcsServerStarted = true;
 					}
 					break;
 				}
-				case DRAW_FRAME: {
+				case RECV_DRAW_FRAME: {
 					//logger.info("received DRAW_FRAME from QEMU.");
 
 					skin.updateDisplay();
 
 					break;
 				}
-				case DRAW_BLANK_GUIDE: {
+				case RECV_DRAW_BLANK_GUIDE: {
 					logger.info("received DRAW_BLANK_GUIDE from QEMU.");
 
 					Image imageGuide = skin.getImageRegistry().getResourceImage(
@@ -426,8 +489,21 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case SHUTDOWN: {
-					logger.info("received RESPONSE_SHUTDOWN from QEMU.");
+				case RECV_EMUL_RESET: {
+					logger.info("received EMUL_RESET from QEMU");
+
+					synchronized (this) {
+						isSensorDaemonStarted = false;
+						isSdbDaemonStarted = false;
+						isEcsServerStarted = false;
+					}
+
+					// TODO:
+
+					break;
+				}
+				case RECV_EMUL_SHUTDOWN: {
+					logger.info("received EMUL_SHUTDOWN from QEMU");
 
 					sendToQEMU(SendCommand.RESPONSE_SHUTDOWN, null, false);
 					terminate();
@@ -471,7 +547,6 @@ public class SocketCommunicator implements ICommunicator {
 			dataTransfer.setData(data);
 			dataTransfer.notifyAll();
 		}
-
 	}
 
 	private byte[] readData(
@@ -539,11 +614,11 @@ public class SocketCommunicator implements ICommunicator {
 		DataTranfer dataTranfer = null;
 
 		if (useDataTransfer) {
-			if (SendCommand.SCREEN_SHOT.equals(command)) {
+			if (SendCommand.SEND_SCREENSHOT_REQ.equals(command)) {
 				dataTranfer = resetDataTransfer(screenShotDataTransfer);
-			} else if (SendCommand.DETAIL_INFO.equals(command)) {
+			} else if (SendCommand.SEND_DETAIL_INFO_REQ.equals(command)) {
 				dataTranfer = resetDataTransfer(detailInfoTransfer);
-			} else if (SendCommand.ECP_PORT_REQ.equals(command)) {
+			} else if (SendCommand.SEND_ECP_PORT_REQ.equals(command)) {
 				dataTranfer = resetDataTransfer(ecpTransfer);
 			}
 		}
@@ -572,16 +647,16 @@ public class SocketCommunicator implements ICommunicator {
 	}
 	
 	private void sendToQEMUInternal(SkinSendData sendData) {
+		if (null == sendData) {
+			return;
+		}
+
+		SendCommand command = sendData.getCommand();
+		ISendData data = sendData.getSendData();
+
+		reqId = (Integer.MAX_VALUE == reqId) ? 0 : ++reqId;
+
 		try {
-			if (null == sendData) {
-				return;
-			}
-			
-			SendCommand command = sendData.getCommand();
-			ISendData data = sendData.getSendData();
-
-			reqId = (Integer.MAX_VALUE == reqId) ? 0 : ++reqId;
-
 			dataOutputStream.writeInt(uId);
 			dataOutputStream.writeInt(reqId);
 			dataOutputStream.writeShort(command.value());
@@ -615,11 +690,9 @@ public class SocketCommunicator implements ICommunicator {
 					logger.fine("[Socket] data  - " + data.toString());
 				}
 			}
-
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, e.getMessage(), e);
 		}
-
 	}
 
 	public byte[] getReceivedData(DataTranfer dataTranfer) {
@@ -714,10 +787,8 @@ public class SocketCommunicator implements ICommunicator {
 
 		isTerminated = true;
 
-		if (null != sendQueue) {
-			synchronized (sendQueue) {
-				sendQueue.notifyAll();
-			}
+		synchronized (sendQueue) {
+			sendQueue.notifyAll();
 		}
 
 		if (null != heartbeatTimer) {

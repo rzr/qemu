@@ -34,9 +34,12 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.util.SwtUtil;
 
 public class SkinPatches {
 	private Logger logger =
@@ -96,15 +99,21 @@ public class SkinPatches {
 		int patchedImageWidth = (patchWidth * 2) + centerPatchWidth;
 		int patchedImageHeight = (patchHeight * 2) + centerPatchHeight;
 
-		Image patchedImage = new Image(display,
-				patchedImageWidth, patchedImageHeight);
+		ImageData imageData = new ImageData(
+				patchedImageWidth, patchedImageHeight, 32,
+				new PaletteData(0xFF000000, 0x00FF0000, 0x0000FF00));
+		imageData.transparentPixel = 0;
+		Image patchedImage = new Image(display, imageData);
 
-		// TODO: copy alphaData
 		GC gc = new GC(patchedImage);
-		gc.setBackground(display.getSystemColor(SWT.COLOR_MAGENTA));
-		gc.fillRectangle(0, 0, patchedImageWidth, patchedImageHeight);
+		if (SwtUtil.isLinuxPlatform() == false) {
+			/* SWT works differently. So, we need a color key */
+			gc.setBackground(display.getSystemColor(SWT.COLOR_MAGENTA));
+			gc.fillRectangle(0, 0, patchedImageWidth, patchedImageHeight);
+		}
 
 		/* top side */
+		// TODO: copy alphaData
 		gc.drawImage(imageLT, 0, 0);
 		gc.drawImage(imageT, 0, 0, imageT.getImageData().width, imageT.getImageData().height,
 				patchWidth, 0, centerPatchWidth, patchHeight);

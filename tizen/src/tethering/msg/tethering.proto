@@ -1,0 +1,169 @@
+package injector;
+
+option java_package = "event.injector.genmsg";
+
+enum Result {
+	SUCCESS = 1;
+	FAILURE = 2;
+	CANCEL = 3;
+}
+
+message HandShakeReq {
+	required int32 key = 1;
+}
+
+message HandShakeAns {
+	required Result result = 1;
+}
+
+enum ConnectionState {
+	CONNECT = 1;
+	DISCONNECT = 2;
+	TERMINATE = 3;
+}
+message EmulatorState {
+	required ConnectionState state = 1;
+}
+
+message AppState {
+	required ConnectionState state =1;
+}
+
+message StartReq {
+
+}
+
+message StartAns {
+	required Result result = 1;
+}
+
+enum Event {
+	SENSOR = 1;
+	MULTITOUCH = 2;
+}
+
+enum Status {
+	ENABLE = 1;
+	DISABLE = 2;
+}
+
+message SetEventStatus {
+	required Event event = 1;
+	required Status status = 2;
+}
+
+message EventMsg {
+	enum TYPE {
+		START_REQ = 2;
+		START_ANS = 3;
+		TERMINATE = 4;
+		EVENT_STATUS = 5;
+	}
+
+	required TYPE type = 1;
+	optional StartReq startReq= 2;
+	optional StartAns startAns= 3;
+	optional EventTerminate terminate = 4;
+	optional SetEventStatus setStatus= 5;
+}
+
+message EventTerminate {
+
+}
+
+enum SensorType{
+	ACCEL = 1;
+	MAGNETIC = 2;
+	GYROSCOPE = 3;
+	PROXIMITY = 4;
+	LIGHT = 5;
+}
+
+message SetSensorStatus {
+	required SensorType sensor = 1;
+	required Status status = 2;
+}
+
+message SensorData {
+	required SensorType sensor = 1;
+	optional string x = 2 [default = "0"];
+	optional string y = 3 [default = "0"];
+	optional string z = 4 [default = "0"];
+}
+
+message SensorMsg {
+	enum Type {
+		START_REQ = 2;
+		START_ANS = 3;
+		TERMINATE = 4;
+		SENSOR_STATUS = 5;
+		SENSOR_DATA = 6;
+	}
+
+	required Type type = 1;
+	optional StartReq startReq= 2;
+	optional StartAns startAns= 3;
+	optional EventTerminate terminate= 4;
+	optional SetSensorStatus setStatus= 5;
+	optional SensorData data = 6;
+}
+
+message Resolution {
+	required int32 width = 1;
+	required int32 height = 2;
+}
+
+message MultiTouchMaxCount {
+	optional int32 max = 1 [default = 10];
+}
+
+enum TouchStatus {
+	PRESS = 1;
+	RELEASE = 2;
+}
+
+message MultiTouchData {
+	optional int32 index = 1 [default = 0];
+	optional float xPoint = 2 [default = 0.0];
+	optional float yPoint = 3 [default = 0.0];
+	optional TouchStatus status = 4;
+}
+
+message MultiTouchMsg {
+	enum Type {
+		START_REQ = 2;
+		START_ANS = 3;
+		TERMINATE = 4;
+		MAX_COUNT = 5;
+		TOUCH_DATA = 6;
+		RESOLUTION = 7;
+	}
+	required Type type = 1;
+	optional StartReq startReq= 2;
+	optional StartAns startAns= 3;
+	optional EventTerminate terminate= 4;
+	optional MultiTouchMaxCount maxCount = 5;
+	optional MultiTouchData touchData = 6;
+	optional Resolution resolution = 7;
+}
+
+message InjectorMsg {
+	enum Type {
+		HANDSHAKE_REQ = 2;
+		HANDSHAKE_ANS = 3;
+		EMUL_STATE = 4;
+		APP_STATE = 5;
+		EVENT_MSG = 6;
+		SENSOR_MSG = 7;
+		TOUCH_MSG = 8;
+	}
+	required Type type = 1;
+	optional HandShakeReq handShakeReq = 2;
+	optional HandShakeAns handShakeAns = 3;
+	optional EmulatorState emulState = 4;
+	optional AppState appState = 5;
+	optional EventMsg eventMsg = 6;
+	optional SensorMsg sensorMsg = 7;
+	optional MultiTouchMsg touchMsg = 8;
+}
+

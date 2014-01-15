@@ -53,6 +53,8 @@
 #include "sdb.h"
 #include "maru_common.h"
 #include "hw/maru_virtio_hwkey.h"
+#include "hw/maru_pm.h"
+#include "ecs/ecs.h"
 
 MULTI_DEBUG_CHANNEL(qemu, guest_server);
 
@@ -66,7 +68,8 @@ static int server_sock = 0;
  */
 typedef struct GS_Client {
     int port;
-    char addr[RECV_BUF_SIZE];
+    struct sockaddr_in addr;
+    char serial[RECV_BUF_SIZE];
 
     QTAILQ_ENTRY(GS_Client) next;
 } GS_Client;
@@ -76,54 +79,30 @@ clients = QTAILQ_HEAD_INITIALIZER(clients);
 
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
 
-static void add_sdb_client(const char* addr, int port)
-{
-    GS_Client *client = g_malloc0(sizeof(GS_Client));
-    if (NULL == client) {
-        INFO("GS_Client allocation failed.\n");
-        return;
-    }
-
-    if (addr == NULL || strlen(addr) <= 0) {
-        INFO("GS_Client client's address is EMPTY.\n");
-        return;
-    } else if (strlen(addr) > RECV_BUF_SIZE) {
-        INFO("GS_Client client's address is too long. %s\n", addr);
-        return;
-    }
-
-    strcpy(client->addr, addr);
-    client->port = port;
-
-    pthread_mutex_lock(&mutex_clilist);
-
-    QTAILQ_INSERT_TAIL(&clients, client, next);
-
-    pthread_mutex_unlock(&mutex_clilist);
-
-    INFO("Added new sdb client. ip: %s, port: %d\n", client->addr, client->port);
-}
-
 static void remove_sdb_client(GS_Client* client)
 {
+    if (client == NULL) {
+        return;
+    }
+
     pthread_mutex_lock(&mutex_clilist);
 
     QTAILQ_REMOVE(&clients, client, next);
-    if (NULL != client) {
-        g_free(client);
-    }
+    g_free(client);
 
     pthread_mutex_unlock(&mutex_clilist);
 }
 
-static void send_to_client(GS_Client* client, int state)
+static void send_to_sdb_client(GS_Client* client, int state)
 {
     struct sockaddr_in sock_addr;
     int s, slen = sizeof(sock_addr);
+    int serial_len = 0;
     char buf [32];
 
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1){
           INFO("socket error!\n");
+          perror("socket creation is failed: ");
           return;
     }
 
@@ -131,18 +110,27 @@ static void send_to_client(GS_Client* client, int state)
 
     sock_addr.sin_family = AF_INET;
     sock_addr.sin_port = htons(client->port);
-    if (inet_aton(client->addr, &sock_addr.sin_addr) == 0) {
-          INFO("inet_aton() failed\n");
+    sock_addr.sin_addr = (client->addr).sin_addr;
+
+    if (connect(s, (struct sockaddr*)&sock_addr, slen) == -1) {
+        INFO("connect error! remove this client.\n");
+        remove_sdb_client(client);
+        close(s);
+        return;
     }
 
     memset(buf, 0, sizeof(buf));
 
-    // send message "[4 digit message length]host:sync:emulator-26101:[0|1]"
-    sprintf(buf, "0026host:sync:emulator-%d:%d", svr_port, state);
+    serial_len = strlen(client->serial);
 
-    if (sendto(s, buf, sizeof(buf), 0, (struct sockaddr*)&sock_addr, slen) == -1)
+    // send message "[4 digit message length]host:sync:emulator-26101:[0|1]"
+    sprintf(buf, "%04xhost:sync:%s:%01d", (serial_len + 12), client->serial, state);
+
+    INFO("send %s to client %s\n", buf, inet_ntoa(client->addr.sin_addr));
+
+    if (send(s, buf, sizeof(buf), 0) == -1)
     {
-        INFO("sendto error! remove this client.\n");
+        INFO("send error! remove this client.\n");
         remove_sdb_client(client);
     }
 
@@ -156,10 +144,55 @@ void notify_all_sdb_clients(int state)
 
     QTAILQ_FOREACH(client, &clients, next)
     {
-        send_to_client(client, state);
+        send_to_sdb_client(client, state);
     }
     pthread_mutex_unlock(&mutex_clilist);
 
+}
+
+static void add_sdb_client(struct sockaddr_in* addr, int port, const char* serial)
+{
+    GS_Client *cli = NULL;
+    GS_Client *client = NULL;
+
+    if (addr == NULL) {
+        INFO("GS_Client client's address is EMPTY.\n");
+        return;
+    } else if (serial == NULL || strlen(serial) <= 0) {
+        INFO("GS_Client client's serial is EMPTY.\n");
+        return;
+    } else if (strlen(serial) > RECV_BUF_SIZE) {
+        INFO("GS_Client client's serial is too long. %s\n", serial);
+        return;
+    }
+
+    QTAILQ_FOREACH(cli, &clients, next)
+    {
+        if (!strcmp(serial, cli->serial) && !strcmp(inet_ntoa(addr->sin_addr), inet_ntoa((cli->addr).sin_addr))) {
+            INFO("Client cannot be duplicated.\n");
+            return;
+        }
+    }
+
+    client = g_malloc0(sizeof(GS_Client));
+    if (NULL == client) {
+        INFO("GS_Client allocation failed.\n");
+        return;
+    }
+
+    memcpy(&client->addr, addr, sizeof(struct sockaddr_in));
+    client->port = port;
+    strcpy(client->serial, serial);
+
+    pthread_mutex_lock(&mutex_clilist);
+
+    QTAILQ_INSERT_TAIL(&clients, client, next);
+
+    pthread_mutex_unlock(&mutex_clilist);
+
+    INFO("Added new sdb client. ip: %s, port: %d, serial: %s\n", inet_ntoa((client->addr).sin_addr), client->port, client->serial);
+
+    send_to_sdb_client(client, runstate_check(RUN_STATE_SUSPENDED));
 }
 
 static int parse_val(char* buff, unsigned char data, char* parsbuf)
@@ -308,6 +341,7 @@ gchar *get_tizen_sdk_data_path(void)
 
             INFO("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
 
+            fclose(sdk_info_fp);
             return tizen_sdk_data_path;
         }
 
@@ -392,22 +426,29 @@ static void handle_sdcard(char* readbuf)
     }
 }
 
-static void register_sdb_server(char* readbuf)
+#define SDB_SERVER_PORT 26097
+static void register_sdb_server(char* readbuf, struct sockaddr_in* client_addr)
 {
     int port = 0;
     char token[] = "\n";
     char* ret = NULL;
-    char* addr = NULL;
-    ret = strtok(readbuf, token);
-    addr = strtok(NULL, token);
-    if (addr == NULL)
-        return;
-    ret = strtok(NULL, token);
-    if (ret == NULL)
-        return;
-    port = atoi(ret);
+    char* serial = NULL;
 
-    add_sdb_client(addr, port);
+    ret = strtok(readbuf, token);
+    if (ret == NULL) {
+        INFO("command is not found.");
+        return;
+    }
+
+    serial = strtok(NULL, token);
+    if (serial == NULL) {
+        INFO("serial is not found.");
+        return;
+    }
+
+    port = SDB_SERVER_PORT;
+
+    add_sdb_client(client_addr, port, serial);
 }
 
 #define PRESS     1
@@ -421,7 +462,12 @@ static void wakeup_guest(void)
     maru_hwkey_event(RELEASE, POWER_KEY);
 }
 
-static void command_handler(char* readbuf)
+static void suspend_lock_state(int state)
+{
+    ecs_suspend_lock_state(state);
+}
+
+static void command_handler(char* readbuf, struct sockaddr_in* client_addr)
 {
     char command[RECV_BUF_SIZE];
     memset(command, '\0', sizeof(command));
@@ -438,9 +484,13 @@ static void command_handler(char* readbuf)
     } else if (strcmp(command, "4\n") == 0) {
         handle_sdcard(readbuf);
     } else if (strcmp(command, "5\n") == 0) {
-        register_sdb_server(readbuf);
+        register_sdb_server(readbuf, client_addr);
     } else if (strcmp(command, "6\n") == 0) {
         wakeup_guest();
+    } else if (strcmp(command, "7\n") == 0) {
+        suspend_lock_state(SUSPEND_LOCK);
+    } else if (strcmp(command, "8\n") == 0) {
+        suspend_lock_state(SUSPEND_UNLOCK);
     } else {
         INFO("!!! unknown command : %s\n", command);
     }
@@ -481,16 +531,15 @@ static void server_process(void)
             TRACE("read_cnt:%d\n", read_cnt);
             TRACE("readbuf:%s\n", readbuf);
 
-            command_handler(readbuf);
+            command_handler(readbuf, &client_addr);
         }
     }
 }
 
 static void close_clients(void)
 {
-    GS_Client * client;
-
     pthread_mutex_lock(&mutex_clilist);
+    GS_Client * client;
 
     QTAILQ_FOREACH(client, &clients, next)
     {

@@ -40,7 +40,7 @@ void shutdown_guest_server( void );
 gchar *get_tizen_sdk_data_path(void);
 
 
-#define STATE_RESUME 0
+#define STATE_RUNNING 0
 #define STATE_SUSPEND 1
 void notify_all_sdb_clients(int state);
 

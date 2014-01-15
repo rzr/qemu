@@ -19,9 +19,29 @@ do_start () {
 	fi
 }
 
+add_group () {
+	# Add the kvm group unless it's already there
+	if ! getent group kvm > /dev/null; then
+		addgroup --quiet --system kvm || true
+	fi
+}
+
+do_udev () {
+	# remove group::--- acl mistakenly placed on /dev/kvm by udev-acl
+	if [ -c /dev/kvm -a ! -L /dev/kvm ]
+	then
+		/usr/bin/setfacl -m g::rw /dev/kvm
+	fi
+
+	# udev rules for /dev/kvm have changed, so have udev recalculate
+	udevadm trigger --subsystem-match=misc --action=change
+}
+
 case "$1" in
   start)
 	do_start
+	add_group
+	do_udev
 	;;
   restart|reload|force-reload)
 	# No-op

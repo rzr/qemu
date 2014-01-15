@@ -45,16 +45,16 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
-import org.tizen.emulator.skin.EmulatorSkinState;
+import org.tizen.emulator.skin.EmulatorSkinMain;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.dbi.DisplayType;
@@ -63,8 +63,11 @@ import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
 import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
+import org.tizen.emulator.skin.info.EmulatorSkinState;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
+import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -86,8 +89,6 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 	private MouseListener shellMouseListener;
 
 	private ProfileSkinImageRegistry imageRegistry;
-	private boolean isGrabbedShell;
-	private Point grabPosition;
 	private HWKey currentPressedHWKey;
 	private HWKey currentHoveredHWKey;
 
@@ -99,24 +100,19 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		this.currentState = skin.getEmulatorSkinState();
 		this.communicator = skin.communicator;
 
-		this.isGrabbedShell= false;
-		this.grabPosition = new Point(0, 0);
-
 		this.imageRegistry = new ProfileSkinImageRegistry(
 				shell.getDisplay(), config.getDbiContents(), skin.skinInfo.getSkinPath());
+
+		this.currentPressedHWKey = null;
+		this.currentHoveredHWKey = null;
 	}
 
 	@Override
 	public Canvas compose(int style) {
 		lcdCanvas = new Canvas(shell, style);
 
-		int vmIndex =
-				config.getArgInt(ArgsConstants.VM_BASE_PORT) % 100;
-		int x = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
-				EmulatorConfig.DEFAULT_WINDOW_X + vmIndex);
-		int y = config.getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
-				EmulatorConfig.DEFAULT_WINDOW_Y + vmIndex);
-
+		int x = config.getValidWindowX();
+		int y = config.getValidWindowY();
 		int scale = currentState.getCurrentScale();
 		short rotationId = currentState.getCurrentRotationId();
 
@@ -134,7 +130,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 		/* This string must match the definition of Emulator-Manager */
 		String emulatorName = SkinUtil.makeEmulatorName(config);
-		shell.setText("Emulator - " + emulatorName);
+		shell.setText(SkinUtil.EMULATOR_PREFIX + " - " + emulatorName);
 
 		lcdCanvas.setBackground(
 				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
@@ -158,7 +154,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			logger.severe("Failed to load initial skin image file. Kill this skin process.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
-			System.exit(-1);
+
+			EmulatorSkinMain.terminateImmediately(-1);
 		}
 
 		/* open the key window if key window menu item was enabled */
@@ -166,14 +163,14 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 		if (popupMenu != null && popupMenu.keyWindowItem != null) {
 			final int dockValue = config.getSkinPropertyInt(
-					SkinPropertiesConstants.KEYWINDOW_POSITION, 0);
+					SkinPropertiesConstants.KEYWINDOW_POSITION, SWT.NONE);
 
 			shell.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (dockValue == 0 || dockValue == SWT.NONE) {
+					if (dockValue == SWT.NONE) {
 						skin.getKeyWindowKeeper().openKeyWindow(
-								SWT.RIGHT | SWT.CENTER, false);
+								KeyWindowKeeper.DEFAULT_DOCK_POSITION, false);
 					} else {
 						skin.getKeyWindowKeeper().openKeyWindow(
 								dockValue, false);
@@ -185,27 +182,43 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 	@Override
 	public void arrangeSkin(int scale, short rotationId) {
-		currentState.setCurrentScale(scale);
-		currentState.setCurrentRotationId(rotationId);
+		//TODO: eject the calculation from UI thread
 
-		/* arrange the display */
-		Rectangle lcdBounds = adjustLcdGeometry(lcdCanvas,
+		/* calculate display bounds */
+		Rectangle displayBounds = adjustDisplayGeometry(lcdCanvas,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(), scale, rotationId);
 
-		if (lcdBounds == null) {
+		if (displayBounds == null) {
 			logger.severe("Failed to read display information for skin.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to read display information for skin.\n" +
 					"Check the contents of skin dbi file.",
 					SWT.ICON_ERROR, config);
-			System.exit(-1);
+
+			EmulatorSkinMain.terminateImmediately(-1);
 		}
-		logger.info("display bounds : " + lcdBounds);
+		logger.info("display bounds : " + displayBounds);
 
-		currentState.setDisplayBounds(lcdBounds);
+		/* make profile skin */
+		Image originSkin = imageRegistry.getSkinImage(
+				rotationId, SkinImageType.PROFILE_IMAGE_TYPE_NORMAL);
+		Image profileSkin = SkinUtil.createScaledImage(
+				shell.getDisplay(), originSkin, rotationId, scale);
 
-		/* arrange the skin image */
+		Image originSkinKeyPressed = imageRegistry.getSkinImage(
+				rotationId, SkinImageType.PROFILE_IMAGE_TYPE_PRESSED);
+		Image profileSkinKeyPressed = SkinUtil.createScaledImage(
+				shell.getDisplay(), originSkinKeyPressed, rotationId, scale);
+
+		/* make window region */
+		Region region = SkinUtil.getTrimmingRegion(profileSkin);
+
+		/* update the skin state information */
+		currentState.setCurrentScale(scale);
+		currentState.setCurrentRotationId(rotationId);
+		currentState.setDisplayBounds(displayBounds);
+
 		Image tempImage = null;
 		Image tempKeyPressedImage = null;
 
@@ -216,14 +229,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			tempKeyPressedImage = currentState.getCurrentKeyPressedImage();
 		}
 
-		currentState.setCurrentImage(SkinUtil.createScaledImage(
-				shell.getDisplay(), imageRegistry,
-				SkinImageType.PROFILE_IMAGE_TYPE_NORMAL,
-				rotationId, scale));
-		currentState.setCurrentKeyPressedImage(SkinUtil.createScaledImage(
-				shell.getDisplay(), imageRegistry,
-				SkinImageType.PROFILE_IMAGE_TYPE_PRESSED,
-				rotationId, scale));
+		currentState.setCurrentImage(profileSkin);
+		currentState.setCurrentKeyPressedImage(profileSkinKeyPressed);
 
 		if (tempImage != null) {
 			tempImage.dispose();
@@ -232,14 +239,15 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			tempKeyPressedImage.dispose();
 		}
 
+		/* arrange the display */
 		if (SwtUtil.isMacPlatform() == true) {
 			lcdCanvas.setBounds(currentState.getDisplayBounds());
 		}
 
 		/* arrange the progress bar */
 		if (skin.bootingProgress != null) {
-			skin.bootingProgress.setBounds(lcdBounds.x,
-					lcdBounds.y + lcdBounds.height + 1, lcdBounds.width, 2);
+			skin.bootingProgress.setBounds(displayBounds.x,
+					displayBounds.y + displayBounds.height + 1, displayBounds.width, 2);
 		}
 
 		/* set window size */
@@ -249,27 +257,29 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		}
 
 		/* custom window shape */
-		SkinUtil.trimShell(shell, currentState.getCurrentImage());
+		if (region != null) {
+			shell.setRegion(region);
+		}
 
 		currentState.setNeedToUpdateDisplay(true);
 		shell.redraw();
 	}
 
 	@Override
-	public Rectangle adjustLcdGeometry(
-			Canvas lcdCanvas, int resolutionW, int resolutionH,
+	public Rectangle adjustDisplayGeometry(
+			Canvas displayCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId) {
-		Rectangle lcdBounds = new Rectangle(0, 0, 0, 0);
+		Rectangle displayBounds = new Rectangle(0, 0, 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
 		RotationType rotation = SkinRotation.getRotation(rotationId);
 
-		DisplayType lcd = rotation.getDisplay(); /* from dbi */
-		if (lcd == null) {
+		DisplayType display = rotation.getDisplay(); /* from dbi */
+		if (display == null) {
 			return null;
 		}
 
-		RegionType region = lcd.getRegion();
+		RegionType region = display.getRegion();
 		if (region == null) {
 			return null;
 		}
@@ -279,12 +289,59 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		Integer width = region.getWidth();
 		Integer height = region.getHeight();
 
-		lcdBounds.x = (int) (left * convertedScale);
-		lcdBounds.y = (int) (top * convertedScale);
-		lcdBounds.width = (int) (width * convertedScale);
-		lcdBounds.height = (int) (height * convertedScale);
+		displayBounds.x = (int) (left * convertedScale);
+		displayBounds.y = (int) (top * convertedScale);
+		displayBounds.width = (int) (width * convertedScale);
+		displayBounds.height = (int) (height * convertedScale);
 
-		return lcdBounds;
+		return displayBounds;
+	}
+
+	private void drawHover(final HWKey hwKey) {
+		if (hwKey == null || hwKey.getRegion() == null
+				|| hwKey.getRegion().width == 0
+				|| hwKey.getRegion().height == 0) {
+			return;
+		}
+
+		currentHoveredHWKey = hwKey;
+
+		shell.getDisplay().syncExec(new Runnable() {
+			public void run() {
+				GC gc = new GC(shell);
+				if (gc != null) {
+					gc.setLineWidth(1);
+					gc.setForeground(currentState.getHoverColor());
+					gc.drawRectangle(currentHoveredHWKey.getRegion().x,
+							currentHoveredHWKey.getRegion().y,
+							currentHoveredHWKey.getRegion().width - 1,
+							currentHoveredHWKey.getRegion().height - 1);
+
+					gc.dispose();
+				}
+			}
+		});
+	}
+
+	private void removeHover() {
+		if (currentHoveredHWKey == null
+				|| currentHoveredHWKey.getRegion() == null) {
+			return;
+		}
+
+		shell.redraw(currentHoveredHWKey.getRegion().x,
+				currentHoveredHWKey.getRegion().y,
+				currentHoveredHWKey.getRegion().width,
+				currentHoveredHWKey.getRegion().height, false);
+
+		currentHoveredHWKey = null;
+	}
+
+	@Override
+	public void updateSkin() {
+		logger.info("update skin");
+
+		/* do nothing */
 	}
 
 	public void addProfileSpecificListener(final Shell shell) {
@@ -302,13 +359,35 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 				/* set window size once again (for ubuntu 12.04) */
 				if (currentState.getCurrentImage() != null) {
 					ImageData imageData = currentState.getCurrentImage().getImageData();
-					shell.setSize(imageData.width, imageData.height);
+
+					if (shell.getSize().x != imageData.width
+							|| shell.getSize().y != imageData.height) {
+						shell.setSize(imageData.width, imageData.height);
+					}
 				}
 
-				/* general shell does not support native transparency,
+				/* swt shell does not support native transparency,
 				 so draw image with GC */
 				if (currentState.getCurrentImage() != null) {
 					e.gc.drawImage(currentState.getCurrentImage(), 0, 0);
+
+					/* draw the HW key region as the cropped keyPressed image area */
+					if (currentPressedHWKey != null
+							&& currentState.getCurrentKeyPressedImage() != null) {
+						if (currentPressedHWKey.getRegion() != null
+								&& currentPressedHWKey.getRegion().width != 0
+								&& currentPressedHWKey.getRegion().height != 0) {
+							e.gc.drawImage(currentState.getCurrentKeyPressedImage(),
+									currentPressedHWKey.getRegion().x,
+									currentPressedHWKey.getRegion().y,
+									currentPressedHWKey.getRegion().width,
+									currentPressedHWKey.getRegion().height,
+									currentPressedHWKey.getRegion().x,
+									currentPressedHWKey.getRegion().y,
+									currentPressedHWKey.getRegion().width,
+									currentPressedHWKey.getRegion().height);
+						}
+					}
 				}
 
 				skin.getKeyWindowKeeper().redock(false, false);
@@ -321,18 +400,10 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseExit(MouseEvent e) {
 				/* shell does not receive event only with MouseMoveListener
-				 * in case that : hover hardkey -> mouse move into LCD area */
-				HWKey hoveredHWKey = currentHoveredHWKey;
+				in case that : hover hardkey -> mouse move into display area */
 
-				if (hoveredHWKey != null) {
-					shell.redraw(hoveredHWKey.getRegion().x,
-							hoveredHWKey.getRegion().y,
-							hoveredHWKey.getRegion().width,
-							hoveredHWKey.getRegion().height, false);
-
-					currentHoveredHWKey = null;
-					shell.setToolTipText(null);
-				}
+				shell.setToolTipText(null);
+				removeHover();
 			}
 		};
 
@@ -341,14 +412,17 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		shellMouseMoveListener = new MouseMoveListener() {
 			@Override
 			public void mouseMove(MouseEvent e) {
-				if (isGrabbedShell == true && e.button == 0/* left button */ &&
-						currentPressedHWKey == null) {
+				if (skin.isShellGrabbing() == true && e.button == 0/* left button */
+						&& currentPressedHWKey == null) {
 					/* move a window */
 					Point previousLocation = shell.getLocation();
-					int x = previousLocation.x + (e.x - grabPosition.x);
-					int y = previousLocation.y + (e.y - grabPosition.y);
+					Point grabLocation = skin.getGrabPosition();
+					if (grabLocation != null) {
+						int x = previousLocation.x + (e.x - grabLocation.x);
+						int y = previousLocation.y + (e.y - grabLocation.y);
 
-					shell.setLocation(x, y);
+						shell.setLocation(x, y);
+					}
 
 					skin.getKeyWindowKeeper().redock(false, false);
 
@@ -357,57 +431,34 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 				final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 						currentState.getCurrentRotationId(), currentState.getCurrentScale());
-				final HWKey hoveredHWKey = currentHoveredHWKey;
 
 				if (hwKey == null) {
-					if (hoveredHWKey != null) {
-						/* remove hover */
-						shell.redraw(hoveredHWKey.getRegion().x,
-								hoveredHWKey.getRegion().y,
-								hoveredHWKey.getRegion().width,
-								hoveredHWKey.getRegion().height, false);
-
-						currentHoveredHWKey = null;
-						shell.setToolTipText(null);
+					shell.setToolTipText(null);
+					removeHover();
+				} else {
+					/* enable tool tip */
+					if (hwKey.getTooltip().isEmpty() == false) {
+						shell.setToolTipText(hwKey.getTooltip());
 					}
 
-					return;
-				}
+					if (hwKey.getRegion() != null) {
+						if (currentHoveredHWKey != null) {
+							HWKeyRegion keyBounds = currentHoveredHWKey.getRegion();
 
-				/* register a tooltip */
-				if (hoveredHWKey == null &&
-						hwKey.getTooltip().isEmpty() == false) {
-					shell.setToolTipText(hwKey.getTooltip());
-
-					currentHoveredHWKey = hwKey;
-
-					/* draw hover */
-					shell.getDisplay().syncExec(new Runnable() {
-						public void run() {
-							if (hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
-								GC gc = new GC(shell);
-								if (gc != null) {
-									gc.setLineWidth(1);
-									gc.setForeground(currentState.getHoverColor());
-									gc.drawRectangle(hwKey.getRegion().x, hwKey.getRegion().y,
-											hwKey.getRegion().width - 1, hwKey.getRegion().height - 1);
-
-									gc.dispose();
+							if (keyBounds != null) {
+								if (hwKey.getRegion().x == keyBounds.x
+										&& hwKey.getRegion().y == keyBounds.y
+										&& hwKey.getRegion().width == keyBounds.width
+										&& hwKey.getRegion().height == keyBounds.height) {
+									/* already got hover rect */
+									return;
+								} else {
+									removeHover();
 								}
 							}
 						}
-					});
-				} else {
-					if (hwKey.getRegion().x != hoveredHWKey.getRegion().x ||
-							hwKey.getRegion().y != hoveredHWKey.getRegion().y) {
-						/* remove hover */
-						shell.redraw(hoveredHWKey.getRegion().x,
-								hoveredHWKey.getRegion().y,
-								hoveredHWKey.getRegion().width,
-								hoveredHWKey.getRegion().height, false);
 
-						currentHoveredHWKey = null;
-						shell.setToolTipText(null);
+						drawHover(hwKey);
 					}
 				}
 			}
@@ -419,8 +470,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				if (e.button == 1) { /* left button */
-					isGrabbedShell = false;
-					grabPosition.x = grabPosition.y = 0;
+					skin.ungrabShell();
 
 					skin.getKeyWindowKeeper().redock(false, true);
 
@@ -434,22 +484,27 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					if (pressedHWKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
 						logger.info(pressedHWKey.getName() + " key is released");
 
-						/* send event */
+						/* send HW key event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.RELEASED.value(), pressedHWKey.getKeyCode(), 0, 0);
 						communicator.sendToQEMU(
-								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
+								SendCommand.SEND_HW_KEY_EVENT, keyEventData, false);
 
 						currentPressedHWKey = null;
 
-						/* roll back a keyPressed image region */
-						shell.redraw(pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
-								pressedHWKey.getRegion().width, pressedHWKey.getRegion().height, false);
+						if (pressedHWKey.getRegion() != null &&
+								pressedHWKey.getRegion().width != 0 &&
+								pressedHWKey.getRegion().height != 0) {
+							/* roll back a keyPressed image */
+							shell.redraw(pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
+									pressedHWKey.getRegion().width, pressedHWKey.getRegion().height, false);
 
-						if (pressedHWKey.getKeyCode() != 101) { // TODO: not necessary for home key
-							SkinUtil.trimShell(shell, currentState.getCurrentImage(),
-									pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
-									pressedHWKey.getRegion().width, pressedHWKey.getRegion().height);
+							/* roll back HW key region */
+							if (pressedHWKey.getRegion().isNeedUpdate() == true) {
+								SkinUtil.trimShell(shell, currentState.getCurrentImage(),
+										pressedHWKey.getRegion().x, pressedHWKey.getRegion().y,
+										pressedHWKey.getRegion().width, pressedHWKey.getRegion().height);
+							}
 						}
 					}
 				}
@@ -458,15 +513,13 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (1 == e.button) { /* left button */
+					skin.grabShell(e.x, e.y);
+
 					/* HW key handling */
 					final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
 							currentState.getCurrentRotationId(), currentState.getCurrentScale());
 					if (hwKey == null) {
 						logger.info("mouseDown in Skin : " + e.x + ", " + e.y);
-
-						isGrabbedShell = true;
-						grabPosition.x = e.x;
-						grabPosition.y = e.y;
 
 						return;
 					}
@@ -474,44 +527,29 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 					if (hwKey.getKeyCode() != SkinUtil.UNKNOWN_KEYCODE) {
 						logger.info(hwKey.getName() + " key is pressed");
 
-						/* send event */
+						shell.setToolTipText(null);
+
+						/* send HW key event */
 						KeyEventData keyEventData = new KeyEventData(
 								KeyEventType.PRESSED.value(), hwKey.getKeyCode(), 0, 0);
 						communicator.sendToQEMU(
-								SendCommand.SEND_HARD_KEY_EVENT, keyEventData, false);
+								SendCommand.SEND_HW_KEY_EVENT, keyEventData, false);
 
 						currentPressedHWKey = hwKey;
 
-						shell.setToolTipText(null);
-
-						/* draw the HW key region as the cropped keyPressed image area */
 						if (hwKey.getRegion() != null &&
 								hwKey.getRegion().width != 0 && hwKey.getRegion().height != 0) {
-							shell.getDisplay().syncExec(new Runnable() {
-								public void run() {
-									if (currentState.getCurrentKeyPressedImage() != null) {
-										GC gc = new GC(shell);
-										if (gc != null) {
-											gc.drawImage(currentState.getCurrentKeyPressedImage(),
-													hwKey.getRegion().x, hwKey.getRegion().y,
-													hwKey.getRegion().width, hwKey.getRegion().height, /* src */
-													hwKey.getRegion().x, hwKey.getRegion().y,
-													hwKey.getRegion().width, hwKey.getRegion().height); /* dst */
+							/* draw the HW key region as the cropped keyPressed image area */
+							shell.redraw(hwKey.getRegion().x, hwKey.getRegion().y,
+									hwKey.getRegion().width, hwKey.getRegion().height, false);
 
-											gc.dispose();
-
-											if (hwKey.getKeyCode() != 101) { // TODO: not necessary for home key
-												SkinUtil.trimShell(shell, currentState.getCurrentKeyPressedImage(),
-														hwKey.getRegion().x, hwKey.getRegion().y,
-														hwKey.getRegion().width, hwKey.getRegion().height);
-											}
-
-										}
-									}
-								} /* end of run */
-							});
+							/* set pressed HW key region */
+							if (hwKey.getRegion().isNeedUpdate() == true) {
+								SkinUtil.trimShell(shell, currentState.getCurrentKeyPressedImage(),
+										hwKey.getRegion().x, hwKey.getRegion().y,
+										hwKey.getRegion().width, hwKey.getRegion().height);
+							}
 						}
-
 					}
 				}
 			}

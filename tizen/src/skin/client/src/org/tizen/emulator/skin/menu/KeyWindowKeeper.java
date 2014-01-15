@@ -32,17 +32,18 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.tizen.emulator.skin.EmulatorSkin;
-import org.tizen.emulator.skin.custom.GeneralKeyWindow;
 import org.tizen.emulator.skin.custom.SkinWindow;
-import org.tizen.emulator.skin.custom.SpecialKeyWindow;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.image.GeneralKeyWindowImageRegistry;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinUtil;
 
 public class KeyWindowKeeper {
+	public static final int DEFAULT_DOCK_POSITION = (SWT.RIGHT | SWT.CENTER);
+
 	private static Logger logger =
 			SkinLogger.getSkinLogger(KeyWindowKeeper.class).getLogger();
 
@@ -69,12 +70,10 @@ public class KeyWindowKeeper {
 				/* show the Key Window */
 				selectKeyWindowMenu(skin.isKeyWindow = true);
 
-				if (skin.pairTag != null) {
-					skin.pairTag.setVisible(true);
-				}
-
 				keyWindow.getShell().setVisible(true);
 				SkinUtil.setTopMost(keyWindow.getShell(), skin.isOnTop);
+
+				skin.updateSkin();
 
 				return;
 			} else {
@@ -96,20 +95,31 @@ public class KeyWindowKeeper {
 					skin.getEmulatorSkinState().getCurrentRotationId());
 
 			if (keyMapList == null) {
-				selectKeyWindowMenu(skin.isKeyWindow = false);
 				logger.info("keyMapList is null");
+
+				selectKeyWindowMenu(skin.isKeyWindow = false);
 				return;
 			} else if (keyMapList.isEmpty() == true) {
-				selectKeyWindowMenu(skin.isKeyWindow = false);
 				logger.info("keyMapList is empty");
+
+				selectKeyWindowMenu(skin.isKeyWindow = false);
 				return;
 			}
 
 			keyWindow = new GeneralKeyWindow(skin, imageRegstry, keyMapList);
 		} else {
-			// TODO:
-			String layoutName =
-					skin.getPopupMenu().keyWindowItem.getMenu().getItem(indexLayout).getText();
+			Menu keywindowMenu = skin.getPopupMenu().keyWindowItem.getMenu();
+			MenuItem layout = keywindowMenu.getItem(indexLayout);
+			if (layout == null) {
+				layout = keywindowMenu.getItem(0);
+				if (layout == null) {
+					return;
+				}
+
+				layout.setSelection(true);
+			}
+
+			String layoutName = layout.getText();
 			logger.info("generate a \'" + layoutName + "\' key window!");
 
 			keyWindow = new SpecialKeyWindow(skin, layoutName);
@@ -118,36 +128,30 @@ public class KeyWindowKeeper {
 		selectKeyWindowMenu(skin.isKeyWindow = true);
 		SkinUtil.setTopMost(keyWindow.getShell(), skin.isOnTop);
 
-		if (skin.pairTag != null) {
-			skin.pairTag.setVisible(true);
-		}
-
 		keyWindow.open(dockValue);
+
+		skin.updateSkin();
 	}
 
 	public void closeKeyWindow() {
 		selectKeyWindowMenu(skin.isKeyWindow = false);
 
-		if (skin.pairTag != null) {
-			skin.pairTag.setVisible(false);
-		}
-
 		if (keyWindow != null) {
 			keyWindow.getShell().close();
 			keyWindow = null;
 		}
+
+		skin.updateSkin();
 	}
 
 	public void hideKeyWindow() {
 		selectKeyWindowMenu(skin.isKeyWindow = false);
 
-		if (skin.pairTag != null) {
-			skin.pairTag.setVisible(false);
-		}
-
 		if (keyWindow != null) {
 			keyWindow.getShell().setVisible(false);
 		}
+
+		skin.updateSkin();
 	}
 
 	public SkinWindow getKeyWindow() {
@@ -167,6 +171,8 @@ public class KeyWindowKeeper {
 
 		if (keywindowItem != null && keywindowItem.getMenu() != null) {
 			logger.info("key window has a special layout");
+
+			indexLayout = 0;
 
 			MenuItem[] layouts = keywindowItem.getMenu().getItems();
 			for (int i = 0; i < layouts.length; i++) {
@@ -196,13 +202,13 @@ public class KeyWindowKeeper {
 
 	/* for Menu */
 	public boolean isSelectKeyWindowMenu() {
-		MenuItem keywindow = skin.getPopupMenu().keyWindowItem;
+		MenuItem keywindowMenu = skin.getPopupMenu().keyWindowItem;
 
-		if (keywindow != null) {
+		if (keywindowMenu != null) {
 			if (isGeneralKeyWindow() == true) {
-				return keywindow.getSelection();
+				return keywindowMenu.getSelection();
 			} else {
-				for (MenuItem layout : keywindow.getMenu().getItems()) {
+				for (MenuItem layout : keywindowMenu.getMenu().getItems()) {
 					if (layout.getSelection() == true) {
 						return true;
 					}
@@ -214,13 +220,16 @@ public class KeyWindowKeeper {
 	}
 
 	public void selectKeyWindowMenu(boolean on) {
-		MenuItem keywindow = skin.getPopupMenu().keyWindowItem;
+		MenuItem keywindowMenu = skin.getPopupMenu().keyWindowItem;
 
-		if (keywindow != null) {
+		if (keywindowMenu != null) {
 			if (isGeneralKeyWindow() == true) {
-				keywindow.setSelection(on);
+				keywindowMenu.setSelection(on);
 			} else {
-				keywindow.getMenu().getItem(indexLayout).setSelection(on);
+				MenuItem layout = keywindowMenu.getMenu().getItem(indexLayout);
+				if (layout != null) {
+					layout.setSelection(on);
+				}
 			}
 		}
 	}

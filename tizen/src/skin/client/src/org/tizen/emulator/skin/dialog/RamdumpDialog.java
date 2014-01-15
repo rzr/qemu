@@ -1,5 +1,5 @@
 /**
- *
+ * Ramdump Dialog
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -51,17 +51,24 @@ import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.SkinUtil;
 
 public class RamdumpDialog extends SkinDialog {
-	private SocketCommunicator communicator;
-	private Composite compositeBase;
-	private ImageData[] frames;
+	public static final String RAMDUMP_DIALOG_TITLE = "Ram Dump";
+	public static final String INDICATOR_IMAGE_PATH = "images/process.gif";
 
 	private Logger logger =
 			SkinLogger.getSkinLogger(RamdumpDialog.class).getLogger();
 
+	private SocketCommunicator communicator;
+	private Composite compositeBase;
+	private ImageData[] frames;
+
+	/**
+	 *  Constructor
+	 */
 	public RamdumpDialog(Shell parent,
 			SocketCommunicator communicator, EmulatorConfig config) throws IOException {
-		super(parent, SkinUtil.makeEmulatorName(config),
-				SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+		super(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL,
+				RAMDUMP_DIALOG_TITLE + " - " + SkinUtil.makeEmulatorName(config), false);
+
 		this.communicator = communicator;
 	}
 
@@ -76,7 +83,7 @@ public class RamdumpDialog extends SkinDialog {
 			return null;
 		}
 
-		RamdumpDialog.this.shell.addListener(SWT.Close, new Listener() {
+		shell.addListener(SWT.Close, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
 				if (communicator.getRamdumpFlag() == true) {
@@ -86,7 +93,7 @@ public class RamdumpDialog extends SkinDialog {
 					event.doit = false;
 				}
 			}
-		} );
+		});
 
 		return composite;
 	}
@@ -102,9 +109,8 @@ public class RamdumpDialog extends SkinDialog {
 
 		try {
 			frames = loader.load(
-					classLoader.getResourceAsStream("images/process.gif"));
+					classLoader.getResourceAsStream(INDICATOR_IMAGE_PATH));
 		} catch (Exception e) {
-			// TODO: register a indicator file
 			frames = null;
 		}
 
@@ -164,13 +170,13 @@ public class RamdumpDialog extends SkinDialog {
 				display.syncExec(new Runnable() {
 					@Override
 					public void run() {
-						logger.info("close the Ramdump dialog");
+						logger.info("ramdump complete");
 
 						if (labelImage.getImage() != null) {
 							labelImage.getImage().dispose();
 						}
 						shell.setCursor(null);
-						RamdumpDialog.this.shell.close();
+						shell.close();
 					}
 				});
 			}
@@ -184,7 +190,7 @@ public class RamdumpDialog extends SkinDialog {
 
 	@Override
 	protected void setShellSize() {
-		shell.setSize(280, 150);
+		shell.setSize(280, 140);
 
 		/* align */
 		Rectangle boundsClient = shell.getClientArea();

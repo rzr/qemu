@@ -1,5 +1,5 @@
 /**
- * Display the emulator detail information
+ * Detailed Information Of VM
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -30,8 +30,11 @@
 package org.tizen.emulator.skin.dialog;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -62,26 +65,39 @@ import org.tizen.emulator.skin.util.SwtUtil;
  *
  */
 public class DetailInfoDialog extends SkinDialog {
-	public final static String DATA_DELIMITER = "#";
+	private final static String DETAIL_INFO_DIALOG_TITLE = "Detail Info";
 
-	public final static String KEY_VM_NAME = "VM Name";
-	public final static String KEY_SKIN_NAME = "Skin Name";
-	public final static String KEY_CPU_ARCH = "CPU";
-	public final static String KEY_RAM_SIZE = "RAM Size";
-	public final static String KEY_DISPLAY_RESOLUTION = "Display Resolution";
-	public final static String KEY_DISPLAY_DENSITY = "Display Density";
-	public final static String KEY_FILESHARING = "File Sharing";
-	public final static String KEY_FILESHARED_PATH = "File Shared Path";
-	public final static String KEY_CPU_VIRTUALIZATION = "CPU Virtualization";
-	public final static String KEY_GPU_VIRTUALIZATION = "GPU Virtualization";
-	public final static String KEY_IMAGE_PATH = "Image Path";
-	public final static String KEY_LOG_PATH = "Log Path";
+	private final static String TABLE_COLUMN_NAME_0 = "Feature";
+	private final static String TABLE_COLUMN_NAME_1 = "Value";
 
-	public final static String VALUE_NONE = "None";
-	public final static String VALUE_SUPPORTED = "Supported";
-	public final static String VALUE_NOTSUPPORTED = "Not Supported";
-	public final static String VALUE_ENABLED = "Enabled";
-	public final static String VALUE_DISABLED = "Disabled";
+	private final static String DATA_DELIMITER = "#";
+	private final static String QEMU_PARAMETER_APPEND = "-append";
+	private final static String QEMU_PARAMETER_KVM = "-enable-kvm";
+	private final static String QEMU_PARAMETER_HAX = "-enable-hax";
+	private final static String QEMU_PARAMETER_VIRTFS = "-virtfs";
+	private final static String QEMU_PARAMETER_VIRTGL = "-enable-gl";
+	private final static String QEMU_PARAMETER_YAGL = "-enable-yagl";
+	private final static String QEMU_PARAMETER_RAM = "-m";
+	private final static String QEMU_PARAMETER_DRIVE = "-drive";
+
+	private final static String KEY_VM_NAME = "VM Name";
+	private final static String KEY_SKIN_NAME = "Skin Name";
+	private final static String KEY_CPU_ARCH = "CPU";
+	private final static String KEY_RAM_SIZE = "RAM Size";
+	private final static String KEY_DISPLAY_RESOLUTION = "Display Resolution";
+	private final static String KEY_DISPLAY_DENSITY = "Display Density";
+	private final static String KEY_FILESHARING = "File Sharing";
+	private final static String KEY_FILESHARED_PATH = "File Shared Path";
+	private final static String KEY_CPU_VIRTUALIZATION = "CPU Virtualization";
+	private final static String KEY_GPU_VIRTUALIZATION = "GPU Virtualization";
+	private final static String KEY_IMAGE_PATH = "Image Path";
+	private final static String KEY_LOG_PATH = "Log Path";
+
+	private final static String VALUE_NONE = "None";
+	private final static String VALUE_SUPPORTED = "Supported";
+	private final static String VALUE_NOTSUPPORTED = "Not Supported";
+	private final static String VALUE_ENABLED = "Enabled";
+	private final static String VALUE_DISABLED = "Disabled";
 
 	private Logger logger =
 			SkinLogger.getSkinLogger(DetailInfoDialog.class).getLogger();
@@ -95,10 +111,10 @@ public class DetailInfoDialog extends SkinDialog {
 	/**
 	 *  Constructor
 	 */
-	public DetailInfoDialog(Shell parent, String emulatorName,
-			SocketCommunicator communicator, EmulatorConfig config, SkinInformation skinInfo) {
-		super(parent, "Detail Info" + " - " + emulatorName,
-				SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE | SWT.MAX);
+	public DetailInfoDialog(Shell parent, SocketCommunicator communicator,
+			EmulatorConfig config, SkinInformation skinInfo) {
+		super(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE | SWT.MAX,
+				DETAIL_INFO_DIALOG_TITLE + " - " + SkinUtil.makeEmulatorName(config));
 
 		this.communicator = communicator;
 		this.config = config;
@@ -123,10 +139,10 @@ public class DetailInfoDialog extends SkinDialog {
 		TableColumn[] column = new TableColumn[2];
 
 		column[0] = new TableColumn(table, SWT.LEFT);
-		column[0].setText("Feature");
+		column[0].setText(TABLE_COLUMN_NAME_0);
 
 		column[1] = new TableColumn(table, SWT.LEFT);
-		column[1].setText("Value");
+		column[1].setText(TABLE_COLUMN_NAME_1);
 
 		int index = 0;
 
@@ -159,26 +175,27 @@ public class DetailInfoDialog extends SkinDialog {
 					return;
 				}
 
-				TableItem tableItem = ((TableItem)table.getSelection()[0]);
+				TableItem tableItem = table.getItem(table.getSelectionIndex());
 				String openPath = VALUE_NONE;
 
-				if (tableItem.getText().compareTo(KEY_LOG_PATH) == 0) {
-					openPath = refinedData.get(KEY_LOG_PATH);
-				} else if (tableItem.getText().compareTo(KEY_IMAGE_PATH) == 0) {
-					openPath = refinedData.get(KEY_IMAGE_PATH);
-				} else if (tableItem.getText().compareTo(KEY_FILESHARED_PATH) == 0) {
-					openPath = refinedData.get(KEY_FILESHARED_PATH);
+				if (tableItem.getText(0).compareTo(KEY_FILESHARED_PATH) == 0
+						|| tableItem.getText(0).compareTo(KEY_LOG_PATH) == 0
+						|| tableItem.getText(0).startsWith(KEY_IMAGE_PATH) == true) {
+					openPath = tableItem.getText(1);
+				} else {
+					return;
+				}
+
+				if (openPath == null || openPath.compareTo(VALUE_NONE) == 0 ||
+						openPath.compareTo("") == 0) {
+					return;
 				}
 
 				try {
+					logger.info("open " + openPath);
 					openPath = StringUtil.getCanonicalPath(openPath);
 				} catch (IOException e) {
 					logger.warning("Invalid path");
-				}
-
-				if (openPath.compareTo(VALUE_NONE) == 0 ||
-						openPath.compareTo("") == 0) {
-					return;
 				}
 
 				Program.launch(openPath);
@@ -209,22 +226,29 @@ public class DetailInfoDialog extends SkinDialog {
 
 	@Override
 	protected void setShellSize() {
-		if (SwtUtil.isLinuxPlatform()) {
-			shell.setSize((int) (402 * 1.618/* golden ratio */), 402);
+		/* if (SwtUtil.isLinuxPlatform()) {
+			shell.setSize((int) (402 * 1.618), 402);
 		} else {
 			shell.setSize((int) (372 * 1.618), 372);
-		}
+		} */
+
+		shell.pack();
 	}
 
 	private String queryData() {
 		String infoData = null;
 
 		DataTranfer dataTranfer =
-				communicator.sendDataToQEMU(SendCommand.DETAIL_INFO, null, true);
+				communicator.sendDataToQEMU(SendCommand.SEND_DETAIL_INFO_REQ, null, true);
 		byte[] receivedData = communicator.getReceivedData(dataTranfer);
 
 		if (null != receivedData) {
-			infoData = new String(receivedData);
+			try {
+				infoData = new String(receivedData, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				logger.warning("unsupported encoding exception");
+				infoData = null;
+			}
 		} else {
 			logger.severe("Fail to get detail info");
 			SkinUtil.openMessage(shell, null,
@@ -240,27 +264,26 @@ public class DetailInfoDialog extends SkinDialog {
 		String cpu = "";
 		String ramSize = "";
 		String dpi = "";
-		String imagePath = "";
+		List<String> imagePathList = new ArrayList<String>();
 		String sharedPath = "";
 		boolean isCpuVirtual = false;
 		boolean isGpuVirtual = false;
 		String cpuVirtualCompare = "";
-		String gpuVirtualCompare = "";
 		String logPath = "";
 		boolean isHaxError = false;
 
-		if (SwtUtil.isLinuxPlatform()) {
-			cpuVirtualCompare = "-enable-kvm";
-		} else if (SwtUtil.isWindowsPlatform()) {
-			cpuVirtualCompare = "-enable-hax";
+		if (SwtUtil.isLinuxPlatform() == true) {
+			cpuVirtualCompare = QEMU_PARAMETER_KVM;
+		} else {
+			cpuVirtualCompare = QEMU_PARAMETER_HAX;
 		}
-		gpuVirtualCompare = "-enable-gl";
 
 		String[] split = infoData.split(DATA_DELIMITER);
 
 		for (int i = 0; i < split.length; i++) {
-			if (0 == i) {
+			if (0 == i) { /* emulator binary name */
 				String exec = split[i].trim().toLowerCase();
+
 				if (SwtUtil.isWindowsPlatform()) {
 					if (4 <= exec.length()) {
 						/* remove '.exe' in Windows */
@@ -274,15 +297,15 @@ public class DetailInfoDialog extends SkinDialog {
 				} else if (exec.endsWith("arm")) {
 					cpu = "ARM";
 				}
-			} else {
+			} else { /* qemu arguments */
 				if (i + 1 <= split.length) {
 					String arg = split[i].trim();
 
-					if ("-m".equals(arg))
+					if (QEMU_PARAMETER_RAM.equals(arg))
 					{
 						ramSize = split[i + 1].trim();
 					}
-					else if ("-drive".equals(arg))
+					else if (QEMU_PARAMETER_DRIVE.equals(arg))
 					{
 						/* arg : file=/path/emulimg.x86,... */
 						arg = split[i + 1].trim();
@@ -292,10 +315,10 @@ public class DetailInfoDialog extends SkinDialog {
 							String[] sp2 = sp[0].split("=");
 							String drivePath = sp2[sp2.length - 1];
 
-							imagePath = drivePath;
+							imagePathList.add(drivePath);
 						}
 					}
-					else if ("-virtfs".equals(arg))
+					else if (QEMU_PARAMETER_VIRTFS.equals(arg))
 					{
 						/* arg : local,path=/path,... */
 						arg = split[i + 1].trim();
@@ -306,7 +329,7 @@ public class DetailInfoDialog extends SkinDialog {
 							sharedPath = sp[1].substring(spIndex + 1, sp[1].length());
 						}
 					}
-					else if ("-append".equals(arg))
+					else if (QEMU_PARAMETER_APPEND.equals(arg)) /* kernel parameters */
 					{
 						arg = split[i + 1].trim();
 						String[] splitSub = arg.split(" ");
@@ -327,7 +350,8 @@ public class DetailInfoDialog extends SkinDialog {
 					{
 						isCpuVirtual = true;
 					}
-					else if (gpuVirtualCompare.equals(arg))
+					else if (QEMU_PARAMETER_VIRTGL.equals(arg) ||
+							QEMU_PARAMETER_YAGL.equals(arg))
 					{
 						isGpuVirtual = true;
 					}
@@ -409,10 +433,15 @@ public class DetailInfoDialog extends SkinDialog {
 		}
 
 		/* platform image path */
-		if (StringUtil.isEmpty(imagePath)) {
-			result.put(KEY_IMAGE_PATH, "Not identified");
+		int nPath = imagePathList.size();
+		if (nPath == 0) {
+			result.put(KEY_IMAGE_PATH, VALUE_NONE);
+		} else if (nPath == 1) {
+			result.put(KEY_IMAGE_PATH, imagePathList.get(0));
 		} else {
-			result.put(KEY_IMAGE_PATH, imagePath);
+			for (int i = 0; i < nPath; i ++) {
+				result.put(KEY_IMAGE_PATH + " " + (i + 1), imagePathList.get(i));
+			}
 		}
 
 		/* emulator log path */

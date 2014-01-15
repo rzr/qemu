@@ -48,8 +48,10 @@ import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
+import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
+import org.tizen.emulator.skin.dbi.OptionType;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
@@ -59,10 +61,7 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class EmulatorShmSkin extends EmulatorSkin {
-	public static final int RED_MASK = 0x00FF0000;
-	public static final int GREEN_MASK = 0x0000FF00;
-	public static final int BLUE_MASK = 0x000000FF;
-	public static final int COLOR_DEPTH = 24; /* no need to Alpha channel */
+	public static final int DISPLAY_COLOR_DEPTH = 24; /* no need to Alpha channel */
 
 	/* touch values */
 	protected static int pressingX = -1, pressingY = -1;
@@ -86,7 +85,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			messageBox.open();
 			temp.dispose();
 
-			System.exit(-1);
+			EmulatorSkinMain.terminateImmediately(-1);;
 		}
 	}
 
@@ -95,7 +94,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public native int shmdt();
 	public native int getPixels(int[] array);
 
-	private PaletteData paletteData;
+	private PaletteData palette;
 	private PollFBThread pollThread;
 	private Image imageGuide;
 
@@ -118,7 +117,10 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private Runnable runnable;
 		private int intervalWait;
 
-		public PollFBThread(int widthFB, int heightFB) {
+		/**
+		 *  Constructor
+		 */
+		public PollFBThread(PaletteData paletteDisplay, int widthFB, int heightFB) {
 			this.display = Display.getDefault();
 			this.widthFB = widthFB;
 			this.heightFB = heightFB;
@@ -126,7 +128,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.arrayFramebuffer = new int[sizeFramebuffer];
 
 			this.dataFramebuffer =
-					new ImageData(widthFB, heightFB, COLOR_DEPTH, paletteData);
+					new ImageData(widthFB, heightFB, DISPLAY_COLOR_DEPTH, paletteDisplay);
 			this.imageFramebuffer =
 					new Image(Display.getDefault(), dataFramebuffer);
 
@@ -189,7 +191,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			//logger.info("getPixels native function returned " + result);
 
 			communicator.sendToQEMU(
-					SendCommand.RESPONSE_DRAW_FRAMEBUFFER, null, true);
+					SendCommand.RESPONSE_DRAW_FRAME, null, true);
 
 			dataFramebuffer.setPixels(0, 0,
 					sizeFramebuffer, arrayFramebuffer, 0);
@@ -215,29 +217,31 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			SkinInformation skinInfo, boolean isOnTop) {
 		super(config, skinInfo, SWT.NONE, isOnTop);
 
-		this.paletteData = new PaletteData(RED_MASK, GREEN_MASK, BLUE_MASK);
+		/* ARGB */
+		this.palette = new PaletteData(0x00FF0000, 0x0000FF00, 0x000000FF);
 
 		/* get MaxTouchPoint from startup argument */
 		this.maxTouchPoint = config.getArgInt(
 				ArgsConstants.INPUT_TOUCH_MAXPOINT);
-
-		this.imageGuide = null;
 	}
 
+	@Override
 	protected void skinFinalize() {
 		pollThread.stopRequest();
 
-		finger.setMultiTouchEnable(0);
-		finger.clearFingerSlot();
-		finger.cleanup_multiTouchState();
+		/* remove multi-touch finger points */
+		finger.cleanupMultiTouchState();
 
 		super.skinFinalize();
 	}
 
-	public long initLayout() {
-		super.initLayout();
+	@Override
+	public StartData initSkin() {
+		initLayout();
 
-		finger = new EmulatorFingers(maxTouchPoint, currentState, communicator);
+		finger = new EmulatorFingers(maxTouchPoint,
+				currentState, communicator, palette);
+
 		if (SwtUtil.isMacPlatform() == true) {
 			multiTouchKey = SWT.COMMAND;
 		} else {
@@ -245,12 +249,35 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		}
 		multiTouchKeySub = SWT.SHIFT;
 
+		initDisplay();
+
+		/* generate a start data */
+		int width = getEmulatorSkinState().getCurrentResolutionWidth();
+		int height = getEmulatorSkinState().getCurrentResolutionHeight();
+		int scale = getEmulatorSkinState().getCurrentScale();
+		short rotation = getEmulatorSkinState().getCurrentRotationId();
+
+		boolean isBlankGuide = true;
+		OptionType option = config.getDbiContents().getOption();
+		if (option != null) {
+			isBlankGuide = (option.getBlankGuide() == null) ?
+					true : option.getBlankGuide().isVisible();
+		}
+
+		StartData startData = new StartData(0,
+				width, height, scale, rotation, isBlankGuide);
+		logger.info("" + startData);
+
+		return startData;
+	}
+
+	private void initDisplay() {
+		/* initialize shared memory */
 		/* base + 1 = sdb port */
 		/* base + 2 = shared memory key */
 		int shmkey = config.getArgInt(ArgsConstants.VM_BASE_PORT) + 2;
 		logger.info("shmkey = " + shmkey);
 
-		/* initialize shared memory */
 		int result = shmget(shmkey,
 				currentState.getCurrentResolutionWidth() *
 				currentState.getCurrentResolutionHeight() * 4);
@@ -262,18 +289,20 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					"Cannot launch this VM.\n" +
 					"Failed to get identifier of the shared memory segment.",
 					SWT.ICON_ERROR, config);
-			System.exit(-1);
+
+			EmulatorSkinMain.terminateImmediately(-1);
 		} else if (result == 2) {
 			logger.severe("Failed to attach the shared memory segment.");
 			SkinUtil.openMessage(shell, null,
 					"Cannot launch this VM.\n" +
 					"Failed to attach the shared memory segment.",
 					SWT.ICON_ERROR, config);
-			System.exit(-1);
+
+			EmulatorSkinMain.terminateImmediately(-1);
 		}
 
 		/* display updater thread */
-		pollThread = new PollFBThread(
+		pollThread = new PollFBThread(palette,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight());
 
@@ -284,8 +313,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					logger.info("Advanced graphics not supported");
 				} */
 
-				int ww = lcdCanvas.getSize().x;
-				int hh = lcdCanvas.getSize().y;
+				final int screen_width = lcdCanvas.getSize().x;
+				final int screen_height = lcdCanvas.getSize().y;
 
 				/* if (pollThread.getWaitIntervalTime() == 0) {
 					logger.info("draw black screen");
@@ -294,27 +323,36 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					return;
 				}*/
 
+				if (isOnInterpolation == false) {
+					/* Mac - NSImageInterpolationNone */
+					e.gc.setInterpolation(SWT.NONE);
+				} else {
+					/* Mac - NSImageInterpolationHigh */
+					e.gc.setInterpolation(SWT.HIGH);
+				}
+
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
 					e.gc.drawImage(pollThread.imageFramebuffer,
 							0, 0, pollThread.widthFB, pollThread.heightFB,
-							0, 0, ww, hh);
+							0, 0, screen_width, screen_height);
 				} else { /* non-portrait */
 					Transform newTransform = new Transform(lcdCanvas.getDisplay());
 					Transform oldTransform = new Transform(lcdCanvas.getDisplay());
 					newTransform.rotate(currentState.getCurrentAngle());
 
+					int frame_width = 0, frame_height = 0;
 					if (currentState.getCurrentAngle() == 90) { /* reverse landscape */
-						int temp = ww;
-						ww = hh;
-						hh = temp;
-						newTransform.translate(0, hh * -1);
+						frame_width = screen_height;
+						frame_height = screen_width;
+						newTransform.translate(0, frame_height * -1);
 					} else if (currentState.getCurrentAngle() == 180) { /* reverse portrait */
-						newTransform.translate(ww * -1, hh * -1);
+						frame_width = screen_width;
+						frame_height = screen_height;
+						newTransform.translate(frame_width * -1, frame_height * -1);
 					} else if (currentState.getCurrentAngle() == -90) { /* landscape */
-						int temp = ww;
-						ww = hh;
-						hh = temp;
-						newTransform.translate(ww * -1, 0);
+						frame_width = screen_height;
+						frame_height = screen_width;
+						newTransform.translate(frame_width * -1, 0);
 					}
 
 					/* save current transform as oldTransform */
@@ -323,7 +361,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					e.gc.setTransform(newTransform);
 					e.gc.drawImage(pollThread.imageFramebuffer,
 							0, 0, pollThread.widthFB, pollThread.heightFB,
-							0, 0, ww, hh);
+							0, 0, frame_width, frame_height);
 					/* back to old transform */
 					e.gc.setTransform(oldTransform);
 
@@ -335,18 +373,23 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				if (imageGuide != null) {
 					logger.info("draw blank guide");
 
-					float convertedScale = SkinUtil.convertScale(
-							currentState.getCurrentScale());
-
 					int widthImage = imageGuide.getImageData().width;
 					int heightImage = imageGuide.getImageData().height;
-					int scaledWidthImage = (int)(widthImage * convertedScale);
-					int scaledHeightImage = (int)(heightImage * convertedScale);
+					int margin_w = screen_width - widthImage;
+					int margin_h = screen_height - heightImage;
+					int margin = Math.min(margin_w, margin_h);
+
+					int scaledWidthImage = widthImage;
+					int scaledHeightImage = heightImage;
+					if (margin < 0) {
+						scaledWidthImage += margin;
+						scaledHeightImage += margin;
+					}
 
 					e.gc.drawImage(imageGuide, 0, 0,
 							widthImage, heightImage,
-							(lcdCanvas.getSize().x - scaledWidthImage) / 2,
-							(lcdCanvas.getSize().y - scaledHeightImage) / 2,
+							(screen_width - scaledWidthImage) / 2,
+							(screen_height - scaledHeightImage) / 2,
 							scaledWidthImage, scaledHeightImage);
 
 					imageGuide = null;
@@ -360,14 +403,12 @@ public class EmulatorShmSkin extends EmulatorSkin {
 								currentState.getCurrentRotationId());
 					}
 
-					finger.drawImage(e, currentState.getCurrentAngle());
+					finger.drawFingerPoints(e.gc);
 				}
 			}
 		});
 
 		pollThread.start();
-
-		return 0;
 	}
 
 	@Override
@@ -515,10 +556,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			if (tempStateMask == (multiTouchKeySub | multiTouchKey)) {
 				finger.setMultiTouchEnable(1);
 
-				logger.info("enable multi-touch = mode1");
+				logger.info("enable multi-touch = mode 1");
 			} else {
-				finger.setMultiTouchEnable(0);
-				finger.clearFingerSlot();
+				finger.clearFingerSlot(false);
 
 				logger.info("disable multi-touch");
 			}
@@ -527,7 +567,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		KeyEventData keyEventData = new KeyEventData(
 				KeyEventType.RELEASED.value(), keyCode, stateMask, keyLocation);
 		communicator.sendToQEMU(
-				SendCommand.SEND_KEY_EVENT, keyEventData, false);
+				SendCommand.SEND_KEYBOARD_KEY_EVENT, keyEventData, false);
 
 		removePressedKeyFromList(keyEventData);
 	}
@@ -554,7 +594,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				pressingOriginX = pressingOriginY = -1;
 			}
 
-			logger.info("enable multi-touch = mode2");
+			logger.info("enable multi-touch = mode 2");
 		} else if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
 			finger.setMultiTouchEnable(1);
 
@@ -569,13 +609,13 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				pressingOriginX = pressingOriginY = -1;
 			}
 
-			logger.info("enable multi-touch = mode1");
+			logger.info("enable multi-touch = mode 1");
 		}
 
 		KeyEventData keyEventData = new KeyEventData(
 				KeyEventType.PRESSED.value(), keyCode, stateMask, keyLocation);
 		communicator.sendToQEMU(
-				SendCommand.SEND_KEY_EVENT, keyEventData, false);
+				SendCommand.SEND_KEYBOARD_KEY_EVENT, keyEventData, false);
 
 		addPressedKeyToList(keyEventData);
 	}
@@ -587,11 +627,11 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			return;
 		}
 
-		try {
-			screenShotDialog = new ShmScreenShotWindow(shell, this, config,
-					imageRegistry.getIcon(IconName.SCREENSHOT));
-			screenShotDialog.open();
+		screenShotDialog = new ShmScreenShotWindow(this, config,
+				palette, imageRegistry.getIcon(IconName.SCREENSHOT));
 
+		try {
+			screenShotDialog.open();
 		} catch (ScreenShotException ex) {
 			screenShotDialog = null;
 			logger.log(Level.SEVERE, ex.getMessage(), ex);

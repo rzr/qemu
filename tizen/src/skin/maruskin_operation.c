@@ -169,7 +169,7 @@ void do_mouse_event(int button_type, int event_type,
 
             break;
         default:
-            ERR("undefined mouse event type passed:%d\n", event_type);
+            ERR("undefined mouse event type passed : %d\n", event_type);
             break;
     }
 
@@ -182,16 +182,18 @@ void do_mouse_event(int button_type, int event_type,
 #endif
 }
 
-void do_key_event(int event_type, int keycode, int state_mask, int key_location)
+void do_keyboard_key_event(int event_type,
+    int keycode, int state_mask, int key_location)
 {
     int scancode = -1;
 
-    TRACE("key_event event_type:%d, keycode:%d, state_mask:%d, key_location:%d\n",
+    TRACE("Keyboard Key : event_type=%d, keycode=%d,"
+        "state_mask=%d, key_location=%d\n",
         event_type, keycode, state_mask, key_location);
 
 #ifndef CONFIG_USE_SHM
-    //is multi-touch mode ?
     if (get_emul_max_touch_point() > 1) {
+        /* multi-touch checking */
         int state_mask_temp = state_mask & ~JAVA_KEYCODE_NO_FOCUS;
 
         if ((keycode == JAVA_KEYCODE_BIT_SHIFT &&
@@ -213,7 +215,7 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
                     pressing_origin_x = pressing_origin_y = -1;
                 }
 
-                INFO("enable multi-touch = mode2\n");
+                INFO("enable multi-touch = mode 2\n");
             }
         }
         else if (keycode == JAVA_KEYCODE_BIT_CTRL ||
@@ -233,14 +235,13 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
                     pressing_origin_x = pressing_origin_y = -1;
                 }
 
-                INFO("enable multi-touch = mode1\n");
+                INFO("enable multi-touch = mode 1\n");
             } else if (KEY_RELEASED == event_type) {
                 if (state_mask_temp == (JAVA_KEYCODE_BIT_CTRL | JAVA_KEYCODE_BIT_SHIFT)) {
                     get_emul_multi_touch_state()->multitouch_enable = 1;
-                    INFO("enabled multi-touch = mode1\'\n");
+                    INFO("enabled multi-touch = mode 1\'\n");
                 } else {
-                    get_emul_multi_touch_state()->multitouch_enable = 0;
-                    clear_finger_slot();
+                    clear_finger_slot(false);
                     INFO("disable multi-touch\n");
                 }
             }
@@ -279,12 +280,12 @@ void do_key_event(int event_type, int keycode, int state_mask, int key_location)
     }
 }
 
-void do_hardkey_event(int event_type, int keycode)
+void do_hw_key_event(int event_type, int keycode)
 {
-    INFO("do_hardkey_event event_type:%d, keycode:%d\n",
+    INFO("HW Key : event_type=%d, keycode=%d\n",
         event_type, keycode);
 
-    if ( is_suspended_state() ) {
+    if ( runstate_check(RUN_STATE_SUSPENDED) ) {
         if ( KEY_PRESSED == event_type ) {
             if ( kbd_mouse_is_absolute() ) {
                 // home key or power key is used for resume.
@@ -405,7 +406,7 @@ QemuSurfaceInfo *get_screenshot_info(void)
         return NULL;
     }
 
-    int length = get_emul_lcd_width() * get_emul_lcd_height() * 4;
+    int length = get_emul_resolution_width() * get_emul_resolution_height() * 4;
     INFO("screenshot data length:%d\n", length);
 
     if (0 >= length) {
@@ -553,15 +554,22 @@ void do_open_shell(void)
     /* do nothing */
 }
 
-void onoff_host_kbd(int on)
+void do_host_kbd_enable(bool on)
 {
-    INFO("host kbd on/off: %d.\n", on);
+    INFO("host kbd enable : %d\n", on);
 
 #if defined(TARGET_ARM)
     mloop_evcmd_usbkbd(on);
 #elif defined(TARGET_I386)
     mloop_evcmd_hostkbd(on);
 #endif
+}
+
+void do_interpolation_enable(bool on)
+{
+    INFO("interpolation enable : %d\n", on);
+
+    maru_display_interpolation(on);
 }
 
 void do_ram_dump(void)
@@ -584,7 +592,7 @@ void request_close(void)
     INFO("request_close\n");
 
     /* FIXME: convert to device emulatoion */
-    do_hardkey_event(KEY_PRESSED, HARD_KEY_POWER);
+    do_hw_key_event(KEY_PRESSED, HARD_KEY_POWER);
 
 #ifdef CONFIG_WIN32
         Sleep(CLOSE_POWER_KEY_INTERVAL);
@@ -592,7 +600,7 @@ void request_close(void)
         usleep(CLOSE_POWER_KEY_INTERVAL * 1000);
 #endif
 
-    do_hardkey_event(KEY_RELEASED, HARD_KEY_POWER);
+    do_hw_key_event(KEY_RELEASED, HARD_KEY_POWER);
 }
 
 void shutdown_qemu_gracefully(void)

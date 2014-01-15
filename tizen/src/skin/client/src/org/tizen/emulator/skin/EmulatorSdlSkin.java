@@ -33,7 +33,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.PaletteData;
+import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.dbi.OptionType;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
@@ -43,8 +46,12 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class EmulatorSdlSkin extends EmulatorSkin {
+	public static final int DISPLAY_COLOR_DEPTH = 32;
+
 	private Logger logger = SkinLogger.getSkinLogger(
 			EmulatorSdlSkin.class).getLogger();
+
+	private PaletteData palette;
 
 	/**
 	 *  Constructor
@@ -52,21 +59,43 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 	public EmulatorSdlSkin(EmulatorConfig config,
 			SkinInformation skinInfo, boolean isOnTop) {
 		super(config, skinInfo, SWT.EMBEDDED, isOnTop);
+
+		/* BGRA */
+		this.palette = new PaletteData(0x0000FF00, 0x00FF0000, 0xFF000000);
 	}
 
-	public long initLayout() {
-		super.initLayout();
+	@Override
+	public StartData initSkin() {
+		initLayout();
 
-		/* sdl uses this handle ID */
-		return getWindowHandleId();
+		/* maru_sdl uses this handle ID */
+		long id = getDisplayHandleId();
+
+		/* generate a start data */
+		int width = getEmulatorSkinState().getCurrentResolutionWidth();
+		int height = getEmulatorSkinState().getCurrentResolutionHeight();
+		int scale = getEmulatorSkinState().getCurrentScale();
+		short rotation = getEmulatorSkinState().getCurrentRotationId();
+
+		boolean isBlankGuide = true;
+		OptionType option = config.getDbiContents().getOption();
+		if (option != null) {
+			isBlankGuide = (option.getBlankGuide() == null) ?
+					true : option.getBlankGuide().isVisible();
+		}
+
+		StartData startData = new StartData(id,
+				width, height, scale, rotation, isBlankGuide);
+		logger.info("" + startData);
+
+		return startData;
 	}
 
-	private long getWindowHandleId() {
+	private long getDisplayHandleId() {
 		long windowHandleId = 0;
 
 		/* org.eclipse.swt.widgets.Widget */
 		if (SwtUtil.isLinuxPlatform()) {
-
 			try {
 				Field field = lcdCanvas.getClass().getField("embeddedHandle");
 				windowHandleId = field.getLong(lcdCanvas);
@@ -84,9 +113,7 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
 			}
-
 		} else if (SwtUtil.isWindowsPlatform()) {
-
 			try {
 				Field field = lcdCanvas.getClass().getField("handle");
 				windowHandleId = field.getLong(lcdCanvas);
@@ -104,15 +131,10 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 				logger.log(Level.SEVERE, e.getMessage(), e);
 				shutdown();
 			}
-
-		} else if (SwtUtil.isMacPlatform()) {
-
-			// not supported
-			windowHandleId = 0;
-
 		} else {
+			/* not supported */
 			logger.severe("Not Supported OS platform:" + SWT.getPlatform());
-			System.exit(-1);
+			shutdown();
 		}
 
 		return windowHandleId;
@@ -135,11 +157,11 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 			return;
 		}
 
-		try {
-			screenShotDialog = new SdlScreenShotWindow(shell, this, config,
-					imageRegistry.getIcon(IconName.SCREENSHOT));
-			screenShotDialog.open();
+		screenShotDialog = new SdlScreenShotWindow(this, config,
+				palette, imageRegistry.getIcon(IconName.SCREENSHOT));
 
+		try {
+			screenShotDialog.open();
 		} catch (ScreenShotException ex) {
 			screenShotDialog = null;
 			logger.log(Level.SEVERE, ex.getMessage(), ex);
@@ -155,5 +177,4 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 					SWT.ICON_WARNING, config);
 		}
 	}
-
 }

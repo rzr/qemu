@@ -145,7 +145,7 @@ static void maru_arm_machine_init(ram_addr_t ram_size,
 
     pci_create_simple(pci_bus, -1, "pci-ohci");
     maru_camera_pci_init(pci_bus);
-    codec_init(pci_bus);
+    maru_brill_codec_pci_device_init(pci_bus);
     pci_maru_brightness_init(pci_bus);
 
     if (enable_vigs) {

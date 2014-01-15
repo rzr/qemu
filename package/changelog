@@ -1,3 +1,64 @@
+* 1.7.15
+- move General skin to mobile-specific path
+== GiWoong Kim <giwoong.kim@samsung.com> 2014-01-13
+* 1.7.14
+- disabled unstable spice because runtime library dependency
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-01-07
+* 1.7.13
+- enabled spice
+== Sungmin Ha <sungmin82.ha@samsung.com> 2014-01-03
+* 1.7.10
+- disabled unstable spice
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-24
+* 1.7.9
+- removed reconfigure code in virt-viewer
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-24
+* 1.7.8
+- added required package libvirt-dev to build
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-24
+* 1.7.7
+- added execute permission spice_codegen.py for build
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-23
+* 1.7.6
+- added remote server/client packages spice-gtk, virt-viewer, celt, spice etc.
+- modified spice input codes for tizen specific functions
+- modified build script and makefile
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-23
+* 1.7.5
+- Use wglMakeCurrent instead of wglMakeContextCurrentARB when possible
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-12-19
+* 1.7.3
+- remove temporary code
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-12-09
+* 1.7.2
+- added reset function for host keyboard
+- deleted blank in maru_virtio_hwkey.c
+== Sungmin Ha <sungmin82.ha@samsung.com> 2013-12-03
+* 1.7.1
+- method for initial scale factor value determining
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-11-26
+* 1.7.0
+- Rewrite maru_pm. Rewrite power management codes.
+== Seokyeon Hwang <syeon.hwang@samsung.com> 2013-11-19
+* 1.6.4
+- added schema for host keyboard menu
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-11-14
+* 1.6.3
+- modify protobuf protocol
+== Munkyu Im <munkyu.im@samsung.com> 2013-11-12
+* 1.6.2
+- changed message format when a sdb server registers in guest server
+- previously it gets ip, port, serial, but now serial only
+== Jinhyung Choi <jinhyung2.choi@samsung.com> 2013-11-07
+* 1.6.1
+- use gsettings instead of gconftool-2
+== Munkyu Im <munkyu.im@samsung.com> 2013-11-04
+* 1.6.0
+- keep the touch point grabbing while finger rearranging
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-10-29
+* 1.5.103
+- function call re-ordering in arrangeSkin() & etc
+== GiWoong Kim <giwoong.kim@samsung.com> 2013-10-17
 * 1.5.102
 - supports qmp handling for ecs.
 - added keep alive checking routine for ecs.

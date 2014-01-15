@@ -51,11 +51,7 @@ yagl_enable() {
     YAGL_EN="no"
   ;;
   1|yes|enable)
-    if [ "$targetos" != "Darwin" ] ; then
-      YAGL_EN="yes"
-    else
-      YAGL_EN="no"
-    fi
+    YAGL_EN="yes"
   ;;
   *)
     usage
@@ -70,11 +66,7 @@ yagl_stats_enable() {
     YAGL_STATS_EN="no"
   ;;
   1|yes|enable)
-    if [ "$targetos" != "Darwin" ] ; then
-      YAGL_STATS_EN="yes"
-    else
-      YAGL_STATS_EN="no"
-    fi
+    YAGL_STATS_EN="yes"
   ;;
   *)
     usage
@@ -239,6 +231,7 @@ cd ..
 echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
+#export PKG_CONFIG_PATH=${PWD}/tizen/distrib/remote/output/lib/pkgconfig:${PKG_CONFIG_PATH}
 exec ./configure \
  --enable-werror \
  --audio-drv-list=alsa \
@@ -246,6 +239,7 @@ exec ./configure \
  --disable-vnc \
  --disable-pie $1 \
  --enable-virtfs \
+ --disable-xen \
  $CONFIGURE_APPEND \
 ;;
 MINGW*)
@@ -286,7 +280,6 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
 ./configure \
  --extra-cflags=-mmacosx-version-min=10.4 \
  --audio-drv-list=coreaudio \
- --enable-mixemu \
  --enable-maru \
  --enable-shm \
  --enable-hax \

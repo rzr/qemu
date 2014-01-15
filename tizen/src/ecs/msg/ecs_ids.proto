@@ -20,4 +20,8 @@ enum Master_Type {
 	// extension from 101 to 150
 	NFC_REQ = 101;
 	NFC_NTF = 102;
+
+	TETHERING_REQ = 103;
+	TETHERING_ANS = 104;
+	TETHERING_NTF = 105;
 }

@@ -1,7 +1,7 @@
 /**
- * 
+ * SWT Utilities
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -37,17 +37,18 @@ import org.eclipse.swt.SWT;
  */
 public class SwtUtil {
 	private SwtUtil() {
+		/* do nothing */
 	}
 
 	public static boolean isLinuxPlatform() {
-		return "gtk".equalsIgnoreCase( SWT.getPlatform() );
+		return "gtk".equalsIgnoreCase(SWT.getPlatform());
 	}
 
 	public static boolean isWindowsPlatform() {
-		return "win32".equalsIgnoreCase( SWT.getPlatform() ); //win32-win32-x86_64
+		return "win32".equalsIgnoreCase(SWT.getPlatform()); /* win32-win32-x86_64 */
 	}
 
 	public static boolean isMacPlatform() {
-		return "cocoa".equalsIgnoreCase( SWT.getPlatform() );
+		return "cocoa".equalsIgnoreCase(SWT.getPlatform());
 	}
 }

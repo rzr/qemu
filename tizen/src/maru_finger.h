@@ -31,6 +31,8 @@
 #ifndef __MARU_FINGER_H__
 #define __MARU_FINGER_H__
 
+#include "qemu-common.h"
+
 
 /* definitions relating to multi-touch */
 #define MAX_FINGER_CNT 10
@@ -69,7 +71,7 @@ int add_finger_point(int origin_x, int origin_y, int x, int y);
 void maru_finger_processing_1(int touch_type, int origin_x, int origin_y, int x, int y);
 void maru_finger_processing_2(int touch_type, int origin_x, int origin_y, int x, int y);
 int rearrange_finger_points(int lcd_w, int lcd_h, double scale_factor, int rotaton_type);
-void clear_finger_slot(void);
+void clear_finger_slot(bool keep_enable);
 void cleanup_multi_touch_state(void);
 
 

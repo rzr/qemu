@@ -110,7 +110,7 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
                     surface_height(dpy_surface));
             } else {
                 int shm_size =
-                   get_emul_lcd_width() * get_emul_lcd_height() * 4;
+                   get_emul_resolution_width() * get_emul_resolution_height() * 4;
                 memset(shared_memory, 0x00, (size_t)shm_size);
             }
 
@@ -152,8 +152,8 @@ static void qemu_ds_shm_switch(DisplayChangeListener *dcl,
     INFO("qemu_ds_shm_switch : (%d, %d)\n",
         console_width, console_height);
 
-    if (console_width == get_emul_lcd_width() &&
-        console_height == get_emul_lcd_height()) {
+    if (console_width == get_emul_resolution_width() &&
+        console_height == get_emul_resolution_height()) {
         is_fit_console_size = true;
     }
 }
@@ -221,7 +221,7 @@ void maruskin_shm_init(uint64 swt_handle,
 
     INFO("maru shm init\n");
 
-    set_emul_lcd_size(display_width, display_height);
+    set_emul_resolution(display_width, display_height);
     set_emul_sdl_bpp(32);
 
     if (blank_guide_enable == true) {
@@ -230,7 +230,7 @@ void maruskin_shm_init(uint64 swt_handle,
 
     /* byte */
     int shm_size =
-        get_emul_lcd_width() * get_emul_lcd_height() * 4;
+        get_emul_resolution_width() * get_emul_resolution_height() * 4;
 
     /* base + 1 = sdb port */
     /* base + 2 = shared memory key */

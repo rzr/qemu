@@ -2,12 +2,11 @@
  * Maru power management emulator
  * Based on qemu/hw/acpi_piix4.h
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
- * GiWoong Kim <giwoong.kim@samsung.com>
+ * Seokyeon Hwang <syeon.hwang@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
- * Hyunjun Son
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,23 +31,10 @@
 #define MARU_PM_H_
 
 #include "qemu-common.h"
+#include "hw/acpi/acpi.h"
 
-i2c_bus *maru_pm_init(PCIBus *bus, int devfn, uint32_t smb_io_base,
-                       qemu_irq sci_irq, qemu_irq smi_irq,
-                       int kvm_enabled, FWCfgState *fw_cfg);
+void acpi_maru_pm_init(ACPIREGS *ar, acpi_update_sci_fn update_sci);
 
-#ifdef TARGET_ARM
-static int is_suspended_state( void )
-{
-    return 0;
-}
-static void resume( void )
-{
-    return;
-}
-#else
-void resume( void );
-int is_suspended_state( void );
-#endif
+void resume(void);
 
 #endif /* MARU_PM_H_ */

@@ -27,7 +27,7 @@ message InjectorReq {
 	required string category = 1;
 	required int32 length = 2;
 	required int32 group = 3;
-	required int32 action = 4; 
+	required int32 action = 4;
 	optional bytes data = 5;
 }
 
@@ -35,17 +35,13 @@ message InjectorAns {
 	required int32 errcode = 1;
 	optional string errstr = 2;
 	required string category = 3;
-	required int32 length = 4;
-	required int32 group = 5;
-	required int32 action = 6; 
-	optional bytes data = 7;
 }
 
 message InjectorNtf {
 	required string category = 1;
 	required int32 length = 2;
 	required int32 group = 3;
-	required int32 action = 4; 
+	required int32 action = 4;
 	optional bytes data = 5;
 }
 
@@ -53,7 +49,7 @@ message DeviceReq {
 	required string category = 1;
 	required int32 length = 2;
 	required int32 group = 3;
-	required int32 action = 4; 
+	required int32 action = 4;
 	optional bytes data = 5;
 }
 
@@ -63,7 +59,7 @@ message DeviceAns {
 	required string category = 3;
 	required int32 length = 4;
 	required int32 group = 5;
-	required int32 action = 6; 
+	required int32 action = 6;
 	optional bytes data = 7;
 }
 
@@ -71,7 +67,7 @@ message DeviceNtf {
 	required string category = 1;
 	required int32 length = 2;
 	required int32 group = 3;
-	required int32 action = 4; 
+	required int32 action = 4;
 	optional bytes data = 5;
 }
 
@@ -103,6 +99,32 @@ message NfcNtf {
 	optional bytes data = 2;
 }
 
+message TetheringReq {
+	required string category = 1;
+	required int32 length = 2;
+	required int32 group = 3;
+	required int32 action = 4;
+	optional bytes data = 5;
+}
+
+message TetheringAns {
+	required int32 errcode = 1;
+	optional string errstr = 2;
+	required string category = 3;
+	required int32 length = 4;
+	required int32 group = 5;
+	required int32 action = 6;
+	optional bytes data = 7;
+}
+
+message TetheringNtf {
+	required string category = 1;
+	required int32 length = 2;
+	required int32 group = 3;
+	required int32 action = 4;
+	optional bytes data = 5;
+}
+
 // ======= Main master message =======
 
 message Master {
@@ -129,6 +151,10 @@ message Master {
 	// Extensions 101 to 150;
 	optional NfcReq nfc_req = 101;
 	optional NfcNtf nfc_ntf = 102;
+
+	optional TetheringReq tethering_req = 103;
+	optional TetheringAns tethering_ans = 104;
+	optional TetheringNtf tethering_ntf = 105;
 }
 
 

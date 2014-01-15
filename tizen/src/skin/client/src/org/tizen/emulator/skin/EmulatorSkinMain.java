@@ -45,6 +45,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
+import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.config.EmulatorConfig.ConfigPropertiesConstants;
@@ -58,6 +59,7 @@ import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
+import org.tizen.emulator.skin.util.CocoaUtil;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.SkinRotation;
@@ -70,7 +72,7 @@ import org.tizen.emulator.skin.util.SwtUtil;
  */
 public class EmulatorSkinMain {
 	public static final String SKINS_FOLDER = "skins";
-	public static final String DEFAULT_SKIN_FOLDER = "emul-general-3btn";
+	public static final String DEFAULT_SKIN_FOLDER = "mobile-general-3btn";
 
 	public static final String SKIN_INFO_FILE_NAME = "info.ini";
 	public static final String SKIN_PROPERTIES_FILE_NAME = ".skin.properties";
@@ -83,10 +85,17 @@ public class EmulatorSkinMain {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		/* make vm name and remove unused menu for macos-x */
 		if (SwtUtil.isMacPlatform()) {
-			//TODO: event handling of about dialog 
 			System.setProperty("apple.laf.useScreenMenuBar", "true");
-			System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Emulator"); 
+			System.setProperty("com.apple.mrj.application.apple.menu.about.name",
+					"Emulator");
+			Display display = Display.getDefault();
+			display.syncExec(new Runnable() {
+				public void run() {
+					new CocoaUtil().removeTopMenuItems();
+				}
+			});
 		}
 
 		String simpleMsg = getSimpleMsg(args);
@@ -99,7 +108,7 @@ public class EmulatorSkinMain {
 			messageBox.open();
 			temp.dispose();
 
-			System.exit(-1);
+			return;
 		}
 
 		SocketCommunicator communicator = null;
@@ -117,17 +126,20 @@ public class EmulatorSkinMain {
 			logger = SkinLogger.getSkinLogger(EmulatorSkinMain.class).getLogger();
 			logger.info("!!! Start Emualtor Skin !!!");
 
-			logger.info("java.version: " + System.getProperty("java.version"));
-			logger.info("java vendor: " + System.getProperty("java.vendor"));
-			logger.info("vm version: " + System.getProperty("java.vm.version"));
-			logger.info("vm vendor: " + System.getProperty("java.vm.vendor"));
-			logger.info("vm name: " + System.getProperty("java.vm.name"));
-			logger.info("os name: " + System.getProperty("os.name"));
-			logger.info("os arch: " + System.getProperty("os.arch"));
-			logger.info("os version: " + System.getProperty("os.version"));
+			logger.info("java.version : " + System.getProperty("java.version"));
+			logger.info("java vendor : " + System.getProperty("java.vendor"));
+			logger.info("vm version : " + System.getProperty("java.vm.version"));
+			logger.info("vm vendor : " + System.getProperty("java.vm.vendor"));
+			logger.info("vm name : " + System.getProperty("java.vm.name"));
+			logger.info("os name : " + System.getProperty("os.name"));
+			logger.info("os arch : " + System.getProperty("os.arch"));
+			logger.info("os version : " + System.getProperty("os.version"));
+			logger.info("swt platform : " + SWT.getPlatform());
+			logger.info("swt version : " + SWT.getVersion());
 
 			/* startup arguments parsing */
 			Map<String, String> argsMap = parseArgs(args);
+			EmulatorConfig.validateArgs(argsMap);
 
 			/* get skin path from startup argument */
 			String argSkinPath = (String) argsMap.get(ArgsConstants.SKIN_PATH);
@@ -160,7 +172,7 @@ public class EmulatorSkinMain {
 				messageBox.open();
 				temp.dispose();
 
-				System.exit(-1);
+				terminateImmediately(-1);
 			}
 
 			String skinInfoResolutionW =
@@ -189,14 +201,13 @@ public class EmulatorSkinMain {
 			String configPropFilePath =
 					vmPath + File.separator + CONFIG_PROPERTIES_FILE_NAME;
 			Properties configProperties = loadProperties(configPropFilePath, false);
+			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
 			/* able to use log file after loading properties */
 			initLog(argsMap, configProperties);
 
 			/* validation check */
-			EmulatorConfig.validateArgs(argsMap);
 			EmulatorConfig.validateSkinProperties(skinProperties);
-			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
 			/* determine the layout */
 			boolean isGeneralSkin = false;
@@ -222,7 +233,7 @@ public class EmulatorSkinMain {
 				messageBox.open();
 				temp.dispose();
 
-				System.exit(-1);
+				terminateImmediately(-1);
 			}
 			logger.info("dbi version : " + dbiContents.getDbiVersion());
 
@@ -256,8 +267,8 @@ public class EmulatorSkinMain {
 			skin.setCommunicator(communicator);
 
 			/* initialize a skin layout */
-			long windowHandleId = skin.initLayout();
-			communicator.setInitialData(windowHandleId);
+			StartData startData = skin.initSkin();
+			communicator.setInitialData(startData);
 
 			Socket commSocket = communicator.getSocket();
 
@@ -298,7 +309,7 @@ public class EmulatorSkinMain {
 			if (null != communicator) {
 				communicator.terminate();
 			} else {
-				System.exit(-1);
+				terminateImmediately(-1);
 			}
 		} finally {
 			ImageRegistry.getInstance().dispose();
@@ -474,5 +485,13 @@ public class EmulatorSkinMain {
 		}
 
 		return properties;
+	}
+
+	public static void terminateImmediately(int exit) {
+		if (logger != null) {
+			logger.info("shutdown immediately! exit value : " + exit);
+		}
+
+		System.exit(exit);
 	}
 }

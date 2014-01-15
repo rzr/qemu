@@ -108,6 +108,9 @@ obj-y += debug_ch.o
 # ECS
 include $(SRC_PATH)/tizen/src/ecs/Makefile.tizen
 
+# tethering
+include $(SRC_PATH)/tizen/src/tethering/Makefile.tizen
+
 # maru hardware
 include $(SRC_PATH)/tizen/src/Makefile.tizen.$(TARGET_BASE_ARCH)
 
@@ -115,7 +118,7 @@ obj-y += maru_brightness.o
 obj-y += maru_virtio_touchscreen.o
 #obj-y += maru_usb_touchscreen.o
 obj-y += maru_virtio_keyboard.o
-obj-y += maru_codec.o
+#obj-y += maru_codec.o
 obj-y += maru_virtio_hwkey.o
 obj-y += maru_virtio_evdi.o
 obj-y += maru_virtio_sensor.o

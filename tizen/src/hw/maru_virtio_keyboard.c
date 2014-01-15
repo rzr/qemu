@@ -121,6 +121,11 @@ static void virtio_keyboard_event(void *opaque, int keycode)
         return;
     }
 
+    if (!virtio_queue_ready(vkbd->vq)) {
+        INFO("virtqueue is not ready.\n");
+        return;
+    }
+
     index = &(vkbd->kbdqueue.index);
     TRACE("[Enter] input_event handler. cnt %d\n", vkbd->kbdqueue.wptr);
 
@@ -269,12 +274,23 @@ static int virtio_keyboard_device_exit(DeviceState *qdev)
     return 0;
 }
 
+static void virtio_keyboard_device_reset(VirtIODevice *vdev)
+{
+    VirtIOKeyboard *vkbd;
+    vkbd = VIRTIO_KEYBOARD(vdev);
+
+    INFO("reset keyboard device\n");
+    vkbd->kbdqueue.rptr = 0;
+    vkbd->kbdqueue.index = 0;
+}
+
 static void virtio_keyboard_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
     dc->exit = virtio_keyboard_device_exit;
     vdc->init = virtio_keyboard_device_init;
+    vdc->reset = virtio_keyboard_device_reset;
     vdc->get_features = virtio_keyboard_get_features;
 }
 

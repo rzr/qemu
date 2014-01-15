@@ -33,6 +33,7 @@
 #include <math.h>
 #include <png.h>
 #include "ui/console.h"
+#include "qemu/main-loop.h"
 #include "maru_sdl.h"
 #include "maru_display.h"
 #include "emul_state.h"
@@ -57,6 +58,7 @@ static SDL_Surface *surface_guide; /* blank guide image */
 
 static double current_scale_factor = 1.0;
 static double current_screen_degree;
+static pixman_filter_t sdl_pixman_filter;
 
 static int sdl_alteration;
 
@@ -109,7 +111,8 @@ static void maru_do_pixman_dpy_surface(pixman_image_t *dst_image)
 }
 
 static SDL_Surface *maru_do_pixman_scale(SDL_Surface *rz_src,
-                                         SDL_Surface *rz_dst)
+                                         SDL_Surface *rz_dst,
+                                         pixman_filter_t filter)
 {
     pixman_image_t *src = NULL;
     pixman_image_t *dst = NULL;
@@ -132,7 +135,7 @@ static SDL_Surface *maru_do_pixman_scale(SDL_Surface *rz_src,
     pixman_f_transform_scale(&matrix_f, NULL, sx, sy);
     pixman_transform_from_pixman_f_transform(&matrix, &matrix_f);
     pixman_image_set_transform(src, &matrix);
-    pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
+    pixman_image_set_filter(src, filter, NULL, 0);
     pixman_image_composite(PIXMAN_OP_SRC, src, NULL, dst,
                            0, 0, 0, 0, 0, 0,
                            rz_dst->w, rz_dst->h);
@@ -190,7 +193,7 @@ static SDL_Surface *maru_do_pixman_rotate(SDL_Surface *rz_src,
     }
     pixman_transform_from_pixman_f_transform(&matrix, &matrix_f);
     pixman_image_set_transform(src, &matrix);
-    pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
+    //pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
     pixman_image_composite(PIXMAN_OP_SRC, src, NULL, dst,
                            0, 0, 0, 0, 0, 0,
                            rz_dst->w, rz_dst->h);
@@ -249,8 +252,8 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
     }
 
     /* create surface_qemu */
-    if (console_width == get_emul_lcd_width() &&
-        console_height == get_emul_lcd_height()) {
+    if (console_width == get_emul_resolution_width() &&
+        console_height == get_emul_resolution_height()) {
         INFO("create SDL screen : (%d, %d)\n",
              console_width, console_height);
 
@@ -265,7 +268,7 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
             dpy_surface->pf.amask);
     } else {
         INFO("create blank screen : (%d, %d)\n",
-             get_emul_lcd_width(), get_emul_lcd_height());
+             get_emul_resolution_width(), get_emul_resolution_height());
 
         surface_qemu = SDL_CreateRGBSurface(
             SDL_SWSURFACE,
@@ -496,20 +499,28 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
                     int dst_x = 0; int dst_y = 0;
                     int dst_w = 0; int dst_h = 0;
 
-                    if (current_scale_factor != 1.0) {
+                    unsigned int screen_width =
+                        get_emul_resolution_width() * current_scale_factor;
+                    unsigned int screen_height =
+                        get_emul_resolution_height() * current_scale_factor;
+
+                    int margin_w = screen_width - guide->w;
+                    int margin_h = screen_height - guide->h;
+
+                    if (margin_w < 0 || margin_h < 0) {
                         /* guide image scaling */
+                        int margin = (margin_w < margin_h)? margin_w : margin_h;
+                        dst_w = guide->w + margin;
+                        dst_h = guide->h + margin;
+
                         SDL_Surface *scaled_guide = SDL_CreateRGBSurface(
-                            SDL_SWSURFACE,
-                            guide->w * current_scale_factor,
-                            guide->h * current_scale_factor,
-                            get_emul_sdl_bpp(),
+                            SDL_SWSURFACE, dst_w, dst_h, get_emul_sdl_bpp(),
                             guide->format->Rmask, guide->format->Gmask,
                             guide->format->Bmask, guide->format->Amask);
 
-                        scaled_guide = maru_do_pixman_scale(guide, scaled_guide);
+                        scaled_guide = maru_do_pixman_scale(
+                            guide, scaled_guide, PIXMAN_FILTER_BEST);
 
-                        dst_w = scaled_guide->w;
-                        dst_h = scaled_guide->h;
                         dst_x = (surface_screen->w - dst_w) / 2;
                         dst_y = (surface_screen->h - dst_h) / 2;
                         SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
@@ -587,6 +598,21 @@ DisplayChangeListenerOps maru_dcl_ops = {
     .dpy_refresh       = qemu_ds_sdl_refresh,
 };
 
+void maruskin_sdl_interpolation(bool on)
+{
+    if (on == true) {
+        INFO("set PIXMAN_FILTER_BEST filter for image processing\n");
+
+        /* PIXMAN_FILTER_BILINEAR */
+        sdl_pixman_filter = PIXMAN_FILTER_BEST;
+    } else {
+        INFO("set PIXMAN_FILTER_FAST filter for image processing\n");
+
+        /* PIXMAN_FILTER_NEAREST */
+        sdl_pixman_filter = PIXMAN_FILTER_FAST;
+    }
+}
+
 static void qemu_update(void)
 {
     if (sdl_alteration == -1) {
@@ -609,7 +635,7 @@ static void qemu_update(void)
                 surface_qemu, rotated_screen,
                 (int)current_screen_degree);
             scaled_screen = maru_do_pixman_scale(
-                rotated_screen, scaled_screen);
+                rotated_screen, scaled_screen, sdl_pixman_filter);
 
             SDL_BlitSurface(scaled_screen, NULL, surface_screen, NULL);
         }
@@ -678,16 +704,16 @@ static void maru_sdl_resize_bh(void *opaque)
     INFO("Set up a video mode with the specified width, "
          "height and bits-per-pixel\n");
 
+    sdl_alteration = 1;
+    sdl_skip_update = 0;
+
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
 
-    sdl_alteration = 1;
-    sdl_skip_update = 0;
-
     /* get current setting information and calculate screen size */
-    display_width = get_emul_lcd_width();
-    display_height = get_emul_lcd_height();
+    display_width = get_emul_resolution_width();
+    display_height = get_emul_resolution_height();
     current_scale_factor = get_emul_win_scale();
 
     short rotaton_type = get_emul_rotation();
@@ -720,6 +746,11 @@ static void maru_sdl_resize_bh(void *opaque)
         ERR("Could not open SDL display (%dx%dx%d) : %s\n",
             surface_width, surface_height,
             get_emul_sdl_bpp(), SDL_GetError());
+
+#ifdef SDL_THREAD
+        pthread_mutex_unlock(&sdl_mutex);
+#endif
+
         return;
     }
 
@@ -745,7 +776,7 @@ static void maru_sdl_resize_bh(void *opaque)
     /* rearrange multi-touch finger points */
     if (get_emul_multi_touch_state()->multitouch_enable == 1 ||
             get_emul_multi_touch_state()->multitouch_enable == 2) {
-        rearrange_finger_points(get_emul_lcd_width(), get_emul_lcd_height(),
+        rearrange_finger_points(get_emul_resolution_width(), get_emul_resolution_height(),
             current_scale_factor, rotaton_type);
     }
 
@@ -807,8 +838,9 @@ void maruskin_sdl_init(uint64 swt_handle,
     INFO("register SDL environment variable. "
         "(SDL_WINDOWID = %s)\n", SDL_windowhack);
 
-    set_emul_lcd_size(display_width, display_height);
+    set_emul_resolution(display_width, display_height);
     set_emul_sdl_bpp(SDL_BPP);
+    maruskin_sdl_interpolation(false);
     init_multi_touch_state();
 
     if (blank_guide_enable == true) {
@@ -837,11 +869,11 @@ void maruskin_sdl_quit(void)
         qemu_bh_delete(sdl_resize_bh);
     }
 
+    sdl_alteration = -1;
+
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
-
-    sdl_alteration = -1;
 
     SDL_Quit();
 

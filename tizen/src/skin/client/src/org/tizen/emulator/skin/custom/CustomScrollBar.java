@@ -1,5 +1,5 @@
 /**
- *
+ * Custom Scroll Bar
  *
  * Copyright (C) 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -189,9 +189,9 @@ public class CustomScrollBar {
 					/* draw a thumb */
 					int heightScrollGap = compositeScroll.getMinHeight() - heightScrollBar;
 
-					float tempHeightThumb = (compositeScroll.getMinHeight() - heightScrollGap) *
+					int tempHeightThumb = (compositeScroll.getMinHeight() - heightScrollGap) *
 							dataShaft.heightShaft / compositeScroll.getMinHeight();
-					dataThumb.boundsThumb.height = Math.max(1, (int)tempHeightThumb);
+					dataThumb.boundsThumb.height = Math.max(1, tempHeightThumb);
 
 					dataThumb.boundsThumb.x = 2;
 					dataThumb.boundsThumb.y = getSelection() *
@@ -328,11 +328,11 @@ public class CustomScrollBar {
 				if (dataThumb.isGrabbed == true) {
 					int yDragged = e.y - dataThumb.yGrabPosition;
 
-					float yDraggedScale = yDragged *
+					int yDraggedScale = yDragged *
 							(compositeScroll.getMinHeight() - heightScrollBar) /
 							(dataShaft.heightShaft - dataThumb.boundsThumb.height);
 
-					setSelection(dataThumb.yGrabSelection + (int)yDraggedScale);
+					setSelection(dataThumb.yGrabSelection + yDraggedScale);
 					updateScrollbar();
 				}
 			}

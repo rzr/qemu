@@ -1,5 +1,5 @@
 /*
- * Emulator
+ * Emulator State Information
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -31,6 +31,7 @@
 
 #include "maru_common.h"
 #include "emul_state.h"
+#include "skin/maruskin_server.h"
 #include "debug_ch.h"
 
 #if defined(CONFIG_LINUX)
@@ -56,24 +57,24 @@ int get_emul_skin_enable(void)
     return _emul_info.skin_enable;
 }
 
-/* display screen size */
-void set_emul_lcd_size(int width, int height)
+/* display screen resolution */
+void set_emul_resolution(int width, int height)
 {
-    _emul_info.lcd_size_w = width;
-    _emul_info.lcd_size_h = height;
+    _emul_info.resolution_w = width;
+    _emul_info.resolution_h = height;
 
     INFO("emulator graphic resolution : %dx%d\n",
-        _emul_info.lcd_size_w, _emul_info.lcd_size_h);
+        _emul_info.resolution_w, _emul_info.resolution_h);
 }
 
-int get_emul_lcd_width(void)
+int get_emul_resolution_width(void)
 {
-    return _emul_info.lcd_size_w;
+    return _emul_info.resolution_w;
 }
 
-int get_emul_lcd_height(void)
+int get_emul_resolution_height(void)
 {
-    return _emul_info.lcd_size_h;
+    return _emul_info.resolution_h;
 }
 
 /* sdl bits per pixel */
@@ -164,13 +165,22 @@ int get_emulator_condition(void)
 
 void set_emulator_condition(int state)
 {
+    if (state == BOOT_COMPLETED) {
+        INFO("boot completed!\n");
+        // TODO:
+    } else if (state == RESET) {
+        INFO("reset emulator!\n");
+
+        notify_emul_reset();
+    }
+
     _emul_state.emulator_condition = state;
 }
 
 /* emulator window scale */
 void set_emul_win_scale(double scale_factor)
 {
-    if (scale_factor < 0.0 || scale_factor > 1.0) {
+    if (scale_factor < 0.0 || scale_factor > 2.0) {
         INFO("scale_factor is out of range : %f\n", scale_factor);
         scale_factor = 1.0;
     }

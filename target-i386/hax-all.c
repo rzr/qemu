@@ -1200,7 +1200,7 @@ int hax_sync_vcpus(void)
         if (!cpu)
             return 0;
 
-        for (; cpu != NULL; cpu = cpu->next_cpu) {
+        for (; cpu != NULL; cpu = CPU_NEXT(cpu)) {
             int ret;
 
             ret = hax_arch_set_registers(cpu->env_ptr);
@@ -1217,7 +1217,7 @@ int hax_sync_vcpus(void)
 void hax_reset_vcpu_state(void *opaque)
 {
     CPUState *cpu;
-    for (cpu = first_cpu; cpu != NULL; cpu = cpu->next_cpu)
+    for (cpu = first_cpu; cpu != NULL; cpu = CPU_NEXT(cpu))
     {
         CPUArchState *env = (CPUArchState *) cpu->env_ptr;
         dprint("*********ReSet hax_vcpu->emulation_state \n");

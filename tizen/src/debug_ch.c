@@ -42,6 +42,7 @@
 
 #include "emulator.h"
 #include "debug_ch.h"
+#include "osutil.h"
 
 static char debugchfile[512] = {0, };
 #ifdef _WIN32
@@ -309,7 +310,11 @@ static void debug_init(void)
             return;
         }
 
-        fseek(fp, 0, SEEK_SET);
+        if(fseek(fp, 0, SEEK_SET) != 0) {
+            fclose(fp);
+            fprintf(stderr, "failed to fseek()\n");
+            return;
+        }
         const char* str = fgets(tmp, 1024, fp);
         if (str) {
             tmp[strlen(tmp) - 1] = 0;
@@ -447,43 +452,21 @@ int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
     int ret = 0;
     int ret_write = 0;
     char buf_msg[2048];
-    char buf_time[128];
     va_list valist;
     int open_flags;
     int fd;
-
-#ifdef _WIN32
-    struct tm *ptm;
-#else
-    struct tm tm;
-#endif
-    qemu_timeval tv = { 0, 0 };
-    time_t ti;
 
     if (!(_dbg_get_channel_flags(channel) & (1 << cls))) {
         return -1;
     }
 
-    qemu_gettimeofday(&tv);
-    ti = tv.tv_sec;
-
-#ifdef _WIN32
-    ptm = localtime(&ti);
-    strftime(buf_time, sizeof(buf_time),
-             "%H:%M:%S", ptm);
-#else
-    localtime_r(&ti, &tm);
-    strftime(buf_time, sizeof(buf_time),
-             "%H:%M:%S", &tm);
-#endif
-
     ret += snprintf(buf_msg, sizeof(buf_msg),"%s [%s:%s",
-        buf_time, debug_classes[cls], channel->name);
+        get_timeofday(), debug_classes[cls], channel->name);
 
     if (*channel->multiname) {
-        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, ":%s]", channel->multiname);
+        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, ":%s] ", channel->multiname);
     } else {
-        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, "]");
+        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, "] ");
     }
 
     va_start(valist, format);

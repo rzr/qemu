@@ -182,7 +182,5 @@ typedef struct CPUWatchpoint {
                                                                         \
     /* user data */                                                     \
     void *opaque;                                                       \
-                                                                        \
-    const char *cpu_model_str;
 
 #endif

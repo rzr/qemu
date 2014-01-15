@@ -1,7 +1,7 @@
 /**
- * 
+ * Key Event Data
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -36,7 +36,6 @@ import java.io.IOException;
  *
  */
 public class KeyEventData extends AbstractSendData {
-
 	public int eventType;
 	public int keycode;
 	public int stateMask;
@@ -48,7 +47,7 @@ public class KeyEventData extends AbstractSendData {
 		this.stateMask = stateMask;
 		this.keyLocation = keyLocation;
 	}
-	
+
 	@Override
 	protected void write() throws IOException {
 		writeInt(eventType);
@@ -56,7 +55,7 @@ public class KeyEventData extends AbstractSendData {
 		writeInt(stateMask);
 		writeInt(keyLocation);
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
@@ -69,7 +68,7 @@ public class KeyEventData extends AbstractSendData {
 		builder.append(", keyLocation=");
 		builder.append(keyLocation);
 		builder.append("]");
+
 		return builder.toString();
 	}
-	
 }

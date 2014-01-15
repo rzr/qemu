@@ -50,7 +50,6 @@ MULTI_DEBUG_CHANNEL(qemu, maru_brightness);
 
 typedef struct BrightnessState {
     PCIDevice       dev;
-    ram_addr_t      vram_offset;
     MemoryRegion    mmio_addr;
 } BrightnessState;
 
@@ -59,7 +58,7 @@ enum {
     BRIGHTNESS_OFF = 0x04,
 };
 
-uint32_t brightness_level = BRIGHTNESS_MAX;
+uint32_t brightness_level;
 uint32_t brightness_off;
 pixman_color_t level_color;
 pixman_image_t *brightness_image;
@@ -167,20 +166,26 @@ static const MemoryRegionOps brightness_mmio_ops = {
 
 static void brightness_exitfn(PCIDevice *dev)
 {
+    BrightnessState *s = DO_UPCAST(BrightnessState, dev, dev);
+
     if (bh) {
         qemu_bh_delete(bh);
     }
     if (brightness_image) {
         pixman_image_unref(brightness_image);
+        brightness_image = NULL;
     }
+
+    memory_region_destroy(&s->mmio_addr);
+    INFO("<%s>\n", __func__);
 }
 
 static void maru_brightness_bh(void *opaque)
 {
     if (brightness_off == 0) {
-        notify_brightness(true);
+        notify_brightness_state(true);
     } else {
-        notify_brightness(false);
+        notify_brightness_state(false);
     }
 }
 
@@ -198,12 +203,13 @@ static int brightness_initfn(PCIDevice *dev)
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
 
     bh = qemu_bh_new(maru_brightness_bh, s);
-
+    brightness_level = BRIGHTNESS_MAX;
     level_color.alpha = 0x0000;
     level_color.red = 0x0000;
     level_color.green = 0x0000;
     level_color.blue = 0x0000;
     brightness_image = pixman_image_create_solid_fill(&level_color);
+    INFO("Init complete: Maru brightness\n");
 
     return 0;
 }

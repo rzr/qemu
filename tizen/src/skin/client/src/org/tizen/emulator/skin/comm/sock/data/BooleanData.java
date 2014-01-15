@@ -1,7 +1,7 @@
 /**
- * 
+ * Boolean Data
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -36,15 +36,14 @@ import java.io.IOException;
  *
  */
 public class BooleanData extends AbstractSendData {
-
 	private boolean booleanValue;
 	private String dataName;
 	
-	public BooleanData( boolean booleanValue ) {
+	public BooleanData(boolean booleanValue) {
 		this.booleanValue = booleanValue;
 	}
 
-	public BooleanData( boolean booleanValue, String dataName) {
+	public BooleanData(boolean booleanValue, String dataName) {
 		this.booleanValue = booleanValue;
 		this.dataName = dataName;
 	}
@@ -54,18 +53,18 @@ public class BooleanData extends AbstractSendData {
 	 */
 	@Override
 	protected void write() throws IOException {
-		writeBoolean( booleanValue );
+		writeBoolean(booleanValue);
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append( "BooleanData [booleanValue=" );
-		builder.append( booleanValue );
-		builder.append( ", dataName=" );
-		builder.append( dataName );
-		builder.append( "]" );
+		builder.append("BooleanData [booleanValue=");
+		builder.append(booleanValue);
+		builder.append(", dataName=");
+		builder.append(dataName);
+		builder.append("]");
+
 		return builder.toString();
 	}
-
 }

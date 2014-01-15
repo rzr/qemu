@@ -49,6 +49,7 @@
 #include "sdb.h"
 #include "ecs.h"
 #include "guest_server.h"
+#include "emul_state.h"
 
 #include "genmsg/ecs.pb-c.h"
 
@@ -69,7 +70,22 @@ static int payloadsize;
 static int port;
 static int port_setting = -1;
 
+static int log_fd = -1;
+static int g_client_id = 1;
+
 static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
+
+static int suspend_state = 1;
+
+void ecs_set_suspend_state(int state)
+{
+    suspend_state = state;
+}
+
+int ecs_get_suspend_state(void)
+{
+    return suspend_state;
+}
 
 static char* get_emulator_ecs_log_path(void)
 {
@@ -103,6 +119,36 @@ static char* get_emulator_ecs_log_path(void)
     return emulator_ecs_log_path;
 }
 
+static char* get_emulator_ecs_prop_path(void)
+{
+    int path_len = 0;
+    gchar *ecs_property_path = NULL;
+    gchar *tizen_sdk_data = NULL;
+#ifndef CONFIG_WIN32
+    char emulator_vms[] = "/emulator/vms/";
+    char ecs_prop[] = "/.ecs.properties";
+#else
+    char emulator_vms[] = "\\emulator\\vms\\";
+    char ecs_prop[] = "\\.ecs.properties";
+#endif
+    char* emul_name = get_emul_vm_name();
+
+    tizen_sdk_data = get_tizen_sdk_data_path();
+    if (!tizen_sdk_data) {
+        LOG("failed to get tizen-sdk-data path.\n");
+        return NULL;
+    }
+
+    path_len = strlen(tizen_sdk_data) + sizeof(emulator_vms) + sizeof(ecs_prop) + strlen(emul_name);
+    ecs_property_path = g_malloc(path_len + 1);
+    g_snprintf(ecs_property_path, path_len, "%s%s%s%s", tizen_sdk_data, emulator_vms, emul_name, ecs_prop);
+
+    g_free(tizen_sdk_data);
+    LOG("ecs property path: %s", ecs_property_path);
+
+    return ecs_property_path;
+}
+
 static inline void start_logging(void) {
     char* path = get_emulator_ecs_log_path();
     if (!path)
@@ -116,7 +162,7 @@ static inline void start_logging(void) {
     if (fnul != NULL)
     stdin[0] = fnul[0];
 
-    flog = fopen(path, "at");
+    flog = fopen(path, "wt+");
     if (flog == NULL)
     flog = fnul;
 
@@ -124,17 +170,53 @@ static inline void start_logging(void) {
 
     stdout[0] = flog[0];
     stderr[0] = flog[0];
-#else
-    int fd = open("/dev/null", O_RDONLY);
-    dup2(fd, 0);
 
-    fd = creat(path, 0640);
-    if (fd < 0) {
-        fd = open("/dev/null", O_WRONLY);
+    g_free(path);
+#else
+    log_fd = open("/dev/null", O_RDONLY);
+    if(log_fd < 0) {
+        fprintf(stderr, "failed to open() /dev/null\n");
+        return;
     }
-    dup2(fd, 1);
-    dup2(fd, 2);
+    if(dup2(log_fd, 0) < 0) {
+        fprintf(stderr, "failed to dup2(log_fd, 0)\n");
+        return;
+    }
+
+    log_fd = creat(path, 0640);
+    if (log_fd < 0) {
+        log_fd = open("/dev/null", O_WRONLY);
+        if(log_fd < 0) {
+            fprintf(stderr, "failed to open(/dev/null, O_WRONLY)\n");
+            g_free(path);
+            return;
+        }
+    }
+
+    if(dup2(log_fd, 1) < 0) {
+        fprintf(stderr, "failed to dup2(log_fd, 1)\n");
+        g_free(path);
+        return;
+    }
+
+    if(dup2(log_fd, 2) < 0) {
+        fprintf(stderr, "failed to dup2(log_fd, 2)\n");
+        g_free(path);
+        return;
+    }
+
+    g_free(path);
 #endif
+}
+
+static inline void stop_logging(void) {
+    int ret = -1;
+    if (log_fd >= 0) {
+        ret = close(log_fd);
+        if (ret != 0) {
+            LOG("failed to close log fd.");
+        }
+    }
 }
 
 int ecs_write(int fd, const uint8_t *buf, int len) {
@@ -147,9 +229,12 @@ int ecs_write(int fd, const uint8_t *buf, int len) {
 }
 
 void ecs_client_close(ECS_Client* clii) {
+    if (clii == NULL)
+        return;
+
     pthread_mutex_lock(&mutex_clilist);
 
-    if (0 <= clii->client_fd) {
+    if (clii->client_fd > 0) {
         LOG("ecs client closed with fd: %d", clii->client_fd);
         closesocket(clii->client_fd);
 #ifndef CONFIG_LINUX
@@ -159,10 +244,9 @@ void ecs_client_close(ECS_Client* clii) {
     }
 
     QTAILQ_REMOVE(&clients, clii, next);
-    if (NULL != clii) {
-        g_free(clii);
-        clii = NULL;
-    }
+
+    g_free(clii);
+    clii = NULL;
 
     pthread_mutex_unlock(&mutex_clilist);
 }
@@ -182,6 +266,12 @@ bool send_to_all_client(const char* data, const int len) {
     return true;
 }
 
+void send_to_single_client(ECS_Client *clii, const char* data, const int len)
+{
+    pthread_mutex_lock(&mutex_clilist);
+    send_to_client(clii->client_fd, data, len);
+    pthread_mutex_unlock(&mutex_clilist);
+}
 
 void send_to_client(int fd, const char* data, const int len)
 {
@@ -208,6 +298,18 @@ bool ntf_to_monitor(const char* data, const int len) {
     return true;
 }
 
+void print_binary(const char* data, const int len) {
+    int i;
+    printf("[DATA: ");
+    for(i = 0; i < len; i++) {
+        if(i == len - 1) {
+            printf("%02x]\n", data[i]);
+        } else {
+            printf("%02x,", data[i]);
+        }
+    }
+}
+
 void ecs_make_header(QDict* obj, type_length length, type_group group,
         type_action action) {
     qdict_put(obj, "length", qint_from_int((int64_t )length));
@@ -231,13 +333,16 @@ static void ecs_close(ECS_State *cs) {
     ECS_Client *clii;
     LOG("### Good bye! ECS ###");
 
+    if (cs == NULL)
+        return;
+
     if (0 <= cs->listen_fd) {
         LOG("close listen_fd: %d", cs->listen_fd);
         closesocket(cs->listen_fd);
         cs->listen_fd = -1;
     }
 
-    if (NULL != cs->mon) {
+    if (cs->mon != NULL) {
         g_free(cs->mon);
         cs->mon = NULL;
     }
@@ -246,8 +351,8 @@ static void ecs_close(ECS_State *cs) {
         g_free(keepalive_buf);
     }
 
-    if (NULL != cs->alive_timer) {
-        qemu_del_timer(cs->alive_timer);
+    if (cs->alive_timer != NULL) {
+        timer_del(cs->alive_timer);
         cs->alive_timer = NULL;
     }
 
@@ -256,10 +361,11 @@ static void ecs_close(ECS_State *cs) {
         ecs_client_close(clii);
     }
 
-    if (NULL != cs) {
-        g_free(cs);
-        cs = NULL;
-    }
+    g_free(cs);
+    cs = NULL;
+    current_ecs = NULL;
+
+    stop_logging();
 }
 
 #ifndef _WIN32
@@ -323,7 +429,7 @@ static void ecs_read(ECS_Client *cli) {
 #endif
 
     if (to_read_bytes == 0) {
-        LOG("ioctl FIONREAD: 0\n");
+        LOG("ioctl FIONREAD: 0");
         goto fail;
     }
 
@@ -403,6 +509,17 @@ static ECS_Client *ecs_find_client(int fd) {
     return NULL;
 }
 
+ECS_Client *find_client(unsigned char id, unsigned char type) {
+    ECS_Client *clii;
+
+    QTAILQ_FOREACH(clii, &clients, next)
+    {
+        if (clii->client_id == id && clii->client_type == type)
+            return clii;
+    }
+    return NULL;
+}
+
 static int ecs_add_client(ECS_State *cs, int fd) {
 
     ECS_Client *clii = g_malloc0(sizeof(ECS_Client));
@@ -417,6 +534,7 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 
     clii->client_fd = fd;
     clii->cs = cs;
+    clii->client_type = TYPE_NONE;
 
     ecs_json_message_parser_init(&clii->parser, handle_qmp_command, clii);
 
@@ -491,7 +609,7 @@ static void epoll_init(ECS_State *cs) {
 #endif
 
 static void send_keep_alive_msg(ECS_Client *clii) {
-    send_to_client(clii->client_fd, keepalive_buf, payloadsize);
+    send_to_single_client(clii, keepalive_buf, payloadsize);
 }
 
 static void make_keep_alive_msg(void) {
@@ -543,8 +661,13 @@ static void alive_checker(void *opaque) {
         send_keep_alive_msg(clii);
     }
 
-    qemu_mod_timer(current_ecs->alive_timer,
-            qemu_get_clock_ns(vm_clock) + get_ticks_per_sec() * TIMER_ALIVE_S);
+    if (current_ecs == NULL) {
+        LOG("alive checking is failed because current ecs is null.");
+        return;
+    }
+
+    timer_mod(current_ecs->alive_timer,
+            qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + get_ticks_per_sec() * TIMER_ALIVE_S);
 
 }
 
@@ -574,10 +697,10 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
 
     make_keep_alive_msg();
 
-    cs->alive_timer = qemu_new_timer_ns(vm_clock, alive_checker, cs);
+    cs->alive_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, alive_checker, cs);
 
-    qemu_mod_timer(cs->alive_timer,
-            qemu_get_clock_ns(vm_clock) + get_ticks_per_sec() * TIMER_ALIVE_S);
+    timer_mod(cs->alive_timer,
+            qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + get_ticks_per_sec() * TIMER_ALIVE_S);
 
     return 0;
 }
@@ -668,30 +791,52 @@ static int ecs_loop(ECS_State *cs)
 
 #endif
 
-static int check_port(int port) {
-    int try = EMULATOR_SERVER_NUM;
-
-    for (; try > 0; try--) {
-        if (0 <= check_port_bind_listen(port)) {
-            LOG("Listening port is %d", port);
-            return port;
-        }
-        port++;
-    }
-    return -1;
-}
-
 int get_ecs_port(void) {
     if (port_setting < 0) {
         LOG("ecs port is not determined yet.");
         return 0;
     }
+    LOG("requests ecs port, and port is %d", port);
     return port;
+}
+
+static int set_ecs_port(int port) {
+    FILE* fprop;
+    char* path = get_emulator_ecs_prop_path();
+    if (!path)
+        return -1;
+
+    fprop = fopen(path, "wt+");
+    if (fprop == NULL) {
+        return -1;
+    }
+
+    fprintf(fprop, "%d", port);
+    fclose(fprop);
+
+    g_free(path);
+
+    return 0;
+}
+
+static int setting_ecs_port(ECS_State *cs) {
+    struct sockaddr server_addr;
+    socklen_t server_len;
+
+    server_len = sizeof(server_addr);
+    memset(&server_addr, 0, sizeof(server_addr));
+    if (getsockname(cs->listen_fd, (struct sockaddr *) &server_addr, &server_len) < 0) {
+        return -1;
+    }
+
+    port = ntohs( ((struct sockaddr_in *) &server_addr)->sin_port );
+    LOG("listen port is %d", port);
+
+    return set_ecs_port(port);
 }
 
 static void* ecs_initialize(void* args) {
     int ret = 1;
-    int index;
     ECS_State *cs = NULL;
     QemuOpts *opts = NULL;
     Error *local_err = NULL;
@@ -708,12 +853,6 @@ static void* ecs_initialize(void* args) {
         return NULL;
     }
 
-    port = check_port(HOST_LISTEN_PORT);
-    if (port < 0) {
-        LOG("None of port is available.");
-        return NULL;
-    }
-
     qemu_opt_set(opts, "host", HOST_LISTEN_ADDR);
 
     cs = g_malloc0(sizeof(ECS_State));
@@ -722,27 +861,18 @@ static void* ecs_initialize(void* args) {
         return NULL;
     }
 
-    for (index = 0; index < EMULATOR_SERVER_NUM; index ++) {
-        sprintf(host_port, "%d", port);
-        qemu_opt_set(opts, "port", host_port);
-        ret = socket_initialize(cs, opts);
-        if (0 > ret) {
-            LOG("socket initialization failed with port %d. next trial", port);
-            port ++;
-
-            port = check_port(port);
-            if (port < 0) {
-                LOG("None of port is available.");
-                break;
-            }
-        } else {
-            break;
-        }
+    sprintf(host_port, "%d", port);
+    qemu_opt_set(opts, "port", host_port);
+    ret = socket_initialize(cs, opts);
+    if (ret < 0) {
+        LOG("Socket initialization is failed.");
+        ecs_close(cs);
+        return NULL;
     }
 
-    if (0 > ret) {
-        LOG("socket resource is full.");
-        port = -1;
+    if (setting_ecs_port(cs) < 0) {
+        LOG("Failed to get random port.");
+        ecs_close(cs);
         return NULL;
     }
 
@@ -816,6 +946,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
     }
     else if (master->type == ECS__MASTER__TYPE__DEVICE_REQ)
     {
+        cli->client_type = TYPE_ECP;
         ECS__DeviceReq* msg = master->device_req;
         if (!msg)
             goto fail;
@@ -826,8 +957,38 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
         ECS__NfcReq* msg = master->nfc_req;
         if (!msg)
             goto fail;
+
+        pthread_mutex_lock(&mutex_clilist);
+        if(cli->client_type == TYPE_NONE) {
+            if (!strncmp(msg->category, MSG_TYPE_NFC, 3)) {
+                QTAILQ_REMOVE(&clients, cli, next);
+                cli->client_type = TYPE_ECP;
+                if(g_client_id > 255) {
+                    g_client_id = 1;
+                }
+                cli->client_id = g_client_id++;
+
+                QTAILQ_INSERT_TAIL(&clients, cli, next);
+            }
+            else if (!strncmp(msg->category, MSG_TYPE_SIMUL_NFC, 9)) {
+                QTAILQ_REMOVE(&clients, cli, next);
+                cli->client_type = TYPE_SIMUL_NFC;
+                if(g_client_id > 255) {
+                    g_client_id = 1;
+                }
+                cli->client_id = g_client_id++;
+                QTAILQ_INSERT_TAIL(&clients, cli, next);
+            }
+            else {
+                LOG("unsupported category is found: %s", msg->category);
+                pthread_mutex_unlock(&mutex_clilist);
+                goto fail;
+            }
+        }
+        pthread_mutex_unlock(&mutex_clilist);
+
         msgproc_nfc_req(cli, msg);
-	}
+    }
 #if 0
     else if (master->type == ECS__MASTER__TYPE__CHECKVERSION_REQ)
     {
@@ -844,6 +1005,13 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             goto fail;
         msgproc_keepalive_ans(cli, msg);
     }
+    else if (master->type == ECS__MASTER__TYPE__TETHERING_REQ)
+    {
+        ECS__TetheringReq* msg = master->tethering_req;
+        if (!msg)
+            goto fail;
+        msgproc_tethering_req(cli, msg);
+    }
 
     ecs__master__free_unpacked(master, NULL);
     return true;
@@ -852,4 +1020,3 @@ fail:
     ecs__master__free_unpacked(master, NULL);
     return false;
 } 
-

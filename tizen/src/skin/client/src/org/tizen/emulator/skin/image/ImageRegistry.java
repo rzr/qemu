@@ -78,8 +78,7 @@ public class ImageRegistry {
 		ADVANCED("advanced.png"),
 		CLOSE("close.png"),
 		SCREENSHOT("screenshot.png"),
-		USB_KEYBOARD("usb_keyboard.png"),
-		HOST_KEYBOARD("host_keyboard.png"),
+		HOST_KBD("host_keyboard.png"),
 		DIAGNOSIS("diagnosis.png"),
 		FORCE_CLOSE("force_close.png"),
 		ABOUT("about.png"),
@@ -224,7 +223,9 @@ public class ImageRegistry {
 
 			while (imageIterator.hasNext()) {
 				image = imageIterator.next();
-				image.dispose();
+				if (image != null) {
+					image.dispose();
+				}
 			}
 		}
 	}

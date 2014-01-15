@@ -1,5 +1,5 @@
 /**
- * 
+ * Emulator Configuration Information
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -43,7 +43,6 @@ import java.util.logging.Logger;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.ConfigException;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -61,14 +60,16 @@ public class EmulatorConfig {
 	public static final String INVALID_OPTION_MESSAGE =
 			"An invalid option have caused the error.\n";
 
-	private static Logger logger =
-			SkinLogger.getSkinLogger(EmulatorConfig.class).getLogger();
-
-	public static final int DEFAULT_WINDOW_SCALE = Scale.SCALE_50.value();
+	public static final int DEFAULT_WINDOW_SCALE = 50;
+	public static final int MIN_SCALE_FACTOR = 25;
+	public static final int MAX_SCALE_FACTOR = 200;
 	public static final short DEFAULT_WINDOW_ROTATION = RotationInfo.PORTRAIT.id();
 	public static final int DEFAULT_WINDOW_X = 50;
 	public static final int DEFAULT_WINDOW_Y = 50;
 	public static final SkinLogLevel DEFAULT_LOG_LEVEL = SkinLogLevel.DEBUG;
+
+	private static Logger logger =
+			SkinLogger.getSkinLogger(EmulatorConfig.class).getLogger();
 
 	public interface ArgsConstants {
 		public static final String SIMPLE_MESSAGE = "simple.msg";
@@ -93,6 +94,7 @@ public class EmulatorConfig {
 		public static final String WINDOW_ROTATION = "window.rotate";
 		public static final String WINDOW_SCALE = "window.scale";
 		public static final String WINDOW_ONTOP = "window.ontop"; /* always on top */
+		public static final String WINDOW_INTERPOLATION = "window.interpolation";
 		public static final String KEYWINDOW_POSITION = "window.keywindow.position";
 	}
 
@@ -137,21 +139,29 @@ public class EmulatorConfig {
 
 		File file = new File(versionFilePath);
 
-		try {
-			if (file.exists() && file.isFile()) {
-				BufferedReader reader = new BufferedReader(
-						new FileReader(versionFilePath));
-
-				strVersion = reader.readLine();
-
-				reader.close();
-			} else {
-				logger.warning("cannot read version from " + versionFilePath);
+		if (file.exists() == false || file.isFile() == false) {
+			logger.warning("cannot read version from " + versionFilePath);
+		} else {
+			BufferedReader reader = null;
+			try {
+				reader = new BufferedReader(new FileReader(file));
+			} catch (FileNotFoundException e) {
+				logger.warning(e.getMessage());
 			}
-		} catch (FileNotFoundException e) {
-			logger.log(Level.SEVERE, e.getMessage(), e);
-		} catch (IOException e) {
-			logger.log(Level.SEVERE, e.getMessage(), e);
+
+			if (reader != null) {
+				try {
+					strVersion = reader.readLine();
+				} catch (IOException e) {
+					logger.warning(e.getMessage());
+				}
+
+				try {
+					reader.close();
+				} catch (IOException e) {
+					logger.warning(e.getMessage());
+				}
+			}
 		}
 
 		logger.info("SDK version : " + strVersion);
@@ -161,7 +171,8 @@ public class EmulatorConfig {
 
 	public static void validateArgs(Map<String, String> args) throws ConfigException {
 		if (null == args) {
-			return;
+			String msg = INVALID_OPTION_MESSAGE;
+			throw new ConfigException(msg);
 		}
 
 		if (args.containsKey(ArgsConstants.UID)) {
@@ -231,69 +242,34 @@ public class EmulatorConfig {
 			return;
 		}
 
-		Rectangle monitorBound = Display.getDefault().getBounds();
-		logger.info("current display size : " + monitorBound);
-
 		if (skinProperties.containsKey(
 				SkinPropertiesConstants.WINDOW_X) == true) {
-			String x = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_X);
-			int xx = 0;
+			String window_x = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_X);
 
 			try {
-				xx = Integer.parseInt(x);
+				Integer.parseInt(window_x);
 			} catch (NumberFormatException e) {
 				String msg = SkinPropertiesConstants.WINDOW_X +
-						" in .skin.properties is not numeric : " + x;
+						" in .skin.properties is not numeric : " + window_x;
 				logger.warning(msg);
 
-				xx = DEFAULT_WINDOW_X;
+				skinProperties.remove(SkinPropertiesConstants.WINDOW_X);
 			}
-
-			/* location correction */
-			if (xx < monitorBound.x) {
-				int correction = monitorBound.x;
-				logger.info("WINDOW_X = " + xx + ", set to " + correction);
-				xx = correction;
-			} else if (xx > monitorBound.x + monitorBound.width - 30) {
-				int correction = monitorBound.x + monitorBound.width - 100;
-				logger.info("WINDOW_X = " + xx + ", set to " + correction);
-				xx = correction;
-			} else {
-				logger.info("WINDOW_X = " + xx);
-			}
-
-			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_X, "" + xx);
 		}
 
 		if (skinProperties.containsKey(
-				SkinPropertiesConstants.WINDOW_Y ) == true) {
-			String y = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_Y);
-			int yy = 0;
+				SkinPropertiesConstants.WINDOW_Y) == true) {
+			String window_y = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_Y);
 
 			try {
-				yy = Integer.parseInt(y);
+				Integer.parseInt(window_y);
 			} catch (NumberFormatException e) {
 				String msg = SkinPropertiesConstants.WINDOW_Y +
-						" in .skin.properties is not numeric. : " + y;
+						" in .skin.properties is not numeric. : " + window_y;
 				logger.warning(msg);
 
-				yy = DEFAULT_WINDOW_Y;
+				skinProperties.remove(SkinPropertiesConstants.WINDOW_Y);
 			}
-
-			/* location correction */
-			if (yy < monitorBound.y) {
-				int correction = monitorBound.y;
-				logger.info("WINDOW_Y = " + yy + ", set to " + correction);
-				yy = correction;
-			} else if (yy > monitorBound.y + monitorBound.height - 30) {
-				int correction = monitorBound.y + monitorBound.height - 100;
-				logger.info("WINDOW_Y = " + yy + ", set to " + correction);
-				yy = correction;
-			} else {
-				logger.info("WINDOW_Y = " + yy);
-			}
-
-			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_Y, "" + yy);
 		}
 
 		if (skinProperties.containsKey(
@@ -307,26 +283,38 @@ public class EmulatorConfig {
 						" in .skin.properties is not numeric. : " + rotation;
 				logger.warning(msg);
 
-				// TODO:
+				skinProperties.remove(SkinPropertiesConstants.WINDOW_ROTATION);
 			}
 		}
 
 		if (skinProperties.containsKey(
 				SkinPropertiesConstants.WINDOW_SCALE) == true) {
 			String scale = skinProperties.getProperty(SkinPropertiesConstants.WINDOW_SCALE);
-			int percent = 0;
 
 			try {
-				percent = Integer.parseInt(scale);
+				Integer.parseInt(scale);
 			} catch (NumberFormatException e) {
 				String msg = SkinPropertiesConstants.WINDOW_SCALE +
 						" in .skin.properties is not numeric. : " + scale;
 				logger.warning(msg);
 
-				percent = DEFAULT_WINDOW_SCALE;
+				skinProperties.remove(SkinPropertiesConstants.WINDOW_SCALE);
 			}
+		}
 
-			skinProperties.setProperty(SkinPropertiesConstants.WINDOW_SCALE, "" + percent);
+		if (skinProperties.containsKey(
+				SkinPropertiesConstants.KEYWINDOW_POSITION) == true) {
+			String position = skinProperties.getProperty(SkinPropertiesConstants.KEYWINDOW_POSITION);
+
+			try {
+				Integer.parseInt(position);
+			} catch (NumberFormatException e) {
+				String msg = SkinPropertiesConstants.KEYWINDOW_POSITION +
+						" in .skin.properties is not numeric. : " + position;
+				logger.warning(msg);
+
+				skinProperties.remove(SkinPropertiesConstants.KEYWINDOW_POSITION);
+			}
 		}
 	}
 
@@ -336,7 +324,7 @@ public class EmulatorConfig {
 			return;
 		}
 
-		// TODO:
+		// TODO: HEART_BEAT_IGNORE, LOG_LEVEL
 	}
 
 	public void saveSkinProperties() {
@@ -411,6 +399,26 @@ public class EmulatorConfig {
 			return defaultValue;
 		}
 		return Boolean.parseBoolean(arg);
+	}
+
+	public int getValidResolutionWidth() {
+		final int storedValue = getArgInt(ArgsConstants.RESOLUTION_WIDTH, 1);
+
+		if (storedValue > 0) {
+			return storedValue;
+		} else {
+			return 1;
+		}
+	}
+
+	public int getValidResolutionHeight() {
+		final int storedValue = getArgInt(ArgsConstants.RESOLUTION_HEIGHT, 1);
+
+		if (storedValue > 0) {
+			return storedValue;
+		} else {
+			return 1;
+		}
 	}
 
 	/* java properties */
@@ -492,6 +500,66 @@ public class EmulatorConfig {
 
 	public void setSkinProperty(String key, int value) {
 		setProperty(skinProperties, key, value);
+	}
+
+	public int getValidWindowX() {
+		int vmIndex = getArgInt(ArgsConstants.VM_BASE_PORT) % 100;
+		final int storedValue = getSkinPropertyInt(SkinPropertiesConstants.WINDOW_X,
+				EmulatorConfig.DEFAULT_WINDOW_X + vmIndex);
+
+		Rectangle monitorBound = Display.getDefault().getBounds();
+		logger.info("current display size : " + monitorBound);
+
+		/* location correction */
+		int xx = 0;
+		if (storedValue < monitorBound.x) {
+			xx = monitorBound.x;
+			logger.info("WINDOW_X = " + storedValue + " -> " + xx);
+		} else if (storedValue > monitorBound.x + monitorBound.width - 30) {
+			xx = monitorBound.x + monitorBound.width - 100;
+			logger.info("WINDOW_X = " + storedValue + " -> " + xx);
+		} else {
+			xx = storedValue;
+			logger.info("WINDOW_X = " + xx);
+		}
+
+		return xx;
+	}
+
+	public int getValidWindowY() {
+		int vmIndex = getArgInt(ArgsConstants.VM_BASE_PORT) % 100;
+		final int storedValue = getSkinPropertyInt(SkinPropertiesConstants.WINDOW_Y,
+				EmulatorConfig.DEFAULT_WINDOW_Y + vmIndex);
+
+		Rectangle monitorBound = Display.getDefault().getBounds();
+		logger.info("current display size : " + monitorBound);
+
+		/* location correction */
+		int yy = 0;
+		if (storedValue < monitorBound.y) {
+			yy = monitorBound.y;
+			logger.info("WINDOW_Y = " + storedValue + " -> " + yy);
+		} else if (storedValue > monitorBound.y + monitorBound.height - 30) {
+			yy = monitorBound.y + monitorBound.height - 100;
+			logger.info("WINDOW_Y = " + storedValue + " -> " + yy);
+		} else {
+			yy = storedValue;
+			logger.info("WINDOW_Y = " + yy);
+		}
+
+		return yy;
+	}
+
+	public int getValidScale() {
+		final int storedScale = getSkinPropertyInt(
+				SkinPropertiesConstants.WINDOW_SCALE, DEFAULT_WINDOW_SCALE);
+
+		if (storedScale >= MIN_SCALE_FACTOR &&
+				storedScale <= MAX_SCALE_FACTOR) { /* percentage */
+			return storedScale;
+		} else {
+			return DEFAULT_WINDOW_SCALE;
+		}
 	}
 
 	/* config properties */

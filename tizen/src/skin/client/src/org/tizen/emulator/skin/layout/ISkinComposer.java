@@ -1,7 +1,7 @@
 /**
- * 
+ * Skin Composer Interface
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -38,9 +38,10 @@ public interface ISkinComposer {
 			int x, int y, int scale, short rotationId);
 
 	public abstract void arrangeSkin(int scale, short rotationId);
+	public abstract void updateSkin();
 
-	public abstract Rectangle adjustLcdGeometry(
-			Canvas lcdCanvas, int resolutionW, int resolutionH,
+	public abstract Rectangle adjustDisplayGeometry(
+			Canvas displayCanvas, int resolutionW, int resolutionH,
 			int scale, short rotationId);
 
 	public abstract void composerFinalize();

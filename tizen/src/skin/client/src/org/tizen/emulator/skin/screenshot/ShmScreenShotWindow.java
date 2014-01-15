@@ -1,5 +1,5 @@
 /**
- * Capture a screenshot of the Emulator framebuffer
+ * Screenshot Window
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -32,12 +32,11 @@ import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorShmSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.log.SkinLogger;
 
@@ -45,29 +44,32 @@ public class ShmScreenShotWindow extends ScreenShotDialog {
 	private static Logger logger = SkinLogger.getSkinLogger(
 			ShmScreenShotWindow.class).getLogger();
 
+	private PaletteData palette;
+
 	/**
 	 * @brief constructor
 	 * @param Image icon : screenshot window icon resource
 	*/
-	public ShmScreenShotWindow(Shell parent,
-			EmulatorShmSkin emulatorSkin, EmulatorConfig config,
-			Image icon) throws ScreenShotException {
-		super(parent, emulatorSkin, config, icon);
+	public ShmScreenShotWindow(EmulatorShmSkin emulatorSkin,
+			EmulatorConfig config, PaletteData palette, Image icon) {
+		super(emulatorSkin, config, icon);
+
+		this.palette = palette;
 	}
 
 	protected void capture() throws ScreenShotException {
 		logger.info("screenshot capture");
 
-		int width = config.getArgInt(ArgsConstants.RESOLUTION_WIDTH);
-		int height = config.getArgInt(ArgsConstants.RESOLUTION_HEIGHT);
-
+		int width = skin.getEmulatorSkinState().getCurrentResolutionWidth();
+		int height = skin.getEmulatorSkinState().getCurrentResolutionHeight();
 		int[] arrayFramebuffer = new int[width * height];
 
 		//int result =
-		((EmulatorShmSkin) emulatorSkin).getPixels(arrayFramebuffer);
+		((EmulatorShmSkin) skin).getPixels(arrayFramebuffer);
 		//logger.info("getPixels native function returned " + result);
 
-		ImageData imageData = new ImageData(width, height, 24, paletteData_ARGB);
+		ImageData imageData = new ImageData(width, height,
+				EmulatorShmSkin.DISPLAY_COLOR_DEPTH, palette);
 		/* from shared memory */
 		imageData.setPixels(0, 0,
 				width * height, arrayFramebuffer, 0);
@@ -75,13 +77,13 @@ public class ShmScreenShotWindow extends ScreenShotDialog {
 		RotationInfo rotation = getCurrentRotation();
 		imageData = rotateImageData(imageData, rotation);
 
-		Image tempImage = image;
-		image = new Image(Display.getDefault(), imageData);
+		Image tempImage = imageShot;
+		imageShot = new Image(Display.getDefault(), imageData);
 
 		if (tempImage != null) {
 			tempImage.dispose();
 		}
 
-		imageCanvas.redraw();
+		canvasShot.redraw();
 	}
 }

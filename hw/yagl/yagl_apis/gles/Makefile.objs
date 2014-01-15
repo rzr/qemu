@@ -1,0 +1,6 @@
+# GLES api
+obj-y += yagl_gles_api.o
+obj-y += yagl_gles_api_ps.o
+obj-y += yagl_gles_api_ts.o
+obj-y += yagl_gles_calls.o
+obj-y += yagl_host_gles_calls.o

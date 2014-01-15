@@ -47,17 +47,13 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
-import org.tizen.emulator.skin.comm.ICommunicator.Scale;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.dbi.EventInfoType;
 import org.tizen.emulator.skin.dbi.KeyMapListType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
-import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
-import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
 import org.tizen.emulator.skin.layout.HWKey;
 import org.tizen.emulator.skin.log.SkinLogger;
 
@@ -73,7 +69,8 @@ public class SkinUtil {
 
 	public static final int UNKNOWN_KEYCODE = -1;
 	public static final int SCALE_CONVERTER = 100;
-	public static final String EMULATOR_PREFIX = "emulator";
+
+	public static final String EMULATOR_PREFIX = "Emulator";
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(SkinUtil.class).getLogger();
@@ -177,7 +174,8 @@ public class SkinUtil {
 				HWKey hwKey = new HWKey(
 						eventInfo.getKeyName(),
 						eventInfo.getKeyCode(),
-						new SkinRegion(scaledX, scaledY, scaledWidth, scaledHeight),
+						new HWKeyRegion(scaledX, scaledY, scaledWidth, scaledHeight,
+								keyEntry.getRegion().isUpdate()),
 						keyEntry.getTooltip());
 
 				return hwKey;
@@ -199,41 +197,38 @@ public class SkinUtil {
 		return false;
 	}
 
-	public static void trimShell(Shell shell, Image image) {
-		/* trim transparent pixels in image.
-		 * especially, corner round areas. */
+	public static Region getTrimmingRegion(Image image) {
 		if (null == image) {
-			return;
+			return null;
 		}
 
 		ImageData imageData = image.getImageData();
-
 		int width = imageData.width;
 		int height = imageData.height;
 
 		Region region = new Region();
 		region.add(new Rectangle(0, 0, width, height));
 
+		int j = 0;
 		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
-				int alpha = imageData.getAlpha(i, j);
-				if (0 == alpha) {
+			for (j = 0; j < height; j++) {
+				if (0 == imageData.getAlpha(i, j)) {
 					region.subtract(i, j, 1, 1);
 				}
 			}
 		}
 
-		shell.setRegion(region);
+		return region;
 	}
 
 	public static void trimShell(Shell shell, Image image,
 			int left, int top, int width, int height) {
-		if (null == image) {
+		if (image == null
+				|| (width == 0 && height == 0)) {
 			return;
 		}
 
 		ImageData imageData = image.getImageData();
-
 		int right = left + width;
 		int bottom = top + height;
 
@@ -242,10 +237,10 @@ public class SkinUtil {
 			return;
 		}
 
+		int j = 0;
 		for (int i = left; i < right; i++) {
-			for (int j = top; j < bottom; j++) {
-				int alpha = imageData.getAlpha(i, j);
-				if (0 == alpha) {
+			for (j = top; j < bottom; j++) {
+				if (0 == imageData.getAlpha(i, j)) {
 					region.subtract(i, j, 1, 1);
 				} else {
 					region.add(i, j, 1, 1);
@@ -282,9 +277,7 @@ public class SkinUtil {
 	}
 
 	public static Image createScaledImage(Display display,
-			ProfileSkinImageRegistry imageRegistry, SkinImageType type,
-			short rotationId, int scale) {
-		Image imageOrigin = imageRegistry.getSkinImage(rotationId, type);
+			Image imageOrigin, short rotationId, int scale) {
 		if (imageOrigin == null) {
 			return null;
 		}
@@ -303,28 +296,6 @@ public class SkinUtil {
 
 	public static float convertScale(int scale) {
 		return (float) scale / SCALE_CONVERTER;
-	}
-
-	public static int getValidScale(EmulatorConfig config) {
-		int storedScale = config.getSkinPropertyInt(
-				SkinPropertiesConstants.WINDOW_SCALE, EmulatorConfig.DEFAULT_WINDOW_SCALE);
-
-		if (!SkinUtil.isValidScale(storedScale)) {
-			return EmulatorConfig.DEFAULT_WINDOW_SCALE;
-		} else {
-			return storedScale;
-		}
-	}
-
-	public static boolean isValidScale(int scale) {
-		if (Scale.SCALE_100.value() == scale
-				|| Scale.SCALE_75.value() == scale
-				|| Scale.SCALE_50.value() == scale
-				|| Scale.SCALE_25.value() == scale) {
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 	public static <T> int openMessage(Shell shell,
@@ -522,21 +493,22 @@ public class SkinUtil {
 				return false;
 			}
 
-			Integer xDisplay = (Integer) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
+			Integer gdkDisplay = (Integer) invokeOSMethod(
+					getOSMethod("gdk_display_get_default"));
+			if (null == gdkDisplay) {
+				logger.warning("gdk_display_get_default returned null");
+				return false;
+			}
+
+			Integer xDisplay = (Integer) invokeOSMethod(
+					getOSMethod("gdk_x11_display_get_xdisplay", int.class), gdkDisplay);
 			if (null == xDisplay) {
-				logger.warning("GDK_DISPLAY returned null");
+				logger.warning("gdk_x11_display_get_xdisplay returned null");
 
-				Integer gdkDisplay = (Integer) invokeOSMethod(
-						getOSMethod("gdk_display_get_default"));
-				if (null == gdkDisplay) {
-					logger.warning("gdk_display_get_default returned null");
-					return false;
-				}
-
-				xDisplay = (Integer) invokeOSMethod(
-						getOSMethod("gdk_x11_display_get_xdisplay", int.class), gdkDisplay);
+				/* deprecated function */
+				xDisplay = (Integer) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
 				if (null == xDisplay) {
-					logger.warning("gdk_x11_display_get_xdisplay returned null");
+					logger.warning("GDK_DISPLAY returned null");
 					return false;
 				}
 			}
@@ -808,21 +780,22 @@ public class SkinUtil {
 				return false;
 			}
 
-			Long xDisplay = (Long) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
+			Long gdkDisplay = (Long) invokeOSMethod(
+					getOSMethod("gdk_display_get_default"));
+			if (null == gdkDisplay) {
+				logger.warning("gdk_display_get_default returned null");
+				return false;
+			}
+
+			Long xDisplay = (Long) invokeOSMethod(
+					getOSMethod("gdk_x11_display_get_xdisplay", long.class), gdkDisplay);
 			if (null == xDisplay) {
-				logger.warning("GDK_DISPLAY returned null");
+				logger.warning("gdk_x11_display_get_xdisplay returned null");
 
-				Long gdkDisplay = (Long) invokeOSMethod(
-						getOSMethod("gdk_display_get_default"));
-				if (null == gdkDisplay) {
-					logger.warning("gdk_display_get_default returned null");
-					return false;
-				}
-
-				xDisplay = (Long) invokeOSMethod(
-						getOSMethod("gdk_x11_display_get_xdisplay", long.class), gdkDisplay);
+				/* deprecated function */
+				xDisplay = (Long) invokeOSMethod(getOSMethod("GDK_DISPLAY"));
 				if (null == xDisplay) {
-					logger.warning("gdk_x11_display_get_xdisplay returned null");
+					logger.warning("GDK_DISPLAY returned null");
 					return false;
 				}
 			}

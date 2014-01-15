@@ -1,7 +1,7 @@
 /**
- * 
+ * Rotation Utilities
  *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -44,50 +44,59 @@ import org.tizen.emulator.skin.dbi.RotationType;
  *
  */
 public class SkinRotation {
-	
 	private static Map<Short, RotationType> rotationMap;
 	private static Map<Short, RotationInfo> angleMap;
-	
-	private SkinRotation(){}
-	
+
+	private SkinRotation() {
+		/* do nothing */
+	}
+
 	static {
 		rotationMap = new LinkedHashMap<Short, RotationType>();
 		angleMap = new HashMap<Short, RotationInfo>();
 	}
-	
-	public static void put(RotationType rotation ) {
 
-		if ( RotationInfo.PORTRAIT.value().equalsIgnoreCase( rotation.getName().value() ) ) {
-			rotationMap.put( RotationInfo.PORTRAIT.id(), rotation );
-			angleMap.put( RotationInfo.PORTRAIT.id(), RotationInfo.PORTRAIT );
-		} else if ( RotationInfo.LANDSCAPE.value().equalsIgnoreCase( rotation.getName().value() ) ) {
-			rotationMap.put( RotationInfo.LANDSCAPE.id(), rotation );
-			angleMap.put( RotationInfo.LANDSCAPE.id(), RotationInfo.LANDSCAPE );
-		} else if ( RotationInfo.REVERSE_PORTRAIT.value().equalsIgnoreCase( rotation.getName().value() ) ) {
-			rotationMap.put( RotationInfo.REVERSE_PORTRAIT.id(), rotation );
-			angleMap.put( RotationInfo.REVERSE_PORTRAIT.id(), RotationInfo.REVERSE_PORTRAIT );
-		} else if ( RotationInfo.REVERSE_LANDSCAPE.value().equalsIgnoreCase( rotation.getName().value() ) ) {
-			rotationMap.put( RotationInfo.REVERSE_LANDSCAPE.id(), rotation );
-			angleMap.put( RotationInfo.REVERSE_LANDSCAPE.id(), RotationInfo.REVERSE_LANDSCAPE );
+	public static void put(RotationType rotation) {
+		if (RotationInfo.PORTRAIT.value()
+				.equalsIgnoreCase(rotation.getName().value()))
+		{
+			rotationMap.put(RotationInfo.PORTRAIT.id(), rotation);
+			angleMap.put(RotationInfo.PORTRAIT.id(), RotationInfo.PORTRAIT);
 		}
-
+		else if (RotationInfo.LANDSCAPE.value()
+				.equalsIgnoreCase(rotation.getName().value()))
+		{
+			rotationMap.put(RotationInfo.LANDSCAPE.id(), rotation);
+			angleMap.put(RotationInfo.LANDSCAPE.id(), RotationInfo.LANDSCAPE);
+		}
+		else if (RotationInfo.REVERSE_PORTRAIT.value()
+				.equalsIgnoreCase(rotation.getName().value()))
+		{
+			rotationMap.put(RotationInfo.REVERSE_PORTRAIT.id(), rotation);
+			angleMap.put(RotationInfo.REVERSE_PORTRAIT.id(), RotationInfo.REVERSE_PORTRAIT);
+		}
+		else if (RotationInfo.REVERSE_LANDSCAPE.value()
+				.equalsIgnoreCase(rotation.getName().value()))
+		{
+			rotationMap.put(RotationInfo.REVERSE_LANDSCAPE.id(), rotation);
+			angleMap.put(RotationInfo.REVERSE_LANDSCAPE.id(), RotationInfo.REVERSE_LANDSCAPE);
+		}
 	}
 
-	public static int getAngle( Short rotationId ) {
+	public static int getAngle(Short rotationId) {
 		RotationInfo rotationInfo = angleMap.get(rotationId);
-		if( null != rotationInfo ) {
+		if (null != rotationInfo) {
 			return rotationInfo.angle();
-		}else {
+		} else {
 			return 0;
 		}
 	}
 
-	public static RotationType getRotation( Short rotationId ) {
+	public static RotationType getRotation(Short rotationId) {
 		return rotationMap.get(rotationId);
 	}
 
-	public static Iterator<Entry<Short, RotationType>>getRotationIterator() {
+	public static Iterator<Entry<Short, RotationType>> getRotationIterator() {
 		return rotationMap.entrySet().iterator();
 	}
-	
 }

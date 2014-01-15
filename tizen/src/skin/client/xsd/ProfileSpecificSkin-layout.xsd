@@ -78,6 +78,7 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 		<attribute name="top" type="int"> </attribute>
 		<attribute name="width" type="int"> </attribute>
 		<attribute name="height" type="int"> </attribute>
+		<attribute name="update" type="boolean" default="false" use="optional"> </attribute>
 	</complexType>
 
 	<complexType name="hoverType">
@@ -96,8 +97,9 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 		<all>
 			<element name="topmostItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 			<element name="rotateItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
-			<element name="scaleItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
+			<element name="scaleItem" type="dbi:scaleItemType" minOccurs="0" maxOccurs="1"> </element>
 			<element name="keywindowItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
+			<element name="hostKeyboardItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 			<element name="shellItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 		</all>
 	</complexType>
@@ -107,13 +109,30 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 		<attribute name="visible" type="boolean" default="true" use="optional"> </attribute>
 	</complexType>
 
+	<complexType name="scaleItemType">
+		<sequence>
+			<element name="factorItem" minOccurs="0" maxOccurs="unbounded">
+				<complexType>
+					<simpleContent>
+						<extension base="int">
+							<attribute name="itemName" type="string" default="" use="optional" />
+						</extension>
+					</simpleContent>
+				</complexType>
+			</element>
+		</sequence>
+		<attribute name="itemName" type="string" default="" use="optional"> </attribute>
+		<attribute name="visible" type="boolean" default="true" use="optional"> </attribute>
+	</complexType>
+
 	<complexType name="optionType">
 		<all>
-			<element name="blankGuide" type="dbi:blankGuideType" minOccurs="0" maxOccurs="1"> </element>
+			<element name="blankGuide" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<attribute name="visible" type="boolean" default="true" use="optional"> </attribute>
+				</complexType>
+			</element>
 		</all>
 	</complexType>
 
-	<complexType name="blankGuideType">
-		<attribute name="visible" type="boolean" default="true" use="optional"> </attribute>
-	</complexType>
 </schema>

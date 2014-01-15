@@ -3,7 +3,6 @@
 #ifndef PROTOBUF_C_ecs_2eproto__INCLUDED
 #define PROTOBUF_C_ecs_2eproto__INCLUDED
 
-//#include <google/protobuf-c/protobuf-c.h>
 #include "../../../distrib/protobuf/protobuf-c.h"
 
 PROTOBUF_C_BEGIN_DECLS
@@ -25,6 +24,9 @@ typedef struct _ECS__MonitorAns ECS__MonitorAns;
 typedef struct _ECS__MonitorNtf ECS__MonitorNtf;
 typedef struct _ECS__NfcReq ECS__NfcReq;
 typedef struct _ECS__NfcNtf ECS__NfcNtf;
+typedef struct _ECS__TetheringReq ECS__TetheringReq;
+typedef struct _ECS__TetheringAns ECS__TetheringAns;
+typedef struct _ECS__TetheringNtf ECS__TetheringNtf;
 typedef struct _ECS__Master ECS__Master;
 
 
@@ -95,15 +97,10 @@ struct  _ECS__InjectorAns
   int32_t errcode;
   char *errstr;
   char *category;
-  int32_t length;
-  int32_t group;
-  int32_t action;
-  protobuf_c_boolean has_data;
-  ProtobufCBinaryData data;
 };
 #define ECS__INJECTOR_ANS__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&ecs__injector_ans__descriptor) \
-    , 0, NULL, NULL, 0, 0, 0, 0,{0,NULL} }
+    , 0, NULL, NULL }
 
 
 struct  _ECS__InjectorNtf
@@ -228,6 +225,53 @@ struct  _ECS__NfcNtf
     , NULL, 0,{0,NULL} }
 
 
+struct  _ECS__TetheringReq
+{
+  ProtobufCMessage base;
+  char *category;
+  int32_t length;
+  int32_t group;
+  int32_t action;
+  protobuf_c_boolean has_data;
+  ProtobufCBinaryData data;
+};
+#define ECS__TETHERING_REQ__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__tethering_req__descriptor) \
+    , NULL, 0, 0, 0, 0,{0,NULL} }
+
+
+struct  _ECS__TetheringAns
+{
+  ProtobufCMessage base;
+  int32_t errcode;
+  char *errstr;
+  char *category;
+  int32_t length;
+  int32_t group;
+  int32_t action;
+  protobuf_c_boolean has_data;
+  ProtobufCBinaryData data;
+};
+#define ECS__TETHERING_ANS__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__tethering_ans__descriptor) \
+    , 0, NULL, NULL, 0, 0, 0, 0,{0,NULL} }
+
+
+struct  _ECS__TetheringNtf
+{
+  ProtobufCMessage base;
+  char *category;
+  int32_t length;
+  int32_t group;
+  int32_t action;
+  protobuf_c_boolean has_data;
+  ProtobufCBinaryData data;
+};
+#define ECS__TETHERING_NTF__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__tethering_ntf__descriptor) \
+    , NULL, 0, 0, 0, 0,{0,NULL} }
+
+
 struct  _ECS__Master
 {
   ProtobufCMessage base;
@@ -247,10 +291,13 @@ struct  _ECS__Master
   ECS__MonitorNtf *monitor_ntf;
   ECS__NfcReq *nfc_req;
   ECS__NfcNtf *nfc_ntf;
+  ECS__TetheringReq *tethering_req;
+  ECS__TetheringAns *tethering_ans;
+  ECS__TetheringNtf *tethering_ntf;
 };
 #define ECS__MASTER__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&ecs__master__descriptor) \
-    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 
 
 /* ECS__CheckVersionReq methods */
@@ -538,6 +585,63 @@ ECS__NfcNtf *
 void   ecs__nfc_ntf__free_unpacked
                      (ECS__NfcNtf *message,
                       ProtobufCAllocator *allocator);
+/* ECS__TetheringReq methods */
+void   ecs__tethering_req__init
+                     (ECS__TetheringReq         *message);
+size_t ecs__tethering_req__get_packed_size
+                     (const ECS__TetheringReq   *message);
+size_t ecs__tethering_req__pack
+                     (const ECS__TetheringReq   *message,
+                      uint8_t             *out);
+size_t ecs__tethering_req__pack_to_buffer
+                     (const ECS__TetheringReq   *message,
+                      ProtobufCBuffer     *buffer);
+ECS__TetheringReq *
+       ecs__tethering_req__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   ecs__tethering_req__free_unpacked
+                     (ECS__TetheringReq *message,
+                      ProtobufCAllocator *allocator);
+/* ECS__TetheringAns methods */
+void   ecs__tethering_ans__init
+                     (ECS__TetheringAns         *message);
+size_t ecs__tethering_ans__get_packed_size
+                     (const ECS__TetheringAns   *message);
+size_t ecs__tethering_ans__pack
+                     (const ECS__TetheringAns   *message,
+                      uint8_t             *out);
+size_t ecs__tethering_ans__pack_to_buffer
+                     (const ECS__TetheringAns   *message,
+                      ProtobufCBuffer     *buffer);
+ECS__TetheringAns *
+       ecs__tethering_ans__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   ecs__tethering_ans__free_unpacked
+                     (ECS__TetheringAns *message,
+                      ProtobufCAllocator *allocator);
+/* ECS__TetheringNtf methods */
+void   ecs__tethering_ntf__init
+                     (ECS__TetheringNtf         *message);
+size_t ecs__tethering_ntf__get_packed_size
+                     (const ECS__TetheringNtf   *message);
+size_t ecs__tethering_ntf__pack
+                     (const ECS__TetheringNtf   *message,
+                      uint8_t             *out);
+size_t ecs__tethering_ntf__pack_to_buffer
+                     (const ECS__TetheringNtf   *message,
+                      ProtobufCBuffer     *buffer);
+ECS__TetheringNtf *
+       ecs__tethering_ntf__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   ecs__tethering_ntf__free_unpacked
+                     (ECS__TetheringNtf *message,
+                      ProtobufCAllocator *allocator);
 /* ECS__Master methods */
 void   ecs__master__init
                      (ECS__Master         *message);
@@ -604,6 +708,15 @@ typedef void (*ECS__NfcReq_Closure)
 typedef void (*ECS__NfcNtf_Closure)
                  (const ECS__NfcNtf *message,
                   void *closure_data);
+typedef void (*ECS__TetheringReq_Closure)
+                 (const ECS__TetheringReq *message,
+                  void *closure_data);
+typedef void (*ECS__TetheringAns_Closure)
+                 (const ECS__TetheringAns *message,
+                  void *closure_data);
+typedef void (*ECS__TetheringNtf_Closure)
+                 (const ECS__TetheringNtf *message,
+                  void *closure_data);
 typedef void (*ECS__Master_Closure)
                  (const ECS__Master *message,
                   void *closure_data);
@@ -628,6 +741,9 @@ extern const ProtobufCMessageDescriptor ecs__monitor_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__monitor_ntf__descriptor;
 extern const ProtobufCMessageDescriptor ecs__nfc_req__descriptor;
 extern const ProtobufCMessageDescriptor ecs__nfc_ntf__descriptor;
+extern const ProtobufCMessageDescriptor ecs__tethering_req__descriptor;
+extern const ProtobufCMessageDescriptor ecs__tethering_ans__descriptor;
+extern const ProtobufCMessageDescriptor ecs__tethering_ntf__descriptor;
 extern const ProtobufCMessageDescriptor ecs__master__descriptor;
 
 PROTOBUF_C_END_DECLS

@@ -59,4 +59,5 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/keywindow/dbi" elementFormDefault=
 		<attribute name="G" type="unsignedInt"> </attribute>
 		<attribute name="B" type="unsignedInt"> </attribute>
 	</complexType>
+
 </schema>

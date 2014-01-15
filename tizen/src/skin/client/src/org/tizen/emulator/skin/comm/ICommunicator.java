@@ -1,5 +1,5 @@
 /**
- * 
+ * Communication Interface Between Qemu And Skin
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -37,24 +37,6 @@ import org.tizen.emulator.skin.dbi.RotationNameType;
  *
  */
 public interface ICommunicator extends Runnable {
-
-	public enum Scale {
-		SCALE_25(25),
-		SCALE_50(50),
-		SCALE_75(75),
-		SCALE_100(100);
-
-		private int value;
-
-		Scale( int value ) {
-			this.value = value;
-		}
-
-		public int value() {
-			return this.value;
-		}
-	}
-	
 	public enum MouseButtonType {
 		LEFT( (short)1 ),
 		WHEEL( (short)2 ),
@@ -133,7 +115,7 @@ public interface ICommunicator extends Runnable {
 	public enum KeyEventType {
 		PRESSED( (short)1 ),
 		RELEASED( (short)2 );
-		
+
 		private short value;
 		KeyEventType( short value ) {
 			this.value = value;
@@ -166,16 +148,15 @@ public interface ICommunicator extends Runnable {
 	}
 
 	public enum RotationInfo {
-
 		PORTRAIT( RotationNameType.PORTRAIT.value(), (short)0, 0 ),
 		LANDSCAPE( RotationNameType.LANDSCAPE.value(), (short)1, -90 ),
 		REVERSE_PORTRAIT( RotationNameType.REVERSE_PORTRAIT.value(), (short)2, 180 ),
 		REVERSE_LANDSCAPE( RotationNameType.REVERSE_LANDSCAPE.value(), (short)3, 90 );
-		
+
 		private String value;
 		private short id;
 		private int angle;
-		
+
 		RotationInfo( String value, short id, int ratio ) {
 			this.value = value;
 			this.id = id;
@@ -193,7 +174,7 @@ public interface ICommunicator extends Runnable {
 		public short id() {
 			return this.id;
 		}
-		
+
 		public static RotationInfo getValue(short id) {
 			RotationInfo[] values = RotationInfo.values();
 			for (int i = 0; i < values.length; i++) {
@@ -209,26 +190,28 @@ public interface ICommunicator extends Runnable {
 	public enum SendCommand {
 		/* This values must match the QEMU definitions */
 
-		SEND_START((short) 1),
+		SEND_SKIN_OPENED((short) 1),
 
 		SEND_MOUSE_EVENT((short) 10),
-		SEND_KEY_EVENT((short) 11),
-		SEND_HARD_KEY_EVENT((short) 12),
-		CHANGE_LCD_STATE((short) 13),
-		OPEN_SHELL((short) 14),
-		HOST_KBD((short) 15),
-		SCREEN_SHOT((short) 16),
-		DETAIL_INFO((short) 17),
-		RAM_DUMP((short) 18),
-		GUEST_DUMP((short) 19),
-		ECP_PORT_REQ((short) 20),
-		
+		SEND_KEYBOARD_KEY_EVENT((short) 11),
+		SEND_HW_KEY_EVENT((short) 12),
+		SEND_DISPLAY_STATE((short) 13),
+		SEND_OPEN_SHELL((short) 14),
+		SEND_HOST_KBD_STATE((short) 15),
+		SEND_SCREENSHOT_REQ((short) 16),
+		SEND_DETAIL_INFO_REQ((short) 17),
+		SEND_RAM_DUMP((short) 18),
+		SEND_GUEST_DUMP((short) 19),
+		SEND_ECP_PORT_REQ((short) 20),
+		SEND_INTERPOLATION_STATE((short) 21),
+
 		RESPONSE_HEART_BEAT((short) 900),
-		RESPONSE_DRAW_FRAMEBUFFER((short) 901),
-		CLOSE((short) 998),
+		RESPONSE_DRAW_FRAME((short) 901),
+		SEND_CLOSE_REQ((short) 998),
 		RESPONSE_SHUTDOWN((short) 999);
 
 		private short value;
+
 		SendCommand(short value) {
 			this.value = value;
 		}
@@ -261,19 +244,23 @@ public interface ICommunicator extends Runnable {
 	public enum ReceiveCommand {
 		/* This values must match the QEMU definitions */
 
-		HEART_BEAT((short) 1),
-		SCREEN_SHOT_DATA((short) 2),
-		DETAIL_INFO_DATA((short) 3),
-		RAMDUMP_COMPLETE((short) 4),
-		BOOTING_PROGRESS((short) 5),
-		BRIGHTNESS_VALUE((short) 6),
-		ECP_PORT((short) 7),
-		SENSOR_DAEMON_START((short) 800),
-		SDB_DAEMON_START((short) 801),
-		ECS_SERVER_START((short) 802),
-		DRAW_FRAME((short) 900),
-		DRAW_BLANK_GUIDE((short) 901),
-		SHUTDOWN((short) 999);
+		RECV_HEART_BEAT((short) 1),
+		RECV_SCREENSHOT_DATA((short) 2),
+		RECV_DETAIL_INFO_DATA((short) 3),
+		RECV_RAMDUMP_COMPLETED((short) 4),
+		RECV_BOOTING_PROGRESS((short) 5),
+		RECV_BRIGHTNESS_STATE((short) 6),
+		RECV_ECP_PORT_DATA((short) 7),
+		RECV_HOST_KBD_STATE((short) 8),
+		RECV_MULTI_TOUCH_STATE((short) 9),
+
+		RECV_SENSORD_STARTED((short) 800),
+		RECV_SDBD_STARTED((short) 801),
+		RECV_ECS_STARTED((short) 802),
+		RECV_DRAW_FRAME((short) 900),
+		RECV_DRAW_BLANK_GUIDE((short) 901),
+		RECV_EMUL_RESET((short) 998),
+		RECV_EMUL_SHUTDOWN((short) 999);
 
 		private short value;
 

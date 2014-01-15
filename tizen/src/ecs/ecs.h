@@ -40,6 +40,7 @@
 #include "ecs-json-streamer.h"
 #include "genmsg/ecs.pb-c.h"
 #include "genmsg/ecs_ids.pb-c.h"
+#include "../osutil.h"
 
 #define ECS_VERSION   "1.0"
 
@@ -48,7 +49,7 @@
 #ifdef ECS_DEBUG
 #define LOG(fmt, arg...)    \
     do {    \
-        fprintf(stdout,"[%s-%s:%d] "fmt"\n", __TIME__, __FUNCTION__, __LINE__, ##arg);  \
+        fprintf(stdout,"[%s-%s:%d] "fmt"\n", get_timeofday(), __FUNCTION__, __LINE__, ##arg);  \
     } while (0)
 #else
 #define LOG(fmt, arg...)
@@ -64,7 +65,7 @@
 
 #define ECS_OPTS_NAME           "ecs"
 #define HOST_LISTEN_ADDR        "127.0.0.1"
-#define HOST_LISTEN_PORT        27000
+#define HOST_LISTEN_PORT        0
 #define EMULATOR_SERVER_NUM     10
 
 #define COMMANDS_TYPE           "type"
@@ -76,11 +77,15 @@
 #define COMMAND_TYPE_MONITOR    "monitor"
 #define COMMAND_TYPE_DEVICE     "device"
 
+//
+#define COMMAND_TYPE_TETHERING  "tethering"
+
 #define ECS_MSG_STARTINFO_REQ   "startinfo_req"
 #define ECS_MSG_STARTINFO_ANS   "startinfo_ans"
 
 #define MSG_TYPE_SENSOR         "sensor"
 #define MSG_TYPE_NFC            "nfc"
+#define MSG_TYPE_SIMUL_NFC      "simul_nfc"
 
 #define MSG_GROUP_STATUS        15
 
@@ -109,7 +114,7 @@ typedef unsigned char   type_action;
 
 #define OUT_BUF_SIZE    4096
 #define READ_BUF_LEN    4096
-
+#define MAX_ID_SIZE     255
 typedef struct sbuf
 {
     int _netlen;
@@ -121,7 +126,6 @@ struct Monitor {
     int suspend_cnt;
     uint8_t outbuf[OUT_BUF_SIZE];
     int outbuf_index;
-    CPUArchState *mon_cpu;
     void *password_opaque;
     QError *error;
     QLIST_HEAD(,mon_fd_t) fds;
@@ -144,9 +148,14 @@ typedef struct ECS_State {
     Monitor *mon;
 } ECS_State;
 
+#define TYPE_NONE       0x00
+#define TYPE_ECP        0x01
+#define TYPE_SIMUL_NFC  0x02
+
 typedef struct ECS_Client {
     int client_fd;
-    int client_id;
+    unsigned char client_id;
+    unsigned char client_type;
     int keep_alive;
     const char* type;
 
@@ -157,11 +166,21 @@ typedef struct ECS_Client {
     QTAILQ_ENTRY(ECS_Client) next;
 } ECS_Client;
 
+#define MAX_BUF_SIZE  255
+
+typedef struct nfc_msg_info {
+    unsigned char client_id;
+    unsigned char client_type;
+    uint32_t use;
+    unsigned char buf[MAX_BUF_SIZE];
+
+}nfc_msg_info;
 
 int start_ecs(void);
 int stop_ecs(void);
 int get_ecs_port(void);
 
+ECS_Client *find_client(unsigned char id, unsigned char type);
 bool handle_protobuf_msg(ECS_Client* cli, char* data, const int len);
 
 bool ntf_to_injector(const char* data, const int len);
@@ -173,10 +192,11 @@ bool send_to_ecp(ECS__Master* master);
 bool send_injector_ntf(const char* data, const int len);
 bool send_monitor_ntf(const char* data, const int len);
 bool send_device_ntf(const char* data, const int len);
-bool send_nfc_ntf(const char* data, const int len);
+bool send_nfc_ntf(struct nfc_msg_info *msg);
 
+void send_to_single_client(ECS_Client *clii, const char* data, const int len);
 bool send_to_all_client(const char* data, const int len);
-void send_to_client(int fd, const char* data, const int len) ;
+void send_to_client(int fd, const char* data, const int len);
 
 void ecs_client_close(ECS_Client* clii);
 int ecs_write(int fd, const uint8_t *buf, int len);
@@ -185,6 +205,7 @@ void ecs_make_header(QDict* obj, type_length length, type_group group, type_acti
 void read_val_short(const char* data, unsigned short* ret_val);
 void read_val_char(const char* data, unsigned char* ret_val);
 void read_val_str(const char* data, char* ret_val, int len);
+void print_binary(const char* data, const int len);
 
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg);
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg);
@@ -192,9 +213,19 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg);
 bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg);
 void msgproc_checkversion_req(ECS_Client* ccli, ECS__CheckVersionReq* msg);
 void msgproc_keepalive_ans(ECS_Client* ccli, ECS__KeepAliveAns* msg);
+bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg);
 
 /* version check  */
 //void send_ecs_version_check(ECS_Client* ccli);
+
+/* Suspend/resume */
+#define SUSPEND_LOCK   1
+#define SUSPEND_UNLOCK 0
+int ecs_get_suspend_state(void);
+void ecs_set_suspend_state(int state);
+void ecs_suspend_lock_state(int state);
+
+void send_host_keyboard_ntf(int on);
 
 /* request */
 int accel_min_max(double value);
