@@ -1,3 +1,6 @@
+* 1.7.16
+- added schema for Control Panel menu
+== GiWoong Kim <giwoong.kim@samsung.com> 2014-01-15
 * 1.7.15
 - move General skin to mobile-specific path
 == GiWoong Kim <giwoong.kim@samsung.com> 2014-01-13
