@@ -257,9 +257,19 @@ public class PopupMenu {
 		new MenuItem(menu, SWT.SEPARATOR);
 
 		/* Emulator Control Panel menu */
-		createEcpItem(menu, ECP_MENUITEM_NAME);
+		if (itemProperties == null || itemProperties.getControlPanelItem() == null) {
+			createEcpItem(menu, ECP_MENUITEM_NAME);
+		} else {
+			MenuItemType ecpMenuType = itemProperties.getControlPanelItem();
+			if (ecpMenuType.isVisible() == true) {
+				createEcpItem(menu, (ecpMenuType.getItemName().isEmpty()) ?
+						ECP_MENUITEM_NAME : ecpMenuType.getItemName());
+			}
+		}
 
-		new MenuItem(menu, SWT.SEPARATOR);
+		if (ecpItem != null) {
+			new MenuItem(menu, SWT.SEPARATOR);
+		}
 
 		/* Close menu */
 		createCloseItem(menu, CLOSE_MENUITEM_NAME);
