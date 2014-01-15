@@ -44,9 +44,15 @@ void yagl_gles_api_ts_init(struct yagl_gles_api_ts *gles_api_ts,
 void yagl_gles_api_ts_cleanup(struct yagl_gles_api_ts *gles_api_ts)
 {
     if (gles_api_ts->num_arrays > 0) {
+        uint32_t i;
+
         yagl_ensure_ctx(0);
-        gles_api_ts->driver->DeleteBuffers(gles_api_ts->num_arrays,
-                                           gles_api_ts->arrays);
+
+        for (i = 0; i < gles_api_ts->num_arrays; ++i) {
+            gles_api_ts->driver->DeleteBuffers(1,
+                                               &gles_api_ts->arrays[i].vbo);
+        }
+
         yagl_unensure_ctx(0);
     }
 

@@ -68,9 +68,11 @@ static GLuint yagl_gles_bind_array(uint32_t indx,
                                    int32_t data_count)
 {
     GLuint current_vbo;
+    uint32_t size;
 
     if (indx >= gles_api_ts->num_arrays) {
-        GLuint *arrays;
+        struct yagl_gles_array *arrays;
+        uint32_t i;
 
         arrays = g_malloc((indx + 1) * sizeof(arrays[0]));
 
@@ -78,8 +80,10 @@ static GLuint yagl_gles_bind_array(uint32_t indx,
                gles_api_ts->arrays,
                gles_api_ts->num_arrays * sizeof(arrays[0]));
 
-        gles_api_ts->driver->GenBuffers(indx + 1 - gles_api_ts->num_arrays,
-                                        &arrays[gles_api_ts->num_arrays]);
+        for (i = gles_api_ts->num_arrays; i <= indx; ++i) {
+            gles_api_ts->driver->GenBuffers(1, &arrays[i].vbo);
+            arrays[i].size = 0;
+        }
 
         g_free(gles_api_ts->arrays);
 
@@ -90,11 +94,18 @@ static GLuint yagl_gles_bind_array(uint32_t indx,
     gles_api_ts->driver->GetIntegerv(GL_ARRAY_BUFFER_BINDING,
                                      (GLint*)&current_vbo);
 
-    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, gles_api_ts->arrays[indx]);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, gles_api_ts->arrays[indx].vbo);
 
-    gles_api_ts->driver->BufferData(GL_ARRAY_BUFFER,
-                                    first * stride + data_count, NULL,
-                                    GL_STREAM_DRAW);
+    size = first * stride + data_count;
+
+    if (size > gles_api_ts->arrays[indx].size) {
+        gles_api_ts->driver->BufferData(GL_ARRAY_BUFFER,
+                                        size, NULL,
+                                        GL_STREAM_DRAW);
+        gles_api_ts->arrays[indx].size = size;
+    }
+
+
     gles_api_ts->driver->BufferSubData(GL_ARRAY_BUFFER,
                                        first * stride, data_count, data);
 
