@@ -1016,7 +1016,7 @@ static void* run_skin_server(void* args)
 
                     /* rotation */
                     bool is_rotate = false;
-                    if (is_sensord_initialized == 1 && get_emul_rotation() != rotation_type) {
+                    if (get_emul_rotation() != rotation_type) {
                         set_emul_rotation(rotation_type);
                         is_rotate = true;
                     }
@@ -1028,7 +1028,7 @@ static void* run_skin_server(void* args)
 #endif
 
                     /* after display resizing */
-                    if (is_rotate == true) {
+                    if (is_rotate == true && is_sensord_initialized == 1) {
                         do_rotation_event(rotation_type);
                     }
 
