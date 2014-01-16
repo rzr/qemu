@@ -305,6 +305,11 @@ void yagl_host_glFramebufferTexture3D(GLenum target,
     GLuint texture,
     GLint level,
     GLint zoffset);
+void yagl_host_glFramebufferTextureLayer(GLenum target,
+    GLenum attachment,
+    GLuint texture,
+    GLint level,
+    GLint layer);
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count);
 void yagl_host_glBindRenderbuffer(GLenum target,
     GLuint renderbuffer);

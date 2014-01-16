@@ -327,6 +327,7 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC4(DrawArraysInstanced, GLenum, GLint, GLsizei, GLsizei, mode, start, count, primcount);
     YAGL_GLES_DRIVER_FUNC5(DrawElementsInstanced, GLenum, GLsizei, GLenum, const void*, GLsizei, mode, count, type, indices, primcount);
     YAGL_GLES_DRIVER_FUNC2(VertexAttribDivisor, GLuint, GLuint, index, divisor);
+    YAGL_GLES_DRIVER_FUNC5(FramebufferTextureLayer, GLenum, GLenum, GLuint, GLint, GLint, target, attachment, texture, level, layer);
 
     /*
      * @}

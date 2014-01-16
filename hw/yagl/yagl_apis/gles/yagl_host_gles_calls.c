@@ -1265,6 +1265,17 @@ void yagl_host_glFramebufferTexture3D(GLenum target,
                                               level, zoffset);
 }
 
+void yagl_host_glFramebufferTextureLayer(GLenum target,
+    GLenum attachment,
+    GLuint texture,
+    GLint level,
+    GLint layer)
+{
+    gles_api_ts->driver->FramebufferTextureLayer(target, attachment,
+                                                 yagl_gles_object_get(texture),
+                                                 level, layer);
+}
+
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count)
 {
     int i;

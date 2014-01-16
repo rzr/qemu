@@ -269,6 +269,7 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, DrawArraysInstanced, glDrawArraysInstanced);
         YAGL_GLES_OGL_GET_PROC(driver, DrawElementsInstanced, glDrawElementsInstanced);
         YAGL_GLES_OGL_GET_PROC(driver, VertexAttribDivisor, glVertexAttribDivisor);
+        YAGL_GLES_OGL_GET_PROC(driver, FramebufferTextureLayer, glFramebufferTextureLayer);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;
