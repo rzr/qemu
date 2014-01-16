@@ -87,6 +87,11 @@ void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, 
      arg4_type arg4, arg5_type arg5, arg6_type arg6, arg7_type arg7, \
      arg8_type arg8, arg9_type arg9);
 
+#define YAGL_GLES_DRIVER_FUNC11(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, arg7_type, arg8_type, arg9_type, arg10_type, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) \
+void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
+     arg4_type arg4, arg5_type arg5, arg6_type arg6, arg7_type arg7, \
+     arg8_type arg8, arg9_type arg9, arg10_type arg10);
+
 /* We need this because we can't include <GL/gl.h> (which has GLdouble
  * definition) and <GLES/gl.h> (which has GLfixed definition) simultaneously */
 typedef double yagl_GLdouble;
@@ -144,6 +149,11 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC3(TexEnvfv, GLenum, GLenum, const GLfloat*, target, pname, params)
     YAGL_GLES_DRIVER_FUNC3(GetTexEnviv, GLenum, GLenum, GLint*, env, pname, params)
     YAGL_GLES_DRIVER_FUNC3(GetTexEnvfv, GLenum, GLenum, GLfloat*, env, pname, params)
+    YAGL_GLES_DRIVER_FUNC10(TexImage3D, GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const void*, target, level, internalformat, width, height, depth, border, format, type, pixels);
+    YAGL_GLES_DRIVER_FUNC11(TexSubImage3D, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLenum, const void*, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+    YAGL_GLES_DRIVER_FUNC9(CopyTexSubImage3D, GLenum, GLint, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei, target, level, xoffset, yoffset, zoffset, x, y, width, height);
+    YAGL_GLES_DRIVER_FUNC9(CompressedTexImage3D, GLenum, GLint, GLenum, GLsizei, GLsizei, GLsizei, GLint, GLsizei, const void*, target, level, internalformat, width, height, depth, border, imageSize, data);
+    YAGL_GLES_DRIVER_FUNC11(CompressedTexSubImage3D, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLsizei, const void*, target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
     YAGL_GLES_DRIVER_FUNC2(GenFramebuffers, GLsizei, GLuint*, n, framebuffers)
     YAGL_GLES_DRIVER_FUNC2(BindFramebuffer, GLenum, GLuint, target, framebuffer)
     YAGL_GLES_DRIVER_FUNC5(FramebufferTexture2D, GLenum, GLenum, GLenum, GLuint, GLint, target, attachment, textarget, texture, level)
@@ -151,6 +161,7 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC2(DeleteFramebuffers, GLsizei, const GLuint*, n, framebuffers)
     YAGL_GLES_DRIVER_FUNC10(BlitFramebuffer, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
     YAGL_GLES_DRIVER_FUNC2(DrawBuffers, GLsizei, const GLenum*, n, bufs)
+    YAGL_GLES_DRIVER_FUNC6(FramebufferTexture3D, GLenum, GLenum, GLenum, GLuint, GLint, GLint, target, attachment, textarget, texture, level, zoffset);
     YAGL_GLES_DRIVER_FUNC2(GenRenderbuffers, GLsizei, GLuint*, n, renderbuffers)
     YAGL_GLES_DRIVER_FUNC2(BindRenderbuffer, GLenum, GLuint, target, renderbuffer)
     YAGL_GLES_DRIVER_FUNC4(RenderbufferStorage, GLenum, GLenum, GLsizei, GLsizei, target, internalformat, width, height)

@@ -1070,6 +1070,121 @@ void yagl_host_glGetTexEnvfv(GLenum env,
     *params_count = params_maxcount;
 }
 
+void yagl_host_glTexImage3D(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    const void *pixels, int32_t pixels_count)
+{
+    gles_api_ts->driver->TexImage3D(target,
+                                    level,
+                                    internalformat,
+                                    width,
+                                    height,
+                                    depth,
+                                    border,
+                                    format,
+                                    type,
+                                    pixels);
+}
+
+void yagl_host_glTexSubImage3D(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLenum format,
+    GLenum type,
+    const void *pixels, int32_t pixels_count)
+{
+    gles_api_ts->driver->TexSubImage3D(target,
+                                       level,
+                                       xoffset,
+                                       yoffset,
+                                       zoffset,
+                                       width,
+                                       height,
+                                       depth,
+                                       format,
+                                       type,
+                                       pixels);
+}
+
+void yagl_host_glCopyTexSubImage3D(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLint x,
+    GLint y,
+    GLsizei width,
+    GLsizei height)
+{
+    gles_api_ts->driver->CopyTexSubImage3D(target,
+                                           level,
+                                           xoffset,
+                                           yoffset,
+                                           zoffset,
+                                           x,
+                                           y,
+                                           width,
+                                           height);
+}
+
+void yagl_host_glCompressedTexImage3D(GLenum target,
+    GLint level,
+    GLenum internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLint border,
+    GLsizei imageSize,
+    const void *data, int32_t data_count)
+{
+    gles_api_ts->driver->CompressedTexImage3D(target,
+                                              level,
+                                              internalformat,
+                                              width,
+                                              height,
+                                              depth,
+                                              border,
+                                              imageSize,
+                                              data);
+}
+
+void yagl_host_glCompressedTexSubImage3D(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLenum format,
+    GLsizei imageSize,
+    const void *data, int32_t data_count)
+{
+    gles_api_ts->driver->CompressedTexSubImage3D(target,
+                                                 level,
+                                                 xoffset,
+                                                 yoffset,
+                                                 zoffset,
+                                                 width,
+                                                 height,
+                                                 depth,
+                                                 format,
+                                                 imageSize,
+                                                 data);
+}
+
 void yagl_host_glGenFramebuffers(const GLuint *framebuffers, int32_t framebuffers_count)
 {
     int i;
@@ -1135,6 +1250,19 @@ void yagl_host_glBlitFramebuffer(GLint srcX0,
 void yagl_host_glDrawBuffers(const GLenum *bufs, int32_t bufs_count)
 {
     gles_api_ts->driver->DrawBuffers(bufs_count, bufs);
+}
+
+void yagl_host_glFramebufferTexture3D(GLenum target,
+    GLenum attachment,
+    GLenum textarget,
+    GLuint texture,
+    GLint level,
+    GLint zoffset)
+{
+    gles_api_ts->driver->FramebufferTexture3D(target, attachment,
+                                              textarget,
+                                              yagl_gles_object_get(texture),
+                                              level, zoffset);
 }
 
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count)
