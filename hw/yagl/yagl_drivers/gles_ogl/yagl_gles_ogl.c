@@ -270,6 +270,13 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, DrawElementsInstanced, glDrawElementsInstanced);
         YAGL_GLES_OGL_GET_PROC(driver, VertexAttribDivisor, glVertexAttribDivisor);
         YAGL_GLES_OGL_GET_PROC(driver, FramebufferTextureLayer, glFramebufferTextureLayer);
+        YAGL_GLES_OGL_GET_PROC(driver, GenSamplers, glGenSamplers);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteSamplers, glDeleteSamplers);
+        YAGL_GLES_OGL_GET_PROC(driver, BindSampler, glBindSampler);
+        YAGL_GLES_OGL_GET_PROC(driver, SamplerParameteri, glSamplerParameteri);
+        YAGL_GLES_OGL_GET_PROC(driver, SamplerParameteriv, glSamplerParameteriv);
+        YAGL_GLES_OGL_GET_PROC(driver, SamplerParameterf, glSamplerParameterf);
+        YAGL_GLES_OGL_GET_PROC(driver, SamplerParameterfv, glSamplerParameterfv);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;

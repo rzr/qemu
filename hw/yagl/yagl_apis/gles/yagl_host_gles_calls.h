@@ -513,6 +513,21 @@ void yagl_host_glBeginQuery(GLenum target,
 void yagl_host_glEndQuery(GLenum target);
 GLboolean yagl_host_glGetQueryObjectuiv(GLuint id,
     GLuint *result);
+void yagl_host_glGenSamplers(const GLuint *samplers, int32_t samplers_count);
+void yagl_host_glBindSampler(GLuint unit,
+    GLuint sampler);
+void yagl_host_glSamplerParameteri(GLuint sampler,
+    GLenum pname,
+    GLint param);
+void yagl_host_glSamplerParameteriv(GLuint sampler,
+    GLenum pname,
+    const GLint *param, int32_t param_count);
+void yagl_host_glSamplerParameterf(GLuint sampler,
+    GLenum pname,
+    GLfloat param);
+void yagl_host_glSamplerParameterfv(GLuint sampler,
+    GLenum pname,
+    const GLfloat *param, int32_t param_count);
 void yagl_host_glDeleteObjects(const GLuint *objects, int32_t objects_count);
 void yagl_host_glBlendEquation(GLenum mode);
 void yagl_host_glBlendEquationSeparate(GLenum modeRGB,

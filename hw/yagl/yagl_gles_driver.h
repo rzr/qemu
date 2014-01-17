@@ -330,6 +330,27 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC5(FramebufferTextureLayer, GLenum, GLenum, GLuint, GLint, GLint, target, attachment, texture, level, layer);
 
     /*
+     * These are actually OpenGL 3.3+ core or
+     * OpenGL 3.2+ core with GL_ARB_sampler_objects.
+     *
+     * TODO: Check if samplers are actually supported on host
+     * and workaround if they're not.
+     * @{
+     */
+
+    YAGL_GLES_DRIVER_FUNC2(GenSamplers, GLsizei, GLuint*, count, samplers);
+    YAGL_GLES_DRIVER_FUNC2(DeleteSamplers, GLsizei, const GLuint*, count, samplers);
+    YAGL_GLES_DRIVER_FUNC2(BindSampler, GLuint, GLuint, unit, sampler);
+    YAGL_GLES_DRIVER_FUNC3(SamplerParameteri, GLuint, GLenum, GLint, sampler, pname, param);
+    YAGL_GLES_DRIVER_FUNC3(SamplerParameteriv, GLuint, GLenum, const GLint*, sampler, pname, param);
+    YAGL_GLES_DRIVER_FUNC3(SamplerParameterf, GLuint, GLenum, GLfloat, sampler, pname, param);
+    YAGL_GLES_DRIVER_FUNC3(SamplerParameterfv, GLuint, GLenum, const GLfloat*, sampler, pname, param);
+
+    /*
+     * @}
+     */
+
+    /*
      * @}
      */
 

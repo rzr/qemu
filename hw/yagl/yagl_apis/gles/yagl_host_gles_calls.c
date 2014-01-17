@@ -388,6 +388,21 @@ static void yagl_gles_query_destroy(struct yagl_object *obj)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
+static void yagl_gles_sampler_destroy(struct yagl_object *obj)
+{
+    struct yagl_gles_object *gles_obj = (struct yagl_gles_object*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_gles_sampler_destroy, "%u", obj->global_name);
+
+    yagl_ensure_ctx(0);
+    gles_obj->driver->DeleteSamplers(1, &obj->global_name);
+    yagl_unensure_ctx(0);
+
+    g_free(gles_obj);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
 static __inline GLuint yagl_gles_object_get(GLuint local_name)
 {
     return (local_name > 0) ? yagl_object_map_get(cur_ts->ps->object_map, local_name) : 0;
@@ -2210,6 +2225,56 @@ GLboolean yagl_host_glGetQueryObjectuiv(GLuint id,
     }
 
     return tmp;
+}
+
+void yagl_host_glGenSamplers(const GLuint *samplers, int32_t samplers_count)
+{
+    int i;
+
+    for (i = 0; i < samplers_count; ++i) {
+        GLuint global_name;
+
+        gles_api_ts->driver->GenSamplers(1, &global_name);
+
+        yagl_gles_object_add(samplers[i],
+                             global_name,
+                             0,
+                             &yagl_gles_sampler_destroy);
+    }
+}
+
+void yagl_host_glBindSampler(GLuint unit,
+    GLuint sampler)
+{
+    gles_api_ts->driver->BindSampler(unit, yagl_gles_object_get(sampler));
+}
+
+void yagl_host_glSamplerParameteri(GLuint sampler,
+    GLenum pname,
+    GLint param)
+{
+    gles_api_ts->driver->SamplerParameteri(yagl_gles_object_get(sampler), pname, param);
+}
+
+void yagl_host_glSamplerParameteriv(GLuint sampler,
+    GLenum pname,
+    const GLint *param, int32_t param_count)
+{
+    gles_api_ts->driver->SamplerParameteriv(yagl_gles_object_get(sampler), pname, param);
+}
+
+void yagl_host_glSamplerParameterf(GLuint sampler,
+    GLenum pname,
+    GLfloat param)
+{
+    gles_api_ts->driver->SamplerParameterf(yagl_gles_object_get(sampler), pname, param);
+}
+
+void yagl_host_glSamplerParameterfv(GLuint sampler,
+    GLenum pname,
+    const GLfloat *param, int32_t param_count)
+{
+    gles_api_ts->driver->SamplerParameterfv(yagl_gles_object_get(sampler), pname, param);
 }
 
 void yagl_host_glDeleteObjects(const GLuint *objects, int32_t objects_count)
