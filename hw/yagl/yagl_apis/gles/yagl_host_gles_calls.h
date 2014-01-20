@@ -135,21 +135,6 @@ void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count);
 void yagl_host_glBindTexture(GLenum target,
     GLuint texture);
 void yagl_host_glActiveTexture(GLenum texture);
-void yagl_host_glCompressedTexImage2D(GLenum target,
-    GLint level,
-    GLenum internalformat,
-    GLsizei width,
-    GLsizei height,
-    GLint border,
-    const GLvoid *data, int32_t data_count);
-void yagl_host_glCompressedTexSubImage2D(GLenum target,
-    GLint level,
-    GLint xoffset,
-    GLint yoffset,
-    GLsizei width,
-    GLsizei height,
-    GLenum format,
-    const GLvoid *data, int32_t data_count);
 void yagl_host_glCopyTexImage2D(GLenum target,
     GLint level,
     GLenum internalformat,
@@ -256,26 +241,6 @@ void yagl_host_glCopyTexSubImage3D(GLenum target,
     GLint y,
     GLsizei width,
     GLsizei height);
-void yagl_host_glCompressedTexImage3D(GLenum target,
-    GLint level,
-    GLenum internalformat,
-    GLsizei width,
-    GLsizei height,
-    GLsizei depth,
-    GLint border,
-    GLsizei imageSize,
-    const void *data, int32_t data_count);
-void yagl_host_glCompressedTexSubImage3D(GLenum target,
-    GLint level,
-    GLint xoffset,
-    GLint yoffset,
-    GLint zoffset,
-    GLsizei width,
-    GLsizei height,
-    GLsizei depth,
-    GLenum format,
-    GLsizei imageSize,
-    const void *data, int32_t data_count);
 void yagl_host_glGenFramebuffers(const GLuint *framebuffers, int32_t framebuffers_count);
 void yagl_host_glBindFramebuffer(GLenum target,
     GLuint framebuffer);

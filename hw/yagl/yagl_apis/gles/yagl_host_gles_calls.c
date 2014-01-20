@@ -831,44 +831,6 @@ void yagl_host_glActiveTexture(GLenum texture)
     gles_api_ts->driver->ActiveTexture(texture);
 }
 
-void yagl_host_glCompressedTexImage2D(GLenum target,
-    GLint level,
-    GLenum internalformat,
-    GLsizei width,
-    GLsizei height,
-    GLint border,
-    const GLvoid *data, int32_t data_count)
-{
-    gles_api_ts->driver->CompressedTexImage2D(target,
-                                              level,
-                                              internalformat,
-                                              width,
-                                              height,
-                                              border,
-                                              data_count,
-                                              data);
-}
-
-void yagl_host_glCompressedTexSubImage2D(GLenum target,
-    GLint level,
-    GLint xoffset,
-    GLint yoffset,
-    GLsizei width,
-    GLsizei height,
-    GLenum format,
-    const GLvoid *data, int32_t data_count)
-{
-    gles_api_ts->driver->CompressedTexSubImage2D(target,
-                                                 level,
-                                                 xoffset,
-                                                 yoffset,
-                                                 width,
-                                                 height,
-                                                 format,
-                                                 data_count,
-                                                 data);
-}
-
 void yagl_host_glCopyTexImage2D(GLenum target,
     GLint level,
     GLenum internalformat,
@@ -1152,52 +1114,6 @@ void yagl_host_glCopyTexSubImage3D(GLenum target,
                                            y,
                                            width,
                                            height);
-}
-
-void yagl_host_glCompressedTexImage3D(GLenum target,
-    GLint level,
-    GLenum internalformat,
-    GLsizei width,
-    GLsizei height,
-    GLsizei depth,
-    GLint border,
-    GLsizei imageSize,
-    const void *data, int32_t data_count)
-{
-    gles_api_ts->driver->CompressedTexImage3D(target,
-                                              level,
-                                              internalformat,
-                                              width,
-                                              height,
-                                              depth,
-                                              border,
-                                              imageSize,
-                                              data);
-}
-
-void yagl_host_glCompressedTexSubImage3D(GLenum target,
-    GLint level,
-    GLint xoffset,
-    GLint yoffset,
-    GLint zoffset,
-    GLsizei width,
-    GLsizei height,
-    GLsizei depth,
-    GLenum format,
-    GLsizei imageSize,
-    const void *data, int32_t data_count)
-{
-    gles_api_ts->driver->CompressedTexSubImage3D(target,
-                                                 level,
-                                                 xoffset,
-                                                 yoffset,
-                                                 zoffset,
-                                                 width,
-                                                 height,
-                                                 depth,
-                                                 format,
-                                                 imageSize,
-                                                 data);
 }
 
 void yagl_host_glGenFramebuffers(const GLuint *framebuffers, int32_t framebuffers_count)

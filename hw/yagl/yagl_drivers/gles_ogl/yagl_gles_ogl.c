@@ -78,8 +78,6 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
     YAGL_GLES_OGL_GET_PROC(driver, BindTexture, glBindTexture);
     YAGL_GLES_OGL_GET_PROC(driver, DeleteTextures, glDeleteTextures);
     YAGL_GLES_OGL_GET_PROC(driver, ActiveTexture, glActiveTexture);
-    YAGL_GLES_OGL_GET_PROC(driver, CompressedTexImage2D, glCompressedTexImage2D);
-    YAGL_GLES_OGL_GET_PROC(driver, CompressedTexSubImage2D, glCompressedTexSubImage2D);
     YAGL_GLES_OGL_GET_PROC(driver, CopyTexImage2D, glCopyTexImage2D);
     YAGL_GLES_OGL_GET_PROC(driver, CopyTexSubImage2D, glCopyTexSubImage2D);
     YAGL_GLES_OGL_GET_PROC(driver, GetTexParameterfv, glGetTexParameterfv);
@@ -101,8 +99,6 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
     YAGL_GLES_OGL_GET_PROC(driver, TexImage3D, glTexImage3D);
     YAGL_GLES_OGL_GET_PROC(driver, TexSubImage3D, glTexSubImage3D);
     YAGL_GLES_OGL_GET_PROC(driver, CopyTexSubImage3D, glCopyTexSubImage3D);
-    YAGL_GLES_OGL_GET_PROC(driver, CompressedTexImage3D, glCompressedTexImage3D);
-    YAGL_GLES_OGL_GET_PROC(driver, CompressedTexSubImage3D, glCompressedTexSubImage3D);
     YAGL_GLES_OGL_GET_PROC(driver, GenFramebuffers, glGenFramebuffersEXT);
     YAGL_GLES_OGL_GET_PROC(driver, BindFramebuffer, glBindFramebufferEXT);
     YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture2D, glFramebufferTexture2DEXT);
