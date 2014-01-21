@@ -92,10 +92,14 @@ static char* get_emulator_ecs_log_path(void)
     gchar *emulator_ecs_log_path = NULL;
     gchar *tizen_sdk_data = NULL;
 #ifndef CONFIG_WIN32
-    char emulator_ecs[] = "/emulator/vms/ecs.log";
+    char emulator_ecs[] = "/emulator/vms/";
+    char ecs_prop[] = "/logs/ecs.log";
 #else
-    char emulator_ecs[] = "\\emulator\\vms\\ecs.log";
+    char emulator_ecs[] = "\\emulator\\vms\\";
+    char ecs_prop[] = "\\logs\\ecs.log";
 #endif
+
+    char* emul_name = get_emul_vm_name();
 
     tizen_sdk_data = get_tizen_sdk_data_path();
     if (!tizen_sdk_data) {
@@ -104,14 +108,14 @@ static char* get_emulator_ecs_log_path(void)
     }
 
     emulator_ecs_log_path =
-        g_malloc(strlen(tizen_sdk_data) + sizeof(emulator_ecs) + 1);
+        g_malloc(strlen(tizen_sdk_data) + sizeof(emulator_ecs) + strlen(emul_name) + sizeof(ecs_prop) + 1);
     if (!emulator_ecs_log_path) {
         LOG("failed to allocate memory.\n");
         return NULL;
     }
 
-    g_snprintf(emulator_ecs_log_path, strlen(tizen_sdk_data) + sizeof(emulator_ecs),
-             "%s%s", tizen_sdk_data, emulator_ecs);
+    g_snprintf(emulator_ecs_log_path, strlen(tizen_sdk_data) + sizeof(emulator_ecs) + strlen(emul_name) + sizeof(ecs_prop),
+             "%s%s%s%s", tizen_sdk_data, emulator_ecs, emul_name, ecs_prop);
 
     g_free(tizen_sdk_data);
 
@@ -747,6 +751,9 @@ static int ecs_loop(ECS_State *cs)
     }
 
     for (index = 0; index < cs->reads.fd_count; index++) {
+        if (cs->reads.fd_array == NULL)
+            continue;
+
         if (FD_ISSET(cs->reads.fd_array[index], &temps)) {
             if (cs->reads.fd_array[index] == cs->listen_fd) {
                 ecs_accept(cs);
