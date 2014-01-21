@@ -1,3 +1,6 @@
+* 1.7.18
+- modified prevent defects in hwkey, keyboard
+== SungMin Ha <sungmin82.ha@samsung.com> 2014-01-21
 * 1.7.17
 - removed platform information of install dependency in emulator-qemu-x86
 == SungMin Ha <sungmin82.ha@samsung.com> 2014-01-20

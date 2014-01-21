@@ -112,7 +112,7 @@ void virtio_keyboard_notify(void *opaque)
 
 static void virtio_keyboard_event(void *opaque, int keycode)
 {
-    EmulKbdEvent kbdevt;
+    EmulKbdEvent kbdevt = {0};
     int *index = NULL;
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)opaque;
 
@@ -231,12 +231,13 @@ static int virtio_keyboard_device_init(VirtIODevice *vdev)
     vkbd = VIRTIO_KEYBOARD(vdev);
 
     INFO("initialize virtio-keyboard device\n");
-    virtio_init(vdev, TYPE_VIRTIO_KEYBOARD, VIRTIO_ID_KEYBOARD, 0);
 
     if (vdev == NULL) {
-        ERR("failed to initialize device\n");
+        ERR("failed to initialize virtio-keyboard device\n");
         return -1;
     }
+
+    virtio_init(vdev, TYPE_VIRTIO_KEYBOARD, VIRTIO_ID_KEYBOARD, 0);
 
     memset(&vkbd->kbdqueue, 0x00, sizeof(vkbd->kbdqueue));
     vkbd->extension_key = 0;

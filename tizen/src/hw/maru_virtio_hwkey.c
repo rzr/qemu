@@ -193,19 +193,22 @@ static int virtio_hwkey_device_init(VirtIODevice *vdev)
     DeviceState *qdev = DEVICE(vdev);
     vhk = VIRTIO_HWKEY(vdev);
 
-    virtio_init(vdev, TYPE_VIRTIO_HWKEY, VIRTIO_ID_HWKEY, 0);
-
     if (vdev == NULL) {
         ERR("failed to initialize the hwkey device\n");
         return -1;
     }
+
+    virtio_init(vdev, TYPE_VIRTIO_HWKEY, VIRTIO_ID_HWKEY, 0);
 
     vhk->vq = virtio_add_queue(vdev, MAX_BUF_COUNT, maru_virtio_hwkey_handle);
 
     vhk->qdev = qdev;
 
     /* reset the counters */
+    pthread_mutex_lock(&event_mutex);
     event_queue_cnt = event_ringbuf_cnt = 0;
+    pthread_mutex_unlock(&event_mutex);
+
     elem_queue_cnt = elem_ringbuf_cnt = 0;
 
     /* bottom-half */
