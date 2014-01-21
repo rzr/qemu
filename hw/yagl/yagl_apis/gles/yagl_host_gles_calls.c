@@ -516,7 +516,7 @@ void yagl_host_glDrawElements(GLenum mode,
     }
 }
 
-void yagl_host_glReadPixels(GLint x,
+void yagl_host_glReadPixelsData(GLint x,
     GLint y,
     GLsizei width,
     GLsizei height,
@@ -524,15 +524,6 @@ void yagl_host_glReadPixels(GLint x,
     GLenum type,
     GLvoid *pixels, int32_t pixels_maxcount, int32_t *pixels_count)
 {
-    GLuint current_pbo = 0;
-
-    gles_api_ts->driver->GetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_ARB,
-                                     (GLint*)&current_pbo);
-    if (current_pbo != 0) {
-        gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
-                                        0);
-    }
-
     gles_api_ts->driver->ReadPixels(x,
                                     y,
                                     width,
@@ -542,11 +533,23 @@ void yagl_host_glReadPixels(GLint x,
                                     pixels);
 
     *pixels_count = pixels_maxcount;
+}
 
-    if (current_pbo != 0) {
-        gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
-                                        current_pbo);
-    }
+void yagl_host_glReadPixelsOffset(GLint x,
+    GLint y,
+    GLsizei width,
+    GLsizei height,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->ReadPixels(x,
+                                    y,
+                                    width,
+                                    height,
+                                    format,
+                                    type,
+                                    (GLvoid*)(uintptr_t)pixels);
 }
 
 void yagl_host_glDrawArraysInstanced(GLenum mode,
@@ -899,7 +902,7 @@ void yagl_host_glGetTexParameteriv(GLenum target,
     }
 }
 
-void yagl_host_glTexImage2D(GLenum target,
+void yagl_host_glTexImage2DData(GLenum target,
     GLint level,
     GLint internalformat,
     GLsizei width,
@@ -918,6 +921,27 @@ void yagl_host_glTexImage2D(GLenum target,
                                     format,
                                     type,
                                     pixels);
+}
+
+void yagl_host_glTexImage2DOffset(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->TexImage2D(target,
+                                    level,
+                                    internalformat,
+                                    width,
+                                    height,
+                                    border,
+                                    format,
+                                    type,
+                                    (const GLvoid*)(uintptr_t)pixels);
 }
 
 void yagl_host_glTexParameterf(GLenum target,
@@ -968,7 +992,7 @@ void yagl_host_glTexParameteriv(GLenum target,
                                         (params ? tmp : NULL));
 }
 
-void yagl_host_glTexSubImage2D(GLenum target,
+void yagl_host_glTexSubImage2DData(GLenum target,
     GLint level,
     GLint xoffset,
     GLint yoffset,
@@ -987,6 +1011,27 @@ void yagl_host_glTexSubImage2D(GLenum target,
                                        format,
                                        type,
                                        pixels);
+}
+
+void yagl_host_glTexSubImage2DOffset(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLsizei width,
+    GLsizei height,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->TexSubImage2D(target,
+                                       level,
+                                       xoffset,
+                                       yoffset,
+                                       width,
+                                       height,
+                                       format,
+                                       type,
+                                       (const GLvoid*)(uintptr_t)pixels);
 }
 
 void yagl_host_glClientActiveTexture(GLenum texture)
@@ -1047,7 +1092,7 @@ void yagl_host_glGetTexEnvfv(GLenum env,
     *params_count = params_maxcount;
 }
 
-void yagl_host_glTexImage3D(GLenum target,
+void yagl_host_glTexImage3DData(GLenum target,
     GLint level,
     GLint internalformat,
     GLsizei width,
@@ -1070,7 +1115,30 @@ void yagl_host_glTexImage3D(GLenum target,
                                     pixels);
 }
 
-void yagl_host_glTexSubImage3D(GLenum target,
+void yagl_host_glTexImage3DOffset(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->TexImage3D(target,
+                                    level,
+                                    internalformat,
+                                    width,
+                                    height,
+                                    depth,
+                                    border,
+                                    format,
+                                    type,
+                                    (const void*)(uintptr_t)pixels);
+}
+
+void yagl_host_glTexSubImage3DData(GLenum target,
     GLint level,
     GLint xoffset,
     GLint yoffset,
@@ -1093,6 +1161,31 @@ void yagl_host_glTexSubImage3D(GLenum target,
                                        format,
                                        type,
                                        pixels);
+}
+
+void yagl_host_glTexSubImage3DOffset(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->TexSubImage3D(target,
+                                       level,
+                                       xoffset,
+                                       yoffset,
+                                       zoffset,
+                                       width,
+                                       height,
+                                       depth,
+                                       format,
+                                       type,
+                                       (const void*)(uintptr_t)pixels);
 }
 
 void yagl_host_glCopyTexSubImage3D(GLenum target,

@@ -152,10 +152,7 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
     gles_driver->GetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_ARB,
                              (GLint*)&current_pbo);
 
-    if (current_pbo != ctx->rp_pbo) {
-        YAGL_LOG_TRACE("Binding pbo");
-        gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, ctx->rp_pbo);
-    }
+    gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, ctx->rp_pbo);
 
     if ((width != ctx->rp_pbo_width) ||
         (height != ctx->rp_pbo_height) ||
@@ -219,13 +216,8 @@ out:
         gles_driver->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
     }
     gles_driver->PixelStorei(GL_PACK_ALIGNMENT, current_pack_alignment);
-    if ((current_pbo != 0) &&
-        (current_pbo != ctx->rp_pbo)) {
-        YAGL_LOG_ERROR("Target binded a pbo ?");
-        gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
-                                current_pbo);
-    }
-
+    gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
+                            current_pbo);
     gles_driver->BindFramebuffer(GL_READ_FRAMEBUFFER, current_fb);
 
     YAGL_LOG_FUNC_EXIT(NULL);
