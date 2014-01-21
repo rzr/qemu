@@ -1,3 +1,6 @@
+* 1.7.17
+- removed platform information of install dependency in emulator-qemu-x86
+== SungMin Ha <sungmin82.ha@samsung.com> 2014-01-20
 * 1.7.16
 - added schema for Control Panel menu
 == GiWoong Kim <giwoong.kim@samsung.com> 2014-01-15
