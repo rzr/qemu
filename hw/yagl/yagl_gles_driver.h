@@ -347,6 +347,8 @@ struct yagl_gles_driver
      * @}
      */
 
+    YAGL_GLES_DRIVER_FUNC5(RenderbufferStorageMultisample, GLenum, GLsizei, GLenum, GLsizei, GLsizei, target, samples, internalformat, width, height);
+
     /*
      * @}
      */

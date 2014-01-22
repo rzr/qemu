@@ -274,6 +274,7 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, SamplerParameteriv, glSamplerParameteriv);
         YAGL_GLES_OGL_GET_PROC(driver, SamplerParameterf, glSamplerParameterf);
         YAGL_GLES_OGL_GET_PROC(driver, SamplerParameterfv, glSamplerParameterfv);
+        YAGL_GLES_OGL_GET_PROC(driver, RenderbufferStorageMultisample, glRenderbufferStorageMultisample);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;

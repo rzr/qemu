@@ -1401,6 +1401,15 @@ void yagl_host_glGetRenderbufferParameteriv(GLenum target,
     }
 }
 
+void yagl_host_glRenderbufferStorageMultisample(GLenum target,
+    GLsizei samples,
+    GLenum internalformat,
+    GLsizei width,
+    GLsizei height)
+{
+    gles_api_ts->driver->RenderbufferStorageMultisample(target, samples, internalformat, width, height);
+}
+
 void yagl_host_glCreateProgram(GLuint program)
 {
     GLuint global_name = gles_api_ts->driver->CreateProgram();

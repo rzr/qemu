@@ -335,6 +335,11 @@ void yagl_host_glRenderbufferStorage(GLenum target,
 void yagl_host_glGetRenderbufferParameteriv(GLenum target,
     GLenum pname,
     GLint *param);
+void yagl_host_glRenderbufferStorageMultisample(GLenum target,
+    GLsizei samples,
+    GLenum internalformat,
+    GLsizei width,
+    GLsizei height);
 void yagl_host_glCreateProgram(GLuint program);
 void yagl_host_glCreateShader(GLuint shader,
     GLenum type);
