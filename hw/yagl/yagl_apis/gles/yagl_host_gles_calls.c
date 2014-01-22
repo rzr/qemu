@@ -800,6 +800,56 @@ void yagl_host_glBindBufferRange(GLenum target,
                                          offset, size);
 }
 
+void yagl_host_glMapBuffer(GLuint buffer,
+    const GLuint *ranges, int32_t ranges_count,
+    GLvoid *data, int32_t data_maxcount, int32_t *data_count)
+{
+    GLuint current_pbo;
+    GLvoid *data_ptr = data, *map_ptr;
+    GLint i;
+
+    YAGL_LOG_FUNC_SET(glMapBuffer);
+
+    gles_api_ts->driver->GetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_ARB,
+                                     (GLint*)&current_pbo);
+
+    gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, yagl_gles_object_get(buffer));
+
+    map_ptr = gles_api_ts->driver->MapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+
+    if (!map_ptr) {
+        YAGL_LOG_ERROR("glMapBuffer failed");
+        goto out1;
+    }
+
+    for (i = 0; i < (ranges_count / 2); ++i) {
+        GLuint offset = ranges[(i * 2) + 0];
+        GLuint size = ranges[(i * 2) + 1];
+
+        map_ptr += offset;
+
+        if (i > 0) {
+            data_ptr += offset;
+        }
+
+        if ((data_ptr + size) > (data + data_maxcount)) {
+            YAGL_LOG_ERROR("read out of range");
+            goto out2;
+        }
+
+        memcpy(data_ptr, map_ptr, size);
+
+        data_ptr += size;
+    }
+
+    *data_count = data_ptr - data;
+
+out2:
+    gles_api_ts->driver->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
+out1:
+    gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, current_pbo);
+}
+
 void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count)
 {
     int i;
