@@ -157,7 +157,7 @@ void set_bin_path_os(gchar * exec_argv)
 
     ssize_t len = readlink("/proc/self/exe", link_path, sizeof(link_path) - 1);
 
-    if (len < 0 || len > sizeof(link_path)) {
+    if (len < 0 || len > (sizeof(link_path) - 1)) {
         perror("set_bin_path error : ");
         return;
     }
@@ -213,23 +213,35 @@ void print_system_info_os(void)
 
     /* get linux distribution information */
     INFO("* Linux distribution infomation :\n");
-    char lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c >> ";
-    strcat(lsb_release_cmd, log_path);
-    if(system(lsb_release_cmd) < 0) {
+    const gchar lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c >> ";
+    gchar *buffer = NULL;
+    gint buffer_size = strlen(lsb_release_cmd) + strlen(log_path) + 1;
+
+    buffer = g_malloc(buffer_size);
+
+    g_snprintf(buffer, buffer_size, "%s%s", lsb_release_cmd, log_path);
+
+    if (system(buffer) < 0) {
         INFO("system function command '%s' \
-            returns error !", lsb_release_cmd);
+                returns error !", buffer);
     }
+    g_free(buffer);
 
     /* pci device description */
     INFO("* Host PCI devices :\n");
-    char lspci_cmd[MAXLEN] = "lspci >> ";
-    strcat(lspci_cmd, log_path);
+    const gchar lspci_cmd[MAXLEN] = "lspci >> ";
+    buffer_size = strlen(lspci_cmd) + strlen(log_path) + 1;
+
+    buffer = g_malloc(buffer_size);
+
+    g_snprintf(buffer, buffer_size, "%s%s", lspci_cmd, log_path);
 
     fflush(stdout);
-    if(system(lspci_cmd) < 0) {
+    if (system(buffer) < 0) {
         INFO("system function command '%s' \
-            returns error !", lspci_cmd);
+                returns error !", buffer);
     }
+    g_free(buffer);
 }
 
 char *get_timeofday(void)
