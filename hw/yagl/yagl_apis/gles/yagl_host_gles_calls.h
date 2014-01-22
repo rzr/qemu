@@ -313,6 +313,7 @@ void yagl_host_glBlitFramebuffer(GLint srcX0,
     GLbitfield mask,
     GLenum filter);
 void yagl_host_glDrawBuffers(const GLenum *bufs, int32_t bufs_count);
+void yagl_host_glReadBuffer(GLenum mode);
 void yagl_host_glFramebufferTexture3D(GLenum target,
     GLenum attachment,
     GLenum textarget,

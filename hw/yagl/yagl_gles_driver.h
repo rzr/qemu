@@ -157,6 +157,7 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC2(DeleteFramebuffers, GLsizei, const GLuint*, n, framebuffers)
     YAGL_GLES_DRIVER_FUNC10(BlitFramebuffer, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
     YAGL_GLES_DRIVER_FUNC2(DrawBuffers, GLsizei, const GLenum*, n, bufs)
+    YAGL_GLES_DRIVER_FUNC1(ReadBuffer, GLenum, mode)
     YAGL_GLES_DRIVER_FUNC6(FramebufferTexture3D, GLenum, GLenum, GLenum, GLuint, GLint, GLint, target, attachment, textarget, texture, level, zoffset);
     YAGL_GLES_DRIVER_FUNC2(GenRenderbuffers, GLsizei, GLuint*, n, renderbuffers)
     YAGL_GLES_DRIVER_FUNC2(BindRenderbuffer, GLenum, GLuint, target, renderbuffer)

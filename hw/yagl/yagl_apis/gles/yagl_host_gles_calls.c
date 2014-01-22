@@ -1326,6 +1326,11 @@ void yagl_host_glDrawBuffers(const GLenum *bufs, int32_t bufs_count)
     gles_api_ts->driver->DrawBuffers(bufs_count, bufs);
 }
 
+void yagl_host_glReadBuffer(GLenum mode)
+{
+    gles_api_ts->driver->ReadBuffer(mode);
+}
+
 void yagl_host_glFramebufferTexture3D(GLenum target,
     GLenum attachment,
     GLenum textarget,
