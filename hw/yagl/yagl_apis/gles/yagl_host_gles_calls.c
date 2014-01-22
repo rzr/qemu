@@ -850,6 +850,16 @@ out1:
     gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, current_pbo);
 }
 
+void yagl_host_glCopyBufferSubData(GLenum readTarget,
+    GLenum writeTarget,
+    GLint readOffset,
+    GLint writeOffset,
+    GLsizei size)
+{
+    gles_api_ts->driver->CopyBufferSubData(readTarget, writeTarget,
+                                           readOffset, writeOffset, size);
+}
+
 void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count)
 {
     int i;

@@ -141,6 +141,11 @@ void yagl_host_glBindBufferRange(GLenum target,
 void yagl_host_glMapBuffer(GLuint buffer,
     const GLuint *ranges, int32_t ranges_count,
     GLvoid *data, int32_t data_maxcount, int32_t *data_count);
+void yagl_host_glCopyBufferSubData(GLenum readTarget,
+    GLenum writeTarget,
+    GLint readOffset,
+    GLint writeOffset,
+    GLsizei size);
 void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count);
 void yagl_host_glBindTexture(GLenum target,
     GLuint texture);
