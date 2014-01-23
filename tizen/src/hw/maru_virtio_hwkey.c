@@ -94,13 +94,14 @@ void maru_hwkey_event(int event_type, int keycode)
     }
 
     entry = &(_events_buf[event_ringbuf_cnt % MAX_HWKEY_EVENT_CNT]);
-    event_ringbuf_cnt++;
 
     /* hwkey event is copied into the queue */
     entry->hwkey.keycode = keycode;
     entry->hwkey.event_type = event_type;
 
     pthread_mutex_lock(&event_mutex);
+
+    event_ringbuf_cnt++;
 
     entry->index = ++event_queue_cnt; // 1 ~
 
