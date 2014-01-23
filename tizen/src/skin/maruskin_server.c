@@ -538,27 +538,16 @@ static void parse_skinconfig_prop(void)
         return;
     }
 
-    char* buf = g_malloc0(buf_size);
+    char* buf = g_malloc0(buf_size + 1);
     if (!buf) {
-        ERR("Fail to malloc for %s\n", SKIN_CONFIG_PROP);
+        ERR("Failed to malloc for %s\n", SKIN_CONFIG_PROP);
         fclose(fp);
         return;
     }
 
-    int read_cnt = 0;
-    int total_cnt = 0;
-
-    while (1) {
-        if (total_cnt == buf_size) {
-            break;
-        }
-
-        read_cnt = fread((void*) (buf + read_cnt), 1, buf_size - total_cnt, fp);
-        if (0 > read_cnt) {
-            break;
-        } else {
-            total_cnt += read_cnt;
-        }
+    int read_cnt = fread((void*) buf, 1, buf_size, fp);
+    if (buf_size > read_cnt) {
+        WARN("Failed to fread for %s\n", SKIN_CONFIG_PROP);
     }
 
     fclose(fp);
