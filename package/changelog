@@ -1,3 +1,6 @@
+* 1.7.19
+- modified missing lock in hwkey
+== SungMin Ha <sungmin82.ha@samsung.com> 2014-01-22
 * 1.7.18
 - modified prevent defects in hwkey, keyboard
 == SungMin Ha <sungmin82.ha@samsung.com> 2014-01-21
