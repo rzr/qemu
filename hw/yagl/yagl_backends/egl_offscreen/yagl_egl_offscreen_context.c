@@ -115,7 +115,7 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
         ((struct yagl_egl_offscreen*)ctx->base.dpy->backend)->gles_driver;
     bool ret = false;
     GLuint current_fb = 0;
-    GLint current_pack_alignment = 0;
+    GLint current_pack[3];
     GLuint current_pbo = 0;
     uint32_t rp_line_size = width * bpp;
     uint32_t rp_size = rp_line_size * height;
@@ -129,10 +129,11 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
     gles_driver->GetIntegerv(GL_READ_FRAMEBUFFER_BINDING,
                              (GLint*)&current_fb);
 
-    gles_driver->GetIntegerv(GL_PACK_ALIGNMENT,
-                             &current_pack_alignment);
-
     gles_driver->BindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    gles_driver->GetIntegerv(GL_PACK_ALIGNMENT, &current_pack[0]);
+    gles_driver->GetIntegerv(GL_PACK_ROW_LENGTH, &current_pack[1]);
+    gles_driver->GetIntegerv(GL_PACK_IMAGE_HEIGHT, &current_pack[2]);
 
     if (!ctx->rp_pbo) {
         /*
@@ -186,6 +187,8 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
     }
 
     gles_driver->PixelStorei(GL_PACK_ALIGNMENT, 1);
+    gles_driver->PixelStorei(GL_PACK_ROW_LENGTH, 0);
+    gles_driver->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0);
 
     gles_driver->ReadPixels(0, 0,
                             width, height, format, GL_UNSIGNED_INT_8_8_8_8_REV,
@@ -215,7 +218,9 @@ out:
     if (mapped_pixels) {
         gles_driver->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
     }
-    gles_driver->PixelStorei(GL_PACK_ALIGNMENT, current_pack_alignment);
+    gles_driver->PixelStorei(GL_PACK_ALIGNMENT, current_pack[0]);
+    gles_driver->PixelStorei(GL_PACK_ROW_LENGTH, current_pack[1]);
+    gles_driver->PixelStorei(GL_PACK_IMAGE_HEIGHT, current_pack[2]);
     gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
                             current_pbo);
     gles_driver->BindFramebuffer(GL_READ_FRAMEBUFFER, current_fb);

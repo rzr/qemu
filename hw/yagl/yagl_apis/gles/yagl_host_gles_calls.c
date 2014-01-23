@@ -2804,7 +2804,7 @@ void yagl_host_glUpdateOffscreenImageYAGL(GLuint texture,
 {
     GLenum format = 0;
     GLuint cur_tex = 0;
-    GLsizei unpack_alignment = 0;
+    GLsizei unpack[3];
 
     YAGL_LOG_FUNC_SET(glUpdateOffscreenImageYAGL);
 
@@ -2823,10 +2823,13 @@ void yagl_host_glUpdateOffscreenImageYAGL(GLuint texture,
     gles_api_ts->driver->GetIntegerv(GL_TEXTURE_BINDING_2D,
                                      (GLint*)&cur_tex);
 
-    gles_api_ts->driver->GetIntegerv(GL_UNPACK_ALIGNMENT,
-                                     &unpack_alignment);
+    gles_api_ts->driver->GetIntegerv(GL_UNPACK_ALIGNMENT, &unpack[0]);
+    gles_api_ts->driver->GetIntegerv(GL_UNPACK_ROW_LENGTH, &unpack[1]);
+    gles_api_ts->driver->GetIntegerv(GL_UNPACK_IMAGE_HEIGHT, &unpack[2]);
 
     gles_api_ts->driver->PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, 0);
 
     gles_api_ts->driver->BindTexture(GL_TEXTURE_2D,
                                      yagl_gles_object_get(texture));
@@ -2844,8 +2847,9 @@ void yagl_host_glUpdateOffscreenImageYAGL(GLuint texture,
                                     GL_UNSIGNED_INT_8_8_8_8_REV,
                                     pixels);
 
-    gles_api_ts->driver->PixelStorei(GL_UNPACK_ALIGNMENT,
-                                     unpack_alignment);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_ALIGNMENT, unpack[0]);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH, unpack[1]);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, unpack[2]);
 
     gles_api_ts->driver->BindTexture(GL_TEXTURE_2D, cur_tex);
 }
