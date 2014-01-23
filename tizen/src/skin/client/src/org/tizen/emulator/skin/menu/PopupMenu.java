@@ -538,7 +538,7 @@ public class PopupMenu {
 			};
 
 			File[] layoutPaths = pathRoot.listFiles(filter);
-			if (layoutPaths.length <= 0) {
+			if (layoutPaths == null || layoutPaths.length <= 0) {
 				logger.info("the layout of key window not found");
 				return null;
 			}

@@ -573,9 +573,9 @@ public class EmulatorSkin {
 				}
 
 				Menu menu = popupMenu.getMenuRoot();
-				keyForceRelease(true);
-
 				if (menu != null) {
+					keyForceRelease(false);
+
 					shell.setMenu(menu);
 					menu.setVisible(true);
 
@@ -837,9 +837,9 @@ public class EmulatorSkin {
 				}
 
 				Menu menu = popupMenu.getMenuRoot();
-				keyForceRelease(true);
-
 				if (menu != null) {
+					keyForceRelease(false);
+
 					lcdCanvas.setMenu(menu);
 					menu.setVisible(true);
 
