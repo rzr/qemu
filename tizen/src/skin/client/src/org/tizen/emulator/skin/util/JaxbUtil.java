@@ -90,6 +90,10 @@ public class JaxbUtil {
 	private static JAXBContext getContext(Class<?> clazz) throws JaxbException {
 		try {
 			String qualifier = clazz.getCanonicalName();
+			if (qualifier == null) {
+				throw new JAXBException("underlying class does not have a canonical name");
+			}
+
 			int index = qualifier.lastIndexOf('.');
 			if (-1 != index) {
 				qualifier = qualifier.substring(0, index);
