@@ -81,7 +81,6 @@ struct mloop_evpack {
 #define MLOOP_EVTYPE_INTR_UP    3
 #define MLOOP_EVTYPE_INTR_DOWN  4
 #define MLOOP_EVTYPE_TOUCH      6
-#define MLOOP_EVTYPE_KEYBOARD   7
 #define MLOOP_EVTYPE_KBD_ADD    8
 #define MLOOP_EVTYPE_KBD_DEL    9
 #define MLOOP_EVTYPE_RAMDUMP    10
@@ -308,11 +307,6 @@ static void mloop_evhandle_touch(struct mloop_evpack* pack)
     maru_virtio_touchscreen_notify();
 }
 
-static void mloop_evhandle_keyboard(long data)
-{
-    virtio_keyboard_notify((void*)data);
-}
-
 #ifdef TARGET_I386
 static void mloop_evhandle_kbd_add(char *name)
 {
@@ -522,9 +516,6 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     case MLOOP_EVTYPE_TOUCH:
         mloop_evhandle_touch(&pack);
         break;
-    case MLOOP_EVTYPE_KEYBOARD:
-        mloop_evhandle_keyboard(*(long*)&pack.data[0]);
-        break;
 #ifdef TARGET_I386
     case MLOOP_EVTYPE_KBD_ADD:
         mloop_evhandle_kbd_add(pack.data);
@@ -666,17 +657,6 @@ void mloop_evcmd_touch(void)
 
     pack.type = MLOOP_EVTYPE_TOUCH;
     pack.size = 5;
-    mloop_evsock_send(&mloop, &pack);
-}
-
-void mloop_evcmd_keyboard(void *data)
-{
-    struct mloop_evpack pack;
-    memset(&pack, 0, sizeof(struct mloop_evpack));
-
-    pack.type = MLOOP_EVTYPE_KEYBOARD;
-    pack.size = 4 + 8;
-    *((VirtIOKeyboard **)pack.data) = (VirtIOKeyboard *)data;
     mloop_evsock_send(&mloop, &pack);
 }
 
