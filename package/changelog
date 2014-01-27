@@ -1,3 +1,6 @@
+* 1.7.20
+- modified the routine for framebuffer swapping
+== GiWoong Kim <giwoong.kim@samsung.com> 2014-01-27
 * 1.7.19
 - modified missing lock in hwkey
 == SungMin Ha <sungmin82.ha@samsung.com> 2014-01-22
