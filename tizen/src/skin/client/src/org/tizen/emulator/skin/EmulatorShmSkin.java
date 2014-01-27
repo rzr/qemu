@@ -196,9 +196,13 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			dataFramebuffer.setPixels(0, 0,
 					sizeFramebuffer, arrayFramebuffer, 0);
 
-			imageTemp = imageFramebuffer;
-			imageFramebuffer = new Image(display, dataFramebuffer);
-			imageTemp.dispose();
+			display.syncExec(new Runnable() {
+				@Override
+				public void run() {
+					imageFramebuffer.dispose();
+					imageFramebuffer = new Image(display, dataFramebuffer);
+				}
+			});
 		}
 
 		public void stopRequest() {
