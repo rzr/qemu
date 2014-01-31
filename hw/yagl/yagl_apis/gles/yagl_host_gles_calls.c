@@ -2310,6 +2310,66 @@ void yagl_host_glUniform4uiv(GLboolean tl,
         (v_count / 4), v);
 }
 
+void yagl_host_glUniformMatrix2x3fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix2x3fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (2 * 3), transpose, value);
+}
+
+void yagl_host_glUniformMatrix2x4fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix2x4fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (2 * 4), transpose, value);
+}
+
+void yagl_host_glUniformMatrix3x2fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix3x2fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (3 * 2), transpose, value);
+}
+
+void yagl_host_glUniformMatrix3x4fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix3x4fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (3 * 4), transpose, value);
+}
+
+void yagl_host_glUniformMatrix4x2fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix4x2fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (4 * 2), transpose, value);
+}
+
+void yagl_host_glUniformMatrix4x3fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix4x3fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (4 * 3), transpose, value);
+}
+
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count)
 {

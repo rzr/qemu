@@ -590,6 +590,30 @@ void yagl_host_glUniform3uiv(GLboolean tl,
 void yagl_host_glUniform4uiv(GLboolean tl,
     uint32_t location,
     const GLuint *v, int32_t v_count);
+void yagl_host_glUniformMatrix2x3fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix2x4fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix3x2fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix3x4fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix4x2fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix4x3fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetFloatv(GLenum pname,

@@ -292,6 +292,12 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, Uniform2uiv, glUniform2uiv);
         YAGL_GLES_OGL_GET_PROC(driver, Uniform3uiv, glUniform3uiv);
         YAGL_GLES_OGL_GET_PROC(driver, Uniform4uiv, glUniform4uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix2x3fv, glUniformMatrix2x3fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix2x4fv, glUniformMatrix2x4fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix3x2fv, glUniformMatrix3x2fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix3x4fv, glUniformMatrix3x4fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix4x2fv, glUniformMatrix4x2fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix4x3fv, glUniformMatrix4x3fv);
         YAGL_GLES_OGL_GET_PROC(driver, ClearBufferiv, glClearBufferiv);
         YAGL_GLES_OGL_GET_PROC(driver, ClearBufferuiv, glClearBufferuiv);
         YAGL_GLES_OGL_GET_PROC(driver, ClearBufferfi, glClearBufferfi);

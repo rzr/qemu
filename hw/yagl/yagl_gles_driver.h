@@ -365,6 +365,12 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC3(Uniform2uiv, GLint, GLsizei, const GLuint*, location, count, v)
     YAGL_GLES_DRIVER_FUNC3(Uniform3uiv, GLint, GLsizei, const GLuint*, location, count, v)
     YAGL_GLES_DRIVER_FUNC3(Uniform4uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix2x3fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix2x4fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix3x2fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix3x4fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix4x2fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix4x3fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
     YAGL_GLES_DRIVER_FUNC3(ClearBufferiv, GLenum, GLint, const GLint*, buffer, drawbuffer, value);
     YAGL_GLES_DRIVER_FUNC3(ClearBufferuiv, GLenum, GLint, const GLuint*, buffer, drawbuffer, value);
     YAGL_GLES_DRIVER_FUNC4(ClearBufferfi, GLenum, GLint, GLfloat, GLint, buffer, drawbuffer, depth, stencil);
