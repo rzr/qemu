@@ -121,6 +121,17 @@ void yagl_host_glDisableClientState(GLenum array);
 void yagl_host_glEnableClientState(GLenum array);
 void yagl_host_glVertexAttribDivisor(GLuint index,
     GLuint divisor);
+void yagl_host_glVertexAttribIPointerData(GLuint index,
+    GLint size,
+    GLenum type,
+    GLsizei stride,
+    GLint first,
+    const GLvoid *data, int32_t data_count);
+void yagl_host_glVertexAttribIPointerOffset(GLuint index,
+    GLint size,
+    GLenum type,
+    GLsizei stride,
+    GLsizei offset);
 void yagl_host_glGenBuffers(const GLuint *buffers, int32_t buffers_count);
 void yagl_host_glBindBuffer(GLenum target,
     GLuint buffer);
@@ -512,6 +523,60 @@ void yagl_host_glGetActiveUniformBlockiv(GLuint program,
     GLuint uniformBlockIndex,
     GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glGetVertexAttribIiv(GLuint index,
+    GLenum pname,
+    GLint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glGetVertexAttribIuiv(GLuint index,
+    GLenum pname,
+    GLuint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glVertexAttribI4i(GLuint index,
+    GLint x,
+    GLint y,
+    GLint z,
+    GLint w);
+void yagl_host_glVertexAttribI4ui(GLuint index,
+    GLuint x,
+    GLuint y,
+    GLuint z,
+    GLuint w);
+void yagl_host_glVertexAttribI4iv(GLuint index,
+    const GLint *v, int32_t v_count);
+void yagl_host_glVertexAttribI4uiv(GLuint index,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glGetUniformuiv(GLboolean tl,
+    GLuint program,
+    uint32_t location,
+    GLuint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glUniform1ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0);
+void yagl_host_glUniform2ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1);
+void yagl_host_glUniform3ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1,
+    GLuint v2);
+void yagl_host_glUniform4ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1,
+    GLuint v2,
+    GLuint v3);
+void yagl_host_glUniform1uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glUniform2uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glUniform3uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glUniform4uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count);
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetFloatv(GLenum pname,

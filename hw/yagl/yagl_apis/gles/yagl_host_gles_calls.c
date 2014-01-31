@@ -745,6 +745,32 @@ void yagl_host_glVertexAttribDivisor(GLuint index,
     gles_api_ts->driver->VertexAttribDivisor(index, divisor);
 }
 
+void yagl_host_glVertexAttribIPointerData(GLuint index,
+    GLint size,
+    GLenum type,
+    GLsizei stride,
+    GLint first,
+    const GLvoid *data, int32_t data_count)
+{
+    GLuint current_vbo = yagl_gles_bind_array(index, first, stride,
+                                              data, data_count);
+
+    gles_api_ts->driver->VertexAttribIPointer(index, size, type, stride, NULL);
+
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
+}
+
+void yagl_host_glVertexAttribIPointerOffset(GLuint index,
+    GLint size,
+    GLenum type,
+    GLsizei stride,
+    GLsizei offset)
+{
+    gles_api_ts->driver->VertexAttribIPointer(index, size, type,
+                                              stride,
+                                              (const GLvoid*)(uintptr_t)offset);
+}
+
 void yagl_host_glGenBuffers(const GLuint *buffers, int32_t buffers_count)
 {
     int i;
@@ -2097,6 +2123,162 @@ void yagl_host_glGetActiveUniformBlockiv(GLuint program,
     default:
         break;
     }
+}
+
+void yagl_host_glGetVertexAttribIiv(GLuint index,
+    GLenum pname,
+    GLint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    if (!yagl_gles_get_array_param_count(pname, params_count)) {
+        return;
+    }
+
+    gles_api_ts->driver->GetVertexAttribIiv(index, pname, params);
+}
+
+void yagl_host_glGetVertexAttribIuiv(GLuint index,
+    GLenum pname,
+    GLuint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    if (!yagl_gles_get_array_param_count(pname, params_count)) {
+        return;
+    }
+
+    gles_api_ts->driver->GetVertexAttribIuiv(index, pname, params);
+}
+
+void yagl_host_glVertexAttribI4i(GLuint index,
+    GLint x,
+    GLint y,
+    GLint z,
+    GLint w)
+{
+    gles_api_ts->driver->VertexAttribI4i(index, x, y, z, w);
+}
+
+void yagl_host_glVertexAttribI4ui(GLuint index,
+    GLuint x,
+    GLuint y,
+    GLuint z,
+    GLuint w)
+{
+    gles_api_ts->driver->VertexAttribI4ui(index, x, y, z, w);
+}
+
+void yagl_host_glVertexAttribI4iv(GLuint index,
+    const GLint *v, int32_t v_count)
+{
+    gles_api_ts->driver->VertexAttribI4iv(index, v);
+}
+
+void yagl_host_glVertexAttribI4uiv(GLuint index,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->VertexAttribI4uiv(index, v);
+}
+
+void yagl_host_glGetUniformuiv(GLboolean tl,
+    GLuint program,
+    uint32_t location,
+    GLuint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    GLenum type;
+    GLuint global_name = yagl_gles_object_get(program);
+    GLint actual_location = yagl_gles_api_ps_translate_location(gles_api_ts->ps,
+                                                                tl,
+                                                                location);
+
+    if (!yagl_gles_program_get_uniform_type(global_name,
+                                            actual_location,
+                                            &type)) {
+        return;
+    }
+
+    if (!yagl_gles_get_uniform_type_count(type, params_count)) {
+        return;
+    }
+
+    gles_api_ts->driver->GetUniformuiv(global_name,
+                                       actual_location,
+                                       params);
+}
+
+void yagl_host_glUniform1ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0)
+{
+    gles_api_ts->driver->Uniform1ui(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v0);
+}
+
+void yagl_host_glUniform2ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1)
+{
+    gles_api_ts->driver->Uniform2ui(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v0, v1);
+}
+
+void yagl_host_glUniform3ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1,
+    GLuint v2)
+{
+    gles_api_ts->driver->Uniform3ui(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v0, v1, v2);
+}
+
+void yagl_host_glUniform4ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1,
+    GLuint v2,
+    GLuint v3)
+{
+    gles_api_ts->driver->Uniform4ui(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v0, v1, v2, v3);
+}
+
+void yagl_host_glUniform1uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->Uniform1uiv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v_count, v);
+}
+
+void yagl_host_glUniform2uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->Uniform2uiv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        (v_count / 2), v);
+}
+
+void yagl_host_glUniform3uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->Uniform3uiv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        (v_count / 3), v);
+}
+
+void yagl_host_glUniform4uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->Uniform4uiv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        (v_count / 4), v);
 }
 
 void yagl_host_glGetIntegerv(GLenum pname,

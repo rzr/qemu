@@ -349,6 +349,22 @@ struct yagl_gles_driver
 
     YAGL_GLES_DRIVER_FUNC5(RenderbufferStorageMultisample, GLenum, GLsizei, GLenum, GLsizei, GLsizei, target, samples, internalformat, width, height);
     YAGL_GLES_DRIVER_FUNC5(CopyBufferSubData, GLenum, GLenum, GLintptr, GLintptr, GLsizeiptr, readTarget, writeTarget, readOffset, writeOffset, size);
+    YAGL_GLES_DRIVER_FUNC5(VertexAttribIPointer, GLuint, GLint, GLenum, GLsizei, const GLvoid*, index, size, type, stride, pointer);
+    YAGL_GLES_DRIVER_FUNC3(GetVertexAttribIiv, GLuint, GLenum, GLint*, index, pname, params);
+    YAGL_GLES_DRIVER_FUNC3(GetVertexAttribIuiv, GLuint, GLenum, GLuint*, index, pname, params);
+    YAGL_GLES_DRIVER_FUNC5(VertexAttribI4i, GLuint, GLint, GLint, GLint, GLint, index, x, y, z, w);
+    YAGL_GLES_DRIVER_FUNC5(VertexAttribI4ui, GLuint, GLuint, GLuint, GLuint, GLuint, index, x, y, z, w);
+    YAGL_GLES_DRIVER_FUNC2(VertexAttribI4iv, GLuint, const GLint*, index, v);
+    YAGL_GLES_DRIVER_FUNC2(VertexAttribI4uiv, GLuint, const GLuint*, index, v);
+    YAGL_GLES_DRIVER_FUNC3(GetUniformuiv, GLuint, GLint, GLuint*, program, location, params)
+    YAGL_GLES_DRIVER_FUNC2(Uniform1ui, GLint, GLuint, location, v0)
+    YAGL_GLES_DRIVER_FUNC3(Uniform2ui, GLint, GLuint, GLuint, location, v0, v1)
+    YAGL_GLES_DRIVER_FUNC4(Uniform3ui, GLint, GLuint, GLuint, GLuint, location, v0, v1, v2)
+    YAGL_GLES_DRIVER_FUNC5(Uniform4ui, GLint, GLuint, GLuint, GLuint, GLuint, location, v0, v1, v2, v3)
+    YAGL_GLES_DRIVER_FUNC3(Uniform1uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC3(Uniform2uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC3(Uniform3uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC3(Uniform4uiv, GLint, GLsizei, const GLuint*, location, count, v)
 
     /*
      * @}

@@ -276,6 +276,22 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, SamplerParameterfv, glSamplerParameterfv);
         YAGL_GLES_OGL_GET_PROC(driver, RenderbufferStorageMultisample, glRenderbufferStorageMultisample);
         YAGL_GLES_OGL_GET_PROC(driver, CopyBufferSubData, glCopyBufferSubData);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribIPointer, glVertexAttribIPointer);
+        YAGL_GLES_OGL_GET_PROC(driver, GetVertexAttribIiv, glGetVertexAttribIiv);
+        YAGL_GLES_OGL_GET_PROC(driver, GetVertexAttribIuiv, glGetVertexAttribIuiv);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribI4i, glVertexAttribI4i);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribI4ui, glVertexAttribI4ui);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribI4iv, glVertexAttribI4iv);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribI4uiv, glVertexAttribI4uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, GetUniformuiv, glGetUniformuiv);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform1ui, glUniform1ui);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform2ui, glUniform2ui);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform3ui, glUniform3ui);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform4ui, glUniform4ui);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform1uiv, glUniform1uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform2uiv, glUniform2uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform3uiv, glUniform3uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform4uiv, glUniform4uiv);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;
