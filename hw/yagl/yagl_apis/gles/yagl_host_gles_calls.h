@@ -616,6 +616,8 @@ void yagl_host_glUniformMatrix4x3fv(GLboolean tl,
     const GLfloat *value, int32_t value_count);
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
+int yagl_host_glGetFragDataLocation(GLuint program,
+    const GLchar *name, int32_t name_count);
 void yagl_host_glGetFloatv(GLenum pname,
     GLfloat *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetString(GLenum name,

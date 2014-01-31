@@ -2370,6 +2370,13 @@ void yagl_host_glUniformMatrix4x3fv(GLboolean tl,
         value_count / (4 * 3), transpose, value);
 }
 
+int yagl_host_glGetFragDataLocation(GLuint program,
+    const GLchar *name, int32_t name_count)
+{
+    return gles_api_ts->driver->GetFragDataLocation(yagl_gles_object_get(program),
+                                                    name);
+}
+
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count)
 {
