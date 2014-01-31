@@ -577,6 +577,21 @@ void yagl_host_glDrawElementsInstanced(GLenum mode,
     }
 }
 
+void yagl_host_glDrawRangeElements(GLenum mode,
+    GLuint start,
+    GLuint end,
+    GLsizei count,
+    GLenum type,
+    const GLvoid *indices, int32_t indices_count)
+{
+    if (indices) {
+        gles_api_ts->driver->DrawRangeElements(mode, start, end, count, type, indices);
+    } else {
+        gles_api_ts->driver->DrawRangeElements(mode, start, end, count, type,
+                                               (const GLvoid*)(uintptr_t)indices_count);
+    }
+}
+
 void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count)
 {
     int i;

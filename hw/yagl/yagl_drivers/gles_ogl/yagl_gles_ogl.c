@@ -303,6 +303,7 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, ClearBufferfi, glClearBufferfi);
         YAGL_GLES_OGL_GET_PROC(driver, ClearBufferfv, glClearBufferfv);
         YAGL_GLES_OGL_GET_PROC(driver, GetFragDataLocation, glGetFragDataLocation);
+        YAGL_GLES_OGL_GET_PROC(driver, DrawRangeElements, glDrawRangeElements);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;

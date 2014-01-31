@@ -65,6 +65,12 @@ void yagl_host_glDrawElementsInstanced(GLenum mode,
     GLenum type,
     const void *indices, int32_t indices_count,
     GLsizei primcount);
+void yagl_host_glDrawRangeElements(GLenum mode,
+    GLuint start,
+    GLuint end,
+    GLsizei count,
+    GLenum type,
+    const GLvoid *indices, int32_t indices_count);
 void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count);
 void yagl_host_glBindVertexArray(GLuint array);
 void yagl_host_glDisableVertexAttribArray(GLuint index);

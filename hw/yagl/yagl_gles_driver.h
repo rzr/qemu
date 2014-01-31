@@ -376,6 +376,7 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC4(ClearBufferfi, GLenum, GLint, GLfloat, GLint, buffer, drawbuffer, depth, stencil);
     YAGL_GLES_DRIVER_FUNC3(ClearBufferfv, GLenum, GLint, const GLfloat*, buffer, drawbuffer, value);
     YAGL_GLES_DRIVER_FUNC_RET2(int, GetFragDataLocation, GLuint, const GLchar*, program, name);
+    YAGL_GLES_DRIVER_FUNC6(DrawRangeElements, GLenum, GLuint, GLuint, GLsizei, GLenum, const GLvoid*, mode, start, end, count, type, indices);
 
     /*
      * @}
