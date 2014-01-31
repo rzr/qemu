@@ -365,6 +365,10 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC3(Uniform2uiv, GLint, GLsizei, const GLuint*, location, count, v)
     YAGL_GLES_DRIVER_FUNC3(Uniform3uiv, GLint, GLsizei, const GLuint*, location, count, v)
     YAGL_GLES_DRIVER_FUNC3(Uniform4uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC3(ClearBufferiv, GLenum, GLint, const GLint*, buffer, drawbuffer, value);
+    YAGL_GLES_DRIVER_FUNC3(ClearBufferuiv, GLenum, GLint, const GLuint*, buffer, drawbuffer, value);
+    YAGL_GLES_DRIVER_FUNC4(ClearBufferfi, GLenum, GLint, GLfloat, GLint, buffer, drawbuffer, depth, stencil);
+    YAGL_GLES_DRIVER_FUNC3(ClearBufferfv, GLenum, GLint, const GLfloat*, buffer, drawbuffer, value);
 
     /*
      * @}

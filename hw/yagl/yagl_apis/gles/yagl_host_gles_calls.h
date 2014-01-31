@@ -341,6 +341,19 @@ void yagl_host_glFramebufferTextureLayer(GLenum target,
     GLuint texture,
     GLint level,
     GLint layer);
+void yagl_host_glClearBufferiv(GLenum buffer,
+    GLint drawbuffer,
+    const GLint *value, int32_t value_count);
+void yagl_host_glClearBufferuiv(GLenum buffer,
+    GLint drawbuffer,
+    const GLuint *value, int32_t value_count);
+void yagl_host_glClearBufferfi(GLenum buffer,
+    GLint drawbuffer,
+    GLfloat depth,
+    GLint stencil);
+void yagl_host_glClearBufferfv(GLenum buffer,
+    GLint drawbuffer,
+    const GLfloat *value, int32_t value_count);
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count);
 void yagl_host_glBindRenderbuffer(GLenum target,
     GLuint renderbuffer);

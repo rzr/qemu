@@ -1391,6 +1391,35 @@ void yagl_host_glFramebufferTextureLayer(GLenum target,
                                                  level, layer);
 }
 
+void yagl_host_glClearBufferiv(GLenum buffer,
+    GLint drawbuffer,
+    const GLint *value, int32_t value_count)
+{
+    gles_api_ts->driver->ClearBufferiv(buffer, drawbuffer, value);
+}
+
+void yagl_host_glClearBufferuiv(GLenum buffer,
+    GLint drawbuffer,
+    const GLuint *value, int32_t value_count)
+{
+    gles_api_ts->driver->ClearBufferuiv(buffer, drawbuffer, value);
+}
+
+void yagl_host_glClearBufferfi(GLenum buffer,
+    GLint drawbuffer,
+    GLfloat depth,
+    GLint stencil)
+{
+    gles_api_ts->driver->ClearBufferfi(buffer, drawbuffer, depth, stencil);
+}
+
+void yagl_host_glClearBufferfv(GLenum buffer,
+    GLint drawbuffer,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->ClearBufferfv(buffer, drawbuffer, value);
+}
+
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count)
 {
     int i;

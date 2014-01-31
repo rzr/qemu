@@ -292,6 +292,10 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, Uniform2uiv, glUniform2uiv);
         YAGL_GLES_OGL_GET_PROC(driver, Uniform3uiv, glUniform3uiv);
         YAGL_GLES_OGL_GET_PROC(driver, Uniform4uiv, glUniform4uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, ClearBufferiv, glClearBufferiv);
+        YAGL_GLES_OGL_GET_PROC(driver, ClearBufferuiv, glClearBufferuiv);
+        YAGL_GLES_OGL_GET_PROC(driver, ClearBufferfi, glClearBufferfi);
+        YAGL_GLES_OGL_GET_PROC(driver, ClearBufferfv, glClearBufferfv);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;
