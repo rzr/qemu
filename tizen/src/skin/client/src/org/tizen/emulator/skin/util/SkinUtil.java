@@ -197,7 +197,7 @@ public class SkinUtil {
 		return false;
 	}
 
-	public static Region getTrimmingRegion(Image image) {
+	public static Region getTrimmedRegion(Image image) {
 		if (null == image) {
 			return null;
 		}

@@ -62,6 +62,8 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
@@ -587,6 +589,16 @@ public class EmulatorSkin {
 		};
 
 		shell.addMenuDetectListener(shellMenuDetectListener);
+
+		/* keep window region while OS theme changing */
+		shell.getDisplay().addListener(SWT.Settings, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				logger.info("operating system property has been changed");
+
+				rearrangeSkin();
+			}
+		});
 	}
 
 	private void removeShellListeners() {
@@ -1214,6 +1226,12 @@ public class EmulatorSkin {
 		if (null != canvasMouseWheelListener) {
 			lcdCanvas.removeMouseWheelListener(canvasMouseWheelListener);
 		}
+	}
+
+	protected void rearrangeSkin() {
+		skinComposer.arrangeSkin(
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
 	}
 
 	public void updateSkin() {
