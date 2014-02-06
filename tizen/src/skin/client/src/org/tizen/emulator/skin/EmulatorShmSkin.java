@@ -111,7 +111,6 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private int[] arrayFramebuffer;
 		private ImageData dataFramebuffer;
 		private Image imageFramebuffer;
-		private Image imageTemp;
 
 		private volatile boolean stopRequest;
 		private Runnable runnable;
