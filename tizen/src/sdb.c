@@ -100,20 +100,31 @@ int check_port_bind_listen(uint32_t port)
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port);
 
-    if (((s = qemu_socket(AF_INET, SOCK_STREAM, 0)) < 0) ||
-#ifndef _WIN32
-            (setsockopt(s, SOL_SOCKET,SO_REUSEADDR, (char *)&opt, sizeof(int)) < 0) ||
-#endif
-            (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) ||
-            (listen(s, 1) < 0)) {
+    s = qemu_socket(AF_INET, SOCK_STREAM, 0);
+    if (s < 0) {
+        ERR("failed to create a socket\n", port);
+        return -1;
+    }
 
-        /* fail */
+#ifndef _WIN32
+    ret = setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
+                    (char *)&opt, sizeof(int));
+    if (ret < 0) {
+        ERR("setsockopt failure\n");
+        close(s);
+        return -1;
+    }
+#endif
+
+    if ((bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) ||
+        (listen(s, 1) < 0)) {
+        /* failure */
         ret = -1;
-        ERR( "port(%d) listen  fail \n", port);
-    }else{
-        /*fsucess*/
+        ERR("port(%d) listen failure\n", port);
+    } else {
+        /* success */
         ret = 1;
-        INFO( "port(%d) listen  ok \n", port);
+        INFO("port(%d) listen success\n", port);
     }
 
 #ifdef _WIN32
@@ -125,7 +136,7 @@ int check_port_bind_listen(uint32_t port)
     return ret;
 }
 
-void set_sdb_base_port(void)
+void set_base_port(void)
 {
     int   tries     = 10;
     int   success   = 0;
@@ -186,14 +197,6 @@ void sdb_setup(void)
     }
 
     INFO( "Port(%d/tcp) listen for SDB \n", number);
-
-    /* for sensort */
-    sprintf(buf, "tcp:%d:10.0.2.16:3577", number + SDB_TCP_EMULD_INDEX );
-    if(net_slirp_redir((char*)buf) < 0){
-        ERR( "redirect [%s] fail \n", buf);
-    }else{
-        INFO("redirect [%s] success\n", buf);
-    }
 }
 
 int sdb_loopback_client(int port, int type)

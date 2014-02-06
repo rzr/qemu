@@ -1778,63 +1778,37 @@ public class EmulatorSkin {
 					}
 
 					return;
+                }
+
+                String emulName = SkinUtil.getVmName(config);
+                int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
+
+				ProcessBuilder procEcp = new ProcessBuilder();
+
+				// FIXME: appropriate running binary setting is necessary.
+				if (SwtUtil.isWindowsPlatform()) {
+					procEcp.command("java.exe", "-jar", ecpPath, "vmname="
+							+ emulName, "base.port=" + portSdb);
+				} else if (SwtUtil.isMacPlatform()) {
+					procEcp.command("java", "-jar", "-XstartOnFirstThread",
+							ecpPath, "vmname=" + emulName, "base.port="
+									+ portSdb);
+				} else { /* Linux */
+					procEcp.command("java", "-jar", ecpPath, "vmname="
+							+ emulName, "base.port=" + portSdb);
 				}
 
-				// TODO: thread
-				/* get ECS port from Qemu */
-				DataTranfer dataTranfer = communicator.sendDataToQEMU(
-						SendCommand.SEND_ECP_PORT_REQ, null, true);
-				byte[] receivedData = communicator.getReceivedData(dataTranfer);
+				logger.info(procEcp.command().toString());
 
-				if (null != receivedData) {
-					int portEcp = (receivedData[0] & 0xFF) << 24;
-					portEcp |= (receivedData[1] & 0xFF) << 16;
-					portEcp |= (receivedData[2] & 0xFF) << 8;
-					portEcp |= (receivedData[3] & 0xFF);
-
-					if (portEcp <= 0) {
-						logger.log(Level.INFO, "ECS port failed : " + portEcp);
-
-						SkinUtil.openMessage(shell, null,
-								"Failed to connect to Control Server. Please restart the emulator.",
-								SWT.ICON_ERROR, config);
-						return;
-					}
-
-					String emulName = SkinUtil.getVmName(config);
-					int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
-
-					ProcessBuilder procEcp = new ProcessBuilder();
-
-					// FIXME: appropriate running binary setting is necessary.
-					if (SwtUtil.isWindowsPlatform()) {
-						procEcp.command("java.exe", "-jar", ecpPath,
-								"vmname=" + emulName, "sdb.port=" + portSdb,
-								"svr.port=" + portEcp);
-					} else if (SwtUtil.isMacPlatform()) {
-						procEcp.command("java", "-jar", "-XstartOnFirstThread", ecpPath,
-								"vmname=" + emulName, "sdb.port=" + portSdb,
-								"svr.port=" + portEcp);
-					} else { /* Linux */
-						procEcp.command("java", "-jar", ecpPath,
-								"vmname=" + emulName, "sdb.port=" + portSdb,
-								"svr.port=" + portEcp);
-					}
-
-					logger.info(procEcp.command().toString());
-
-					try {
-						procEcp.start(); /* open ECP */
-					} catch (Exception ee) {
-						logger.log(Level.SEVERE, ee.getMessage(), ee);
-						SkinUtil.openMessage(shell, null,
-								"Fail to open control panel : \n" + ee.getMessage(),
-								SWT.ICON_ERROR, config);
-					}
-				} else {
-					logger.severe("Fail to get ECP data");
-					SkinUtil.openMessage(shell, null,
-							"Fail to get ECP data", SWT.ICON_ERROR, config);
+				try {
+					procEcp.start(); /* open ECP */
+				} catch (Exception ee) {
+					logger.log(Level.SEVERE, ee.getMessage(), ee);
+					SkinUtil.openMessage(
+							shell,
+							null,
+							"Fail to open control panel : \n" + ee.getMessage(),
+							SWT.ICON_ERROR, config);
 				}
 			}
 		};

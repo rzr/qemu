@@ -618,8 +618,6 @@ public class SocketCommunicator implements ICommunicator {
 				dataTranfer = resetDataTransfer(screenShotDataTransfer);
 			} else if (SendCommand.SEND_DETAIL_INFO_REQ.equals(command)) {
 				dataTranfer = resetDataTransfer(detailInfoTransfer);
-			} else if (SendCommand.SEND_ECP_PORT_REQ.equals(command)) {
-				dataTranfer = resetDataTransfer(ecpTransfer);
 			}
 		}
 
