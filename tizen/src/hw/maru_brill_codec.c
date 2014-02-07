@@ -211,6 +211,26 @@ static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_inde
     TRACE("wakeup thread. ctx_id: %u, api_id: %u, mem_offset: 0x%x\n",
         ioparam->ctx_index, ioparam->api_index, ioparam->mem_offset);
 
+    qemu_mutex_lock(&s->context_mutex);
+
+    if (ioparam->api_index == CODEC_DEINIT) {
+        if (s->context[ioparam->ctx_index].occupied_thread) {
+            s->context[ioparam->ctx_index].requested_close = true;
+            INFO("make running thread to handle deinit\n");
+            qemu_mutex_unlock(&s->context_mutex);
+            return;
+        }
+    } else if (ioparam->api_index != CODEC_INIT) {
+        if (!s->context[ioparam->ctx_index].opened_context) {
+            INFO("abandon api %d for context %d\n",
+                    ioparam->api_index, ioparam->ctx_index);
+            qemu_mutex_unlock(&s->context_mutex);
+            return;
+        }
+    }
+
+    qemu_mutex_unlock(&s->context_mutex);
+
     maru_brill_codec_push_readqueue(s, ioparam);
 
     qemu_mutex_lock(&s->context_mutex);
@@ -235,7 +255,7 @@ static void *maru_brill_codec_threads(void *opaque)
     TRACE("enter: %s\n", __func__);
 
     while (s->is_thread_running) {
-        int ctx_id, api_id;
+        int ctx_id = 0, api_id = 0;
         CodecDataStg *elem = NULL;
         DeviceMemEntry *indata_buf = NULL;
 
@@ -265,39 +285,50 @@ static void *maru_brill_codec_threads(void *opaque)
 
         TRACE("api_id: %d ctx_id: %d\n", api_id, ctx_id);
 
-        if (api_id == CODEC_INIT) {
-            ret = codec_init(s, ctx_id, indata_buf);
-        } else if (s->context[ctx_id].opened) {
-            ret = codec_func_handler[api_id](s, ctx_id, indata_buf);
-        } else {
-            INFO("abandon api %d for context %d\n", api_id, ctx_id);
-            ret = false;
-        }
+        qemu_mutex_lock(&s->context_mutex);
+        s->context[ctx_id].occupied_thread = true;
+        qemu_mutex_unlock(&s->context_mutex);
 
+    ret = codec_func_handler[api_id](s, ctx_id, indata_buf);
         if (!ret) {
             ERR("fail api %d for context %d\n", api_id, ctx_id);
+            g_free(elem->param_buf);
             continue;
         }
 
         TRACE("release a buffer of CodecParam\n");
         g_free(elem->param_buf);
+        elem->param_buf = NULL;
 
         if (elem->data_buf) {
-
             if (elem->data_buf->buf) {
                 TRACE("release inbuf\n");
                 g_free(elem->data_buf->buf);
+                elem->data_buf->buf = NULL;
             }
 
             TRACE("release a buffer indata_buf\n");
             g_free(elem->data_buf);
+            elem->data_buf = NULL;
         }
 
         TRACE("release an element of CodecDataStg\n");
         g_free(elem);
 
+        qemu_mutex_lock(&s->context_mutex);
+        if (s->context[ctx_id].requested_close) {
+            INFO("make worker thread to handle deinit\n");
+            codec_deinit(s, ctx_id, NULL);
+            s->context[ctx_id].requested_close = false;
+        }
+        qemu_mutex_unlock(&s->context_mutex);
+
         TRACE("switch context to raise interrupt.\n");
         qemu_bh_schedule(s->codec_bh);
+
+        qemu_mutex_lock(&s->context_mutex);
+        s->context[ctx_id].occupied_thread = false;
+        qemu_mutex_unlock(&s->context_mutex);
     }
 
     maru_brill_codec_thread_exit(s);
@@ -322,7 +353,6 @@ static void maru_brill_codec_push_readqueue(MaruBrillCodecState *s,
     elem->param_buf = ioparam;
 
     switch(ioparam->api_index) {
-//    case CODEC_DECODE_VIDEO ... CODEC_ENCODE_AUDIO:
     case CODEC_INIT ... CODEC_ENCODE_AUDIO:
         data_buf = maru_brill_codec_store_inbuf((uint8_t *)s->vaddr, ioparam);
         break;
@@ -520,12 +550,12 @@ static void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t con
     TRACE("release %d of context\n", context_id);
 
     qemu_mutex_lock(&s->threadpool.mutex);
-    if (s->context[context_id].opened) {
-        qemu_mutex_unlock(&s->threadpool.mutex);
+    if (s->context[context_id].opened_context) {
+        // qemu_mutex_unlock(&s->threadpool.mutex);
         codec_deinit(s, context_id, NULL);
-        qemu_mutex_lock(&s->threadpool.mutex);
+        // qemu_mutex_lock(&s->threadpool.mutex);
     }
-    s->context[context_id].occupied = false;
+    s->context[context_id].occupied_context = false;
     qemu_mutex_unlock(&s->threadpool.mutex);
 
     // TODO: check if foreach statment needs lock or not.
@@ -880,11 +910,12 @@ static int maru_brill_codec_get_context_index(MaruBrillCodecState *s)
 
     TRACE("enter: %s\n", __func__);
 
+    // requires mutex_lock? its function is protected by critical section.
     qemu_mutex_lock(&s->threadpool.mutex);
     for (index = 1; index < CODEC_CONTEXT_MAX; index++) {
-        if (s->context[index].occupied == false) {
+        if (s->context[index].occupied_context == false) {
             TRACE("get %d of codec context successfully.\n", index);
-            s->context[index].occupied = true;
+            s->context[index].occupied_context = true;
             break;
         }
     }
@@ -909,11 +940,12 @@ static AVCodecContext *maru_brill_codec_alloc_context(MaruBrillCodecState *s, in
     TRACE("allocate %d of context and frame.\n", index);
     s->context[index].avctx = avcodec_alloc_context();
     s->context[index].frame = avcodec_alloc_frame();
-    s->context[index].opened = false;
+    s->context[index].opened_context = false;
 
+#if 0
     s->context[index].parser_buf = NULL;
     s->context[index].parser_use = false;
-
+#endif
     TRACE("leave: %s\n", __func__);
 
     return s->context[index].avctx;
@@ -1031,8 +1063,9 @@ static bool codec_init(MaruBrillCodecState *s, int ctx_id, void *data_buf)
 
             ret = avcodec_open(avctx, codec);
             INFO("avcodec_open success!! ret %d ctx_id %d\n", ret, ctx_id);
+            // TODO: check requested_close ?
 
-            s->context[ctx_id].opened = true;
+            s->context[ctx_id].opened_context = true;
             s->context[ctx_id].parser_ctx =
                 maru_brill_codec_parser_init(avctx);
         } else {
@@ -1078,11 +1111,10 @@ static bool codec_deinit(MaruBrillCodecState *s, int ctx_id, void *data_buf)
     }
 
     INFO("close avcontext of %d\n", ctx_id);
-
-    qemu_mutex_lock(&s->threadpool.mutex);
+    // qemu_mutex_lock(&s->threadpool.mutex);
     avcodec_close(avctx);
-    s->context[ctx_id].opened = false;
-    qemu_mutex_unlock(&s->threadpool.mutex);
+    s->context[ctx_id].opened_context = false;
+    // qemu_mutex_unlock(&s->threadpool.mutex);
 
     if (avctx->extradata) {
         TRACE("free context extradata\n");
@@ -1197,8 +1229,8 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
         picture->pict_type = -1;
         len =
             avcodec_decode_video2(avctx, picture, &got_picture, &avpkt);
-
         TRACE("decode_video. len %d, frame_size %d\n", len, got_picture);
+        // TODO: check requested_close ?
     }
 
     TRACE("after decoding video. len: %d, have_data: %d\n",
@@ -1274,6 +1306,7 @@ static bool codec_picture_copy (MaruBrillCodecState *s, int ctx_id, void *elem)
             TRACE("picture size: %d\n", pict_size);
             av_picture_copy(&dst, src, avctx->pix_fmt,
                             avctx->width, avctx->height);
+            // TODO: check requested_close ?
 
             tempbuf = g_malloc0(pict_size);
             if (!tempbuf) {
@@ -1342,6 +1375,7 @@ static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
 
             TRACE("decode_audio. len %d, channel_layout %lld, frame_size %d\n",
                 len, avctx->channel_layout, frame_size_ptr);
+            // TODO: check requested_close ?
         }
 
     }
@@ -1458,6 +1492,7 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
 
                 TRACE("encode video. len %d pts %lld  outbuf size %d\n",
                     len, pict->pts, outbuf, outbuf_size);
+                // TODO: check requested_close ?
             }
         }
     }
@@ -1534,6 +1569,7 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
             len =
                 avcodec_encode_audio(avctx, outbuf, max_size, (short *)inbuf);
             TRACE("after encoding audio. len: %d\n", len);
+            // TODO: check requested_close ?
         }
     }
 

@@ -84,8 +84,10 @@ typedef struct CodecContext {
     AVCodecParserContext    *parser_ctx;
     uint8_t                 *parser_buf;
     uint16_t                parser_use;
-    bool                    occupied;
-    bool                    opened;
+    bool                    occupied_context;
+    bool                    occupied_thread;
+    bool                    opened_context;
+    bool                    requested_close;
 } CodecContext;
 
 typedef struct CodecThreadPool {
