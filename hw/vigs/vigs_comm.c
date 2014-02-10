@@ -74,12 +74,14 @@ static void vigs_comm_dispatch_set_root_surface(struct vigs_comm_ops *ops,
                                                 struct vigsp_cmd_set_root_surface_request *request,
                                                 vigsp_fence_seq fence_seq)
 {
-    VIGS_LOG_TRACE("id = %u, offset = %u",
+    VIGS_LOG_TRACE("id = %u, scanout = %d, offset = %u",
                    request->id,
+                   request->scanout,
                    request->offset);
 
     ops->set_root_surface(user_data,
                           request->id,
+                          request->scanout,
                           request->offset,
                           fence_seq);
 }
@@ -189,6 +191,28 @@ static void vigs_comm_dispatch_solid_fill(struct vigs_comm_batch_ops *ops,
                     request->num_entries);
 }
 
+static void vigs_comm_dispatch_set_plane(struct vigs_comm_batch_ops *ops,
+                                         void *user_data,
+                                         struct vigsp_cmd_set_plane_request *request)
+{
+    VIGS_LOG_TRACE("plane = %u, sfc_id = %u, src_rect = {%u, %u, %u, %u}, dst_x = %d, dst_y = %d, dst_size = {%u, %u}, z_pos = %d",
+                   request->plane,
+                   request->sfc_id,
+                   request->src_rect.pos.x,
+                   request->src_rect.pos.y,
+                   request->src_rect.size.w,
+                   request->src_rect.size.h,
+                   request->dst_x,
+                   request->dst_y,
+                   request->dst_size.w,
+                   request->dst_size.h,
+                   request->z_pos);
+
+    ops->set_plane(user_data, request->plane, request->sfc_id,
+                   &request->src_rect, request->dst_x, request->dst_y,
+                   &request->dst_size, request->z_pos);
+}
+
 /*
  * @}
  */
@@ -210,11 +234,13 @@ static const vigs_dispatch_func vigs_dispatch_table[] =
     VIGS_DISPATCH_ENTRY(vigsp_cmd_copy,
                         vigs_comm_dispatch_copy),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_solid_fill,
-                        vigs_comm_dispatch_solid_fill)
+                        vigs_comm_dispatch_solid_fill),
+    VIGS_DISPATCH_ENTRY(vigsp_cmd_set_plane,
+                        vigs_comm_dispatch_set_plane)
 };
 
 #define VIGS_MIN_BATCH_CMD_ID vigsp_cmd_create_surface
-#define VIGS_MAX_BATCH_CMD_ID vigsp_cmd_solid_fill
+#define VIGS_MAX_BATCH_CMD_ID vigsp_cmd_set_plane
 
 struct vigs_comm *vigs_comm_create(uint8_t *ram_ptr)
 {

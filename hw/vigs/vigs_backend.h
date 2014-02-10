@@ -34,13 +34,16 @@
 
 struct winsys_info;
 struct vigs_surface;
+struct vigs_plane;
 
-typedef void (*vigs_read_pixels_cb)(void */*user_data*/,
-                                    uint8_t */*pixels*/,
-                                    uint32_t /*width*/,
-                                    uint32_t /*height*/,
-                                    uint32_t /*stride*/,
-                                    vigsp_surface_format /*format*/);
+typedef uint8_t *(*vigs_composite_start_cb)(void */*user_data*/,
+                                            uint32_t /*width*/,
+                                            uint32_t /*height*/,
+                                            uint32_t /*stride*/,
+                                            vigsp_surface_format /*format*/);
+
+typedef void (*vigs_composite_end_cb)(void */*user_data*/,
+                                      bool /*was_started*/);
 
 struct vigs_backend
 {
@@ -55,10 +58,11 @@ struct vigs_backend
                                            vigsp_surface_format /*format*/,
                                            vigsp_surface_id /*id*/);
 
-    void (*read_pixels)(struct vigs_surface */*surface*/,
-                        uint8_t */*pixels*/,
-                        vigs_read_pixels_cb /*cb*/,
-                        void */*user_data*/);
+    void (*composite)(struct vigs_surface */*surface*/,
+                      const struct vigs_plane */*planes*/,
+                      vigs_composite_start_cb /*start_cb*/,
+                      vigs_composite_end_cb /*end_cb*/,
+                      void */*user_data*/);
 
     void (*batch_end)(struct vigs_backend */*backend*/);
 

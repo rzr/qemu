@@ -42,6 +42,7 @@ struct vigs_comm_ops
 
     void (*set_root_surface)(void */*user_data*/,
                              vigsp_surface_id /*id*/,
+                             bool /*scanout*/,
                              vigsp_offset /*offset*/,
                              vigsp_fence_seq /*fence_seq*/);
 
@@ -85,6 +86,15 @@ struct vigs_comm_batch_ops
                        vigsp_color /*color*/,
                        const struct vigsp_rect */*entries*/,
                        uint32_t /*num_entries*/);
+
+    void (*set_plane)(void */*user_data*/,
+                      vigsp_u32 /*plane*/,
+                      vigsp_surface_id /*sfc_id*/,
+                      const struct vigsp_rect */*src_rect*/,
+                      int /*dst_x*/,
+                      int /*dst_y*/,
+                      const struct vigsp_size */*dst_size*/,
+                      int /*z_pos*/);
 
     void (*end)(void */*user_data*/, vigsp_fence_seq /*fence_seq*/);
 };

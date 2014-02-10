@@ -27,31 +27,29 @@
  *
  */
 
-#include "vigs_surface.h"
-#include "winsys.h"
+#ifndef _QEMU_VIGS_PLANE_H
+#define _QEMU_VIGS_PLANE_H
 
-void vigs_surface_init(struct vigs_surface *sfc,
-                       struct winsys_surface *ws_sfc,
-                       struct vigs_backend *backend,
-                       uint32_t stride,
-                       vigsp_surface_format format,
-                       vigsp_surface_id id)
-{
-    ws_sfc->acquire(ws_sfc);
-    sfc->ws_sfc = ws_sfc;
-    sfc->backend = backend;
-    sfc->ptr = NULL;
-    sfc->stride = stride;
-    sfc->format = format;
-    sfc->id = id;
-}
+#include "vigs_types.h"
 
-void vigs_surface_cleanup(struct vigs_surface *sfc)
-{
-    sfc->ws_sfc->release(sfc->ws_sfc);
-}
+struct vigs_surface;
 
-void vigs_surface_set_scanout(struct vigs_surface *sfc, uint8_t *ptr)
+struct vigs_plane
 {
-    sfc->ptr = ptr;
-}
+    struct vigs_surface *sfc;
+
+    struct vigsp_rect src_rect;
+
+    int dst_x;
+    int dst_y;
+    struct vigsp_size dst_size;
+
+    int z_pos;
+
+    /*
+     * Plane moved/resized, need to recomposite.
+     */
+    bool is_dirty;
+};
+
+#endif

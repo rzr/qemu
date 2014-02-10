@@ -31,6 +31,7 @@
 #define _QEMU_VIGS_SERVER_H
 
 #include "vigs_types.h"
+#include "vigs_plane.h"
 #include "winsys.h"
 #include <glib.h>
 
@@ -92,7 +93,8 @@ struct vigs_server
     GHashTable *surfaces;
 
     struct vigs_surface *root_sfc;
-    uint8_t *root_sfc_ptr;
+
+    struct vigs_plane planes[VIGS_MAX_PLANES];
 
     QemuMutex capture_mutex;
 

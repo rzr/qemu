@@ -310,15 +310,33 @@ static struct vigs_surface *vigs_sw_backend_create_surface(struct vigs_backend *
     return &sw_sfc->base;
 }
 
-static void vigs_sw_backend_read_pixels(struct vigs_surface *surface,
-                                        uint8_t *pixels,
-                                        vigs_read_pixels_cb cb,
-                                        void *user_data)
+static void vigs_sw_backend_composite(struct vigs_surface *surface,
+                                      const struct vigs_plane *planes,
+                                      vigs_composite_start_cb start_cb,
+                                      vigs_composite_end_cb end_cb,
+                                      void *user_data)
 {
-    surface->read_pixels(surface, pixels);
+    struct vigs_sw_surface *sw_sfc = (struct vigs_sw_surface*)surface;
+    uint8_t *buff;
 
-    cb(user_data, pixels, surface->ws_sfc->width, surface->ws_sfc->height,
-       surface->stride, surface->format);
+    /*
+     * TODO: Render planes.
+     */
+
+    buff = start_cb(user_data, surface->ws_sfc->width, surface->ws_sfc->height,
+                    surface->stride, surface->format);
+
+    if (surface->ptr) {
+        memcpy(buff,
+               surface->ptr,
+               surface->stride * surface->ws_sfc->height);
+    } else if (surface->is_dirty) {
+        memcpy(buff,
+               sw_sfc->data,
+               surface->stride * surface->ws_sfc->height);
+    }
+
+    end_cb(user_data, true);
 }
 
 static void vigs_sw_backend_batch_end(struct vigs_backend *backend)
@@ -341,7 +359,7 @@ struct vigs_backend *vigs_sw_backend_create(void)
 
     backend->batch_start = &vigs_sw_backend_batch_start;
     backend->create_surface = &vigs_sw_backend_create_surface;
-    backend->read_pixels = &vigs_sw_backend_read_pixels;
+    backend->composite = &vigs_sw_backend_composite;
     backend->batch_end = &vigs_sw_backend_batch_end;
     backend->destroy = &vigs_sw_backend_destroy;
 

@@ -29,6 +29,7 @@
 
 #include "vigs_gl_backend.h"
 #include "vigs_surface.h"
+#include "vigs_plane.h"
 #include "vigs_log.h"
 #include "vigs_utils.h"
 #include "vigs_ref.h"
@@ -43,9 +44,9 @@ struct vigs_gl_backend_read_pixels_work_item
 
     struct vigs_gl_backend *backend;
 
-    vigs_read_pixels_cb cb;
+    vigs_composite_start_cb start_cb;
+    vigs_composite_end_cb end_cb;
     void *user_data;
-    uint8_t *pixels;
     uint32_t width;
     uint32_t height;
     uint32_t stride;
@@ -886,18 +887,23 @@ static void vigs_gl_backend_read_pixels_work(struct work_queue_item *wq_item)
 {
     struct vigs_gl_backend_read_pixels_work_item *item = (struct vigs_gl_backend_read_pixels_work_item*)wq_item;
     struct vigs_gl_backend *backend = item->backend;
+    uint8_t *dst = NULL;
 
     VIGS_LOG_TRACE("enter");
 
     if (backend->read_pixels_make_current(backend, true)) {
-        uint8_t *pixels;
+        uint8_t *src;
 
         backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, backend->pbo);
 
-        pixels = backend->MapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+        src = backend->MapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 
-        if (pixels) {
-            memcpy(item->pixels, pixels, item->stride * item->height);
+        if (src) {
+            dst = item->start_cb(item->user_data,
+                                 item->width, item->height,
+                                 item->stride, item->format);
+
+            memcpy(dst, src, item->stride * item->height);
 
             if (!backend->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB)) {
                 VIGS_LOG_CRITICAL("glUnmapBuffer failed");
@@ -911,23 +917,208 @@ static void vigs_gl_backend_read_pixels_work(struct work_queue_item *wq_item)
         backend->read_pixels_make_current(backend, false);
     }
 
-    item->cb(item->user_data,
-             item->pixels, item->width, item->height,
-             item->stride, item->format);
+    item->end_cb(item->user_data, (dst != NULL));
 
     g_free(item);
 }
 
-static void vigs_gl_backend_read_pixels(struct vigs_surface *surface,
-                                        uint8_t *pixels,
-                                        vigs_read_pixels_cb cb,
-                                        void *user_data)
+static void vigs_gl_backend_composite(struct vigs_surface *surface,
+                                      const struct vigs_plane *planes,
+                                      vigs_composite_start_cb start_cb,
+                                      vigs_composite_end_cb end_cb,
+                                      void *user_data)
 {
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)surface->backend;
+    struct vigs_gl_surface *gl_root_sfc = (struct vigs_gl_surface*)surface;
+    struct vigs_winsys_gl_surface *ws_root_sfc = get_ws_sfc(gl_root_sfc);
+    uint32_t i;
+    GLfloat *vert_coords;
+    GLfloat *tex_coords;
+    const struct vigs_plane *sorted_planes[VIGS_MAX_PLANES];
     uint32_t size = surface->stride * surface->ws_sfc->height;
     struct vigs_gl_backend_read_pixels_work_item *item;
 
     VIGS_LOG_TRACE("enter");
+
+    if (!surface->ptr) {
+        if (!ws_root_sfc->tex) {
+            VIGS_LOG_WARN("compositing garbage (root surface) ???");
+        }
+
+        if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc, &ws_root_sfc->tex)) {
+            goto out;
+        }
+    }
+
+    if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc, &gl_root_sfc->tmp_tex)) {
+        goto out;
+    }
+
+    for (i = 0; i < VIGS_MAX_PLANES; ++i) {
+        struct vigs_gl_surface *gl_sfc;
+        struct vigs_winsys_gl_surface *ws_sfc;
+
+        if (!planes[i].sfc) {
+            continue;
+        }
+
+        gl_sfc = (struct vigs_gl_surface*)planes[i].sfc;
+        ws_sfc = get_ws_sfc(gl_sfc);
+
+        if (!ws_sfc->tex) {
+            VIGS_LOG_WARN("compositing garbage (plane %u) ???", i);
+        }
+
+        if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
+            goto out;
+        }
+    }
+
+    if (!vigs_gl_surface_create_framebuffer(gl_root_sfc)) {
+        goto out;
+    }
+
+    vigs_vector_resize(&gl_backend->v1, 0);
+    vigs_vector_resize(&gl_backend->v2, 0);
+
+    vert_coords = vigs_vector_append(&gl_backend->v1,
+                                     (8 * sizeof(GLfloat)));
+    tex_coords = vigs_vector_append(&gl_backend->v2,
+                                    (8 * sizeof(GLfloat)));
+
+    if (surface->ptr) {
+        /*
+         * Root surface is scanout, upload it to texture.
+         * Slow path.
+         */
+
+        gl_backend->PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        gl_backend->PixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        gl_backend->PixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+        gl_backend->PixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+
+        gl_backend->BindTexture(GL_TEXTURE_2D, gl_root_sfc->tmp_tex);
+
+        gl_backend->TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+                                  ws_root_sfc->base.base.width,
+                                  ws_root_sfc->base.base.height,
+                                  ws_root_sfc->tex_format,
+                                  ws_root_sfc->tex_type,
+                                  surface->ptr);
+    }
+
+    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_root_sfc->fb);
+
+    vigs_gl_surface_setup_framebuffer(gl_root_sfc);
+
+    gl_backend->Enable(GL_TEXTURE_2D);
+
+    gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                     GL_TEXTURE_2D, gl_root_sfc->tmp_tex, 0);
+
+    gl_backend->EnableClientState(GL_VERTEX_ARRAY);
+    gl_backend->EnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    gl_backend->Color4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    if (!surface->ptr) {
+        /*
+         * If root surface is not scanout then we must render
+         * it.
+         */
+
+        vert_coords[0] = 0;
+        vert_coords[1] = ws_root_sfc->base.base.height;
+        vert_coords[2] = ws_root_sfc->base.base.width;
+        vert_coords[3] = ws_root_sfc->base.base.height;
+        vert_coords[4] = ws_root_sfc->base.base.width;
+        vert_coords[5] = 0;
+        vert_coords[6] = 0;
+        vert_coords[7] = 0;
+
+        tex_coords[0] = 0;
+        tex_coords[1] = 0;
+        tex_coords[2] = 1;
+        tex_coords[3] = 0;
+        tex_coords[4] = 1;
+        tex_coords[5] = 1;
+        tex_coords[6] = 0;
+        tex_coords[7] = 1;
+
+        gl_backend->BindTexture(GL_TEXTURE_2D, ws_root_sfc->tex);
+
+        gl_backend->VertexPointer(2, GL_FLOAT, 0, vert_coords);
+        gl_backend->TexCoordPointer(2, GL_FLOAT, 0, tex_coords);
+
+        gl_backend->DrawArrays(GL_QUADS, 0, 4);
+    }
+
+    /*
+     * Sort planes, only 2 of them now, don't bother...
+     */
+
+    assert(VIGS_MAX_PLANES == 2);
+
+    if (planes[0].z_pos <= planes[1].z_pos) {
+        sorted_planes[0] = &planes[0];
+        sorted_planes[1] = &planes[1];
+    } else {
+        sorted_planes[0] = &planes[1];
+        sorted_planes[1] = &planes[0];
+    }
+
+    /*
+     * Now render planes, respect z-order.
+     */
+
+    for (i = 0; i < VIGS_MAX_PLANES; ++i) {
+        const struct vigs_plane *plane = sorted_planes[i];
+        struct vigs_gl_surface *gl_sfc;
+        struct vigs_winsys_gl_surface *ws_sfc;
+        GLfloat src_w, src_h;
+
+        if (!plane->sfc) {
+            continue;
+        }
+
+        gl_sfc = (struct vigs_gl_surface*)plane->sfc;
+        ws_sfc = get_ws_sfc(gl_sfc);
+
+        src_w = ws_sfc->base.base.width;
+        src_h = ws_sfc->base.base.height;
+
+        vert_coords[0] = plane->dst_x;
+        vert_coords[1] = plane->dst_y;
+        vert_coords[2] = plane->dst_x + (int)plane->dst_size.w;
+        vert_coords[3] = plane->dst_y;
+        vert_coords[4] = plane->dst_x + (int)plane->dst_size.w;
+        vert_coords[5] = plane->dst_y + (int)plane->dst_size.h;
+        vert_coords[6] = plane->dst_x;
+        vert_coords[7] = plane->dst_y + (int)plane->dst_size.h;
+
+        tex_coords[0] = (GLfloat)plane->src_rect.pos.x / src_w;
+        tex_coords[1] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
+        tex_coords[2] = (GLfloat)(plane->src_rect.pos.x + plane->src_rect.size.w) / src_w;
+        tex_coords[3] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
+        tex_coords[4] = (GLfloat)(plane->src_rect.pos.x + plane->src_rect.size.w) / src_w;
+        tex_coords[5] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
+        tex_coords[6] = (GLfloat)plane->src_rect.pos.x / src_w;
+        tex_coords[7] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
+
+        gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
+
+        gl_backend->VertexPointer(2, GL_FLOAT, 0, vert_coords);
+        gl_backend->TexCoordPointer(2, GL_FLOAT, 0, tex_coords);
+
+        gl_backend->DrawArrays(GL_QUADS, 0, 4);
+    }
+
+    gl_backend->DisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl_backend->DisableClientState(GL_VERTEX_ARRAY);
+
+    /*
+     * Now schedule asynchronous glReadPixels.
+     */
 
     gl_backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, gl_backend->pbo);
 
@@ -939,7 +1130,11 @@ static void vigs_gl_backend_read_pixels(struct vigs_surface *surface,
                                GL_STREAM_READ);
     }
 
-    surface->read_pixels(surface, NULL);
+    gl_backend->PixelStorei(GL_PACK_ALIGNMENT, 1);
+    gl_backend->ReadPixels(0, 0,
+                           surface->ws_sfc->width, surface->ws_sfc->height,
+                           ws_root_sfc->tex_format, ws_root_sfc->tex_type,
+                           NULL);
 
     gl_backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
 
@@ -958,15 +1153,18 @@ static void vigs_gl_backend_read_pixels(struct vigs_surface *surface,
 
     item->backend = gl_backend;
 
-    item->cb = cb;
+    item->start_cb = start_cb;
+    item->end_cb = end_cb;
     item->user_data = user_data;
-    item->pixels = pixels;
     item->width = surface->ws_sfc->width;
     item->height = surface->ws_sfc->height;
     item->stride = surface->stride;
     item->format = surface->format;
 
     work_queue_add_item(gl_backend->read_pixels_queue, &item->base);
+
+out:
+    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 static void vigs_gl_backend_batch_end(struct vigs_backend *backend)
@@ -1011,7 +1209,7 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
 
     gl_backend->base.batch_start = &vigs_gl_backend_batch_start;
     gl_backend->base.create_surface = &vigs_gl_backend_create_surface;
-    gl_backend->base.read_pixels = &vigs_gl_backend_read_pixels;
+    gl_backend->base.composite = &vigs_gl_backend_composite;
     gl_backend->base.batch_end = &vigs_gl_backend_batch_end;
 
     gl_backend->make_current(gl_backend, false);

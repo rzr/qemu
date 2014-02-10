@@ -41,6 +41,11 @@ struct vigs_surface
 
     struct vigs_backend *backend;
 
+    /*
+     * Can be non-NULL only for root surface.
+     */
+    uint8_t *ptr;
+
     uint32_t stride;
     vigsp_surface_format format;
     vigsp_surface_id id;
@@ -76,5 +81,7 @@ void vigs_surface_init(struct vigs_surface *sfc,
                        vigsp_surface_id id);
 
 void vigs_surface_cleanup(struct vigs_surface *sfc);
+
+void vigs_surface_set_scanout(struct vigs_surface *sfc, uint8_t *ptr);
 
 #endif
