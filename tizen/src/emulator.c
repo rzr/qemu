@@ -1,7 +1,7 @@
 /*
  * Emulator
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
@@ -238,7 +238,9 @@ static void set_image_and_log_path(char *qemu_argv)
     }
 #else
     if (access(log_path, R_OK) != 0) {
-        g_mkdir(log_path, 0755);
+        if (g_mkdir(log_path, 0755) < 0) {
+            fprintf(stderr, "failed to create log directory %s\n", log_path);
+        }
     }
 #endif
     strcat(log_path, LOGFILE);
