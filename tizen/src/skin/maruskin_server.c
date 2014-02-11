@@ -1,7 +1,7 @@
 /*
  * socket server for emulator skin
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -1308,53 +1308,59 @@ static int send_n(int sockfd,
     return total_cnt;
 }
 
+// TODO: call send_skin_data
+char header1[SEND_HEADER_SIZE] = { 0, };
 static int send_skin_header_only(int sockfd, short send_cmd, int print_log)
 {
-    char headerbuf[SEND_HEADER_SIZE] = { 0, };
-
-    make_header(sockfd, send_cmd, 0, headerbuf, print_log);
-
     /* send */
     pthread_mutex_lock(&mutex_send_data);
 
-    int send_count = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
+    make_header(sockfd, send_cmd, 0, header1, print_log);
 
-    pthread_mutex_unlock(&mutex_send_data);
-
-    return send_count;
-}
-
-static int send_skin_data(int sockfd,
-    short send_cmd, unsigned char* data, int length, int big_data)
-{
-
-    char headerbuf[SEND_HEADER_SIZE] = { 0, };
-
-    if (data == NULL) {
-        ERR("send data is NULL.\n");
-        return -1;
-    }
-
-    make_header(sockfd, send_cmd, length, headerbuf, 1);
-
-    /* send */
-    pthread_mutex_lock(&mutex_send_data);
-
-    int header_cnt = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
+    int header_cnt = send(sockfd, header1, SEND_HEADER_SIZE, 0);
     if (0 > header_cnt) {
-        ERR("send header for data is NULL.\n");
+        ERR("failed to send header1\n");
         pthread_mutex_unlock(&mutex_send_data);
 
         return header_cnt;
     }
 
-    int send_cnt = send_n(sockfd, data, length, big_data);
+    pthread_mutex_unlock(&mutex_send_data);
+
+    TRACE("send header result : %d\n", header_cnt);
+
+    return header_cnt;
+}
+
+char header2[SEND_HEADER_SIZE] = { 0, };
+static int send_skin_data(int sockfd,
+    short send_cmd, unsigned char* data, int length, int big_data)
+{
+    if (data == NULL) {
+        ERR("send data is NULL.\n");
+        return -1;
+    }
+
+    /* send */
+    pthread_mutex_lock(&mutex_send_data);
+
+    make_header(sockfd, send_cmd, length, header2, 1);
+
+    int header_cnt = send(sockfd, header2, SEND_HEADER_SIZE, 0);
+    if (0 > header_cnt) {
+        ERR("failed to send header2\n");
+        pthread_mutex_unlock(&mutex_send_data);
+
+        return header_cnt;
+    }
+
+    int data_cnt = send_n(sockfd, data, length, big_data);
 
     pthread_mutex_unlock(&mutex_send_data);
 
-    TRACE("send_n result : %d\n", send_cnt);
+    TRACE("send data result : %d\n", data_cnt);
 
-    return send_cnt;
+    return data_cnt;
 }
 
 static void* do_heart_beat(void* args)

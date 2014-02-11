@@ -259,7 +259,7 @@ public class DetailInfoDialog extends SkinDialog {
 	}
 
 	private LinkedHashMap<String, String> composeAndParseData(String infoData) {
-		logger.info("Received infoData : " + infoData);
+		logger.info("Received infoData : {" + infoData + "}");
 
 		String cpu = "";
 		String ramSize = "";

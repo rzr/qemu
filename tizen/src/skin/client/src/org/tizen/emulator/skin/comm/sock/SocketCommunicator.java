@@ -1,7 +1,7 @@
 /**
  * Communicate With Qemu
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -29,7 +29,6 @@
 
 package org.tizen.emulator.skin.comm.sock;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -322,13 +321,13 @@ public class SocketCommunicator implements ICommunicator {
 				}
 				case RECV_SCREENSHOT_DATA: {
 					logger.info("received SCREENSHOT_DATA from QEMU");
-					receiveData(screenShotDataTransfer, length);
+					receiveData(sockInputStream, screenShotDataTransfer, length);
 
 					break;
 				}
 				case RECV_DETAIL_INFO_DATA: {
 					logger.info("received DETAIL_INFO_DATA from QEMU");
-					receiveData(detailInfoTransfer, length);
+					receiveData(sockInputStream, detailInfoTransfer, length);
 
 					break;
 				}
@@ -341,7 +340,7 @@ public class SocketCommunicator implements ICommunicator {
 					//logger.info("received BOOTING_PROGRESS from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
-					receiveData(miscDataTransfer, length);
+					receiveData(sockInputStream, miscDataTransfer, length);
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
@@ -367,7 +366,7 @@ public class SocketCommunicator implements ICommunicator {
 					//logger.info("received BRIGHTNESS_STATE from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
-					receiveData(miscDataTransfer, length);
+					receiveData(sockInputStream, miscDataTransfer, length);
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
@@ -391,7 +390,7 @@ public class SocketCommunicator implements ICommunicator {
 				}
 				case RECV_ECP_PORT_DATA: {
 					logger.info("received ECP_PORT_DATA from QEMU");
-					receiveData(ecpTransfer, length);
+					receiveData(sockInputStream, ecpTransfer, length);
 
 					break;
 				}
@@ -399,7 +398,7 @@ public class SocketCommunicator implements ICommunicator {
 					logger.info("received HOST_KBD_STATE from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
-					receiveData(miscDataTransfer, length);
+					receiveData(sockInputStream, miscDataTransfer, length);
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
@@ -425,7 +424,7 @@ public class SocketCommunicator implements ICommunicator {
 					logger.info("received MULTI_TOUCH_STATE from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
-					receiveData(miscDataTransfer, length);
+					receiveData(sockInputStream, miscDataTransfer, length);
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
@@ -525,15 +524,14 @@ public class SocketCommunicator implements ICommunicator {
 		logger.info("communicatorThread is stopped");
 	}
 
-	private void receiveData(
+	private void receiveData(DataInputStream is,
 			DataTranfer dataTransfer, int length) throws IOException {
 		synchronized (dataTransfer) {
-
 			if (null != dataTransfer.timer) {
 				dataTransfer.timer.cancel();
 			}
 
-			byte[] data = readData(sockInputStream, length);
+			byte[] data = readData(is, length);
 
 			if (null != data) {
 				logger.info("finished receiving data from QEMU.");
@@ -543,7 +541,7 @@ public class SocketCommunicator implements ICommunicator {
 
 			dataTransfer.isTransferState = false;
 			dataTransfer.timer = null;
-			
+
 			dataTransfer.setData(data);
 			dataTransfer.notifyAll();
 		}
@@ -555,28 +553,10 @@ public class SocketCommunicator implements ICommunicator {
 			return null;
 		}
 
-		BufferedInputStream bfis = new BufferedInputStream(is, length);
 		byte[] data = new byte[length];
-		int read = 0;
-		int total = 0;
+		is.readFully(data, 0, length);
 
-		while (true) {
-			if (total == length) {
-				break;
-			}
-
-			read = bfis.read(data, total, length - total);
-
-			if (0 > read) {
-				if (total < length) {
-					continue;
-				}
-			} else {
-				total += read;
-			}
-		}
-
-		logger.info("finished reading stream. read : " + total);
+		logger.info("finished reading stream. read : " + length);
 
 		return data;
 	}
