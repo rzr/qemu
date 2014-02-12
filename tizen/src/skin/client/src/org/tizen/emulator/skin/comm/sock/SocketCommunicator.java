@@ -118,7 +118,6 @@ public class SocketCommunicator implements ICommunicator {
 	private DataTranfer screenShotDataTransfer;
 	private DataTranfer detailInfoTransfer;
 	private DataTranfer miscDataTransfer;
-	private DataTranfer ecpTransfer;
 
 	private Thread sendThread;
 	private LinkedList<SkinSendData> sendQueue;
@@ -145,10 +144,6 @@ public class SocketCommunicator implements ICommunicator {
 		this.miscDataTransfer = new DataTranfer();
 		this.miscDataTransfer.sleep = SHORT_WAIT_INTERVAL;
 		this.miscDataTransfer.maxWaitTime = SHORT_WAIT_LIMIT;
-
-		this.ecpTransfer = new DataTranfer();
-		this.ecpTransfer.sleep = LONG_WAIT_INTERVAL;
-		this.ecpTransfer.maxWaitTime = LONG_WAIT_LIMIT;
 
 		this.heartbeatCount = new AtomicInteger(0);
 		//this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -369,12 +364,6 @@ public class SocketCommunicator implements ICommunicator {
 							skin.updateBrightness(true);
 						}
 					}
-
-					break;
-				}
-				case RECV_ECP_PORT_DATA: {
-					logger.info("received ECP_PORT_DATA from QEMU");
-					receiveData(sockInputStream, ecpTransfer, length);
 
 					break;
 				}

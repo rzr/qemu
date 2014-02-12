@@ -61,6 +61,7 @@ import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class EmulatorShmSkin extends EmulatorSkin {
+	public static final String JNI_LIBRARY_FILE = "shared";
 	public static final int DISPLAY_COLOR_DEPTH = 24; /* no need to Alpha channel */
 
 	/* touch values */
@@ -73,19 +74,20 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	static {
 		/* load JNI library file */
 		try {
-			System.loadLibrary("shared");
+			System.loadLibrary(JNI_LIBRARY_FILE);
 		} catch (UnsatisfiedLinkError e) {
-			logger.info("Failed to load a JNI library file.\n" + e);
+			logger.severe("Failed to load a " + JNI_LIBRARY_FILE + " file.\n" + e);
 
 			Shell temp = new Shell(Display.getDefault());
 			MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
 			messageBox.setText("Emulator");
 			messageBox.setMessage(
-					"Failed to load a JNI library file.\n\n" + e);
+					"Failed to load a JNI library file from "
+					+ System.getProperty("java.library.path") + ".\n\n" + e);
 			messageBox.open();
 			temp.dispose();
 
-			EmulatorSkinMain.terminateImmediately(-1);;
+			EmulatorSkinMain.terminateImmediately(-1);
 		}
 	}
 

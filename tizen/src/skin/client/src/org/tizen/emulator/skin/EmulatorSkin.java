@@ -76,7 +76,6 @@ import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
-import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
 import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
@@ -1731,6 +1730,8 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (communicator.isSdbDaemonStarted() == false) {
+					logger.warning("SDB is not ready.");
+
 					SkinUtil.openMessage(shell, null,
 							"SDB is not ready.\n"
 									+ "Please wait until the emulator is completely boot up.",
@@ -1796,13 +1797,16 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				/* if (communicator.isEcsServerStarted() == false) {
-					SkinUtil.openMessage(shell, null,
+				if (communicator.isSdbDaemonStarted() == false) {
+//						|| communicator.isEcsServerStarted() == false) {
+					logger.warning("Control Panel is not ready.");
+
+					SkinUtil.openMessage(shell,null,
 							"Control Panel is not ready.\n"
 							+ "Please wait until the emulator is completely boot up.",
 							SWT.ICON_WARNING, config);
 					return;
-				} */
+				}
 
 				String ecpPath = SkinUtil.getEcpPath();
 

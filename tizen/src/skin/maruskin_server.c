@@ -129,7 +129,6 @@ enum {
     SEND_RAMDUMP_COMPLETED = 4,
     SEND_BOOTING_PROGRESS = 5,
     SEND_BRIGHTNESS_STATE = 6,
-    SEND_ECP_PORT_DATA = 7,
     SEND_HOST_KBD_STATE = 8,
     SEND_MULTI_TOUCH_STATE = 9,
 
@@ -792,31 +791,29 @@ static void* run_skin_server(void* args)
                 log_cnt += sprintf(log_buf + log_cnt,
                     "uid:%d, req_id:%d, cmd:%d, length:%d ", uid, req_id, cmd, length);
 
-                if ( 0 < length ) {
-
-                    if ( RECV_BUF_SIZE < length ) {
-                        ERR( "length is bigger than RECV_BUF_SIZE\n" );
+                if (0 < length) {
+                    if (RECV_BUF_SIZE < length) {
+                        ERR("length is bigger than RECV_BUF_SIZE\n");
                         continue;
                     }
 
-                    memset( &recvbuf, 0, length );
+                    memset(&recvbuf, 0, length);
 
-                    int recv_cnt = recv_n( client_sock, recvbuf, length );
+                    int recv_cnt = recv_n(client_sock, recvbuf, length);
 
-                    log_cnt += sprintf( log_buf + log_cnt, "data read_cnt:%d ", recv_cnt );
+                    log_cnt += sprintf(log_buf + log_cnt, "data read_cnt:%d ", recv_cnt);
 
-                    if ( 0 > recv_cnt ) {
-                        ERR( "skin_server read data\n" );
-                        perror( "skin_server read data : " );
+                    if (0 > recv_cnt) {
+                        ERR("skin_server read data\n");
+                        perror("skin_server read data : ");
                         break;
-                    } else if ( 0 == recv_cnt ) {
-                        ERR( "data read_cnt is 0.\n" );
+                    } else if (0 == recv_cnt) {
+                        ERR("data read_cnt is 0.\n");
                         break;
-                    } else if ( recv_cnt != length ) {
-                        ERR( "read_cnt is not equal to length.\n" );
+                    } else if (recv_cnt != length) {
+                        ERR("read_cnt is not equal to length.\n");
                         break;
                     }
-
                 }
 
                 switch (cmd) {

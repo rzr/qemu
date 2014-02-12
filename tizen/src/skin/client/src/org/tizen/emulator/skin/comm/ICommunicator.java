@@ -1,7 +1,7 @@
 /**
  * Communication Interface Between Qemu And Skin
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -249,7 +249,6 @@ public interface ICommunicator extends Runnable {
 		RECV_RAMDUMP_COMPLETED((short) 4),
 		RECV_BOOTING_PROGRESS((short) 5),
 		RECV_BRIGHTNESS_STATE((short) 6),
-		RECV_ECP_PORT_DATA((short) 7),
 		RECV_HOST_KBD_STATE((short) 8),
 		RECV_MULTI_TOUCH_STATE((short) 9),
 
