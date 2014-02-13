@@ -1153,7 +1153,7 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     AVPacket avpkt;
     int got_picture = 0, len = -1;
     uint8_t *inbuf = NULL;
-    int inbuf_size, idx, size = 0;
+    int inbuf_size = 0, idx, size = 0;
     int64_t in_offset;
     DeviceMemEntry *elem = NULL;
     uint8_t *tempbuf = NULL;
@@ -1392,7 +1392,7 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     uint8_t *inbuf = NULL, *outbuf = NULL;
     int inbuf_size, outbuf_size, len = -1;
     int ret, size = 0;
-    int64_t in_timestamp;
+    int64_t in_timestamp = 0;
 
     DeviceMemEntry *elem = NULL;
     uint8_t *tempbuf = NULL;
@@ -1494,7 +1494,7 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
 {
     AVCodecContext *avctx;
     uint8_t *inbuf = NULL, *outbuf = NULL;
-    int32_t inbuf_size, max_size;
+    int32_t inbuf_size = 0, max_size = 0;
     int len = -1, size = 0;
 
     DeviceMemEntry *elem = NULL;
