@@ -88,7 +88,6 @@ typedef struct PixFmtInfo {
 static PixFmtInfo pix_fmt_info[PIX_FMT_NB];
 
 // thread
-// static int idle_thread_cnt = 0;
 #define DEFAULT_WORKER_THREAD_CNT 8
 
 static void *maru_brill_codec_threads(void *opaque);
@@ -162,7 +161,10 @@ static void maru_brill_codec_threads_create(MaruBrillCodecState *s)
     qemu_mutex_init(&s->threadpool.mutex);
 
     s->is_thread_running = true;
+
+    qemu_mutex_lock(&s->context_mutex);
     s->idle_thread_cnt = 0;
+    qemu_mutex_unlock(&s->context_mutex);
 
     for (index = 0; index < s->worker_thread_cnt; index++) {
         qemu_thread_create(&pthread[index],
@@ -1722,8 +1724,6 @@ static int maru_brill_codec_initfn(PCIDevice *dev)
 
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->vram);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio);
-
-//    maru_brill_codec_reset(&s->dev.qdev);
 
     qemu_mutex_init(&s->context_mutex);
     qemu_mutex_init(&s->context_queue_mutex);
