@@ -1223,8 +1223,10 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
         size = sizeof(len);
         memcpy(tempbuf + size, &got_picture, sizeof(got_picture));
         size += sizeof(got_picture);
-        deserialize_video_data(avctx, &video);
-        memcpy(tempbuf + size, &video, sizeof(struct video_data));
+        if (avctx) {
+            deserialize_video_data(avctx, &video);
+            memcpy(tempbuf + size, &video, sizeof(struct video_data));
+        }
     }
 
     maru_brill_codec_push_writequeue(s, tempbuf, tempbuf_size, ctx_id);
@@ -1236,8 +1238,8 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
 
 static bool codec_picture_copy (MaruBrillCodecState *s, int ctx_id, void *elem)
 {
-    AVCodecContext *avctx;
-    AVPicture *src;
+    AVCodecContext *avctx = NULL;
+    AVPicture *src = NULL;
     AVPicture dst;
     uint8_t *out_buffer = NULL, *tempbuf = NULL;
     int pict_size = 0;
@@ -1474,7 +1476,7 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     } else {
         memcpy(tempbuf, &len, sizeof(len));
         size = sizeof(len);
-        if (len) {
+        if (len && outbuf) {
             memcpy(tempbuf + size, outbuf, len);
         }
     }
@@ -1549,7 +1551,7 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     } else {
         memcpy(tempbuf, &len, sizeof(len));
         size = sizeof(len);
-        if (len) {
+        if (len && outbuf) {
             memcpy(tempbuf + size, outbuf, len);
         }
     }
