@@ -45,7 +45,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.widgets.MenuItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
@@ -54,7 +53,6 @@ import org.tizen.emulator.skin.comm.sock.data.ISendData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
-import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.image.ImageRegistry.ResourceImageName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
@@ -178,24 +176,10 @@ public class SocketCommunicator implements ICommunicator {
 		logger.info("send startData");
 		sendToQEMU(SendCommand.SEND_SKIN_OPENED, startData, false);
 
-		/* default interpolation */
 		skin.getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				skin.isOnInterpolation = Boolean.parseBoolean(config.getSkinProperty(
-						SkinPropertiesConstants.WINDOW_INTERPOLATION,
-						Boolean.TRUE.toString()));
-
-				MenuItem item = skin.getPopupMenu().interpolationHighItem;
-				if (item != null) {
-					item.setSelection(skin.isOnInterpolation);
-				}
-
-				item = skin.getPopupMenu().interpolationLowItem;
-				if (item != null) {
-					item.setSelection(!skin.isOnInterpolation);
-				}
-
+				/* send a state for display interpolation */
 				BooleanData dataInterpolation = new BooleanData(
 						skin.isOnInterpolation,
 						SendCommand.SEND_INTERPOLATION_STATE.toString());

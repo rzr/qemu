@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Main
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -245,9 +245,9 @@ public class EmulatorSkinMain {
 			ImageRegistry.getInstance().initialize(config, skinPath);
 
 			/* load Always on Top value */
-			String onTopVal = config.getSkinProperty(
-					SkinPropertiesConstants.WINDOW_ONTOP, Boolean.FALSE.toString());
-			boolean isOnTop = Boolean.parseBoolean(onTopVal);
+			boolean isOnTop = Boolean.parseBoolean(config.getSkinProperty(
+					SkinPropertiesConstants.WINDOW_ONTOP,
+					Boolean.FALSE.toString()));
 
 			/* create a skin */
 			EmulatorSkin skin = null;
@@ -260,6 +260,11 @@ public class EmulatorSkinMain {
 
 				skin = new EmulatorSdlSkin(config, skinInfo, isOnTop);
 			}
+
+			/* load Interpolation value */
+			skin.isOnInterpolation = Boolean.parseBoolean(config.getSkinProperty(
+					SkinPropertiesConstants.WINDOW_INTERPOLATION,
+					Boolean.TRUE.toString()));
 
 			/* create a qemu communicator */
 			int uid = config.getArgInt(ArgsConstants.UID);

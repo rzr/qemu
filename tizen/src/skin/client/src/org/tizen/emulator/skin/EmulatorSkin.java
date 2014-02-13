@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Process
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -192,7 +192,7 @@ public class EmulatorSkin {
 		this.pressedKeyEventList = new LinkedList<KeyEventData>();
 
 		this.isOnTop = isOnTop;
-		this.isOnInterpolation = false;
+		this.isOnInterpolation = true;
 		this.isOnKbd = false;
 		this.isKeyWindow = false;
 
@@ -1280,8 +1280,15 @@ public class EmulatorSkin {
 		getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				getPopupMenu().hostKbdOnItem.setSelection(isOnKbd);
-				getPopupMenu().hostKbdOffItem.setSelection(!isOnKbd);
+				MenuItem item = getPopupMenu().hostKbdOnItem;
+				if (item != null) {
+					item.setSelection(isOnKbd);
+				}
+
+				item = getPopupMenu().hostKbdOffItem;
+				if (item != null) {
+					item.setSelection(!isOnKbd);
+				}
 			}
 		});
 	}
@@ -1336,10 +1343,10 @@ public class EmulatorSkin {
 			public void widgetSelected(SelectionEvent e) {
 				isOnTop = popupMenu.onTopItem.getSelection();
 
-				logger.info("Select Always On Top : " + isOnTop);
+				logger.info("Select top most : " + isOnTop);
 
 				if (SkinUtil.setTopMost(shell, isOnTop) == false) {
-					logger.info("failed to Always On Top");
+					logger.info("failed to top most");
 
 					popupMenu.onTopItem.setSelection(isOnTop = false);
 				} else {
@@ -1515,7 +1522,8 @@ public class EmulatorSkin {
 				if (item.getSelection()) {
 					boolean on = item.equals(popupMenu.interpolationHighItem);
 					isOnInterpolation = on;
-					logger.info("Scale interpolation : " + isOnInterpolation);
+
+					logger.info("Select scale interpolation : " + isOnInterpolation);
 
 					communicator.sendToQEMU(SendCommand.SEND_INTERPOLATION_STATE,
 							new BooleanData(on, SendCommand.SEND_INTERPOLATION_STATE.toString()),
@@ -1645,7 +1653,8 @@ public class EmulatorSkin {
 				if (item.getSelection()) {
 					boolean on = item.equals(popupMenu.hostKbdOnItem);
 					isOnKbd = on;
-					logger.info("Host Keyboard : " + isOnKbd);
+
+					logger.info("Select host keyboard : " + isOnKbd);
 
 					communicator.sendToQEMU(SendCommand.SEND_HOST_KBD_STATE,
 							new BooleanData(on, SendCommand.SEND_HOST_KBD_STATE.toString()), false);
