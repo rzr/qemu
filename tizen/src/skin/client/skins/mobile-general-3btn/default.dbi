@@ -72,6 +72,7 @@
         <scaleItem visible="true" />
         <keywindowItem visible="true" />
         <hostKeyboardItem visible="true" />
+        <ramdumpItem visible="true" />
         <shellItem visible="true" />
         <controlPanelItem visible="true" />
     </popupMenu>

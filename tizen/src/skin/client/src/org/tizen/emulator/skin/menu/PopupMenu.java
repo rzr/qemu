@@ -208,10 +208,6 @@ public class PopupMenu {
 		}
 
 		/* Advanced menu */
-		advancedItem = new MenuItem(menu, SWT.CASCADE);
-		advancedItem.setText(ADVANCED_MENUITEM_NAME);
-		advancedItem.setImage(imageRegistry.getIcon(IconName.ADVANCED));
-
 		Menu advancedSubMenu = new Menu(menu.getShell(), SWT.DROP_DOWN);
 		{
 			/* Screen shot menu */
@@ -233,20 +229,35 @@ public class PopupMenu {
 
 			/* Diagnosis menu */
 			if (SwtUtil.isLinuxPlatform()) { //TODO: windows
-				diagnosisItem = new MenuItem(advancedSubMenu, SWT.CASCADE);
-				diagnosisItem.setText(DIAGNOSIS_MENUITEM_NAME);
-				diagnosisItem.setImage(imageRegistry.getIcon(IconName.DIAGNOSIS));
-
 				Menu diagnosisSubMenu = new Menu(advancedSubMenu.getShell(), SWT.DROP_DOWN);
 				{
 					/* Ram Dump menu */
-					ramdumpItem = createRamDumpItem(
-							diagnosisSubMenu, RAMDUMP_MENUITEM_NAME);
+					if (itemProperties == null ||
+							itemProperties.getRamdumpItem() == null) {
+						ramdumpItem = createRamDumpItem(diagnosisSubMenu, RAMDUMP_MENUITEM_NAME);
+					} else {
+						MenuItemType ramdumpMenuType = itemProperties.getRamdumpItem();
+						if (ramdumpMenuType.isVisible() == true) {
+							ramdumpItem = createRamDumpItem(diagnosisSubMenu,
+									(ramdumpMenuType.getItemName().isEmpty()) ?
+									RAMDUMP_MENUITEM_NAME : ramdumpMenuType.getItemName());
+						}
+					}
 				}
-				diagnosisItem.setMenu(diagnosisSubMenu);
+
+				if (ramdumpItem != null) {
+					diagnosisItem = new MenuItem(advancedSubMenu, SWT.CASCADE);
+					diagnosisItem.setText(DIAGNOSIS_MENUITEM_NAME);
+					diagnosisItem.setImage(imageRegistry.getIcon(IconName.DIAGNOSIS));
+					diagnosisItem.setMenu(diagnosisSubMenu);
+				}
 			}
 
 			if (screenshotItem != null || hostKbdItem != null || diagnosisItem != null) {
+				advancedItem = new MenuItem(menu, SWT.CASCADE);
+				advancedItem.setText(ADVANCED_MENUITEM_NAME);
+				advancedItem.setImage(imageRegistry.getIcon(IconName.ADVANCED));
+
 				new MenuItem(advancedSubMenu, SWT.SEPARATOR);
 			}
 
