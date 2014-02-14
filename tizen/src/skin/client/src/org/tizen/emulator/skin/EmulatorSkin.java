@@ -37,6 +37,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -164,6 +167,7 @@ public class EmulatorSkin {
 	public ScreenShotDialog screenShotDialog;
 
 	public SocketCommunicator communicator;
+	private AtomicBoolean demanderFlag = new AtomicBoolean(false);
 	private ShellListener shellListener;
 	private MenuDetectListener shellMenuDetectListener;
 
@@ -469,14 +473,32 @@ public class EmulatorSkin {
 
 					skinFinalize();
 				} else {
-					/*
-					 * Skin have to be alive until receiving shutdown request
-					 * from qemu
-					 */
+					/* Skin have to be alive until receiving shutdown request from qemu */
 					event.doit = false;
 
-					if (null != communicator) {
-						communicator.sendToQEMU(SendCommand.SEND_CLOSE_REQ, null, false);
+					if (pressedKeyEventList.isEmpty() == true
+							&& demanderFlag.compareAndSet(false, true)) {
+						if (null != communicator) {
+							communicator.sendToQEMU(
+									SendCommand.SEND_CLOSE_REQ, null, false);
+						}
+
+						/* block for a while */
+						try {
+							/* In Close emulation,
+							 * 1000ms parameter was used for sleep function.
+							 * So, we need a bigger value than that.*/
+							new Timer().schedule(new TimerTask() {
+								@Override
+								public void run() {
+									demanderFlag.set(false);
+								}
+							}, 1500);
+						} catch (IllegalArgumentException e) {
+							logger.log(Level.SEVERE, e.getMessage(), e);
+						}
+					} else {
+						logger.info("skip close request");
 					}
 				}
 			}
