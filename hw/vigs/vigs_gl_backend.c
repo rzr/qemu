@@ -252,6 +252,41 @@ static void vigs_winsys_gl_surface_set_dirty(struct winsys_surface *sfc)
     }
 }
 
+static void vigs_winsys_gl_surface_draw_pixels(struct winsys_surface *sfc,
+                                               uint8_t *pixels)
+{
+    struct vigs_winsys_gl_surface *vigs_sfc = (struct vigs_winsys_gl_surface*)sfc;
+    bool has_current = vigs_sfc->backend->has_current(vigs_sfc->backend);
+    if (!vigs_sfc->parent) {
+        return;
+    }
+
+    if (has_current ||
+        vigs_sfc->backend->make_current(vigs_sfc->backend, true)) {
+        struct vigsp_rect rect;
+
+        rect.pos.x = 0;
+        rect.pos.y = 0;
+        rect.size.w = sfc->width;
+        rect.size.h = sfc->height;
+
+        vigs_sfc->parent->base.draw_pixels(&vigs_sfc->parent->base,
+                                           pixels,
+                                           &rect,
+                                           1);
+
+        vigs_sfc->parent->base.is_dirty = true;
+
+        vigs_sfc->backend->Finish();
+
+        if (!has_current) {
+            vigs_sfc->backend->make_current(vigs_sfc->backend, false);
+        }
+    } else {
+        VIGS_LOG_CRITICAL("make_current failed");
+    }
+}
+
 static GLuint vigs_winsys_gl_surface_get_texture(struct winsys_gl_surface *sfc)
 {
     struct vigs_winsys_gl_surface *vigs_sfc = (struct vigs_winsys_gl_surface*)sfc;
@@ -312,6 +347,7 @@ static struct vigs_winsys_gl_surface
     ws_sfc->base.base.acquire = &vigs_winsys_gl_surface_acquire;
     ws_sfc->base.base.release = &vigs_winsys_gl_surface_release;
     ws_sfc->base.base.set_dirty = &vigs_winsys_gl_surface_set_dirty;
+    ws_sfc->base.base.draw_pixels = &vigs_winsys_gl_surface_draw_pixels;
     ws_sfc->base.get_texture = &vigs_winsys_gl_surface_get_texture;
     ws_sfc->tex_internalformat = tex_internalformat;
     ws_sfc->tex_format = tex_format;

@@ -34,11 +34,25 @@
 #include "vigs_ref.h"
 #include "winsys.h"
 
+struct vigs_sw_surface;
+
+struct vigs_sw_backend
+{
+    struct vigs_backend base;
+
+    struct winsys_info ws_info;
+};
+
 struct vigs_winsys_sw_surface
 {
     struct winsys_surface base;
 
     struct vigs_ref ref;
+
+    /*
+     * Will be set to NULL when orphaned.
+     */
+    struct vigs_sw_surface *parent;
 };
 
 struct vigs_sw_surface
@@ -47,6 +61,12 @@ struct vigs_sw_surface
 
     uint8_t *data;
 };
+
+static __inline struct vigs_winsys_sw_surface
+    *get_ws_sfc(struct vigs_sw_surface *sfc)
+{
+    return (struct vigs_winsys_sw_surface*)sfc->base.ws_sfc;
+}
 
 /*
  * vigs_winsys_sw_surface.
@@ -69,6 +89,29 @@ static void vigs_winsys_sw_surface_set_dirty(struct winsys_surface *sfc)
 {
 }
 
+static void vigs_winsys_sw_surface_draw_pixels(struct winsys_surface *sfc,
+                                               uint8_t *pixels)
+{
+    struct vigsp_rect rect;
+    struct vigs_winsys_sw_surface *vigs_sfc = (struct vigs_winsys_sw_surface*)sfc;
+
+    if (!vigs_sfc->parent) {
+        return;
+    }
+
+    rect.pos.x = 0;
+    rect.pos.y = 0;
+    rect.size.w = sfc->width;
+    rect.size.h = sfc->height;
+
+    vigs_sfc->parent->base.draw_pixels(&vigs_sfc->parent->base,
+                                       pixels,
+                                       &rect,
+                                       1);
+
+    vigs_sfc->parent->base.is_dirty = true;
+}
+
 static void vigs_winsys_sw_surface_destroy(struct vigs_ref *ref)
 {
     struct vigs_winsys_sw_surface *vigs_sfc =
@@ -80,7 +123,8 @@ static void vigs_winsys_sw_surface_destroy(struct vigs_ref *ref)
 }
 
 static struct vigs_winsys_sw_surface
-    *vigs_winsys_sw_surface_create(uint32_t width,
+    *vigs_winsys_sw_surface_create(struct vigs_sw_surface *parent,
+                                   uint32_t width,
                                    uint32_t height)
 {
     struct vigs_winsys_sw_surface *ws_sfc;
@@ -92,10 +136,17 @@ static struct vigs_winsys_sw_surface
     ws_sfc->base.acquire = &vigs_winsys_sw_surface_acquire;
     ws_sfc->base.release = &vigs_winsys_sw_surface_release;
     ws_sfc->base.set_dirty = &vigs_winsys_sw_surface_set_dirty;
+    ws_sfc->base.draw_pixels = &vigs_winsys_sw_surface_draw_pixels;
+    ws_sfc->parent = parent;
 
     vigs_ref_init(&ws_sfc->ref, &vigs_winsys_sw_surface_destroy);
 
     return ws_sfc;
+}
+
+static void vigs_winsys_sw_surface_orphan(struct vigs_winsys_sw_surface *sfc)
+{
+    sfc->parent = NULL;
 }
 
 /*
@@ -264,6 +315,9 @@ static void vigs_sw_surface_solid_fill(struct vigs_surface *sfc,
 static void vigs_sw_surface_destroy(struct vigs_surface *sfc)
 {
     struct vigs_sw_surface *sw_sfc = (struct vigs_sw_surface*)sfc;
+    struct vigs_winsys_sw_surface *ws_sfc = get_ws_sfc(sw_sfc);
+
+    vigs_winsys_sw_surface_orphan(ws_sfc);
 
     g_free(sw_sfc->data);
 
@@ -290,7 +344,7 @@ static struct vigs_surface *vigs_sw_backend_create_surface(struct vigs_backend *
 
     sw_sfc->data = g_malloc(stride * height);
 
-    ws_sfc = vigs_winsys_sw_surface_create(width, height);
+    ws_sfc = vigs_winsys_sw_surface_create(sw_sfc, width, height);
 
     vigs_surface_init(&sw_sfc->base,
                       &ws_sfc->base,
@@ -345,23 +399,25 @@ static void vigs_sw_backend_batch_end(struct vigs_backend *backend)
 
 static void vigs_sw_backend_destroy(struct vigs_backend *backend)
 {
+    struct vigs_sw_backend *sw_backend = (struct vigs_sw_backend*)backend;
+
     vigs_backend_cleanup(backend);
-    g_free(backend);
+    g_free(sw_backend);
 }
 
 struct vigs_backend *vigs_sw_backend_create(void)
 {
-    struct vigs_backend *backend;
+    struct vigs_sw_backend *backend;
 
     backend = g_malloc0(sizeof(*backend));
 
-    vigs_backend_init(backend, NULL);
+    vigs_backend_init(&backend->base, &backend->ws_info);
 
-    backend->batch_start = &vigs_sw_backend_batch_start;
-    backend->create_surface = &vigs_sw_backend_create_surface;
-    backend->composite = &vigs_sw_backend_composite;
-    backend->batch_end = &vigs_sw_backend_batch_end;
-    backend->destroy = &vigs_sw_backend_destroy;
+    backend->base.batch_start = &vigs_sw_backend_batch_start;
+    backend->base.create_surface = &vigs_sw_backend_create_surface;
+    backend->base.composite = &vigs_sw_backend_composite;
+    backend->base.batch_end = &vigs_sw_backend_batch_end;
+    backend->base.destroy = &vigs_sw_backend_destroy;
 
-    return backend;
+    return &backend->base;
 }

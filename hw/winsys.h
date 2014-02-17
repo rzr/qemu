@@ -14,6 +14,8 @@ struct winsys_surface
     void (*release)(struct winsys_surface */*sfc*/);
 
     void (*set_dirty)(struct winsys_surface */*sfc*/);
+
+    void (*draw_pixels)(struct winsys_surface */*sfc*/, uint8_t */*pixels*/);
 };
 
 struct winsys_info
