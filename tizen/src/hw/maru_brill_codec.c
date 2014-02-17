@@ -991,8 +991,10 @@ static void read_codec_init_data(AVCodecContext *avctx, uint8_t *mem_buf)
     size = sizeof(video);
     serialize_video_data(&video, avctx);
 
-    memcpy(&audio, mem_buf + size, sizeof(audio));
-    size += sizeof(audio);
+    memcpy(&audio, mem_buf + size, sizeof(int32_t) * 7);
+    size += (sizeof(int32_t) * 7);
+    memcpy(&audio.channel_layout, mem_buf + size, sizeof(audio.channel_layout));
+    size += sizeof(audio.channel_layout);
     serialize_audio_data(&audio, avctx);
 
     memcpy(&bitrate, mem_buf + size, sizeof(bitrate));
@@ -1006,8 +1008,9 @@ static void read_codec_init_data(AVCodecContext *avctx, uint8_t *mem_buf)
     memcpy(&avctx->extradata_size,
             mem_buf + size, sizeof(avctx->extradata_size));
     size += sizeof(avctx->extradata_size);
+    TRACE("extradata size: %d.\n", avctx->extradata_size);
+
     if (avctx->extradata_size > 0) {
-        TRACE("extradata size: %d.\n", avctx->extradata_size);
         avctx->extradata =
             av_mallocz(ROUND_UP_X(avctx->extradata_size +
                         FF_INPUT_BUFFER_PADDING_SIZE, 4));
