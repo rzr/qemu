@@ -1468,15 +1468,16 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     } else if (!avctx->codec) {
         ERR("%d of AVCodec is NULL.\n", ctx_id);
     } else {
-        TRACE("pixel format: %d inbuf: %p, picture data: %p\n",
-            avctx->pix_fmt, inbuf, pict->data[0]);
-
         ret =
             maru_brill_codec_get_picture_size((AVPicture *)pict, inbuf,
                                             avctx->pix_fmt, avctx->width,
                                             avctx->height, true);
+
+        TRACE("pixel format %d inbuf %p, picture data %p pict_size %d\n",
+            avctx->pix_fmt, inbuf, pict->data[0], ret);
+
         if (ret < 0) {
-            ERR("after avpicture_fill, ret:%d\n", ret);
+            ERR("invalid picture size\n");
         } else {
             if (avctx->time_base.num == 0) {
                 pict->pts = AV_NOPTS_VALUE;
@@ -1493,19 +1494,19 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
             if (!outbuf) {
                 ERR("failed to allocate a buffer of encoding video.\n");
             } else {
-                TRACE("before encode video, ticks_per_frame:%d, pts:%lld\n",
+                TRACE("encode video 1. ticks_per_frame:%d, pts:%lld\n",
                     avctx->ticks_per_frame, pict->pts);
 
                 len = avcodec_encode_video(avctx, outbuf, outbuf_size, pict);
 
-                TRACE("encode video. len %d pts %lld  outbuf size %d\n",
+                TRACE("encode video 2. len %d pts %lld  outbuf size %d\n",
                     len, pict->pts, outbuf, outbuf_size);
                 // TODO: check requested_close ?
             }
         }
     }
 
-    tempbuf_size = sizeof(len) + len;
+    tempbuf_size = sizeof(len);
     if (len < 0) {
         ERR("failed to encode audio. ctx_id: %d len: %d\n", ctx_id, len);
     } else {
@@ -1519,7 +1520,7 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     } else {
         memcpy(tempbuf, &len, sizeof(len));
         size = sizeof(len);
-        if (len && outbuf) {
+        if ((len > 0) && outbuf) {
             memcpy(tempbuf + size, outbuf, len);
         }
     }
@@ -1595,7 +1596,7 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     } else {
         memcpy(tempbuf, &len, sizeof(len));
         size = sizeof(len);
-        if (len && outbuf) {
+        if ((len > 0) && outbuf) {
             memcpy(tempbuf + size, outbuf, len);
         }
     }
