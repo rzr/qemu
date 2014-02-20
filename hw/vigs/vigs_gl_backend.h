@@ -61,8 +61,6 @@ struct vigs_gl_backend
     void (GLAPIENTRY *GenTextures)(GLsizei n, GLuint *textures);
     void (GLAPIENTRY *DeleteTextures)(GLsizei n, const GLuint *textures);
     void (GLAPIENTRY *BindTexture)(GLenum target, GLuint texture);
-    void (GLAPIENTRY *Begin)(GLenum mode);
-    void (GLAPIENTRY *End)(void);
     void (GLAPIENTRY *CullFace)(GLenum mode);
     void (GLAPIENTRY *TexParameterf)(GLenum target, GLenum pname, GLfloat param);
     void (GLAPIENTRY *TexParameterfv)(GLenum target, GLenum pname, const GLfloat *params);
@@ -70,10 +68,6 @@ struct vigs_gl_backend
     void (GLAPIENTRY *TexParameteriv)(GLenum target, GLenum pname, const GLint *params);
     void (GLAPIENTRY *TexImage2D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
     void (GLAPIENTRY *TexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
-    void (GLAPIENTRY *TexEnvf)(GLenum target, GLenum pname, GLfloat param);
-    void (GLAPIENTRY *TexEnvfv)(GLenum target, GLenum pname, const GLfloat *params);
-    void (GLAPIENTRY *TexEnvi)(GLenum target, GLenum pname, GLint param);
-    void (GLAPIENTRY *TexEnviv)(GLenum target, GLenum pname, const GLint *params);
     void (GLAPIENTRY *Clear)(GLbitfield mask);
     void (GLAPIENTRY *ClearColor)(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
     void (GLAPIENTRY *Disable)(GLenum cap);
@@ -93,29 +87,35 @@ struct vigs_gl_backend
     void (GLAPIENTRY *FramebufferRenderbuffer)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
     void (GLAPIENTRY *FramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
     void (GLAPIENTRY *GetIntegerv)(GLenum pname, GLint *params);
-    const GLubyte *(GLAPIENTRY *GetString)(GLenum name);
-    void (GLAPIENTRY *LoadIdentity)(void);
-    void (GLAPIENTRY *MatrixMode)(GLenum mode);
-    void (GLAPIENTRY *Ortho)(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
-    void (GLAPIENTRY *EnableClientState)(GLenum array);
-    void (GLAPIENTRY *DisableClientState)(GLenum array);
-    void (GLAPIENTRY *Color4f)(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
-    void (GLAPIENTRY *TexCoordPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
-    void (GLAPIENTRY *VertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
     void (GLAPIENTRY *DrawArrays)(GLenum mode, GLint first, GLsizei count);
-    void (GLAPIENTRY *Color4ub)(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
-    void (GLAPIENTRY *WindowPos2f)(GLfloat x, GLfloat y);
-    void (GLAPIENTRY *PixelZoom)(GLfloat xfactor, GLfloat yfactor);
-    void (GLAPIENTRY *DrawPixels)(GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data);
-    void (GLAPIENTRY *BlendFunc)(GLenum sfactor, GLenum dfactor);
-    void (GLAPIENTRY *CopyTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
-    void (GLAPIENTRY *BlitFramebuffer)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
     void (GLAPIENTRY *GenBuffers)(GLsizei n, GLuint *buffers);
     void (GLAPIENTRY *DeleteBuffers)(GLsizei n, const GLuint *buffers);
     void (GLAPIENTRY *BindBuffer)(GLenum target, GLuint buffer);
     void (GLAPIENTRY *BufferData)(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+    void (GLAPIENTRY *BufferSubData)(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data);
     GLvoid *(GLAPIENTRY *MapBuffer)(GLenum target, GLenum access);
     GLboolean (GLAPIENTRY *UnmapBuffer)(GLenum target);
+    GLuint (GLAPIENTRY* CreateProgram)(void);
+    GLuint (GLAPIENTRY* CreateShader)(GLenum type);
+    void (GLAPIENTRY* CompileShader)(GLuint shader);
+    void (GLAPIENTRY* AttachShader)(GLuint program, GLuint shader);
+    void (GLAPIENTRY* LinkProgram)(GLuint program);
+    void (GLAPIENTRY* GetProgramiv)(GLuint program, GLenum pname, GLint* params);
+    void (GLAPIENTRY* GetProgramInfoLog)(GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog);
+    void (GLAPIENTRY* GetShaderiv)(GLuint shader, GLenum pname, GLint* params);
+    void (GLAPIENTRY* GetShaderInfoLog)(GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog);
+    void (GLAPIENTRY* DetachShader)(GLuint program, GLuint shader);
+    void (GLAPIENTRY* DeleteProgram)(GLuint program);
+    void (GLAPIENTRY* DeleteShader)(GLuint shader);
+    void (GLAPIENTRY* DisableVertexAttribArray)(GLuint index);
+    void (GLAPIENTRY* EnableVertexAttribArray)(GLuint index);
+    void (GLAPIENTRY* ShaderSource)(GLuint shader, GLsizei count, const GLchar** string, const GLint* length);
+    void (GLAPIENTRY* UseProgram)(GLuint program);
+    GLint (GLAPIENTRY* GetAttribLocation)(GLuint program, const GLchar* name);
+    GLint (GLAPIENTRY* GetUniformLocation)(GLuint program, const GLchar* name);
+    void (GLAPIENTRY* VertexAttribPointer)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer);
+    void (GLAPIENTRY* Uniform4fv)(GLint location, GLsizei count, const GLfloat* value);
+    void (GLAPIENTRY* UniformMatrix4fv)(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
 
     /*
      * @}
@@ -134,8 +134,27 @@ struct vigs_gl_backend
      */
 
     /*
-     *
+     * Other.
      */
+
+    GLuint tex_prog_vs_id;
+    GLuint tex_prog_fs_id;
+    GLuint tex_prog_id;
+    GLint tex_prog_proj_loc;
+    GLint tex_prog_vertCoord_loc;
+    GLint tex_prog_texCoord_loc;
+
+    GLuint color_prog_vs_id;
+    GLuint color_prog_fs_id;
+    GLuint color_prog_id;
+    GLint color_prog_proj_loc;
+    GLint color_prog_vertCoord_loc;
+    GLint color_prog_color_loc;
+
+    GLuint vbo;
+    uint32_t vbo_size;
+
+    GLuint cur_prog_id;
 
     struct work_queue *read_pixels_queue;
 
