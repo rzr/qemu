@@ -1698,7 +1698,7 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				logger.info("Force close is selected");
+				logger.info("Force close menu is selected");
 
 				int answer = SkinUtil.openMessage(shell, null,
 						"If you force stop an emulator, it may cause some problems.\n"
@@ -1729,6 +1729,8 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				logger.info("Shell menu is selected");
+
 				if (communicator.isSdbDaemonStarted() == false) {
 					logger.warning("SDB is not ready.");
 
@@ -1797,6 +1799,8 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				logger.info("Control Panel menu is selected");
+
 				if (communicator.isSdbDaemonStarted() == false) {
 //						|| communicator.isEcsServerStarted() == false) {
 					logger.warning("Control Panel is not ready.");
@@ -1867,7 +1871,7 @@ public class EmulatorSkin {
 		SelectionAdapter listener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				logger.info("Close Menu is selected");
+				logger.info("Close menu is selected");
 
 				communicator.sendToQEMU(SendCommand.SEND_CLOSE_REQ, null, false);
 			}
