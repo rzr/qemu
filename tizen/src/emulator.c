@@ -366,13 +366,13 @@ static void prepare_basic_features(void)
 
     qemu_add_opts(&qemu_ecs_opts);
 
-    start_ecs();
-
     get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
     /* using "DNS" provided by default QEMU */
     g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 
-    set_sdb_base_port();
+    set_base_port();
+
+    start_ecs();
 
     check_vm_lock();
     make_vm_lock();

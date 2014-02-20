@@ -319,6 +319,7 @@ static int virtio_touchscreen_device_init(VirtIODevice *vdev)
         return NULL;
     }*/
 
+    // TODO: reduce size
     ts->vq = virtio_add_queue(&ts->vdev, 64, maru_virtio_touchscreen_handle);
     ts->qdev = qdev;
 
@@ -364,18 +365,32 @@ static Property virtio_touchscreen_properties[] = {
 
 static void virtio_touchscreen_device_reset(VirtIODevice *vdev)
 {
+    TouchEventEntry *event_entry = NULL;
+    ElementEntry *elem_entry = NULL;
+
     INFO("reset the touchscreen device\n");
 
     /* reset the counters */
-    pthread_mutex_lock(&event_mutex);
-    event_queue_cnt = 0;
-    pthread_mutex_unlock(&event_mutex);
-
     event_ringbuf_cnt = 0;
     elem_ringbuf_cnt = 0;
 
+    /* reset queue */
+    pthread_mutex_lock(&event_mutex);
+    while (event_queue_cnt > 0) {
+        event_entry = QTAILQ_FIRST(&events_queue);
+        QTAILQ_REMOVE(&events_queue, event_entry, node);
+
+        event_queue_cnt--;
+    }
+    pthread_mutex_unlock(&event_mutex);
+
     pthread_mutex_lock(&elem_mutex);
-    elem_queue_cnt = 0;
+    while (elem_queue_cnt > 0) {
+        elem_entry = QTAILQ_FIRST(&elem_queue);
+        QTAILQ_REMOVE(&elem_queue, elem_entry, node);
+
+        elem_queue_cnt--;
+    }
 
     ts->waitBuf = false;
     pthread_mutex_unlock(&elem_mutex);

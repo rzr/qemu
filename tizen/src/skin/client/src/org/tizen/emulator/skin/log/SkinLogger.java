@@ -119,12 +119,14 @@ public class SkinLogger {
 
 			/* delete .lck files after abnormal skin termination */
 			File[] listFiles = dir.listFiles();
-			for (File f : listFiles) {
-				String name = f.getName();
+			if (listFiles != null) {
+				for (File f : listFiles) {
+					String name = f.getName();
 
-				if (!FILE_NAME.equals(name) && name.startsWith(FILE_NAME)) {
-					if (f.delete() == false) {
-						/* do nothing */
+					if (!FILE_NAME.equals(name) && name.startsWith(FILE_NAME)) {
+						if (f.delete() == false) {
+							/* do nothing */
+						}
 					}
 				}
 			}

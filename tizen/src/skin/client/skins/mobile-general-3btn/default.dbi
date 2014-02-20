@@ -73,6 +73,7 @@
         <keywindowItem visible="true" />
         <hostKeyboardItem visible="true" />
         <shellItem visible="true" />
+        <controlPanelItem visible="true" />
     </popupMenu>
     <option>
         <blankGuide visible="true" />

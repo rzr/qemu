@@ -245,8 +245,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		/* make window region */
 		Region region = (SwtUtil.isLinuxPlatform() == false) ?
-				getTrimmingRegion(shell.getDisplay(), generalSkin) : /* color key */
-				SkinUtil.getTrimmingRegion(generalSkin);
+				getTrimmedRegion(shell.getDisplay(), generalSkin) : /* color key */
+				SkinUtil.getTrimmedRegion(generalSkin);
 
 		/* update the skin state information */
 		currentState.setCurrentScale(scale);
@@ -338,7 +338,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		return displayBounds;
 	}
 
-	private static Region getTrimmingRegion(Display display, Image image) {
+	private static Region getTrimmedRegion(Display display, Image image) {
 		if (null == image) {
 			return null;
 		}

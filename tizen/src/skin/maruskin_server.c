@@ -1,7 +1,7 @@
 /*
  * socket server for emulator skin
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -111,7 +111,6 @@ enum {
     RECV_DETAIL_INFO_REQ = 17,
     RECV_RAM_DUMP = 18,
     RECV_GUESTMEMORY_DUMP = 19,
-    RECV_ECP_PORT_REQ = 20,
     RECV_INTERPOLATION_STATE = 21,
 
     RECV_RESPONSE_HEART_BEAT = 900,
@@ -538,27 +537,16 @@ static void parse_skinconfig_prop(void)
         return;
     }
 
-    char* buf = g_malloc0(buf_size);
+    char* buf = g_malloc0(buf_size + 1);
     if (!buf) {
-        ERR("Fail to malloc for %s\n", SKIN_CONFIG_PROP);
+        ERR("Failed to malloc for %s\n", SKIN_CONFIG_PROP);
         fclose(fp);
         return;
     }
 
-    int read_cnt = 0;
-    int total_cnt = 0;
-
-    while (1) {
-        if (total_cnt == buf_size) {
-            break;
-        }
-
-        read_cnt = fread((void*) (buf + read_cnt), 1, buf_size - total_cnt, fp);
-        if (0 > read_cnt) {
-            break;
-        } else {
-            total_cnt += read_cnt;
-        }
+    int read_cnt = fread((void*) buf, 1, buf_size, fp);
+    if (buf_size > read_cnt) {
+        WARN("Failed to fread for %s\n", SKIN_CONFIG_PROP);
     }
 
     fclose(fp);
@@ -1016,7 +1004,7 @@ static void* run_skin_server(void* args)
 
                     /* rotation */
                     bool is_rotate = false;
-                    if (is_sensord_initialized == 1 && get_emul_rotation() != rotation_type) {
+                    if (get_emul_rotation() != rotation_type) {
                         set_emul_rotation(rotation_type);
                         is_rotate = true;
                     }
@@ -1028,7 +1016,7 @@ static void* run_skin_server(void* args)
 #endif
 
                     /* after display resizing */
-                    if (is_rotate == true) {
+                    if (is_rotate == true && is_sensord_initialized == 1) {
                         do_rotation_event(rotation_type);
                     }
 
@@ -1071,21 +1059,6 @@ static void* run_skin_server(void* args)
                     TRACE(log_buf);
 
                     do_ram_dump();
-                    break;
-                }
-                case RECV_ECP_PORT_REQ: {
-                    log_cnt += sprintf(log_buf + log_cnt, "RECV_ECP_PORT_REQ ==\n");
-                    TRACE(log_buf);
-
-                    int port = get_ecs_port();
-                    unsigned char port_buf[5];
-                    memset(port_buf, 0, 5);
-                    port_buf[0] = (port & 0xFF000000) >> 24;
-                    port_buf[1] = (port & 0x00FF0000) >> 16;
-                    port_buf[2] = (port & 0x0000FF00) >> 8;
-                    port_buf[3] = (port & 0x000000FF);
-
-                    send_skin_data(client_sock, SEND_ECP_PORT_DATA, port_buf, 4, 0);
                     break;
                 }
                 case RECV_GUESTMEMORY_DUMP: {
@@ -1319,53 +1292,59 @@ static int send_n(int sockfd,
     return total_cnt;
 }
 
+// TODO: call send_skin_data
+char header1[SEND_HEADER_SIZE] = { 0, };
 static int send_skin_header_only(int sockfd, short send_cmd, int print_log)
 {
-    char headerbuf[SEND_HEADER_SIZE] = { 0, };
-
-    make_header(sockfd, send_cmd, 0, headerbuf, print_log);
-
     /* send */
     pthread_mutex_lock(&mutex_send_data);
 
-    int send_count = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
+    make_header(sockfd, send_cmd, 0, header1, print_log);
 
-    pthread_mutex_unlock(&mutex_send_data);
-
-    return send_count;
-}
-
-static int send_skin_data(int sockfd,
-    short send_cmd, unsigned char* data, int length, int big_data)
-{
-
-    char headerbuf[SEND_HEADER_SIZE] = { 0, };
-
-    if (data == NULL) {
-        ERR("send data is NULL.\n");
-        return -1;
-    }
-
-    make_header(sockfd, send_cmd, length, headerbuf, 1);
-
-    /* send */
-    pthread_mutex_lock(&mutex_send_data);
-
-    int header_cnt = send(sockfd, headerbuf, SEND_HEADER_SIZE, 0);
+    int header_cnt = send(sockfd, header1, SEND_HEADER_SIZE, 0);
     if (0 > header_cnt) {
-        ERR("send header for data is NULL.\n");
+        ERR("failed to send header1\n");
         pthread_mutex_unlock(&mutex_send_data);
 
         return header_cnt;
     }
 
-    int send_cnt = send_n(sockfd, data, length, big_data);
+    pthread_mutex_unlock(&mutex_send_data);
+
+    TRACE("send header result : %d\n", header_cnt);
+
+    return header_cnt;
+}
+
+char header2[SEND_HEADER_SIZE] = { 0, };
+static int send_skin_data(int sockfd,
+    short send_cmd, unsigned char* data, int length, int big_data)
+{
+    if (data == NULL) {
+        ERR("send data is NULL.\n");
+        return -1;
+    }
+
+    /* send */
+    pthread_mutex_lock(&mutex_send_data);
+
+    make_header(sockfd, send_cmd, length, header2, 1);
+
+    int header_cnt = send(sockfd, header2, SEND_HEADER_SIZE, 0);
+    if (0 > header_cnt) {
+        ERR("failed to send header2\n");
+        pthread_mutex_unlock(&mutex_send_data);
+
+        return header_cnt;
+    }
+
+    int data_cnt = send_n(sockfd, data, length, big_data);
 
     pthread_mutex_unlock(&mutex_send_data);
 
-    TRACE("send_n result : %d\n", send_cnt);
+    TRACE("send data result : %d\n", data_cnt);
 
-    return send_cnt;
+    return data_cnt;
 }
 
 static void* do_heart_beat(void* args)

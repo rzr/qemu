@@ -202,7 +202,6 @@ public interface ICommunicator extends Runnable {
 		SEND_DETAIL_INFO_REQ((short) 17),
 		SEND_RAM_DUMP((short) 18),
 		SEND_GUEST_DUMP((short) 19),
-		SEND_ECP_PORT_REQ((short) 20),
 		SEND_INTERPOLATION_STATE((short) 21),
 
 		RESPONSE_HEART_BEAT((short) 900),

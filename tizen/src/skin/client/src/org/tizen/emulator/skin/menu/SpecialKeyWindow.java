@@ -49,6 +49,8 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -138,10 +140,7 @@ public class SpecialKeyWindow extends SkinWindow {
 		}
 
 		/* custom window shape */
-		Region region = SkinUtil.getTrimmingRegion(keyWindowImage);
-		if (region != null) {
-			shell.setRegion(region);
-		}
+		trimWindow();
 
 		addKeyWindowListener();
 	}
@@ -201,6 +200,13 @@ public class SpecialKeyWindow extends SkinWindow {
 		}
 
 		return null;
+	}
+
+	protected void trimWindow() {
+		Region region = SkinUtil.getTrimmedRegion(keyWindowImage);
+		if (region != null) {
+			shell.setRegion(region);
+		}
 	}
 
 	private void addKeyWindowListener() {
@@ -484,6 +490,14 @@ public class SpecialKeyWindow extends SkinWindow {
 		};
 
 		shell.addMouseListener(shellMouseListener);
+
+		/* keep window region while OS theme changing */
+		shell.getDisplay().addListener(SWT.Settings, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				trimWindow();
+			}
+		});
 	}
 
 	private void dispose() {

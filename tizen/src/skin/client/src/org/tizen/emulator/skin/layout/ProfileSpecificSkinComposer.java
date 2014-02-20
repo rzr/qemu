@@ -212,7 +212,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 				shell.getDisplay(), originSkinKeyPressed, rotationId, scale);
 
 		/* make window region */
-		Region region = SkinUtil.getTrimmingRegion(profileSkin);
+		Region region = SkinUtil.getTrimmedRegion(profileSkin);
 
 		/* update the skin state information */
 		currentState.setCurrentScale(scale);

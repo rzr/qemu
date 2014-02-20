@@ -370,7 +370,9 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
     } else if (!strncmp(cmd, "gesture", strlen("gesture"))) {
         /* release multi-touch */
 #ifndef CONFIG_USE_SHM
-        clear_finger_slot(false);
+        if (get_multi_touch_enable() != 0) {
+            clear_finger_slot(false);
+        }
 #else
         // TODO:
 #endif

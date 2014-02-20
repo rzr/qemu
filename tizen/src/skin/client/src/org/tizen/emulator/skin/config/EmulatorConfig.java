@@ -31,10 +31,12 @@ package org.tizen.emulator.skin.config;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -144,8 +146,11 @@ public class EmulatorConfig {
 		} else {
 			BufferedReader reader = null;
 			try {
-				reader = new BufferedReader(new FileReader(file));
+				reader = new BufferedReader(new InputStreamReader(
+						new FileInputStream(file), "UTF8"));
 			} catch (FileNotFoundException e) {
+				logger.warning(e.getMessage());
+			} catch (UnsupportedEncodingException e) {
 				logger.warning(e.getMessage());
 			}
 

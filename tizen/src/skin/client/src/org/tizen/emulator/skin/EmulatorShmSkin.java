@@ -1,7 +1,7 @@
 /**
  * Emulator Skin Process
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -111,7 +111,6 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		private int[] arrayFramebuffer;
 		private ImageData dataFramebuffer;
 		private Image imageFramebuffer;
-		private Image imageTemp;
 
 		private volatile boolean stopRequest;
 		private Runnable runnable;
@@ -196,9 +195,13 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			dataFramebuffer.setPixels(0, 0,
 					sizeFramebuffer, arrayFramebuffer, 0);
 
-			imageTemp = imageFramebuffer;
-			imageFramebuffer = new Image(display, dataFramebuffer);
-			imageTemp.dispose();
+			display.asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					imageFramebuffer.dispose();
+					imageFramebuffer = new Image(display, dataFramebuffer);
+				}
+			});
 		}
 
 		public void stopRequest() {

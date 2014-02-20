@@ -62,6 +62,8 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
@@ -573,9 +575,9 @@ public class EmulatorSkin {
 				}
 
 				Menu menu = popupMenu.getMenuRoot();
-				keyForceRelease(true);
-
 				if (menu != null) {
+					keyForceRelease(false);
+
 					shell.setMenu(menu);
 					menu.setVisible(true);
 
@@ -587,6 +589,16 @@ public class EmulatorSkin {
 		};
 
 		shell.addMenuDetectListener(shellMenuDetectListener);
+
+		/* keep window region while OS theme changing */
+		shell.getDisplay().addListener(SWT.Settings, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				logger.info("operating system property has been changed");
+
+				rearrangeSkin();
+			}
+		});
 	}
 
 	private void removeShellListeners() {
@@ -837,9 +849,9 @@ public class EmulatorSkin {
 				}
 
 				Menu menu = popupMenu.getMenuRoot();
-				keyForceRelease(true);
-
 				if (menu != null) {
+					keyForceRelease(false);
+
 					lcdCanvas.setMenu(menu);
 					menu.setVisible(true);
 
@@ -1214,6 +1226,12 @@ public class EmulatorSkin {
 		if (null != canvasMouseWheelListener) {
 			lcdCanvas.removeMouseWheelListener(canvasMouseWheelListener);
 		}
+	}
+
+	protected void rearrangeSkin() {
+		skinComposer.arrangeSkin(
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
 	}
 
 	public void updateSkin() {
@@ -1778,63 +1796,37 @@ public class EmulatorSkin {
 					}
 
 					return;
+                }
+
+                String emulName = SkinUtil.getVmName(config);
+                int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
+
+				ProcessBuilder procEcp = new ProcessBuilder();
+
+				// FIXME: appropriate running binary setting is necessary.
+				if (SwtUtil.isWindowsPlatform()) {
+					procEcp.command("java.exe", "-jar", ecpPath, "vmname="
+							+ emulName, "base.port=" + portSdb);
+				} else if (SwtUtil.isMacPlatform()) {
+					procEcp.command("java", "-jar", "-XstartOnFirstThread",
+							ecpPath, "vmname=" + emulName, "base.port="
+									+ portSdb);
+				} else { /* Linux */
+					procEcp.command("java", "-jar", ecpPath, "vmname="
+							+ emulName, "base.port=" + portSdb);
 				}
 
-				// TODO: thread
-				/* get ECS port from Qemu */
-				DataTranfer dataTranfer = communicator.sendDataToQEMU(
-						SendCommand.SEND_ECP_PORT_REQ, null, true);
-				byte[] receivedData = communicator.getReceivedData(dataTranfer);
+				logger.info(procEcp.command().toString());
 
-				if (null != receivedData) {
-					int portEcp = (receivedData[0] & 0xFF) << 24;
-					portEcp |= (receivedData[1] & 0xFF) << 16;
-					portEcp |= (receivedData[2] & 0xFF) << 8;
-					portEcp |= (receivedData[3] & 0xFF);
-
-					if (portEcp <= 0) {
-						logger.log(Level.INFO, "ECS port failed : " + portEcp);
-
-						SkinUtil.openMessage(shell, null,
-								"Failed to connect to Control Server. Please restart the emulator.",
-								SWT.ICON_ERROR, config);
-						return;
-					}
-
-					String emulName = SkinUtil.getVmName(config);
-					int portSdb = config.getArgInt(ArgsConstants.VM_BASE_PORT);
-
-					ProcessBuilder procEcp = new ProcessBuilder();
-
-					// FIXME: appropriate running binary setting is necessary.
-					if (SwtUtil.isWindowsPlatform()) {
-						procEcp.command("java.exe", "-jar", ecpPath,
-								"vmname=" + emulName, "sdb.port=" + portSdb,
-								"svr.port=" + portEcp);
-					} else if (SwtUtil.isMacPlatform()) {
-						procEcp.command("java", "-jar", "-XstartOnFirstThread", ecpPath,
-								"vmname=" + emulName, "sdb.port=" + portSdb,
-								"svr.port=" + portEcp);
-					} else { /* Linux */
-						procEcp.command("java", "-jar", ecpPath,
-								"vmname=" + emulName, "sdb.port=" + portSdb,
-								"svr.port=" + portEcp);
-					}
-
-					logger.info(procEcp.command().toString());
-
-					try {
-						procEcp.start(); /* open ECP */
-					} catch (Exception ee) {
-						logger.log(Level.SEVERE, ee.getMessage(), ee);
-						SkinUtil.openMessage(shell, null,
-								"Fail to open control panel : \n" + ee.getMessage(),
-								SWT.ICON_ERROR, config);
-					}
-				} else {
-					logger.severe("Fail to get ECP data");
-					SkinUtil.openMessage(shell, null,
-							"Fail to get ECP data", SWT.ICON_ERROR, config);
+				try {
+					procEcp.start(); /* open ECP */
+				} catch (Exception ee) {
+					logger.log(Level.SEVERE, ee.getMessage(), ee);
+					SkinUtil.openMessage(
+							shell,
+							null,
+							"Fail to open control panel : \n" + ee.getMessage(),
+							SWT.ICON_ERROR, config);
 				}
 			}
 		};

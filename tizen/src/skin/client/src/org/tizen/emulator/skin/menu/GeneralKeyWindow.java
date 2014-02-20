@@ -50,6 +50,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
@@ -165,14 +167,7 @@ public class GeneralKeyWindow extends SkinWindow {
 
 		createContents();
 
-		/* make window region */
-		Region region = (SwtUtil.isLinuxPlatform() == false) ?
-				getTrimmingRegion(shell.getDisplay(), imageFrame) : /* color key */
-				SkinUtil.getTrimmingRegion(imageFrame);
-		/* custom window shape */
-		if (region != null) {
-			shell.setRegion(region);
-		}
+		trimWindow();
 
 		addKeyWindowListener();
 
@@ -306,7 +301,7 @@ public class GeneralKeyWindow extends SkinWindow {
 		}
 	}
 
-	private static Region getTrimmingRegion(Display display, Image image) {
+	private static Region getTrimmedRegion(Display display, Image image) {
 		if (null == image) {
 			return null;
 		}
@@ -340,6 +335,18 @@ public class GeneralKeyWindow extends SkinWindow {
 		}
 
 		return region;
+	}
+
+	protected void trimWindow() {
+		/* make window region */
+		Region region = (SwtUtil.isLinuxPlatform() == false) ?
+				getTrimmedRegion(shell.getDisplay(), imageFrame) : /* color key */
+				SkinUtil.getTrimmedRegion(imageFrame);
+
+		/* custom window shape */
+		if (region != null) {
+			shell.setRegion(region);
+		}
 	}
 
 	private void addKeyWindowListener() {
@@ -511,6 +518,14 @@ public class GeneralKeyWindow extends SkinWindow {
 		};
 
 		shell.addMouseListener(shellMouseListener);
+
+		/* keep window region while OS theme changing */
+		shell.getDisplay().addListener(SWT.Settings, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+				trimWindow();
+			}
+		});
 	}
 
 	private void dispose() {

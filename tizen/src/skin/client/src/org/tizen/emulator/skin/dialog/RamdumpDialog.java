@@ -172,6 +172,10 @@ public class RamdumpDialog extends SkinDialog {
 					public void run() {
 						logger.info("ramdump complete");
 
+						if (shell.isDisposed() == true) {
+							return;
+						}
+
 						if (labelImage.getImage() != null) {
 							labelImage.getImage().dispose();
 						}
