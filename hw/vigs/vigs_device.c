@@ -71,6 +71,7 @@ typedef struct VIGSState
      */
     QemuConsole *con;
 
+    uint32_t reg_con;
     uint32_t reg_int;
 } VIGSState;
 
@@ -82,7 +83,7 @@ static void vigs_update_irq(VIGSState *s)
 {
     bool raise = false;
 
-    if ((s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) &&
+    if ((s->reg_con & VIGS_REG_CON_VBLANK_ENABLE) &&
         (s->reg_int & VIGS_REG_INT_VBLANK_PENDING)) {
         raise = true;
     }
@@ -122,7 +123,7 @@ static void vigs_hw_update(void *opaque)
 
     dpy_gfx_update(s->con, 0, 0, surface_width(ds), surface_height(ds));
 
-    if (s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) {
+    if (s->reg_con & VIGS_REG_CON_VBLANK_ENABLE) {
         s->reg_int |= VIGS_REG_INT_VBLANK_PENDING;
         vigs_update_irq(s);
     }
@@ -140,8 +141,7 @@ static void vigs_dpy_resize(void *user_data,
     DisplaySurface *ds = qemu_console_surface(s->con);
 
     if ((width != surface_width(ds)) ||
-        (height != surface_height(ds)))
-    {
+        (height != surface_height(ds))) {
         qemu_console_resize(s->con, width, height);
     }
 }
@@ -186,6 +186,8 @@ static uint64_t vigs_io_read(void *opaque, hwaddr offset,
     VIGSState *s = opaque;
 
     switch (offset) {
+    case VIGS_REG_CON:
+        return s->reg_con;
     case VIGS_REG_INT:
         return s->reg_int;
     case VIGS_REG_FENCE_LOWER:
@@ -209,6 +211,19 @@ static void vigs_io_write(void *opaque, hwaddr offset,
     case VIGS_REG_EXEC:
         vigs_server_dispatch(s->server, value);
         break;
+    case VIGS_REG_CON:
+        if (((s->reg_con & VIGS_REG_CON_VBLANK_ENABLE) == 0) &&
+            (value & VIGS_REG_CON_VBLANK_ENABLE)) {
+            VIGS_LOG_DEBUG("VBLANK On");
+        } else if (((value & VIGS_REG_CON_VBLANK_ENABLE) == 0) &&
+                   (s->reg_con & VIGS_REG_CON_VBLANK_ENABLE)) {
+            VIGS_LOG_DEBUG("VBLANK Off");
+        }
+
+        s->reg_con = value & VIGS_REG_CON_MASK;
+
+        vigs_update_irq(s);
+        break;
     case VIGS_REG_INT:
         if (value & VIGS_REG_INT_VBLANK_PENDING) {
             value &= ~VIGS_REG_INT_VBLANK_PENDING;
@@ -220,14 +235,6 @@ static void vigs_io_write(void *opaque, hwaddr offset,
             value &= ~VIGS_REG_INT_FENCE_ACK_PENDING;
         } else {
             value |= (s->reg_int & VIGS_REG_INT_FENCE_ACK_PENDING);
-        }
-
-        if (((s->reg_int & VIGS_REG_INT_VBLANK_ENABLE) == 0) &&
-            (value & VIGS_REG_INT_VBLANK_ENABLE)) {
-            VIGS_LOG_DEBUG("VBLANK On");
-        } else if (((value & VIGS_REG_INT_VBLANK_ENABLE) == 0) &&
-                   (s->reg_int & VIGS_REG_INT_VBLANK_ENABLE)) {
-            VIGS_LOG_DEBUG("VBLANK Off");
         }
 
         s->reg_int = value & VIGS_REG_INT_MASK;
@@ -371,6 +378,7 @@ static void vigs_device_reset(DeviceState *d)
 
     pci_set_irq(&s->dev.pci_dev, 0);
 
+    s->reg_con = 0;
     s->reg_int = 0;
 
     VIGS_LOG_INFO("VIGS reset");
