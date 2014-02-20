@@ -1,7 +1,7 @@
 /**
  * General-Purpose Skin Layout
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -28,6 +28,7 @@
 
 package org.tizen.emulator.skin.layout;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
@@ -55,6 +56,7 @@ import org.tizen.emulator.skin.custom.ColorTag;
 import org.tizen.emulator.skin.custom.CustomButton;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.custom.SkinWindow;
+import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.image.GeneralSkinImageRegistry;
 import org.tizen.emulator.skin.image.GeneralSkinImageRegistry.GeneralSkinImageName;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
@@ -150,42 +152,14 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					.getIcon(IconName.EMULATOR_TITLE));
 		}
 
-		/* load image for toggle button of key window */
-		Image imageNormal = imageRegistry.getSkinImage(
-				GeneralSkinImageName.TOGGLE_BUTTON_NORMAL);
-		Image imageHover = imageRegistry.getSkinImage(
-				GeneralSkinImageName.TOGGLE_BUTTON_HOVER);
-		Image imagePushed = imageRegistry.getSkinImage(
-				GeneralSkinImageName.TOGGLE_BUTTON_PUSHED);
-
 		/* create a toggle button of key window */
-		toggleButton = new CustomButton(shell, SWT.DRAW_TRANSPARENT | SWT.NO_FOCUS,
-				imageNormal, imageHover, imagePushed);
-		toggleButton.setBackground(backgroundColor);
+		List<KeyMapType> keyMapList = SkinUtil.getHWKeyMapList(
+				skin.getEmulatorSkinState().getCurrentRotationId());
 
-		toggleButton.addMouseListener(new MouseListener() {
-			@Override
-			public void mouseDown(MouseEvent e) {
-				if (skin.isKeyWindow == true) {
-					skin.getKeyWindowKeeper().closeKeyWindow();
-					skin.getKeyWindowKeeper().setRecentlyDocked(
-							KeyWindowKeeper.DEFAULT_DOCK_POSITION);
-				} else {
-					skin.getKeyWindowKeeper().openKeyWindow(
-							KeyWindowKeeper.DEFAULT_DOCK_POSITION, true);
-				}
-			}
-
-			@Override
-			public void mouseUp(MouseEvent e) {
-				/* do nothing */
-			}
-
-			@Override
-			public void mouseDoubleClick(MouseEvent e) {
-				/* do nothing */
-			}
-		});
+		if (keyMapList.isEmpty() == false) {
+			toggleButton = createToggleButton();
+			toggleButton.setBackground(backgroundColor);
+		}
 
 		/* make a pair tag circle */
 		pairTag = new ColorTag(shell, SWT.NO_FOCUS, skin.getColorVM());
@@ -196,6 +170,16 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		skin.bootingProgress.setBackground(backgroundColor);
 
 		arrangeSkin(scale, rotationId);
+
+		if (currentState.getCurrentImage() == null) {
+			logger.severe("Failed to load initial skin image. Kill this skin process.");
+			SkinUtil.openMessage(shell, null,
+					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
+
+			EmulatorSkinMain.terminateImmediately(-1);
+		}
+
+		addListeners();
 
 		/* open the key window if key window menu item was enabled */
 		PopupMenu popupMenu = skin.getPopupMenu();
@@ -267,9 +251,13 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		displayCanvas.setBounds(displayBounds);
 
 		/* arrange the toggle button of key window */
-		toggleButton.setBounds(displayBounds.x + displayBounds.width + 4,
-				displayBounds.y + ((displayBounds.height - toggleButton.getImageSize().y) / 2),
-				toggleButton.getImageSize().x, toggleButton.getImageSize().y);
+		if (toggleButton != null) {
+			int centerY = ((displayBounds.height - toggleButton.getImageSize().y) / 2);
+
+			toggleButton.setBounds(displayBounds.x + displayBounds.width + 4,
+					displayBounds.y + centerY,
+					toggleButton.getImageSize().x, toggleButton.getImageSize().y);
+		}
 
 		/* arrange the progress bar */
 		if (skin.bootingProgress != null) {
@@ -395,7 +383,47 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		});
 	}
 
-	public void addGeneralPurposeListener(final Shell shell) {
+	private CustomButton createToggleButton() {
+		/* load image for toggle button of key window */
+		Image imageNormal = imageRegistry.getSkinImage(
+				GeneralSkinImageName.TOGGLE_BUTTON_NORMAL);
+		Image imageHover = imageRegistry.getSkinImage(
+				GeneralSkinImageName.TOGGLE_BUTTON_HOVER);
+		Image imagePushed = imageRegistry.getSkinImage(
+				GeneralSkinImageName.TOGGLE_BUTTON_PUSHED);
+
+		CustomButton toggle = new CustomButton(shell,
+				SWT.DRAW_TRANSPARENT | SWT.NO_FOCUS,
+				imageNormal, imageHover, imagePushed);
+
+		toggle.addMouseListener(new MouseListener() {
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (skin.isKeyWindow == true) {
+					skin.getKeyWindowKeeper().closeKeyWindow();
+					skin.getKeyWindowKeeper().setRecentlyDocked(
+							KeyWindowKeeper.DEFAULT_DOCK_POSITION);
+				} else {
+					skin.getKeyWindowKeeper().openKeyWindow(
+							KeyWindowKeeper.DEFAULT_DOCK_POSITION, true);
+				}
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				/* do nothing */
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				/* do nothing */
+			}
+		});
+
+		return toggle;
+	}
+
+	private void addListeners() {
 		shellPaintListener = new PaintListener() {
 			@Override
 			public void paintControl(final PaintEvent e) {

@@ -1,7 +1,7 @@
 /**
  * Profile-Specific Skin Layout
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -151,12 +151,14 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		arrangeSkin(scale, rotationId);
 
 		if (currentState.getCurrentImage() == null) {
-			logger.severe("Failed to load initial skin image file. Kill this skin process.");
+			logger.severe("Failed to load initial skin image. Kill this skin process.");
 			SkinUtil.openMessage(shell, null,
 					"Failed to load Skin image file.", SWT.ICON_ERROR, config);
 
 			EmulatorSkinMain.terminateImmediately(-1);
 		}
+
+		addListeners();
 
 		/* open the key window if key window menu item was enabled */
 		PopupMenu popupMenu = skin.getPopupMenu();
@@ -344,7 +346,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		/* do nothing */
 	}
 
-	public void addProfileSpecificListener(final Shell shell) {
+	private void addListeners() {
 		shellPaintListener = new PaintListener() {
 			@Override
 			public void paintControl(final PaintEvent e) {

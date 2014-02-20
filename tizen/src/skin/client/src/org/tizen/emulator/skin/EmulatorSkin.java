@@ -269,14 +269,8 @@ public class EmulatorSkin {
 		/* build a skin layout */
 		if (skinInfo.isGeneralPurposeSkin() == false) {
 			skinComposer = new ProfileSpecificSkinComposer(config, this);
-
-			((ProfileSpecificSkinComposer) skinComposer)
-					.addProfileSpecificListener(shell);
 		} else { /* general purpose skin */
 			skinComposer = new GeneralPurposeSkinComposer(config, this);
-
-			((GeneralPurposeSkinComposer) skinComposer)
-					.addGeneralPurposeListener(shell);
 		}
 
 		lcdCanvas = skinComposer.compose(displayCanvasStyle);
