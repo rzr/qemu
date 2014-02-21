@@ -45,6 +45,8 @@ struct vigs_gl_backend
 
     struct winsys_gl_info ws_info;
 
+    bool is_gl_2;
+
     bool (*has_current)(struct vigs_gl_backend */*gl_backend*/);
 
     bool (*make_current)(struct vigs_gl_backend */*gl_backend*/,
@@ -122,6 +124,19 @@ struct vigs_gl_backend
      */
 
     /*
+     * OpenGL 3.1+ core functions and extensions.
+     * @{
+     */
+
+    void (GLAPIENTRY* GenVertexArrays)(GLsizei n, GLuint* arrays);
+    void (GLAPIENTRY* BindVertexArray)(GLuint array);
+    void (GLAPIENTRY* DeleteVertexArrays)(GLsizei n, const GLuint* arrays);
+
+    /*
+     * @}
+     */
+
+    /*
      * General purpose vectors.
      * @{
      */
@@ -136,6 +151,8 @@ struct vigs_gl_backend
     /*
      * Other.
      */
+
+    GLuint vao;
 
     GLuint tex_prog_vs_id;
     GLuint tex_prog_fs_id;

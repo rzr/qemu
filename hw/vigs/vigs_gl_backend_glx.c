@@ -84,6 +84,7 @@ struct vigs_gl_backend_glx
     PFNGLXDESTROYCONTEXTPROC glXDestroyContext;
     PFNGLXMAKECONTEXTCURRENTPROC glXMakeContextCurrent;
     PFNGLXGETCURRENTCONTEXTPROC glXGetCurrentContext;
+    PFNGLXCREATENEWCONTEXTPROC glXCreateNewContext;
 
     /* GLX_ARB_create_context */
     PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
@@ -94,6 +95,100 @@ struct vigs_gl_backend_glx
     GLXPbuffer read_pixels_sfc;
     GLXContext read_pixels_ctx;
 };
+
+static bool vigs_gl_backend_glx_check_gl_version(struct vigs_gl_backend_glx *gl_backend_glx,
+                                                 bool *is_gl_2)
+{
+    int config_attribs[] =
+    {
+        GLX_DOUBLEBUFFER, True,
+        GLX_RED_SIZE, 8,
+        GLX_GREEN_SIZE, 8,
+        GLX_BLUE_SIZE, 8,
+        GLX_ALPHA_SIZE, 8,
+        GLX_BUFFER_SIZE, 32,
+        GLX_DEPTH_SIZE, 24,
+        GLX_STENCIL_SIZE, 8,
+        GLX_RENDER_TYPE, GLX_RGBA_BIT,
+        GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT,
+        None
+    };
+    int ctx_attribs[] =
+    {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 1,
+        GLX_RENDER_TYPE, GLX_RGBA_TYPE,
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+        None
+    };
+    bool res = false;
+    const char *tmp;
+    int n = 0;
+    GLXFBConfig *configs = NULL;
+    GLXContext ctx = NULL;
+
+    tmp = getenv("GL_VERSION");
+
+    if (tmp) {
+        if (strcmp(tmp, "2") == 0) {
+            VIGS_LOG_INFO("GL_VERSION forces OpenGL version to 2.1");
+            *is_gl_2 = true;
+            res = true;
+        } else if (strcmp(tmp, "3_1") == 0) {
+            VIGS_LOG_INFO("GL_VERSION forces OpenGL version to 3.1");
+            *is_gl_2 = false;
+            res = true;
+        } else if (strcmp(tmp, "3_1_es3") == 0) {
+            VIGS_LOG_INFO("GL_VERSION forces OpenGL version to 3.1 ES3");
+            *is_gl_2 = false;
+            res = true;
+        } else if (strcmp(tmp, "3_2") == 0) {
+            VIGS_LOG_INFO("GL_VERSION forces OpenGL version to 3.2");
+            *is_gl_2 = false;
+            res = true;
+        } else {
+            VIGS_LOG_CRITICAL("Bad GL_VERSION value = %s", tmp);
+        }
+
+        goto out;
+    }
+
+    configs = gl_backend_glx->glXChooseFBConfig(gl_backend_glx->dpy,
+                                                DefaultScreen(gl_backend_glx->dpy),
+                                                config_attribs,
+                                                &n);
+
+    if (n <= 0) {
+        VIGS_LOG_ERROR("glXChooseFBConfig failed");
+        goto out;
+    }
+
+    ctx = gl_backend_glx->glXCreateContextAttribsARB(gl_backend_glx->dpy,
+                                                     configs[0],
+                                                     NULL,
+                                                     True,
+                                                     ctx_attribs);
+
+    *is_gl_2 = (ctx == NULL);
+    res = true;
+
+    if (ctx) {
+        VIGS_LOG_INFO("Using OpenGL 3.1+ core");
+    } else {
+        VIGS_LOG_INFO("glXCreateContextAttribsARB failed, using OpenGL 2.1");
+    }
+
+out:
+    if (ctx) {
+        gl_backend_glx->glXMakeContextCurrent(gl_backend_glx->dpy, 0, 0, NULL);
+        gl_backend_glx->glXDestroyContext(gl_backend_glx->dpy, ctx);
+    }
+    if (configs) {
+        XFree(configs);
+    }
+
+    return res;
+}
 
 static GLXFBConfig vigs_gl_backend_glx_get_config(struct vigs_gl_backend_glx *gl_backend_glx)
 {
@@ -180,19 +275,28 @@ static bool vigs_gl_backend_glx_create_context(struct vigs_gl_backend_glx *gl_ba
     int attribs[] =
     {
         GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-        GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 1,
         GLX_RENDER_TYPE, GLX_RGBA_TYPE,
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
         None
     };
 
-    *ctx = gl_backend_glx->glXCreateContextAttribsARB(gl_backend_glx->dpy,
-                                                      config,
-                                                      share_ctx,
-                                                      True,
-                                                      attribs);
+    if (gl_backend_glx->base.is_gl_2) {
+        *ctx = gl_backend_glx->glXCreateNewContext(gl_backend_glx->dpy,
+                                                   config,
+                                                   GLX_RGBA_TYPE,
+                                                   share_ctx,
+                                                   True);
+    } else {
+        *ctx = gl_backend_glx->glXCreateContextAttribsARB(gl_backend_glx->dpy,
+                                                          config,
+                                                          share_ctx,
+                                                          True,
+                                                          attribs);
+    }
 
     if (!*ctx) {
-        VIGS_LOG_CRITICAL("glXCreateContextAttribsARB failed");
+        VIGS_LOG_CRITICAL("glXCreateContextAttribsARB/glXCreateNewContext failed");
         return false;
     }
 
@@ -312,6 +416,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GLX_GET_PROC(PFNGLXDESTROYCONTEXTPROC, glXDestroyContext);
     VIGS_GLX_GET_PROC(PFNGLXMAKECONTEXTCURRENTPROC, glXMakeContextCurrent);
     VIGS_GLX_GET_PROC(PFNGLXGETCURRENTCONTEXTPROC, glXGetCurrentContext);
+    VIGS_GLX_GET_PROC(PFNGLXCREATENEWCONTEXTPROC, glXCreateNewContext);
     VIGS_GLX_GET_PROC(PFNGLXCREATECONTEXTATTRIBSARBPROC, glXCreateContextAttribsARB);
 
     VIGS_GL_GET_PROC(GenTextures, glGenTextures);
@@ -374,6 +479,17 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(UniformMatrix4fv, glUniformMatrix4fv);
 
     gl_backend_glx->dpy = x_display;
+
+    if (!vigs_gl_backend_glx_check_gl_version(gl_backend_glx,
+                                              &gl_backend_glx->base.is_gl_2)) {
+        goto fail2;
+    }
+
+    if (!gl_backend_glx->base.is_gl_2) {
+        VIGS_GL_GET_PROC(GenVertexArrays, glGenVertexArrays);
+        VIGS_GL_GET_PROC(BindVertexArray, glBindVertexArray);
+        VIGS_GL_GET_PROC(DeleteVertexArrays, glDeleteVertexArrays);
+    }
 
     config = vigs_gl_backend_glx_get_config(gl_backend_glx);
 

@@ -1316,6 +1316,17 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
         return false;
     }
 
+    if (!gl_backend->is_gl_2) {
+        gl_backend->GenVertexArrays(1, &gl_backend->vao);
+
+        if (!gl_backend->vao) {
+            VIGS_LOG_CRITICAL("cannot create VAO");
+            goto fail;
+        }
+
+        gl_backend->BindVertexArray(gl_backend->vao);
+    }
+
     gl_backend->tex_prog_vs_id = vigs_gl_create_shader(gl_backend,
                                                        g_vs_tex_source,
                                                        GL_VERTEX_SHADER);
@@ -1435,6 +1446,10 @@ void vigs_gl_backend_cleanup(struct vigs_gl_backend *gl_backend)
         gl_backend->DeleteShader(gl_backend->tex_prog_vs_id);
         gl_backend->DeleteShader(gl_backend->tex_prog_fs_id);
         gl_backend->DeleteProgram(gl_backend->tex_prog_id);
+
+        if (!gl_backend->is_gl_2) {
+            gl_backend->DeleteVertexArrays(1, &gl_backend->vao);
+        }
 
         gl_backend->make_current(gl_backend, false);
     }

@@ -168,27 +168,27 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_get_gl_version, NULL);
 
-    tmp = getenv("YAGL_GL_VERSION");
+    tmp = getenv("GL_VERSION");
 
     if (tmp) {
-        if (strcmp(tmp, "gl_2") == 0) {
-            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 2.1");
+        if (strcmp(tmp, "2") == 0) {
+            YAGL_LOG_INFO("GL_VERSION forces OpenGL version to 2.1");
             *version = yagl_gl_2;
             res = true;
-        } else if (strcmp(tmp, "gl_3_1") == 0) {
-            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.1");
+        } else if (strcmp(tmp, "3_1") == 0) {
+            YAGL_LOG_INFO("GL_VERSION forces OpenGL version to 3.1");
             *version = yagl_gl_3_1;
             res = true;
-        } else if (strcmp(tmp, "gl_3_1_es3") == 0) {
-            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.1 ES3");
+        } else if (strcmp(tmp, "3_1_es3") == 0) {
+            YAGL_LOG_INFO("GL_VERSION forces OpenGL version to 3.1 ES3");
             *version = yagl_gl_3_1_es3;
             res = true;
-        } else if (strcmp(tmp, "gl_3_2") == 0) {
-            YAGL_LOG_INFO("YAGL_GL_VERSION forces OpenGL version to 3.2");
+        } else if (strcmp(tmp, "3_2") == 0) {
+            YAGL_LOG_INFO("GL_VERSION forces OpenGL version to 3.2");
             *version = yagl_gl_3_2;
             res = true;
         } else {
-            YAGL_LOG_CRITICAL("Bad YAGL_GL_VERSION value = %s", tmp);
+            YAGL_LOG_CRITICAL("Bad GL_VERSION value = %s", tmp);
         }
 
         goto out;
