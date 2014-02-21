@@ -53,14 +53,16 @@ static void yagl_egl_context_destroy(struct yagl_ref *ref)
 struct yagl_egl_context
     *yagl_egl_context_create(struct yagl_egl_display *dpy,
                              struct yagl_egl_config *cfg,
-                             struct yagl_eglb_context *backend_share_ctx)
+                             struct yagl_eglb_context *backend_share_ctx,
+                             int version)
 {
     struct yagl_eglb_context *backend_ctx;
     struct yagl_egl_context *ctx;
 
     backend_ctx = dpy->backend_dpy->create_context(dpy->backend_dpy,
                                                    &cfg->native,
-                                                   backend_share_ctx);
+                                                   backend_share_ctx,
+                                                   version);
 
     if (!backend_ctx) {
         return NULL;

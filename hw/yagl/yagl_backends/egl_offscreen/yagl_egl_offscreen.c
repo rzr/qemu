@@ -281,13 +281,13 @@ struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *egl_d
         goto fail;
     }
 
-    ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], NULL);
+    ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], NULL, 0);
 
     if (ctx == EGL_NO_CONTEXT) {
         goto fail;
     }
 
-    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx);
+    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx, 0);
 
     if (global_ctx == EGL_NO_CONTEXT) {
         goto fail;

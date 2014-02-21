@@ -578,7 +578,8 @@ static void yagl_egl_glx_pbuffer_surface_destroy(struct yagl_egl_driver *driver,
 static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType dpy,
                                               const struct yagl_egl_native_config *cfg,
-                                              EGLContext share_context)
+                                              EGLContext share_context,
+                                              int version)
 {
     struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     GLXContext ctx;
@@ -592,11 +593,12 @@ static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
     };
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_context_create,
-                       "dpy = %p, share_context = %p",
+                       "dpy = %p, share_context = %p, version = %d",
                        dpy,
-                       share_context);
+                       share_context,
+                       version);
 
-    if (egl_glx->base.gl_version > yagl_gl_2) {
+    if ((egl_glx->base.gl_version > yagl_gl_2) && (version != 1)) {
         ctx = egl_glx->glXCreateContextAttribsARB(dpy,
                                                   (GLXFBConfig)cfg->driver_data,
                                                   ((share_context == EGL_NO_CONTEXT) ?

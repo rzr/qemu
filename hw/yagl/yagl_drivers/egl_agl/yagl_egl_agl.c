@@ -170,7 +170,8 @@ static void yagl_egl_agl_config_cleanup(struct yagl_egl_driver *driver,
 static EGLContext yagl_egl_agl_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType egl_dpy,
                                               const struct yagl_egl_native_config *cfg,
-                                              EGLContext share_context)
+                                              EGLContext share_context,
+                                              int version)
 {
     YaglEglAglContext *egl_glc;
     AGLContext agl_share_glc;

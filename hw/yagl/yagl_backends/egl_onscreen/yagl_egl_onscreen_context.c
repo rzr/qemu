@@ -77,7 +77,8 @@ static void yagl_egl_onscreen_context_destroy(struct yagl_eglb_context *ctx)
 struct yagl_egl_onscreen_context
     *yagl_egl_onscreen_context_create(struct yagl_egl_onscreen_display *dpy,
                                       const struct yagl_egl_native_config *cfg,
-                                      struct yagl_egl_onscreen_context *share_context)
+                                      struct yagl_egl_onscreen_context *share_context,
+                                      int version)
 {
     struct yagl_egl_onscreen *egl_onscreen =
         (struct yagl_egl_onscreen*)dpy->base.backend;
@@ -85,15 +86,17 @@ struct yagl_egl_onscreen_context
     EGLContext native_ctx;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_onscreen_context_create,
-                        "dpy = %p, cfg = %d",
+                        "dpy = %p, cfg = %d, version = %d",
                         dpy,
-                        cfg->config_id);
+                        cfg->config_id,
+                        version);
 
     native_ctx = egl_onscreen->egl_driver->context_create(
         egl_onscreen->egl_driver,
         dpy->native_dpy,
         cfg,
-        egl_onscreen->global_ctx);
+        egl_onscreen->global_ctx,
+        version);
 
     if (!native_ctx) {
         YAGL_LOG_FUNC_EXIT(NULL);

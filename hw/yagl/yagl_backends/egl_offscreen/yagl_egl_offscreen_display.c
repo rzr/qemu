@@ -108,14 +108,16 @@ static void yagl_egl_offscreen_display_config_cleanup(struct yagl_eglb_display *
 static struct yagl_eglb_context
     *yagl_egl_offscreen_display_create_context(struct yagl_eglb_display *dpy,
                                                const struct yagl_egl_native_config *cfg,
-                                               struct yagl_eglb_context *share_context)
+                                               struct yagl_eglb_context *share_context,
+                                               int version)
 {
     struct yagl_egl_offscreen_display *egl_offscreen_dpy =
         (struct yagl_egl_offscreen_display*)dpy;
     struct yagl_egl_offscreen_context *ctx =
         yagl_egl_offscreen_context_create(egl_offscreen_dpy,
                                           cfg,
-                                          (struct yagl_egl_offscreen_context*)share_context);
+                                          (struct yagl_egl_offscreen_context*)share_context,
+                                          version);
 
     return ctx ? &ctx->base : NULL;
 }

@@ -374,13 +374,13 @@ struct yagl_egl_backend *yagl_egl_onscreen_create(struct winsys_interface *wsi,
     }
 
     ctx = egl_driver->context_create(egl_driver, dpy, &configs[0],
-                                     (EGLContext)ws_info->context);
+                                     (EGLContext)ws_info->context, 0);
 
     if (ctx == EGL_NO_CONTEXT) {
         goto fail;
     }
 
-    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx);
+    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx, 0);
 
     if (global_ctx == EGL_NO_CONTEXT) {
         goto fail;

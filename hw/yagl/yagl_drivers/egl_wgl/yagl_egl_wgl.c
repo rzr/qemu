@@ -500,7 +500,8 @@ fail:
 static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
                                               EGLNativeDisplayType egl_dpy,
                                               const struct yagl_egl_native_config *cfg,
-                                              EGLContext share_context)
+                                              EGLContext share_context,
+                                              int version)
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;

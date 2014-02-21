@@ -59,7 +59,8 @@ struct yagl_egl_context
 struct yagl_egl_context
     *yagl_egl_context_create(struct yagl_egl_display *dpy,
                              struct yagl_egl_config *cfg,
-                             struct yagl_eglb_context *backend_share_ctx);
+                             struct yagl_eglb_context *backend_share_ctx,
+                             int version);
 
 void yagl_egl_context_update_surfaces(struct yagl_egl_context *ctx,
                                       struct yagl_egl_surface *draw,

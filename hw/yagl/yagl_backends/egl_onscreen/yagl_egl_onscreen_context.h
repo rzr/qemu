@@ -74,7 +74,8 @@ struct yagl_egl_onscreen_context
 struct yagl_egl_onscreen_context
     *yagl_egl_onscreen_context_create(struct yagl_egl_onscreen_display *dpy,
                                       const struct yagl_egl_native_config *cfg,
-                                      struct yagl_egl_onscreen_context *share_context);
+                                      struct yagl_egl_onscreen_context *share_context,
+                                      int version);
 
 void yagl_egl_onscreen_context_setup(struct yagl_egl_onscreen_context *ctx);
 

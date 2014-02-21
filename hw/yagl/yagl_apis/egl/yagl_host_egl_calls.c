@@ -890,6 +890,7 @@ yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
     const EGLint *attrib_list, int32_t attrib_list_count,
     EGLint *error)
 {
+    int i = 0, version = 1;
     yagl_host_handle res = 0;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_config *config = NULL;
@@ -906,6 +907,22 @@ yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
         goto out;
     }
 
+    if (egl_api_ts->api == EGL_OPENGL_ES_API) {
+        if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
+            while (attrib_list[i] != EGL_NONE) {
+                switch (attrib_list[i]) {
+                case EGL_CONTEXT_CLIENT_VERSION:
+                    version = attrib_list[i + 1];
+                    break;
+                default:
+                    break;
+                }
+
+                i += 2;
+            }
+        }
+    }
+
     if (share_context_) {
         if (!yagl_validate_context(dpy, share_context_, &share_context, error)) {
             goto out;
@@ -915,7 +932,8 @@ yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
     ctx = yagl_egl_context_create(dpy,
                                   config,
                                   (share_context ? share_context->backend_ctx
-                                                 : NULL));
+                                                 : NULL),
+                                  version);
 
     if (!ctx) {
         YAGL_SET_ERR(EGL_BAD_MATCH);
