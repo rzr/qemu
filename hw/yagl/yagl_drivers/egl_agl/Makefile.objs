@@ -1,3 +1,0 @@
-# EGL AGL driver
-QEMU_CFLAGS += -Wno-comment
-obj-y += yagl_egl_agl.o

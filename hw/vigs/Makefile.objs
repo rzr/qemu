@@ -21,7 +21,7 @@ endif
 ifdef CONFIG_WIN32
 obj-y += vigs_gl_backend_wgl.o
 endif
-# GL AGL backend
+# GL CGL backend
 ifdef CONFIG_DARWIN
-obj-y += vigs_gl_backend_agl.o
+obj-y += vigs_gl_backend_cgl.o
 endif
