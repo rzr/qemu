@@ -50,6 +50,9 @@
         } \
     } while (0)
 
+#define VIGS_GL_GET_PROC_OPTIONAL(func, proc_name) \
+    *(void**)(&gl_backend_cgl->base.func) = dlsym(gl_backend_cgl->handle, #proc_name)
+
 static const CGLPixelFormatAttribute pixel_format_legacy_attrs[] =
 {
     kCGLPFAAccelerated,
@@ -272,6 +275,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(FramebufferRenderbuffer, glFramebufferRenderbufferEXT);
     VIGS_GL_GET_PROC(FramebufferTexture2D, glFramebufferTexture2DEXT);
     VIGS_GL_GET_PROC(GetIntegerv, glGetIntegerv);
+    VIGS_GL_GET_PROC(GetString, glGetString);
     VIGS_GL_GET_PROC(DrawArrays, glDrawArrays);
     VIGS_GL_GET_PROC(GenBuffers, glGenBuffers);
     VIGS_GL_GET_PROC(DeleteBuffers, glDeleteBuffers);
@@ -301,6 +305,8 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(VertexAttribPointer, glVertexAttribPointer);
     VIGS_GL_GET_PROC(Uniform4fv, glUniform4fv);
     VIGS_GL_GET_PROC(UniformMatrix4fv, glUniformMatrix4fv);
+
+    VIGS_GL_GET_PROC_OPTIONAL(MapBufferRange, glMapBufferRange);
 
     if (!vigs_gl_backend_cgl_check_gl_version(gl_backend_cgl,
                                               &gl_backend_cgl->base.is_gl_2)) {

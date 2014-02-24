@@ -54,6 +54,11 @@ struct yagl_gles_api_ts
 
     struct yagl_gles_array *arrays;
     uint32_t num_arrays;
+
+    /*
+     * -1 when undecided, 0/1 when decided.
+     */
+    int use_map_buffer_range;
 };
 
 void yagl_gles_api_ts_init(struct yagl_gles_api_ts *gles_api_ts,

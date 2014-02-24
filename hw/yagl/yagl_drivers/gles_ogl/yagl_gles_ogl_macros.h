@@ -47,6 +47,9 @@
         } \
     } while (0)
 
+#define YAGL_GLES_OGL_GET_PROC_OPT(driver, func, sym) \
+    *(void**)(&driver->func) = yagl_dyn_lib_get_ogl_procaddr(dyn_lib, #sym)
+
 /*
  * @}
  */

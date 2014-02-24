@@ -61,6 +61,28 @@ typedef enum
     yagl_gles1_array_texcoord,
 } yagl_gles1_array_type;
 
+static bool yagl_gles_use_map_buffer_range(void)
+{
+    YAGL_LOG_FUNC_SET(yagl_gles_use_map_buffer_range);
+
+    if (gles_api_ts->use_map_buffer_range == -1) {
+        if (gles_api_ts->driver->gl_version > yagl_gl_2) {
+            gles_api_ts->use_map_buffer_range = 1;
+        } else {
+            const char *tmp = (const char*)gles_api_ts->driver->GetString(GL_EXTENSIONS);
+
+            gles_api_ts->use_map_buffer_range =
+                (tmp && (strstr(tmp, "GL_ARB_map_buffer_range ") != NULL));
+
+            if (!gles_api_ts->use_map_buffer_range) {
+                YAGL_LOG_WARN("glMapBufferRange not supported, using glBufferSubData");
+            }
+        }
+    }
+
+    return gles_api_ts->use_map_buffer_range;
+}
+
 static GLuint yagl_gles_bind_array(uint32_t indx,
                                    GLint first,
                                    GLsizei stride,
@@ -69,6 +91,9 @@ static GLuint yagl_gles_bind_array(uint32_t indx,
 {
     GLuint current_vbo;
     uint32_t size;
+    void *ptr;
+
+    YAGL_LOG_FUNC_SET(yagl_gles_bind_array);
 
     if (indx >= gles_api_ts->num_arrays) {
         struct yagl_gles_array *arrays;
@@ -105,9 +130,25 @@ static GLuint yagl_gles_bind_array(uint32_t indx,
         gles_api_ts->arrays[indx].size = size;
     }
 
+    if (yagl_gles_use_map_buffer_range()) {
+        ptr = gles_api_ts->driver->MapBufferRange(GL_ARRAY_BUFFER,
+                                                  first * stride,
+                                                  data_count,
+                                                  GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
 
-    gles_api_ts->driver->BufferSubData(GL_ARRAY_BUFFER,
-                                       first * stride, data_count, data);
+        if (ptr) {
+            memcpy(ptr, data, data_count);
+
+            gles_api_ts->driver->UnmapBuffer(GL_ARRAY_BUFFER);
+        } else {
+            YAGL_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        gles_api_ts->driver->Finish();
+        gles_api_ts->driver->BufferSubData(GL_ARRAY_BUFFER,
+                                           first * stride, data_count,
+                                           data);
+    }
 
     return current_vbo;
 }
@@ -819,7 +860,27 @@ void yagl_host_glBufferSubData(GLenum target,
     GLsizei offset,
     const GLvoid *data, int32_t data_count)
 {
-    gles_api_ts->driver->BufferSubData(target, offset, data_count, data);
+    void *ptr;
+
+    YAGL_LOG_FUNC_SET(glBufferSubData);
+
+    if (yagl_gles_use_map_buffer_range()) {
+        ptr = gles_api_ts->driver->MapBufferRange(target,
+                                                  offset,
+                                                  data_count,
+                                                  GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+        if (ptr) {
+            memcpy(ptr, data, data_count);
+
+            gles_api_ts->driver->UnmapBuffer(target);
+        } else {
+            YAGL_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        gles_api_ts->driver->Finish();
+        gles_api_ts->driver->BufferSubData(target, offset, data_count, data);
+    }
 }
 
 void yagl_host_glBindBufferBase(GLenum target,

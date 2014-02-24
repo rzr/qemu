@@ -39,6 +39,7 @@ void yagl_gles_api_ts_init(struct yagl_gles_api_ts *gles_api_ts,
 {
     gles_api_ts->driver = driver;
     gles_api_ts->ps = ps;
+    gles_api_ts->use_map_buffer_range = -1;
 }
 
 void yagl_gles_api_ts_cleanup(struct yagl_gles_api_ts *gles_api_ts)

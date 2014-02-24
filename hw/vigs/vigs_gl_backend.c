@@ -246,6 +246,7 @@ static void vigs_gl_draw_tex_prog(struct vigs_gl_backend *backend,
                                   uint32_t count)
 {
     uint32_t size = count * 16;
+    void *ptr;
 
     if (size > backend->vbo_size) {
         backend->vbo_size = size;
@@ -255,10 +256,25 @@ static void vigs_gl_draw_tex_prog(struct vigs_gl_backend *backend,
                             GL_STREAM_DRAW);
     }
 
-    backend->BufferSubData(GL_ARRAY_BUFFER, 0,
-                           (size / 2), vigs_vector_data(&backend->v1));
-    backend->BufferSubData(GL_ARRAY_BUFFER, (size / 2),
-                           (size / 2), vigs_vector_data(&backend->v2));
+    if (backend->MapBufferRange) {
+        ptr = backend->MapBufferRange(GL_ARRAY_BUFFER, 0, size,
+                                      GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+        if (ptr) {
+            memcpy(ptr, vigs_vector_data(&backend->v1), size / 2);
+            memcpy(ptr + (size / 2), vigs_vector_data(&backend->v2), size / 2);
+
+            backend->UnmapBuffer(GL_ARRAY_BUFFER);
+        } else {
+            VIGS_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        backend->Finish();
+        backend->BufferSubData(GL_ARRAY_BUFFER, 0,
+                               (size / 2), vigs_vector_data(&backend->v1));
+        backend->BufferSubData(GL_ARRAY_BUFFER, (size / 2),
+                               (size / 2), vigs_vector_data(&backend->v2));
+    }
 
     backend->EnableVertexAttribArray(backend->tex_prog_vertCoord_loc);
     backend->EnableVertexAttribArray(backend->tex_prog_texCoord_loc);
@@ -279,6 +295,7 @@ static void vigs_gl_draw_color_prog(struct vigs_gl_backend *backend,
                                     uint32_t count)
 {
     uint32_t size = count * 8;
+    void *ptr;
 
     if (size > backend->vbo_size) {
         backend->vbo_size = size;
@@ -288,8 +305,22 @@ static void vigs_gl_draw_color_prog(struct vigs_gl_backend *backend,
                             GL_STREAM_DRAW);
     }
 
-    backend->BufferSubData(GL_ARRAY_BUFFER, 0, size,
-                           vigs_vector_data(&backend->v1));
+    if (backend->MapBufferRange) {
+        ptr = backend->MapBufferRange(GL_ARRAY_BUFFER, 0, size,
+                                      GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+        if (ptr) {
+            memcpy(ptr, vigs_vector_data(&backend->v1), size);
+
+            backend->UnmapBuffer(GL_ARRAY_BUFFER);
+        } else {
+            VIGS_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        backend->Finish();
+        backend->BufferSubData(GL_ARRAY_BUFFER, 0, size,
+                               vigs_vector_data(&backend->v1));
+    }
 
     backend->Uniform4fv(backend->color_prog_color_loc, 1, color);
 
@@ -1316,7 +1347,15 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
         return false;
     }
 
-    if (!gl_backend->is_gl_2) {
+    if (gl_backend->is_gl_2) {
+        const char *tmp = (const char*)gl_backend->GetString(GL_EXTENSIONS);
+
+        if (!tmp || (strstr(tmp, "GL_ARB_map_buffer_range ") == NULL)) {
+            VIGS_LOG_WARN("glMapBufferRange not supported, using glBufferSubData");
+        }
+
+        gl_backend->MapBufferRange = NULL;
+    } else {
         gl_backend->GenVertexArrays(1, &gl_backend->vao);
 
         if (!gl_backend->vao) {

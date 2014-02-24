@@ -62,6 +62,9 @@ void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2);
 #define YAGL_GLES_DRIVER_FUNC4(func, arg0_type, arg1_type, arg2_type, arg3_type, arg0, arg1, arg2, arg3) \
 void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3);
 
+#define YAGL_GLES_DRIVER_FUNC_RET4(ret_type, func, arg0_type, arg1_type, arg2_type, arg3_type, arg0, arg1, arg2, arg3) \
+ret_type (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3);
+
 #define YAGL_GLES_DRIVER_FUNC5(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg0, arg1, arg2, arg3, arg4) \
 void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, arg4_type arg4);
 
@@ -286,6 +289,11 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC_RET2(void*, MapBuffer, GLenum, GLenum, target, access)
     YAGL_GLES_DRIVER_FUNC_RET1(GLboolean, UnmapBuffer, GLenum, target)
     YAGL_GLES_DRIVER_FUNC0(Finish)
+
+    /*
+     * Only OpenGL 2.1 + GL_ARB_map_buffer_range or OpenGL 3.1+ core.
+     */
+    YAGL_GLES_DRIVER_FUNC_RET4(GLvoid*, MapBufferRange, GLenum, GLintptr, GLsizeiptr, GLbitfield, target, offset, length, access)
 
     /*
      * @}

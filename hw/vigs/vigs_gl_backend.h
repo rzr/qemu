@@ -89,6 +89,7 @@ struct vigs_gl_backend
     void (GLAPIENTRY *FramebufferRenderbuffer)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
     void (GLAPIENTRY *FramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
     void (GLAPIENTRY *GetIntegerv)(GLenum pname, GLint *params);
+    const GLubyte *(GLAPIENTRY *GetString)(GLenum name);
     void (GLAPIENTRY *DrawArrays)(GLenum mode, GLint first, GLsizei count);
     void (GLAPIENTRY *GenBuffers)(GLsizei n, GLuint *buffers);
     void (GLAPIENTRY *DeleteBuffers)(GLsizei n, const GLuint *buffers);
@@ -122,6 +123,11 @@ struct vigs_gl_backend
     /*
      * @}
      */
+
+    /*
+     * Only OpenGL 2.1 + GL_ARB_map_buffer_range or OpenGL 3.1+ core.
+     */
+    GLvoid *(GLAPIENTRY *MapBufferRange)(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
 
     /*
      * OpenGL 3.1+ core functions and extensions.
