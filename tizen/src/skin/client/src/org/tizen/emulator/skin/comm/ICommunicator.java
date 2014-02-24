@@ -37,6 +37,24 @@ import org.tizen.emulator.skin.dbi.RotationNameType;
  *
  */
 public interface ICommunicator extends Runnable {
+	/* This values must match the QEMU definitions */
+	public final static short RECV_HEART_BEAT = 1;
+	public final static short RECV_SCREENSHOT_DATA = 2;
+	public final static short RECV_DETAIL_INFO_DATA = 3;
+	public final static short RECV_RAMDUMP_COMPLETED = 4;
+	public final static short RECV_BOOTING_PROGRESS = 5;
+	public final static short RECV_BRIGHTNESS_STATE = 6;
+	public final static short RECV_HOST_KBD_STATE = 8;
+	public final static short RECV_MULTI_TOUCH_STATE = 9;
+
+	public final static short RECV_SENSORD_STARTED = 800;
+	public final static short RECV_SDBD_STARTED = 801;
+	public final static short RECV_ECS_STARTED = 802;
+	public final static short RECV_DRAW_FRAME = 900;
+	public final static short RECV_DRAW_BLANK_GUIDE = 901;
+	public final static short RECV_EMUL_RESET = 998;
+	public final static short RECV_EMUL_SHUTDOWN = 999;
+
 	public enum MouseButtonType {
 		LEFT( (short)1 ),
 		WHEEL( (short)2 ),
@@ -231,57 +249,6 @@ public interface ICommunicator extends Runnable {
 
 		public static SendCommand getValue(short val) {
 			SendCommand[] values = SendCommand.values();
-			for (int i = 0; i < values.length; i++) {
-				if (values[i].value == val) {
-					return values[i];
-				}
-			}
-			throw new IllegalArgumentException(Integer.toString(val));
-		}
-	}
-
-	public enum ReceiveCommand {
-		/* This values must match the QEMU definitions */
-
-		RECV_HEART_BEAT((short) 1),
-		RECV_SCREENSHOT_DATA((short) 2),
-		RECV_DETAIL_INFO_DATA((short) 3),
-		RECV_RAMDUMP_COMPLETED((short) 4),
-		RECV_BOOTING_PROGRESS((short) 5),
-		RECV_BRIGHTNESS_STATE((short) 6),
-		RECV_HOST_KBD_STATE((short) 8),
-		RECV_MULTI_TOUCH_STATE((short) 9),
-
-		RECV_SENSORD_STARTED((short) 800),
-		RECV_SDBD_STARTED((short) 801),
-		RECV_ECS_STARTED((short) 802),
-		RECV_DRAW_FRAME((short) 900),
-		RECV_DRAW_BLANK_GUIDE((short) 901),
-		RECV_EMUL_RESET((short) 998),
-		RECV_EMUL_SHUTDOWN((short) 999);
-
-		private short value;
-
-		ReceiveCommand(short value) {
-			this.value = value;
-		}
-
-		public short value() {
-			return this.value;
-		}
-
-		public static ReceiveCommand getValue(String val) {
-			ReceiveCommand[] values = ReceiveCommand.values();
-			for (int i = 0; i < values.length; i++) {
-				if (values[i].value == Short.parseShort(val)) {
-					return values[i];
-				}
-			}
-			throw new IllegalArgumentException(val);
-		}
-
-		public static ReceiveCommand getValue(short val) {
-			ReceiveCommand[] values = ReceiveCommand.values();
 			for (int i = 0; i < values.length; i++) {
 				if (values[i].value == val) {
 					return values[i];

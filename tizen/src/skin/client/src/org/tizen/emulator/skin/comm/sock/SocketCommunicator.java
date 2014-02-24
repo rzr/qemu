@@ -57,12 +57,17 @@ import org.tizen.emulator.skin.image.ImageRegistry.ResourceImageName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
 
-
 /**
  * 
  * 
  */
 public class SocketCommunicator implements ICommunicator {
+	private static class PacketHeader {
+		int reqId; /* id */
+		short cmd; /* command */
+		int length; /* data length */
+	}
+
 	public static class DataTranfer {
 		private boolean isTransferState;
 		private byte[] receivedData;
@@ -189,6 +194,7 @@ public class SocketCommunicator implements ICommunicator {
 
 		sendThread = new Thread("sendThread") {
 			List<SkinSendData> list = new ArrayList<SkinSendData>();
+			SkinSendData sendData = null;
 
 			@Override
 			public void run() {
@@ -202,7 +208,6 @@ public class SocketCommunicator implements ICommunicator {
 							}
 						}
 
-						SkinSendData sendData = null;
 						while (true) {
 							sendData = sendQueue.poll();
 							if (null != sendData) {
@@ -263,31 +268,24 @@ public class SocketCommunicator implements ICommunicator {
 			heartbeatTimer.schedule(heartbeatExecutor, 1, HEART_BEAT_INTERVAL * 1000);
 		}
 
+		PacketHeader header = new PacketHeader();
+
 		while (true) {
 			if (isTerminated) {
 				break;
 			}
 
 			try {
-				int reqId = sockInputStream.readInt();
-				short cmd = sockInputStream.readShort();
-				int length = sockInputStream.readInt();
+				header.reqId = sockInputStream.readInt();
+				header.cmd = sockInputStream.readShort();
+				header.length = sockInputStream.readInt();
 
 				if (logger.isLoggable(Level.FINE)) {
-					logger.fine("[Socket] read - reqId:" + reqId +
-							", command:" + cmd + ", dataLength:" + length);
+					logger.fine("[Socket] read - reqId:" + header.reqId +
+							", command:" + header.cmd + ", dataLength:" + header.length);
 				}
 
-				ReceiveCommand command = null;
-
-				try {
-					command = ReceiveCommand.getValue(cmd);
-				} catch (IllegalArgumentException e) {
-					logger.severe("unknown command:" + cmd);
-					continue;
-				}
-
-				switch (command) {
+				switch (header.cmd) {
 				case RECV_HEART_BEAT: {
 					resetHeartbeatCount();
 
@@ -300,13 +298,13 @@ public class SocketCommunicator implements ICommunicator {
 				}
 				case RECV_SCREENSHOT_DATA: {
 					logger.info("received SCREENSHOT_DATA from QEMU");
-					receiveData(sockInputStream, screenShotDataTransfer, length);
+					receiveData(sockInputStream, screenShotDataTransfer, header.length);
 
 					break;
 				}
 				case RECV_DETAIL_INFO_DATA: {
 					logger.info("received DETAIL_INFO_DATA from QEMU");
-					receiveData(sockInputStream, detailInfoTransfer, length);
+					receiveData(sockInputStream, detailInfoTransfer, header.length);
 
 					break;
 				}
@@ -319,12 +317,12 @@ public class SocketCommunicator implements ICommunicator {
 					//logger.info("received BOOTING_PROGRESS from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
-					receiveData(sockInputStream, miscDataTransfer, length);
+					receiveData(sockInputStream, miscDataTransfer, header.length);
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
 						String strLayer = new String(receivedData, 0, 1, "UTF-8");
-						String strValue = new String(receivedData, 1, length - 2, "UTF-8");
+						String strValue = new String(receivedData, 1, header.length - 2, "UTF-8");
 
 						int layer = 0;
 						int value = 0;
@@ -345,11 +343,11 @@ public class SocketCommunicator implements ICommunicator {
 					//logger.info("received BRIGHTNESS_STATE from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
-					receiveData(sockInputStream, miscDataTransfer, length);
+					receiveData(sockInputStream, miscDataTransfer, header.length);
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
-						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
+						String strValue = new String(receivedData, 0, header.length - 1, "UTF-8");
 
 						int value = 1;
 						try {
@@ -371,11 +369,11 @@ public class SocketCommunicator implements ICommunicator {
 					logger.info("received HOST_KBD_STATE from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
-					receiveData(sockInputStream, miscDataTransfer, length);
+					receiveData(sockInputStream, miscDataTransfer, header.length);
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
-						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
+						String strValue = new String(receivedData, 0, header.length - 1, "UTF-8");
 
 						int value = 1;
 						try {
@@ -397,11 +395,11 @@ public class SocketCommunicator implements ICommunicator {
 					logger.info("received MULTI_TOUCH_STATE from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
-					receiveData(sockInputStream, miscDataTransfer, length);
+					receiveData(sockInputStream, miscDataTransfer, header.length);
 
 					byte[] receivedData = getReceivedData(miscDataTransfer);
 					if (null != receivedData) {
-						String strValue = new String(receivedData, 0, length - 1, "UTF-8");
+						String strValue = new String(receivedData, 0, header.length - 1, "UTF-8");
 
 						int value = 1;
 						try {
@@ -483,7 +481,7 @@ public class SocketCommunicator implements ICommunicator {
 					break;
 				}
 				default: {
-					logger.severe("Unknown command from QEMU. command : " + cmd);
+					logger.severe("Unknown command from QEMU. command : " + header.cmd);
 					break;
 				}
 				}
@@ -619,6 +617,7 @@ public class SocketCommunicator implements ICommunicator {
 			} else {
 				byte[] byteData = data.serialize();
 				length = (short) byteData.length;
+
 				dataOutputStream.writeShort(length);
 				dataOutputStream.write(byteData);
 			}
