@@ -1164,6 +1164,27 @@ void yagl_host_glTexSubImage2DData(GLenum target,
     GLenum type,
     const GLvoid *pixels, int32_t pixels_count)
 {
+    GLint row_length;
+
+    /*
+     * Nvidia Windows OpenGL drivers don't account for GL_UNPACK_ALIGNMENT
+     * parameter when glTexSubImage2D function is called with format GL_ALPHA.
+     * Work around this by setting row length.
+     */
+    if (format == GL_ALPHA) {
+        GLint alignment;
+
+        gles_api_ts->driver->GetIntegerv(GL_UNPACK_ROW_LENGTH, &row_length);
+        gles_api_ts->driver->GetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+
+        if (alignment == 0) {
+            alignment = 1;
+        }
+
+        gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH,
+            (((row_length == 0) ? width : row_length) + alignment - 1) & ~(alignment - 1));
+    }
+
     gles_api_ts->driver->TexSubImage2D(target,
                                        level,
                                        xoffset,
@@ -1173,6 +1194,10 @@ void yagl_host_glTexSubImage2DData(GLenum target,
                                        format,
                                        type,
                                        pixels);
+
+    if (format == GL_ALPHA) {
+        gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    }
 }
 
 void yagl_host_glTexSubImage2DOffset(GLenum target,
@@ -1185,6 +1210,27 @@ void yagl_host_glTexSubImage2DOffset(GLenum target,
     GLenum type,
     GLsizei pixels)
 {
+    GLint row_length;
+
+    /*
+     * Nvidia Windows OpenGL drivers don't account for GL_UNPACK_ALIGNMENT
+     * parameter when glTexSubImage2D function is called with format GL_ALPHA.
+     * Work around this by setting row length.
+     */
+    if (format == GL_ALPHA) {
+        GLint alignment;
+
+        gles_api_ts->driver->GetIntegerv(GL_UNPACK_ROW_LENGTH, &row_length);
+        gles_api_ts->driver->GetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+
+        if (alignment == 0) {
+            alignment = 1;
+        }
+
+        gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH,
+            (((row_length == 0) ? width : row_length) + alignment - 1) & ~(alignment - 1));
+    }
+
     gles_api_ts->driver->TexSubImage2D(target,
                                        level,
                                        xoffset,
@@ -1194,6 +1240,10 @@ void yagl_host_glTexSubImage2DOffset(GLenum target,
                                        format,
                                        type,
                                        (const GLvoid*)(uintptr_t)pixels);
+
+    if (format == GL_ALPHA) {
+        gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    }
 }
 
 void yagl_host_glClientActiveTexture(GLenum texture)
