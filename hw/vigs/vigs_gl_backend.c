@@ -336,15 +336,15 @@ static void vigs_gl_draw_color_prog(struct vigs_gl_backend *backend,
 
 static void vigs_gl_create_ortho(GLfloat left, GLfloat right,
                                  GLfloat bottom, GLfloat top,
-                                 GLfloat near, GLfloat far,
+                                 GLfloat nearf, GLfloat farf,
                                  GLfloat ortho[16])
 {
     ortho[0] = 2.0f / (right - left);
     ortho[5] = 2.0f / (top - bottom);
-    ortho[10] = -2.0f / (far - near);
+    ortho[10] = -2.0f / (farf - nearf);
     ortho[12] = -(right + left) / (right - left);
     ortho[13] = -(top + bottom) / (top - bottom);
-    ortho[14] = -(far + near) / (far - near);
+    ortho[14] = -(farf + nearf) / (farf - nearf);
     ortho[15] = 1.0f;
 }
 

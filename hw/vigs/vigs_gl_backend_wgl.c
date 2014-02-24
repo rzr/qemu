@@ -504,6 +504,8 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
         goto fail;
     }
 
+    gl_backend_wgl->base.is_gl_2 = true;
+
     config_id = vigs_gl_backend_wgl_choose_config(gl_backend_wgl);
 
     if (!config_id) {
