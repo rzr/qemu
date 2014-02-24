@@ -4,17 +4,9 @@
 UNAME=`uname`
 CONFIGURE_SCRIPT="./emulator_configure.sh"
 
-build_remote()
-{
-    cd distrib/remote
-    ./build_linux.sh
-    cd ../../
-}
-
 case "$UNAME" in
 Linux)
     NUMCPU=`grep -c 'cpu cores' /proc/cpuinfo`
-    build_remote
     ;;
 MINGW*)
     NUMCPU=`echo $NUMBER_OF_PROCESSORS`
