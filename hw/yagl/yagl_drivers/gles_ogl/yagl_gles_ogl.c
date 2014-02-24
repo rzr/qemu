@@ -242,6 +242,11 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, GenVertexArrays, glGenVertexArrays);
         YAGL_GLES_OGL_GET_PROC(driver, BindVertexArray, glBindVertexArray);
         YAGL_GLES_OGL_GET_PROC(driver, DeleteVertexArrays, glDeleteVertexArrays);
+    } else {
+        YAGL_GLES_OGL_GET_PROC_OPT(driver, MapBufferRange, glMapBufferRange);
+    }
+
+    if (gl_version >= yagl_gl_3_1_es3) {
         YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformsiv, glGetActiveUniformsiv);
         YAGL_GLES_OGL_GET_PROC(driver, GetUniformIndices, glGetUniformIndices);
         YAGL_GLES_OGL_GET_PROC(driver, GetUniformBlockIndex, glGetUniformBlockIndex);
@@ -305,8 +310,6 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
         YAGL_GLES_OGL_GET_PROC(driver, ClearBufferfv, glClearBufferfv);
         YAGL_GLES_OGL_GET_PROC(driver, GetFragDataLocation, glGetFragDataLocation);
         YAGL_GLES_OGL_GET_PROC(driver, DrawRangeElements, glDrawRangeElements);
-    } else {
-        YAGL_GLES_OGL_GET_PROC_OPT(driver, MapBufferRange, glMapBufferRange);
     }
 
     driver->destroy = &yagl_gles_ogl_destroy;

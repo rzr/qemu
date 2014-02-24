@@ -109,6 +109,9 @@ struct vigs_gl_backend_wgl
     PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB;
     PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB;
 
+    /* WGL_ARB_create_context */
+    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
+
     HWND win;
     HDC dc;
     HPBUFFERARB sfc;
@@ -118,6 +121,130 @@ struct vigs_gl_backend_wgl
     HDC read_pixels_sfc_dc;
     HGLRC read_pixels_ctx;
 };
+
+static bool vigs_gl_backend_wgl_check_gl_version(struct vigs_gl_backend_wgl *gl_backend_wgl,
+                                                 bool *is_gl_2)
+{
+    int config_attribs[] = {
+        WGL_SUPPORT_OPENGL_ARB, TRUE,
+        WGL_DOUBLE_BUFFER_ARB, TRUE,
+        WGL_DRAW_TO_PBUFFER_ARB, TRUE,
+        WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+        WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+        WGL_RED_BITS_ARB, 8,
+        WGL_GREEN_BITS_ARB, 8,
+        WGL_BLUE_BITS_ARB, 8,
+        WGL_ALPHA_BITS_ARB, 8,
+        WGL_COLOR_BITS_ARB, 32,
+        WGL_DEPTH_BITS_ARB, 24,
+        WGL_STENCIL_BITS_ARB, 8,
+        0,
+    };
+    int ctx_attribs[] =
+    {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 1,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
+    bool res = false;
+    const char *tmp;
+    HWND win;
+    HDC dc;
+    int config_id = 0;
+    UINT n = 0;
+    PIXELFORMATDESCRIPTOR pix_fmt;
+    HGLRC ctx;
+
+    tmp = getenv("GL_VERSION");
+
+    if (tmp) {
+        if (strcmp(tmp, "2") == 0) {
+            VIGS_LOG_INFO("GL_VERSION forces OpenGL version to 2.1");
+            *is_gl_2 = true;
+            res = true;
+        } else if (strcmp(tmp, "3_1") == 0) {
+            VIGS_LOG_INFO("GL_VERSION forces OpenGL version to 3.1");
+            *is_gl_2 = false;
+            res = true;
+        } else if (strcmp(tmp, "3_1_es3") == 0) {
+            VIGS_LOG_INFO("GL_VERSION forces OpenGL version to 3.1 ES3");
+            *is_gl_2 = false;
+            res = true;
+        } else if (strcmp(tmp, "3_2") == 0) {
+            VIGS_LOG_INFO("GL_VERSION forces OpenGL version to 3.2");
+            *is_gl_2 = false;
+            res = true;
+        } else {
+            VIGS_LOG_CRITICAL("Bad GL_VERSION value = %s", tmp);
+        }
+
+        goto out1;
+    }
+
+    win = CreateWindow(VIGS_WGL_WIN_CLASS, "VIGSWin",
+                       WS_DISABLED | WS_POPUP,
+                       0, 0, 1, 1, NULL, NULL, 0, 0);
+
+    if (!win) {
+        VIGS_LOG_ERROR("CreateWindow failed");
+        goto out1;
+    }
+
+    dc = GetDC(win);
+    if (!dc) {
+        VIGS_LOG_ERROR("GetDC failed");
+        goto out2;
+    }
+
+    if (!gl_backend_wgl->wglChoosePixelFormatARB(dc,
+                                                 config_attribs,
+                                                 NULL,
+                                                 1,
+                                                 &config_id,
+                                                 &n) || (n == 0)) {
+        VIGS_LOG_ERROR("wglChoosePixelFormatARB failed");
+        goto out3;
+    }
+
+    if (!DescribePixelFormat(dc,
+                             config_id,
+                             sizeof(PIXELFORMATDESCRIPTOR),
+                             &pix_fmt)) {
+        VIGS_LOG_ERROR("DescribePixelFormat failed");
+        goto out3;
+    }
+
+    if (!SetPixelFormat(dc,
+                        config_id,
+                        &pix_fmt)) {
+        VIGS_LOG_ERROR("SetPixelFormat failed");
+        goto out3;
+    }
+
+    ctx = gl_backend_wgl->wglCreateContextAttribsARB(dc,
+                                                     NULL,
+                                                     ctx_attribs);
+
+    *is_gl_2 = (ctx == NULL);
+    res = true;
+
+    if (ctx) {
+        VIGS_LOG_INFO("Using OpenGL 3.1+ core");
+    } else {
+        VIGS_LOG_INFO("wglCreateContextAttribsARB failed, using OpenGL 2.1");
+    }
+
+    gl_backend_wgl->wglDeleteContext(ctx);
+
+out3:
+    ReleaseDC(win, dc);
+out2:
+    DestroyWindow(win);
+out1:
+
+    return res;
+}
 
 static int vigs_gl_backend_wgl_choose_config(struct vigs_gl_backend_wgl *gl_backend_wgl)
 {
@@ -199,14 +326,28 @@ static bool vigs_gl_backend_wgl_create_context(struct vigs_gl_backend_wgl *gl_ba
                                                HGLRC share_ctx,
                                                HGLRC *ctx)
 {
-    *ctx = gl_backend_wgl->wglCreateContext(gl_backend_wgl->dc);
+    int attribs[] =
+    {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 1,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
+
+    if (gl_backend_wgl->base.is_gl_2) {
+        *ctx = gl_backend_wgl->wglCreateContext(gl_backend_wgl->dc);
+    } else {
+        *ctx = gl_backend_wgl->wglCreateContextAttribsARB(gl_backend_wgl->dc,
+                                                          share_ctx,
+                                                          attribs);
+    }
 
     if (!*ctx) {
-        VIGS_LOG_CRITICAL("wglCreateContext failed");
+        VIGS_LOG_CRITICAL("wglCreateContextAttribsARB/wglCreateContext failed");
         return false;
     }
 
-    if (share_ctx) {
+    if (share_ctx && gl_backend_wgl->base.is_gl_2) {
         if (!gl_backend_wgl->wglShareLists(share_ctx, *ctx)) {
             VIGS_LOG_CRITICAL("wglShareLists failed");
             gl_backend_wgl->wglDeleteContext(*ctx);
@@ -417,6 +558,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, PFNWGLRELEASEPBUFFERDCARBPROC, wglReleasePbufferDCARB);
     VIGS_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, PFNWGLDESTROYPBUFFERARBPROC, wglDestroyPbufferARB);
     VIGS_WGL_GET_EXT_PROC(WGL_ARB_pixel_format, PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB);
+    VIGS_WGL_GET_EXT_PROC(WGL_ARB_create_context, PFNWGLCREATECONTEXTATTRIBSARBPROC, wglCreateContextAttribsARB);
 
     VIGS_GL_GET_PROC(GenTextures, glGenTextures);
     VIGS_GL_GET_PROC(DeleteTextures, glDeleteTextures);
@@ -480,6 +622,17 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
 
     VIGS_GL_GET_PROC_OPTIONAL(MapBufferRange, glMapBufferRange);
 
+    if (!vigs_gl_backend_wgl_check_gl_version(gl_backend_wgl,
+                                              &gl_backend_wgl->base.is_gl_2)) {
+        goto fail;
+    }
+
+    if (!gl_backend_wgl->base.is_gl_2) {
+        VIGS_GL_GET_PROC(GenVertexArrays, glGenVertexArrays);
+        VIGS_GL_GET_PROC(BindVertexArray, glBindVertexArray);
+        VIGS_GL_GET_PROC(DeleteVertexArrays, glDeleteVertexArrays);
+    }
+
     gl_backend_wgl->wglMakeCurrent(NULL, NULL);
     gl_backend_wgl->wglDeleteContext(tmp_ctx);
     tmp_ctx = NULL;
@@ -503,8 +656,6 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
         VIGS_LOG_CRITICAL("Unable to get window DC");
         goto fail;
     }
-
-    gl_backend_wgl->base.is_gl_2 = true;
 
     config_id = vigs_gl_backend_wgl_choose_config(gl_backend_wgl);
 

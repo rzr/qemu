@@ -115,12 +115,230 @@ typedef struct YaglEglWglDriver {
     PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB;
     PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB;
     PFNWGLMAKECONTEXTCURRENTARBPROC wglMakeContextCurrentARB;
+
+    /* WGL_ARB_create_context */
+    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
 } YaglEglWglDriver;
 
 static inline HWND yagl_egl_wgl_dummy_win_create(void)
 {
     return CreateWindow(YAGL_EGL_WGL_WIN_CLASS, "YaGLwin",
         WS_DISABLED | WS_POPUP, 0, 0, 1, 1, NULL, NULL, 0, 0);
+}
+
+static bool yagl_egl_wgl_get_gl_version(YaglEglWglDriver *egl_wgl,
+                                        yagl_gl_version *version)
+{
+    int config_attribs[] = {
+        WGL_SUPPORT_OPENGL_ARB, TRUE,
+        WGL_DOUBLE_BUFFER_ARB, TRUE,
+        WGL_DRAW_TO_PBUFFER_ARB, TRUE,
+        WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+        WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+        WGL_RED_BITS_ARB, 8,
+        WGL_GREEN_BITS_ARB, 8,
+        WGL_BLUE_BITS_ARB, 8,
+        WGL_ALPHA_BITS_ARB, 8,
+        WGL_COLOR_BITS_ARB, 32,
+        WGL_DEPTH_BITS_ARB, 24,
+        WGL_STENCIL_BITS_ARB, 8,
+        0,
+    };
+    int ctx_attribs[] =
+    {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 1,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
+    int pbuff_attribs[] =
+    {
+        WGL_PBUFFER_LARGEST_ARB, FALSE,
+        WGL_TEXTURE_TARGET_ARB, WGL_NO_TEXTURE_ARB,
+        WGL_TEXTURE_FORMAT_ARB, WGL_NO_TEXTURE_ARB,
+        0
+    };
+    bool res = false;
+    const char *tmp;
+    HWND win;
+    HDC dc;
+    int config_id = 0;
+    UINT n = 0;
+    PIXELFORMATDESCRIPTOR pix_fmt;
+    HGLRC ctx;
+    HPBUFFERARB pbuffer;
+    HDC pbuffer_dc;
+    const GLubyte *(GLAPIENTRY *GetStringi)(GLenum, GLuint) = NULL;
+    void (GLAPIENTRY *GetIntegerv)(GLenum, GLint*) = NULL;
+    GLint i, num_extensions = 0;
+    GLint major = 0, minor = 0;
+
+    YAGL_EGL_WGL_ENTER(yagl_egl_wgl_get_gl_version, NULL);
+
+    tmp = getenv("GL_VERSION");
+
+    if (tmp) {
+        if (strcmp(tmp, "2") == 0) {
+            YAGL_LOG_INFO("GL_VERSION forces OpenGL version to 2.1");
+            *version = yagl_gl_2;
+            res = true;
+        } else if (strcmp(tmp, "3_1") == 0) {
+            YAGL_LOG_INFO("GL_VERSION forces OpenGL version to 3.1");
+            *version = yagl_gl_3_1;
+            res = true;
+        } else if (strcmp(tmp, "3_1_es3") == 0) {
+            YAGL_LOG_INFO("GL_VERSION forces OpenGL version to 3.1 ES3");
+            *version = yagl_gl_3_1_es3;
+            res = true;
+        } else if (strcmp(tmp, "3_2") == 0) {
+            YAGL_LOG_INFO("GL_VERSION forces OpenGL version to 3.2");
+            *version = yagl_gl_3_2;
+            res = true;
+        } else {
+            YAGL_LOG_CRITICAL("Bad GL_VERSION value = %s", tmp);
+        }
+
+        goto out1;
+    }
+
+    win = yagl_egl_wgl_dummy_win_create();
+    if (!win) {
+        YAGL_LOG_ERROR("CreateWindow failed");
+        goto out1;
+    }
+
+    dc = GetDC(win);
+    if (!dc) {
+        YAGL_LOG_ERROR("GetDC failed");
+        goto out2;
+    }
+
+    if (!egl_wgl->wglChoosePixelFormatARB(dc,
+                                          config_attribs,
+                                          NULL,
+                                          1,
+                                          &config_id,
+                                          &n) || (n == 0)) {
+        YAGL_LOG_ERROR("wglChoosePixelFormatARB failed");
+        goto out3;
+    }
+
+    if (!DescribePixelFormat(dc,
+                             config_id,
+                             sizeof(PIXELFORMATDESCRIPTOR),
+                             &pix_fmt)) {
+        YAGL_LOG_ERROR("DescribePixelFormat failed");
+        goto out3;
+    }
+
+    if (!SetPixelFormat(dc,
+                        config_id,
+                        &pix_fmt)) {
+        YAGL_LOG_ERROR("SetPixelFormat failed");
+        goto out3;
+    }
+
+    ctx = egl_wgl->wglCreateContextAttribsARB(dc,
+                                              NULL,
+                                              ctx_attribs);
+
+    if (!ctx) {
+        YAGL_LOG_INFO("wglCreateContextAttribsARB failed, using OpenGL 2.1");
+        *version = yagl_gl_2;
+        res = true;
+        goto out3;
+    }
+
+    pbuffer = egl_wgl->wglCreatePbufferARB(dc, config_id,
+                                           1, 1, pbuff_attribs);
+
+    if (!pbuffer) {
+        YAGL_LOG_ERROR("wglCreatePbufferARB failed");
+        goto out4;
+    }
+
+    pbuffer_dc = egl_wgl->wglGetPbufferDCARB(pbuffer);
+
+    if (!pbuffer_dc) {
+        YAGL_LOG_ERROR("wglGetPbufferDCARB failed");
+        goto out5;
+    }
+
+    if (!egl_wgl->wglMakeCurrent(pbuffer_dc, ctx)) {
+        YAGL_LOG_ERROR("wglMakeCurrent failed");
+        goto out6;
+    }
+
+    GetStringi = yagl_dyn_lib_get_ogl_procaddr(egl_wgl->base.dyn_lib,
+                                               "glGetStringi");
+
+    if (!GetStringi) {
+        YAGL_LOG_ERROR("Unable to get symbol: %s",
+                       yagl_dyn_lib_get_error(egl_wgl->base.dyn_lib));
+        goto out7;
+    }
+
+    GetIntegerv = yagl_dyn_lib_get_ogl_procaddr(egl_wgl->base.dyn_lib,
+                                                "glGetIntegerv");
+
+    if (!GetIntegerv) {
+        YAGL_LOG_ERROR("Unable to get symbol: %s",
+                       yagl_dyn_lib_get_error(egl_wgl->base.dyn_lib));
+        goto out7;
+    }
+
+    GetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+
+    for (i = 0; i < num_extensions; ++i) {
+        tmp = (const char*)GetStringi(GL_EXTENSIONS, i);
+        if (strcmp(tmp, "GL_ARB_ES3_compatibility") == 0) {
+            YAGL_LOG_INFO("GL_ARB_ES3_compatibility supported, using OpenGL 3.1 ES3");
+            *version = yagl_gl_3_1_es3;
+            res = true;
+            goto out7;
+        }
+    }
+
+    /*
+     * No GL_ARB_ES3_compatibility, so we need at least OpenGL 3.2 to be
+     * able to patch shaders and run them with GLSL 1.50.
+     */
+
+    GetIntegerv(GL_MAJOR_VERSION, &major);
+    GetIntegerv(GL_MINOR_VERSION, &minor);
+
+    if ((major > 3) ||
+        ((major == 3) && (minor >= 2))) {
+        YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, using OpenGL 3.2");
+        *version = yagl_gl_3_2;
+        res = true;
+        goto out7;
+    }
+
+    YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, OpenGL 3.2 not supported, using OpenGL 3.1");
+    *version = yagl_gl_3_1;
+    res = true;
+
+out7:
+    egl_wgl->wglMakeCurrent(NULL, NULL);
+out6:
+    egl_wgl->wglReleasePbufferDCARB(pbuffer, pbuffer_dc);
+out5:
+    egl_wgl->wglDestroyPbufferARB(pbuffer);
+out4:
+    egl_wgl->wglDeleteContext(ctx);
+out3:
+    ReleaseDC(win, dc);
+out2:
+    DestroyWindow(win);
+out1:
+    if (res) {
+        YAGL_LOG_FUNC_EXIT("%d, version = %u", res, *version);
+    } else {
+        YAGL_LOG_FUNC_EXIT("%d", res);
+    }
+
+    return res;
 }
 
 static inline bool yagl_egl_wgl_dc_set_def_pixfmt(HDC dc)
@@ -505,6 +723,13 @@ static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
 {
     YaglEglWglDriver *egl_wgl = (YaglEglWglDriver *)(driver);
     YaglEglWglDpy *dpy = (YaglEglWglDpy *)egl_dpy;
+    int attribs[] =
+    {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 1,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
     HGLRC egl_wgl_ctx;
     HDC dc;
 
@@ -518,12 +743,20 @@ static EGLContext yagl_egl_wgl_context_create(struct yagl_egl_driver *driver,
         goto fail;
     }
 
-    egl_wgl_ctx = egl_wgl->wglCreateContext(dc);
+    if ((egl_wgl->base.gl_version > yagl_gl_2) && (version != 1)) {
+        egl_wgl_ctx = egl_wgl->wglCreateContextAttribsARB(dc,
+                                                          share_context,
+                                                          attribs);
+    } else {
+        egl_wgl_ctx = egl_wgl->wglCreateContext(dc);
+    }
+
     if (!egl_wgl_ctx) {
         goto fail;
     }
 
-    if (share_context != EGL_NO_CONTEXT) {
+    if ((share_context != EGL_NO_CONTEXT) &&
+        ((egl_wgl->base.gl_version <= yagl_gl_2) || (version == 1))) {
         if(!egl_wgl->wglShareLists((HGLRC)share_context,
                                    egl_wgl_ctx)) {
             egl_wgl->wglDeleteContext(egl_wgl_ctx);
@@ -828,6 +1061,7 @@ static bool yagl_egl_wgl_init_ext(YaglEglWglDriver *egl_wgl)
     YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_pbuffer, wglDestroyPbufferARB, PFNWGLDESTROYPBUFFERARBPROC);
     YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_pixel_format, wglChoosePixelFormatARB, PFNWGLCHOOSEPIXELFORMATARBPROC);
     YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_make_current_read, wglMakeContextCurrentARB, PFNWGLMAKECONTEXTCURRENTARBPROC);
+    YAGL_EGL_WGL_GET_EXT_PROC(WGL_ARB_create_context, wglCreateContextAttribsARB, PFNWGLCREATECONTEXTATTRIBSARBPROC);
 
     ext_initialized = true;
 
@@ -917,6 +1151,10 @@ struct yagl_egl_driver *yagl_egl_driver_create(void *display)
     egl_driver->destroy = &yagl_egl_wgl_destroy;
 
     if (!yagl_egl_wgl_init_ext(egl_wgl)) {
+        goto fail;
+    }
+
+    if (!yagl_egl_wgl_get_gl_version(egl_wgl, &egl_wgl->base.gl_version)) {
         goto fail;
     }
 

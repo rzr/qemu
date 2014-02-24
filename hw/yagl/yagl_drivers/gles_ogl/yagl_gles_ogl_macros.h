@@ -41,7 +41,8 @@
     do { \
         *(void**)(&driver->func) = yagl_dyn_lib_get_ogl_procaddr(dyn_lib, #sym); \
         if (!driver->func) { \
-            YAGL_LOG_ERROR("Unable to get symbol: %s", \
+            YAGL_LOG_ERROR("Unable to get symbol \"%s\": %s", \
+                           #sym, \
                            yagl_dyn_lib_get_error(dyn_lib)); \
             goto fail; \
         } \
