@@ -1,7 +1,7 @@
 /**
  * About Dialog
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -132,7 +132,7 @@ public class AboutDialog extends SkinDialog {
 		compositeBase.setBackground(white);
 
 		/* left side */
-		Composite compositeLeft = new Composite(compositeBase, SWT.BORDER);
+		Composite compositeLeft = new Composite(compositeBase, SWT.NONE);
 		compositeLeft.setLayout(getNopaddedGridLayout(1, false));
 
 		Label imageLabel = new Label(compositeLeft, SWT.NONE);
@@ -294,11 +294,6 @@ public class AboutDialog extends SkinDialog {
 		}
 
 		return properties;
-	}
-
-	@Override
-	protected void setShellSize() {
-		shell.setSize(436, shell.getSize().y);
 	}
 
 	@Override
