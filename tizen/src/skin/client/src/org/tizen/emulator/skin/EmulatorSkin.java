@@ -723,10 +723,12 @@ public class EmulatorSkin {
 							isDisplayDragging = false;
 						}
 					}
+
 					getRelativePoint(e);
 
-					if (e.x != 0 || e.y != 0)
+					if (e.x != 0 || e.y != 0) {
 						mouseMoveDelivery(e, eventType);
+					}
 				}
 			}
 		};
@@ -784,6 +786,7 @@ public class EmulatorSkin {
 						if (true == isDisplayDragging) {
 							isDisplayDragging = false;
 						}
+
 						getRelativePoint(e);
 						mouseUpDelivery(e);
 					} else if (2 == e.button) { /* wheel button */
@@ -800,6 +803,7 @@ public class EmulatorSkin {
 						if (false == isDisplayDragging) {
 							isDisplayDragging = true;
 						}
+
 						getRelativePoint(e);
 						mouseDownDelivery(e);
 					}
@@ -820,15 +824,14 @@ public class EmulatorSkin {
 		MouseWheelListener listener = new MouseWheelListener() {
 			@Override
 			public void mouseScrolled(MouseEvent e) {
-				if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true)
-					getRelativePoint(e);
+				getRelativePoint(e);
 
 				int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
 						currentState.getCurrentResolutionWidth(),
 						currentState.getCurrentResolutionHeight(),
 						currentState.getCurrentScale(),
 						currentState.getCurrentAngle());
-				logger.info("mousewheel in display" + " x:" + geometry[0]
+				logger.info("mouseWheel in display" + " x:" + geometry[0]
 						+ " y:" + geometry[1] + " value:" + e.count);
 
 				int eventType;
@@ -898,25 +901,24 @@ public class EmulatorSkin {
 
 		lcdCanvas.addFocusListener(canvasFocusListener);
 
-		/* mouse event */
+		/* host mouse event */
 		if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true) {
+			/* mapping to virtual mouse */
 			canvasMouseMoveListener = makeDisplayMouseMoveListener();
-		} else {
-			canvasMouseMoveListener = makeDisplayTouchMoveListener();
-		}
-		lcdCanvas.addMouseMoveListener(canvasMouseMoveListener);
-
-		if (config.getArgBoolean(ArgsConstants.INPUT_MOUSE, false) == true) {
 			canvasMouseListener = makeDisplayMouseClickListener();
+
+			canvasMouseWheelListener = makeDisplayMouseWheelListener();
+			lcdCanvas.addMouseWheelListener(canvasMouseWheelListener);
 		} else {
+			/* mapping to virtual touch screen */
+			canvasMouseMoveListener = makeDisplayTouchMoveListener();
 			canvasMouseListener = makeDisplayTouchClickListener();
 		}
+
+		lcdCanvas.addMouseMoveListener(canvasMouseMoveListener);
 		lcdCanvas.addMouseListener(canvasMouseListener);
 
-		canvasMouseWheelListener = makeDisplayMouseWheelListener();
-		lcdCanvas.addMouseWheelListener(canvasMouseWheelListener);
-
-		/* keyboard event */
+		/* host keyboard event */
 		canvasKeyListener = new KeyListener() {
 			private KeyEvent previous;
 			private boolean disappearEvent = false;
