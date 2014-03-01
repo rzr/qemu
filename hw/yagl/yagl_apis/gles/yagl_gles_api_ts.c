@@ -49,6 +49,10 @@ void yagl_gles_api_ts_cleanup(struct yagl_gles_api_ts *gles_api_ts)
 
         yagl_ensure_ctx(0);
 
+        if (gles_api_ts->ebo) {
+            gles_api_ts->driver->DeleteBuffers(1, &gles_api_ts->ebo);
+        }
+
         for (i = 0; i < gles_api_ts->num_arrays; ++i) {
             gles_api_ts->driver->DeleteBuffers(1,
                                                &gles_api_ts->arrays[i].vbo);

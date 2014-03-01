@@ -153,6 +153,51 @@ static GLuint yagl_gles_bind_array(uint32_t indx,
     return current_vbo;
 }
 
+static GLuint yagl_gles_bind_ebo(const GLvoid *data, int32_t size)
+{
+    GLuint current_ebo;
+    void *ptr;
+
+    YAGL_LOG_FUNC_SET(yagl_gles_bind_ebo);
+
+    if (!gles_api_ts->ebo) {
+        gles_api_ts->driver->GenBuffers(1, &gles_api_ts->ebo);
+    }
+
+    gles_api_ts->driver->GetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING,
+                                     (GLint*)&current_ebo);
+
+    gles_api_ts->driver->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, gles_api_ts->ebo);
+
+    if (size > gles_api_ts->ebo_size) {
+        gles_api_ts->driver->BufferData(GL_ELEMENT_ARRAY_BUFFER,
+                                        size, NULL,
+                                        GL_STREAM_DRAW);
+        gles_api_ts->ebo_size = size;
+    }
+
+    if (yagl_gles_use_map_buffer_range()) {
+        ptr = gles_api_ts->driver->MapBufferRange(GL_ELEMENT_ARRAY_BUFFER,
+                                                  0,
+                                                  size,
+                                                  GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+        if (ptr) {
+            memcpy(ptr, data, size);
+
+            gles_api_ts->driver->UnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+        } else {
+            YAGL_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        gles_api_ts->driver->Finish();
+        gles_api_ts->driver->BufferSubData(GL_ELEMENT_ARRAY_BUFFER,
+                                           0, size, data);
+    }
+
+    return current_ebo;
+}
+
 static bool yagl_gles_program_get_uniform_type(GLuint program,
                                                GLint location,
                                                GLenum *type)
@@ -550,7 +595,11 @@ void yagl_host_glDrawElements(GLenum mode,
     const GLvoid *indices, int32_t indices_count)
 {
     if (indices) {
-        gles_api_ts->driver->DrawElements(mode, count, type, indices);
+        GLuint current_ebo = yagl_gles_bind_ebo(indices, indices_count);
+
+        gles_api_ts->driver->DrawElements(mode, count, type, NULL);
+
+        gles_api_ts->driver->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, current_ebo);
     } else {
         gles_api_ts->driver->DrawElements(mode, count, type,
                                           (const GLvoid*)(uintptr_t)indices_count);
@@ -608,7 +657,11 @@ void yagl_host_glDrawElementsInstanced(GLenum mode,
     GLsizei primcount)
 {
     if (indices) {
-        gles_api_ts->driver->DrawElementsInstanced(mode, count, type, indices, primcount);
+        GLuint current_ebo = yagl_gles_bind_ebo(indices, indices_count);
+
+        gles_api_ts->driver->DrawElementsInstanced(mode, count, type, NULL, primcount);
+
+        gles_api_ts->driver->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, current_ebo);
     } else {
         gles_api_ts->driver->DrawElementsInstanced(mode,
                                                    count,
@@ -626,7 +679,11 @@ void yagl_host_glDrawRangeElements(GLenum mode,
     const GLvoid *indices, int32_t indices_count)
 {
     if (indices) {
-        gles_api_ts->driver->DrawRangeElements(mode, start, end, count, type, indices);
+        GLuint current_ebo = yagl_gles_bind_ebo(indices, indices_count);
+
+        gles_api_ts->driver->DrawRangeElements(mode, start, end, count, type, NULL);
+
+        gles_api_ts->driver->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, current_ebo);
     } else {
         gles_api_ts->driver->DrawRangeElements(mode, start, end, count, type,
                                                (const GLvoid*)(uintptr_t)indices_count);

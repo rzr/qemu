@@ -56,6 +56,12 @@ struct yagl_gles_api_ts
     uint32_t num_arrays;
 
     /*
+     * See above comments regarding VBO.
+     */
+    GLuint ebo;
+    uint32_t ebo_size;
+
+    /*
      * -1 when undecided, 0/1 when decided.
      */
     int use_map_buffer_range;
