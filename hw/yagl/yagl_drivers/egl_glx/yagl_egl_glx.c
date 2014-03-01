@@ -140,10 +140,18 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
         GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT,
         None
     };
-    int ctx_attribs[] =
+    int ctx_attribs_3_1[] =
     {
         GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
         GLX_CONTEXT_MINOR_VERSION_ARB, 1,
+        GLX_RENDER_TYPE, GLX_RGBA_TYPE,
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+        None
+    };
+    int ctx_attribs_3_2[] =
+    {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 2,
         GLX_RENDER_TYPE, GLX_RGBA_TYPE,
         GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
         None
@@ -164,7 +172,6 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
     const GLubyte *(GLAPIENTRY *GetStringi)(GLenum, GLuint) = NULL;
     void (GLAPIENTRY *GetIntegerv)(GLenum, GLint*) = NULL;
     GLint i, num_extensions = 0;
-    GLint major = 0, minor = 0;
 
     YAGL_EGL_GLX_ENTER(yagl_egl_glx_get_gl_version, NULL);
 
@@ -208,7 +215,7 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
                                               configs[0],
                                               NULL,
                                               True,
-                                              ctx_attribs);
+                                              ctx_attribs_3_1);
 
     if (!ctx) {
         YAGL_LOG_INFO("glXCreateContextAttribsARB failed, using OpenGL 2.1");
@@ -267,19 +274,23 @@ static bool yagl_egl_glx_get_gl_version(struct yagl_egl_glx *egl_glx,
      * able to patch shaders and run them with GLSL 1.50.
      */
 
-    GetIntegerv(GL_MAJOR_VERSION, &major);
-    GetIntegerv(GL_MINOR_VERSION, &minor);
+    egl_glx->glXMakeContextCurrent(egl_glx->global_dpy, 0, 0, NULL);
+    egl_glx->glXDestroyContext(egl_glx->global_dpy, ctx);
 
-    if ((major > 3) ||
-        ((major == 3) && (minor >= 2))) {
+    ctx = egl_glx->glXCreateContextAttribsARB(egl_glx->global_dpy,
+                                              configs[0],
+                                              NULL,
+                                              True,
+                                              ctx_attribs_3_2);
+
+    if (ctx) {
         YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, using OpenGL 3.2");
         *version = yagl_gl_3_2;
-        res = true;
-        goto out;
+    } else {
+        YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, OpenGL 3.2 not supported, using OpenGL 3.1");
+        *version = yagl_gl_3_1;
     }
 
-    YAGL_LOG_INFO("GL_ARB_ES3_compatibility not supported, OpenGL 3.2 not supported, using OpenGL 3.1");
-    *version = yagl_gl_3_1;
     res = true;
 
 out:
@@ -583,10 +594,18 @@ static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
 {
     struct yagl_egl_glx *egl_glx = (struct yagl_egl_glx*)driver;
     GLXContext ctx;
-    int attribs[] =
+    int attribs_3_1[] =
     {
         GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
         GLX_CONTEXT_MINOR_VERSION_ARB, 1,
+        GLX_RENDER_TYPE, GLX_RGBA_TYPE,
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+        None
+    };
+    int attribs_3_2[] =
+    {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 2,
         GLX_RENDER_TYPE, GLX_RGBA_TYPE,
         GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
         None
@@ -605,7 +624,8 @@ static EGLContext yagl_egl_glx_context_create(struct yagl_egl_driver *driver,
                                                       NULL
                                                     : (GLXContext)share_context),
                                                   True,
-                                                  attribs);
+                                                  ((egl_glx->base.gl_version >= yagl_gl_3_2) ?
+                                                   attribs_3_2 : attribs_3_1));
     } else {
         ctx = egl_glx->glXCreateNewContext(dpy,
                                            (GLXFBConfig)cfg->driver_data,
