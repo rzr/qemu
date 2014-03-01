@@ -128,7 +128,8 @@ static __inline struct vigs_winsys_gl_surface
  * @{
  */
 
-static const char *g_vs_tex_source =
+static const char *g_vs_tex_source_gl2 =
+    "#version 120\n\n"
     "attribute vec4 vertCoord;\n"
     "uniform mat4 proj;\n"
     "attribute vec2 texCoord;\n"
@@ -139,7 +140,20 @@ static const char *g_vs_tex_source =
     "    gl_Position = proj * vertCoord;\n"
     "}\n";
 
-static const char *g_fs_tex_source =
+static const char *g_vs_tex_source_gl3 =
+    "#version 140\n\n"
+    "in vec4 vertCoord;\n"
+    "uniform mat4 proj;\n"
+    "in vec2 texCoord;\n"
+    "out vec2 v_texCoord;\n"
+    "void main()\n"
+    "{\n"
+    "    v_texCoord = texCoord;\n"
+    "    gl_Position = proj * vertCoord;\n"
+    "}\n";
+
+static const char *g_fs_tex_source_gl2 =
+    "#version 120\n\n"
     "uniform sampler2D tex;\n"
     "varying vec2 v_texCoord;\n"
     "void main()\n"
@@ -147,7 +161,18 @@ static const char *g_fs_tex_source =
     "    gl_FragColor = texture2D(tex, v_texCoord);\n"
     "}\n";
 
-static const char *g_vs_color_source =
+static const char *g_fs_tex_source_gl3 =
+    "#version 140\n\n"
+    "uniform sampler2D tex;\n"
+    "in vec2 v_texCoord;\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "    FragColor = texture(tex, v_texCoord);\n"
+    "}\n";
+
+static const char *g_vs_color_source_gl2 =
+    "#version 120\n\n"
     "attribute vec4 vertCoord;\n"
     "uniform mat4 proj;\n"
     "void main()\n"
@@ -155,11 +180,30 @@ static const char *g_vs_color_source =
     "    gl_Position = proj * vertCoord;\n"
     "}\n";
 
-static const char *g_fs_color_source =
+static const char *g_vs_color_source_gl3 =
+    "#version 140\n\n"
+    "in vec4 vertCoord;\n"
+    "uniform mat4 proj;\n"
+    "void main()\n"
+    "{\n"
+    "    gl_Position = proj * vertCoord;\n"
+    "}\n";
+
+static const char *g_fs_color_source_gl2 =
+    "#version 120\n\n"
     "uniform vec4 color;\n"
     "void main()\n"
     "{\n"
     "    gl_FragColor = color;\n"
+    "}\n";
+
+static const char *g_fs_color_source_gl3 =
+    "#version 140\n\n"
+    "uniform vec4 color;\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "    FragColor = color;\n"
     "}\n";
 
 static GLuint vigs_gl_create_shader(struct vigs_gl_backend *backend,
@@ -1367,16 +1411,16 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     }
 
     gl_backend->tex_prog_vs_id = vigs_gl_create_shader(gl_backend,
-                                                       g_vs_tex_source,
-                                                       GL_VERTEX_SHADER);
+        (gl_backend->is_gl_2 ? g_vs_tex_source_gl2 : g_vs_tex_source_gl3),
+        GL_VERTEX_SHADER);
 
     if (!gl_backend->tex_prog_vs_id) {
         goto fail;
     }
 
     gl_backend->tex_prog_fs_id = vigs_gl_create_shader(gl_backend,
-                                                       g_fs_tex_source,
-                                                       GL_FRAGMENT_SHADER);
+        (gl_backend->is_gl_2 ? g_fs_tex_source_gl2 : g_fs_tex_source_gl3),
+        GL_FRAGMENT_SHADER);
 
     if (!gl_backend->tex_prog_fs_id) {
         goto fail;
@@ -1395,16 +1439,16 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     gl_backend->tex_prog_texCoord_loc = gl_backend->GetAttribLocation(gl_backend->tex_prog_id, "texCoord");
 
     gl_backend->color_prog_vs_id = vigs_gl_create_shader(gl_backend,
-                                                         g_vs_color_source,
-                                                         GL_VERTEX_SHADER);
+        (gl_backend->is_gl_2 ? g_vs_color_source_gl2 : g_vs_color_source_gl3),
+        GL_VERTEX_SHADER);
 
     if (!gl_backend->color_prog_vs_id) {
         goto fail;
     }
 
     gl_backend->color_prog_fs_id = vigs_gl_create_shader(gl_backend,
-                                                         g_fs_color_source,
-                                                         GL_FRAGMENT_SHADER);
+        (gl_backend->is_gl_2 ? g_fs_color_source_gl2 : g_fs_color_source_gl3),
+        GL_FRAGMENT_SHADER);
 
     if (!gl_backend->color_prog_fs_id) {
         goto fail;
