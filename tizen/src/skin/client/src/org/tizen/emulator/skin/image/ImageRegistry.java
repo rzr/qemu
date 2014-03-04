@@ -89,8 +89,7 @@ public class ImageRegistry {
 		DECREASE_SCALE("decrease_scale.png"),
 		SAVE_SCREEN_SHOT("save_screenshot_dialog.png"),
 
-		EMULATOR_TITLE("emulator_icon.png"),
-		EMULATOR_TITLE_ICO("emulator_icon.ico");
+		EMULATOR_ICON("emulator_icon.ico");
 		
 		private String name;
 		

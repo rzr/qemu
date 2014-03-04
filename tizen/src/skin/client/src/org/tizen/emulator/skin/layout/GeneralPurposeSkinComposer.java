@@ -144,13 +144,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		displayCanvas.setBackground(
 				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 
-		if (SwtUtil.isWindowsPlatform()) {
-			shell.setImage(skin.getImageRegistry()
-					.getIcon(IconName.EMULATOR_TITLE_ICO));
-		} else {
-			shell.setImage(skin.getImageRegistry()
-					.getIcon(IconName.EMULATOR_TITLE));
-		}
+		shell.setImage(skin.getImageRegistry().getIcon(
+				IconName.EMULATOR_ICON));
 
 		/* create a toggle button of key window */
 		List<KeyMapType> keyMapList = SkinUtil.getHWKeyMapList(

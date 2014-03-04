@@ -135,13 +135,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		lcdCanvas.setBackground(
 				shell.getDisplay().getSystemColor(SWT.COLOR_BLACK));
 
-		if (SwtUtil.isWindowsPlatform()) {
-			shell.setImage(skin.getImageRegistry()
-					.getIcon(IconName.EMULATOR_TITLE_ICO));
-		} else {
-			shell.setImage(skin.getImageRegistry()
-					.getIcon(IconName.EMULATOR_TITLE));
-		}
+		shell.setImage(skin.getImageRegistry().getIcon(
+				IconName.EMULATOR_ICON));
 
 		/* create a progress bar for booting status */
 		skin.bootingProgress = new CustomProgressBar(skin, SWT.NONE, true);

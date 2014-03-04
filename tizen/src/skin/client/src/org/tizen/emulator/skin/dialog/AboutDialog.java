@@ -59,7 +59,8 @@ import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class AboutDialog extends SkinDialog {
-	public static final String ABOUT_DIALOG_TITLE = "About Tizen Emulator";
+	public static final String ABOUT_DIALOG_TITLE = "About Emulator";
+	public static final String SDK_NAME = "Tizen SDK";
 	public static final String ABOUT_PROP_FILENAME = "about.properties";
 
 	public static final String PROP_KEY_VERSION = "version";
@@ -152,7 +153,7 @@ public class AboutDialog extends SkinDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalAlignment = SWT.CENTER;
 		titleLabel.setLayoutData(gridData);*/
-		titleLabel.setText("\nTizen SDK\n");
+		titleLabel.setText("\n" + SDK_NAME + "\n");
 		/*Font systemFont = shell.getDisplay().getSystemFont();
 		FontData[] fontData = systemFont.getFontData();
 		fontData[0].setStyle(SWT.BOLD);
