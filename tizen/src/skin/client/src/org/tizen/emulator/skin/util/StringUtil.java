@@ -37,15 +37,16 @@ import java.io.IOException;
  *
  */
 public class StringUtil {
-	
-	private StringUtil(){}
-	
-	public static boolean isEmpty( String value ) {
-		return ( null == value ) || ( 0 == value.length() );
+	private StringUtil() {
+		/* do nothing */
 	}
 
-	public static String nvl( String value ) {
-		return ( null == value ) ? "" : value;
+	public static boolean isEmpty(String value) {
+		return (null == value) || (0 == value.length());
+	}
+
+	public static String nvl(String value) {
+		return (null == value) ? "" : value;
 	}
 
 	public static String getCanonicalPath(String filePath) throws IOException {
@@ -60,8 +61,8 @@ public class StringUtil {
 			canonicalPath = file.getCanonicalPath();
 
 			if (file.isDirectory() == false) {
-				canonicalPath =
-						canonicalPath.substring(0, canonicalPath.lastIndexOf(File.separator));
+				canonicalPath = canonicalPath.substring(
+						0, canonicalPath.lastIndexOf(File.separator));
 				if (canonicalPath.compareTo("") == 0) {
 					return "./";
 				}

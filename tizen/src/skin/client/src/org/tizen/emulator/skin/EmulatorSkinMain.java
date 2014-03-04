@@ -63,6 +63,7 @@ import org.tizen.emulator.skin.util.CocoaUtil;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.SkinRotation;
+import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -159,7 +160,8 @@ public class EmulatorSkinMain {
 			/* set skin information */
 			String skinInfoFilePath =
 					skinPath + File.separator + SKIN_INFO_FILE_NAME;
-			Properties skinInfoProperties = loadProperties(skinInfoFilePath, false);
+			Properties skinInfoProperties =
+					SkinUtil.loadProperties(skinInfoFilePath, false);
 			if (null == skinInfoProperties) {
 				logger.severe("Fail to load skin information file.");
 
@@ -192,7 +194,8 @@ public class EmulatorSkinMain {
 			/* set emulator window skin property */
 			String skinPropFilePath =
 					vmPath + File.separator + SKIN_PROPERTIES_FILE_NAME;
-			Properties skinProperties = loadProperties(skinPropFilePath, true);
+			Properties skinProperties =
+					SkinUtil.loadProperties(skinPropFilePath, true);
 			if (null == skinProperties) {
 				logger.severe("Fail to load skin properties file.");
 			}
@@ -200,7 +203,8 @@ public class EmulatorSkinMain {
 			/* set emulator window config property */
 			String configPropFilePath =
 					vmPath + File.separator + CONFIG_PROPERTIES_FILE_NAME;
-			Properties configProperties = loadProperties(configPropFilePath, false);
+			Properties configProperties =
+					SkinUtil.loadProperties(configPropFilePath, false);
 			EmulatorConfig.validateSkinConfigProperties(configProperties);
 
 			/* able to use log file after loading properties */
@@ -452,44 +456,6 @@ public class EmulatorSkinMain {
 		}
 
 		return emulatorUI;
-	}
-
-	private static Properties loadProperties(
-			String filePath, boolean create) {
-		FileInputStream fis = null;
-		Properties properties = null;
-
-		try {
-			File file = new File(filePath);
-			
-			if (create == true) {
-				if (file.exists() == false) {
-					if (file.createNewFile() == false) {
-						logger.severe(
-								"Fail to create new " + filePath + " property file.");
-						return null;
-					}
-				}
-
-				fis = new FileInputStream(filePath);
-				properties = new Properties();
-				properties.load(fis);
-			} else {
-				if (file.exists() == true) {
-					fis = new FileInputStream(filePath);
-					properties = new Properties();
-					properties.load(fis);
-				}
-			}
-
-			logger.info("load properties file : " + filePath);
-		} catch (IOException e) {
-			logger.log(Level.SEVERE, "failed to load skin properties file", e);
-		} finally {
-			IOUtil.close(fis);
-		}
-
-		return properties;
 	}
 
 	public static void terminateImmediately(int exit) {

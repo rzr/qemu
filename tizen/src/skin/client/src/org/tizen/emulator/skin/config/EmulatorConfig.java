@@ -29,14 +29,9 @@
 
 package org.tizen.emulator.skin.config;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -135,14 +130,33 @@ public class EmulatorConfig {
 			this.configProperties = new Properties();
 		}
 
-		/* load SDK version */
-		String strVersion = "Undefined";
-		String versionFilePath = SkinUtil.getSdkVersionFilePath();
+		/* read SDK version */
+		String strVersion = loadSDKVersion();
+		logger.info("SDK version : " + strVersion);
 
-		File file = new File(versionFilePath);
+		setSkinProperty(
+				EmulatorConfig.SkinInfoConstants.SDK_VERSION_NAME, strVersion);
+	}
+
+	private String loadSDKVersion() {
+		String strVersion = "Undefined";
+
+		String filePath = SkinUtil.getSdkVersionFilePath();
+		Properties properties = SkinUtil.loadProperties(filePath, false);
+
+		if (properties != null) {
+			strVersion = (String) properties.get("TIZEN_SDK_VERSION");
+			if (StringUtil.isEmpty(strVersion) == true) {
+				strVersion = "Undefined";
+			}
+		} else {
+			logger.warning("cannot read version from " + filePath);
+		}
+
+		/* File file = new File(filePath);
 
 		if (file.exists() == false || file.isFile() == false) {
-			logger.warning("cannot read version from " + versionFilePath);
+			logger.warning("cannot read version from " + filePath);
 		} else {
 			BufferedReader reader = null;
 			try {
@@ -167,11 +181,9 @@ public class EmulatorConfig {
 					logger.warning(e.getMessage());
 				}
 			}
-		}
+		} */
 
-		logger.info("SDK version : " + strVersion);
-		setSkinProperty(
-				EmulatorConfig.SkinInfoConstants.SDK_VERSION_NAME, strVersion);
+		return strVersion;
 	}
 
 	public static void validateArgs(Map<String, String> args) throws ConfigException {

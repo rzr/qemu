@@ -30,11 +30,14 @@
 package org.tizen.emulator.skin.util;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -107,6 +110,43 @@ public class SkinUtil {
 		return vmName + ":" + portNumber;
 	}
 
+	public static Properties loadProperties(String filePath, boolean create) {
+		FileInputStream fis = null;
+		Properties properties = null;
+
+		try {
+			File file = new File(filePath);
+
+			if (create == true) {
+				if (file.exists() == false) {
+					if (file.createNewFile() == false) {
+						logger.severe(
+								"Fail to create new " + filePath + " property file.");
+						return null;
+					}
+				}
+
+				fis = new FileInputStream(filePath);
+				properties = new Properties();
+				properties.load(fis);
+			} else {
+				if (file.exists() == true) {
+					fis = new FileInputStream(filePath);
+					properties = new Properties();
+					properties.load(fis);
+				}
+			}
+
+			logger.info("load properties file : " + filePath);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "failed to load skin properties file", e);
+		} finally {
+			IOUtil.close(fis);
+		}
+
+		return properties;
+	}
+
 	public static String getSdbPath() {
 		String sdbPath = null;
 
@@ -124,7 +164,8 @@ public class SkinUtil {
 	}
 
 	public static String getSdkVersionFilePath() {
-		return ".." + File.separator + "etc" + File.separator + "version";
+		return ".." + File.separator + ".." + File.separator +
+				".." + File.separator + "sdk.version";
 	}
 
 	public static List<KeyMapType> getHWKeyMapList(short rotationId) {
