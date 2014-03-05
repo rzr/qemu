@@ -1259,7 +1259,7 @@ public class EmulatorSkin {
 		/* abstract */
 	}
 
-	public void drawImageToDisplay(Image image) {
+	public void setCoverImage(Image image) {
 		/* abstract */
 	}
 
