@@ -1022,7 +1022,7 @@ public class EmulatorSkin {
 
 				previous = null;
 
-				keyReleasedDelivery(keyCode, stateMask, e.keyLocation);
+				keyReleasedDelivery(keyCode, stateMask, e.keyLocation, true);
 			}
 
 			@Override
@@ -1107,7 +1107,7 @@ public class EmulatorSkin {
 					logger.fine(e.toString());
 				}
 
-				keyPressedDelivery(keyCode, stateMask, e.keyLocation);
+				keyPressedDelivery(keyCode, stateMask, e.keyLocation, true);
 
 				previous = e;
 			}
@@ -1124,11 +1124,11 @@ public class EmulatorSkin {
 				currentState.getCurrentScale(), currentState.getCurrentAngle());
 
 		MouseEventData mouseEventData = new MouseEventData(
-				MouseButtonType.LEFT.value(), eventType, e.x, e.y, geometry[0],
-				geometry[1], 0);
+				MouseButtonType.LEFT.value(), eventType,
+				e.x, e.y, geometry[0], geometry[1], 0);
 
-		communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData,
-				false);
+		communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT,
+				mouseEventData, false);
 	}
 
 	protected void mouseUpDelivery(MouseEvent e) {
@@ -1136,15 +1136,15 @@ public class EmulatorSkin {
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(),
 				currentState.getCurrentScale(), currentState.getCurrentAngle());
-		logger.info("mouseUp in display" + " x:" + geometry[0] + " y:"
-				+ geometry[1]);
+		logger.info("mouseUp in display" +
+				" x:" + geometry[0] + " y:" + geometry[1]);
 
 		MouseEventData mouseEventData = new MouseEventData(
 				MouseButtonType.LEFT.value(), MouseEventType.RELEASE.value(),
 				e.x, e.y, geometry[0], geometry[1], 0);
 
-		communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData,
-				false);
+		communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT,
+				mouseEventData, false);
 	}
 
 	protected void mouseDownDelivery(MouseEvent e) {
@@ -1152,35 +1152,39 @@ public class EmulatorSkin {
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(),
 				currentState.getCurrentScale(), currentState.getCurrentAngle());
-		logger.info("mouseDown in display" + " x:" + geometry[0] + " y:"
-				+ geometry[1]);
+		logger.info("mouseDown in display" +
+				" x:" + geometry[0] + " y:" + geometry[1]);
 
 		MouseEventData mouseEventData = new MouseEventData(
 				MouseButtonType.LEFT.value(), MouseEventType.PRESS.value(),
 				e.x, e.y, geometry[0], geometry[1], 0);
 
-		communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT, mouseEventData,
-				false);
+		communicator.sendToQEMU(SendCommand.SEND_MOUSE_EVENT,
+				mouseEventData, false);
 	}
 
-	protected void keyReleasedDelivery(int keyCode, int stateMask,
-			int keyLocation) {
+	protected void keyReleasedDelivery(int keyCode,
+			int stateMask, int keyLocation, boolean remove) {
 		KeyEventData keyEventData = new KeyEventData(
 				KeyEventType.RELEASED.value(), keyCode, stateMask, keyLocation);
 		communicator.sendToQEMU(
 				SendCommand.SEND_KEYBOARD_KEY_EVENT, keyEventData, false);
 
-		removePressedKeyFromList(keyEventData);
+		if (remove == true) {
+			removePressedKeyFromList(keyEventData);
+		}
 	}
 
-	protected void keyPressedDelivery(int keyCode, int stateMask,
-			int keyLocation) {
+	protected void keyPressedDelivery(int keyCode,
+			int stateMask, int keyLocation, boolean add) {
 		KeyEventData keyEventData = new KeyEventData(
 				KeyEventType.PRESSED.value(), keyCode, stateMask, keyLocation);
 		communicator.sendToQEMU(
 				SendCommand.SEND_KEYBOARD_KEY_EVENT, keyEventData, false);
 
-		addPressedKeyToList(keyEventData);
+		if (add == true) {
+			addPressedKeyToList(keyEventData);
+		}
 	}
 
 	private boolean isMetaKey(int keyCode) {
@@ -1938,15 +1942,12 @@ public class EmulatorSkin {
 					}
 				}
 
-				KeyEventData keyEventData = new KeyEventData(
-						KeyEventType.RELEASED.value(), data.keycode,
-						data.stateMask, data.keyLocation);
-				communicator.sendToQEMU(SendCommand.SEND_KEYBOARD_KEY_EVENT,
-						keyEventData, false);
+				keyReleasedDelivery(data.keycode,
+						data.stateMask, data.keyLocation, false);
 
-				logger.info("auto release : keycode=" + keyEventData.keycode
-						+ ", stateMask=" + keyEventData.stateMask
-						+ ", keyLocation=" + keyEventData.keyLocation);
+				logger.info("auto release : keycode=" + data.keycode
+						+ ", stateMask=" + data.stateMask
+						+ ", keyLocation=" + data.keyLocation);
 			}
 		}
 
