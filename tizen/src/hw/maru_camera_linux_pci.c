@@ -707,46 +707,46 @@ int marucam_device_check(int log_flag)
 
     gettimeofday(&t1, NULL);
     if (stat(dev_name, &st) < 0) {
-        fprintf(stdout, "[Webcam] <WARNING> Cannot identify '%s': %s\n",
+        INFO("<WARNING> Cannot identify '%s': %s\n",
                 dev_name, strerror(errno));
     } else {
         if (!S_ISCHR(st.st_mode)) {
-            fprintf(stdout, "[Webcam] <WARNING>%s is no character device\n",
+            INFO("<WARNING>%s is no character device\n",
                     dev_name);
         }
     }
 
     tmp_fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
     if (tmp_fd < 0) {
-        fprintf(stdout, "[Webcam] Camera device open failed: %s\n", dev_name);
+        ERR("Camera device open failed: %s\n", dev_name);
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+        ERR("Elapsed time: %lu:%06lu\n",
                 t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
     if (ioctl(tmp_fd, VIDIOC_QUERYCAP, &cap) < 0) {
-        fprintf(stdout, "[Webcam] Could not qeury video capabilities\n");
+        ERR("Could not qeury video capabilities\n");
         close(tmp_fd);
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+        ERR("Elapsed time: %lu:%06lu\n",
                 t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) ||
             !(cap.capabilities & V4L2_CAP_STREAMING)) {
-        fprintf(stdout, "[Webcam] Not supported video driver\n");
+        ERR("Not supported video driver\n");
         close(tmp_fd);
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+        ERR("Elapsed time: %lu:%06lu\n",
                 t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
     ret = 1;
 
     if (log_flag) {
-        fprintf(stdout, "[Webcam] Driver: %s\n", cap.driver);
-        fprintf(stdout, "[Webcam] Card:  %s\n", cap.card);
-        fprintf(stdout, "[Webcam] Bus info: %s\n", cap.bus_info);
+        INFO("Driver: %s\n", cap.driver);
+        INFO("Card:  %s\n", cap.card);
+        INFO("Bus info: %s\n", cap.bus_info);
 
         CLEAR(format);
         format.index = 0;
@@ -755,7 +755,7 @@ int marucam_device_check(int log_flag)
         if (yioctl(tmp_fd, VIDIOC_ENUM_FMT, &format) < 0) {
             close(tmp_fd);
             gettimeofday(&t2, NULL);
-            fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+            ERR("Elapsed time: %lu:%06lu\n",
                     t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
             return ret;
         }
@@ -765,7 +765,7 @@ int marucam_device_check(int log_flag)
             size.index = 0;
             size.pixel_format = format.pixelformat;
 
-            fprintf(stdout, "[Webcam] PixelFormat: %c%c%c%c\n",
+            INFO("PixelFormat: %c%c%c%c\n",
                              (char)(format.pixelformat),
                              (char)(format.pixelformat >> 8),
                              (char)(format.pixelformat >> 16),
@@ -774,30 +774,30 @@ int marucam_device_check(int log_flag)
             if (yioctl(tmp_fd, VIDIOC_ENUM_FRAMESIZES, &size) < 0) {
                 close(tmp_fd);
                 gettimeofday(&t2, NULL);
-                fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+                ERR("Elapsed time: %lu:%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
                 return ret;
             }
 
             if (size.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
                 do {
-                    fprintf(stdout, "[Webcam] got discrete frame size %dx%d\n",
+                    INFO("\tGot a discrete frame size %dx%d\n",
                                     size.discrete.width, size.discrete.height);
                     size.index++;
                 } while (yioctl(tmp_fd, VIDIOC_ENUM_FRAMESIZES, &size) >= 0);
             } else if (size.type == V4L2_FRMSIZE_TYPE_STEPWISE) {
-                fprintf(stdout, "[Webcam] we have stepwise frame sizes:\n");
-                fprintf(stdout, "[Webcam] min width: %d, min height: %d\n",
+                INFO("We have stepwise frame sizes:\n");
+                INFO("\tmin width: %d, min height: %d\n",
                         size.stepwise.min_width, size.stepwise.min_height);
-                fprintf(stdout, "[Webcam] max width: %d, max height: %d\n",
+                INFO("\tmax width: %d, max height: %d\n",
                         size.stepwise.max_width, size.stepwise.max_height);
-                fprintf(stdout, "[Webcam] step width: %d, step height: %d\n",
+                INFO("\tstep width: %d, step height: %d\n",
                         size.stepwise.step_width, size.stepwise.step_height);
             } else if (size.type == V4L2_FRMSIZE_TYPE_CONTINUOUS) {
-                fprintf(stdout, "[Webcam] we have continuous frame sizes:\n");
-                fprintf(stdout, "[Webcam] min width: %d, min height: %d\n",
+                INFO("We have continuous frame sizes:\n");
+                INFO("\tmin width: %d, min height: %d\n",
                         size.stepwise.min_width, size.stepwise.min_height);
-                fprintf(stdout, "[Webcam] max width: %d, max height: %d\n",
+                INFO("\tmax width: %d, max height: %d\n",
                         size.stepwise.max_width, size.stepwise.max_height);
 
             }
@@ -807,7 +807,7 @@ int marucam_device_check(int log_flag)
 
     close(tmp_fd);
     gettimeofday(&t2, NULL);
-    fprintf(stdout, "[Webcam] Elapsed time: %lu:%06lu\n",
+    INFO("Elapsed time: %lu:%06lu\n",
                     t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
     return ret;
 }
@@ -1115,13 +1115,13 @@ void marucam_device_enum_fmt(MaruCamState *state)
     /* set description */
     switch (supported_dst_pixfmts[index].fmt) {
     case V4L2_PIX_FMT_YUYV:
-        memcpy(&param->stack[3], "YUYV", 32);
+        strcpy((char *)&param->stack[3], "YUYV");
         break;
     case V4L2_PIX_FMT_YUV420:
-        memcpy(&param->stack[3], "YU12", 32);
+        strcpy((char *)&param->stack[3], "YU12");
         break;
     case V4L2_PIX_FMT_YVU420:
-        memcpy(&param->stack[3], "YV12", 32);
+        strcpy((char *)&param->stack[3], "YV12");
         break;
     default:
         ERR("Invalid fixel format\n");
@@ -1144,22 +1144,22 @@ void marucam_device_qctrl(MaruCamState *state)
     switch (ctrl.id) {
     case V4L2_CID_BRIGHTNESS:
         TRACE("Query : BRIGHTNESS\n");
-        memcpy((void *)name, (void *)"brightness", 32);
+        strcpy(name, "brightness");
         i = 0;
         break;
     case V4L2_CID_CONTRAST:
         TRACE("Query : CONTRAST\n");
-        memcpy((void *)name, (void *)"contrast", 32);
+        strcpy(name, "contrast");
         i = 1;
         break;
     case V4L2_CID_SATURATION:
         TRACE("Query : SATURATION\n");
-        memcpy((void *)name, (void *)"saturation", 32);
+        strcpy(name, "saturation");
         i = 2;
         break;
     case V4L2_CID_SHARPNESS:
         TRACE("Query : SHARPNESS\n");
-        memcpy((void *)name, (void *)"sharpness", 32);
+        strcpy(name, "sharpness");
         i = 3;
         break;
     default:

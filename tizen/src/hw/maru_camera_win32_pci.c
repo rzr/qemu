@@ -1744,9 +1744,9 @@ int marucam_device_check(int log_flag)
     gettimeofday(&t1, NULL);
     hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) {
-        fprintf(stdout, "[Webcam] failed to CoInitailizeEx\n");
+        ERR("Failed to CoInitailizeEx\n");
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
@@ -1756,10 +1756,10 @@ int marucam_device_check(int log_flag)
                           &IID_IGraphBuilder,
                           (void **)&pGB);
     if (FAILED(hr)) {
-        fprintf(stdout, "[Webcam] Failed to create GraphBuilder, 0x%x\n", hr);
+        ERR("Failed to create GraphBuilder, 0x%x\n", hr);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
@@ -1769,24 +1769,23 @@ int marucam_device_check(int log_flag)
                           &IID_ICaptureGraphBuilder2,
                           (void **)&pCGB);
     if (FAILED(hr)) {
-        fprintf(stdout,
-        "[Webcam] Failed to create CaptureGraphBuilder2, 0x%x\n", hr);
+        ERR("Failed to create CaptureGraphBuilder2, 0x%x\n", hr);
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
 
     hr = pCGB->lpVtbl->SetFiltergraph(pCGB, pGB);
     if (FAILED(hr)) {
-        fprintf(stdout, "[Webcam] Failed to SetFiltergraph, 0x%x\n", hr);
+        ERR("Failed to SetFiltergraph, 0x%x\n", hr);
         SAFE_RELEASE(pCGB);
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
@@ -1796,13 +1795,12 @@ int marucam_device_check(int log_flag)
                           &IID_ICreateDevEnum,
                           (void **)&pCreateDevEnum);
     if (FAILED(hr)) {
-        fprintf(stdout,
-            "[Webcam] failed to create instance of CLSID_SystemDeviceEnum\n");
+        ERR("Failed to create instance of CLSID_SystemDeviceEnum\n");
         SAFE_RELEASE(pCGB);
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
@@ -1810,25 +1808,25 @@ int marucam_device_check(int log_flag)
     hr = pCreateDevEnum->lpVtbl->CreateClassEnumerator(pCreateDevEnum,
                                   &CLSID_VideoInputDeviceCategory, &pEnumMK, 0);
     if (FAILED(hr)) {
-        fprintf(stdout, "[Webcam] failed to create class enumerator\n");
+        ERR("Failed to create class enumerator\n");
         SAFE_RELEASE(pCreateDevEnum);
         SAFE_RELEASE(pCGB);
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
 
     if (!pEnumMK) {
-        fprintf(stdout, "[Webcam] class enumerator is NULL!!\n");
+        ERR("Class enumerator is NULL!!\n");
         SAFE_RELEASE(pCreateDevEnum);
         SAFE_RELEASE(pCGB);
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
@@ -1836,14 +1834,14 @@ int marucam_device_check(int log_flag)
 
     hr = pEnumMK->lpVtbl->Next(pEnumMK, 1, &pMoniKer, NULL);
     if (FAILED(hr) || (hr == S_FALSE)) {
-        fprintf(stdout, "[Webcam] enum moniker returns a invalid value.\n");
+        ERR("Enum moniker returns a invalid value.\n");
         SAFE_RELEASE(pEnumMK);
         SAFE_RELEASE(pCreateDevEnum);
         SAFE_RELEASE(pCGB);
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
@@ -1853,14 +1851,14 @@ int marucam_device_check(int log_flag)
                                          &IID_IPropertyBag,
                                          (void **)&pBag);
     if (FAILED(hr)) {
-        fprintf(stdout, "[Webcam] failed to bind to storage.\n");
+        ERR("Failed to bind to storage.\n");
         SAFE_RELEASE(pEnumMK);
         SAFE_RELEASE(pCreateDevEnum);
         SAFE_RELEASE(pCGB);
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     } else {
@@ -1879,19 +1877,18 @@ int marucam_device_check(int log_flag)
                 SAFE_RELEASE(pGB);
                 CoUninitialize();
                 gettimeofday(&t2, NULL);
-                fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                ERR("Elapsed time : %lu.%06lu\n",
                                 t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
                 return ret;
             }
             device_name = __wchar_to_char(var.bstrVal);
-            fprintf(stdout, "[Webcam] Device name : %s\n", device_name);
+            INFO("Device name : %s\n", device_name);
             g_free(device_name);
             hr = pMoniKer->lpVtbl->BindToObject(pMoniKer, NULL, NULL,
                                                 &IID_IBaseFilter,
                                                 (void **)&pSrcFilter);
             if (FAILED(hr)) {
-                fprintf(stdout,
-                   "[Webcam] Counldn't bind moniker to filter object!!\n");
+                ERR("Counldn't bind moniker to filter object!!\n");
                 SysFreeString(var.bstrVal);
                 SAFE_RELEASE(pBag);
                 SAFE_RELEASE(pMoniKer);
@@ -1901,7 +1898,7 @@ int marucam_device_check(int log_flag)
                 SAFE_RELEASE(pGB);
                 CoUninitialize();
                 gettimeofday(&t2, NULL);
-                fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+                ERR("Elapsed time : %lu.%06lu\n",
                                 t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
                 return ret;
             } else {
@@ -1915,8 +1912,7 @@ int marucam_device_check(int log_flag)
 
     hr = pGB->lpVtbl->AddFilter(pGB, pSrcFilter, L"Video Capture");
     if (hr != S_OK && hr != S_FALSE) {
-        fprintf(stdout,
-                "[Webcam] Counldn't add Video Capture filter to our graph!\n");
+        ERR("Counldn't add Video Capture filter to our graph!\n");
         SAFE_RELEASE(pSrcFilter);
         SAFE_RELEASE(pEnumMK);
         SAFE_RELEASE(pCreateDevEnum);
@@ -1924,7 +1920,7 @@ int marucam_device_check(int log_flag)
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
@@ -1933,7 +1929,7 @@ int marucam_device_check(int log_flag)
                                        pSrcFilter, &IID_IAMStreamConfig,
                                        (void **)&pSConfig);
     if (FAILED(hr)) {
-        fprintf(stdout, "[Webcam] failed to FindInterface method\n");
+        ERR("Failed to FindInterface method\n");
         SAFE_RELEASE(pSrcFilter);
         SAFE_RELEASE(pEnumMK);
         SAFE_RELEASE(pCreateDevEnum);
@@ -1941,14 +1937,14 @@ int marucam_device_check(int log_flag)
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
 
     hr = pSConfig->lpVtbl->GetNumberOfCapabilities(pSConfig, &iCount, &iSize);
     if (FAILED(hr)) {
-        fprintf(stdout, "[Webcam] failed to GetNumberOfCapabilities method\n");
+        ERR("Failed to GetNumberOfCapabilities method\n");
         SAFE_RELEASE(pSConfig);
         SAFE_RELEASE(pSrcFilter);
         SAFE_RELEASE(pEnumMK);
@@ -1957,7 +1953,7 @@ int marucam_device_check(int log_flag)
         SAFE_RELEASE(pGB);
         CoUninitialize();
         gettimeofday(&t2, NULL);
-        fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+        ERR("Elapsed time : %lu.%06lu\n",
                         t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
         return ret;
     }
@@ -1975,19 +1971,18 @@ int marucam_device_check(int log_flag)
                     VIDEOINFOHEADER *pvi =
                                          (VIDEOINFOHEADER *)pmtConfig->pbFormat;
                     if (pvi->bmiHeader.biCompression == BI_RGB) {
-                        fprintf(stdout, "[Webcam] RGB BitCount: %d, %ux%u\n",
+                        INFO("RGB BitCount: %d, Frame size: %ux%u\n",
                                 pvi->bmiHeader.biBitCount,
                                 pvi->bmiHeader.biWidth,
                                 pvi->bmiHeader.biHeight);
                     } else {
-                        fprintf(stdout,
-                                "[Webcam] PixelFormat: %c%c%c%c, %ux%u\n",
-                                (char)(pvi->bmiHeader.biCompression),
-                                (char)(pvi->bmiHeader.biCompression >> 8),
-                                (char)(pvi->bmiHeader.biCompression >> 16),
-                                (char)(pvi->bmiHeader.biCompression >> 24),
-                                pvi->bmiHeader.biWidth,
-                                pvi->bmiHeader.biHeight);
+                        INFO("PixelFormat: %c%c%c%c, Frame size: %ux%u\n",
+                            (char)(pvi->bmiHeader.biCompression),
+                            (char)(pvi->bmiHeader.biCompression >> 8),
+                            (char)(pvi->bmiHeader.biCompression >> 16),
+                            (char)(pvi->bmiHeader.biCompression >> 24),
+                            pvi->bmiHeader.biWidth,
+                            pvi->bmiHeader.biHeight);
                     }
                 }
                 DeleteMediaType(pmtConfig);
@@ -1997,7 +1992,7 @@ int marucam_device_check(int log_flag)
 
     hr = pGB->lpVtbl->RemoveFilter(pGB, pSrcFilter);
     if (FAILED(hr)) {
-        fprintf(stdout, "[Webcam] Failed to remove source filer. 0x%x\n", hr);
+        ERR("Failed to remove source filer. 0x%x\n", hr);
     }
 
     SAFE_RELEASE(pSConfig);
@@ -2008,7 +2003,7 @@ int marucam_device_check(int log_flag)
     SAFE_RELEASE(pCreateDevEnum);
     CoUninitialize();
     gettimeofday(&t2, NULL);
-    fprintf(stdout, "[Webcam] Elapsed time : %lu.%06lu\n",
+    ERR("Elapsed time : %lu.%06lu\n",
                     t2.tv_sec-t1.tv_sec, t2.tv_usec-t1.tv_usec);
 
     return ret;
@@ -2114,10 +2109,20 @@ void marucam_device_open(MaruCamState *state)
 void marucam_device_close(MaruCamState *state)
 {
     MaruCamParam *param = state->param;
+    int ret = 0;
     param->top = 0;
 
-    DisconnectPins();
-    RemoveFilters();
+    qemu_mutex_lock(&state->thread_mutex);
+    ret = state->streamon;
+    qemu_mutex_unlock(&state->thread_mutex);
+    if (ret) {
+        marucam_device_stop_preview(state);
+    }
+
+    if (g_pGB) {
+        DisconnectPins();
+        RemoveFilters();
+    }
     CloseInterfaces();
     CoUninitialize();
     INFO("Closed\n");
