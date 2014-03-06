@@ -35,6 +35,6 @@
 /*
  * Whenever protocol changes be sure to bump this.
  */
-#define YAGL_VERSION 22
+#define YAGL_VERSION 23
 
 #endif
