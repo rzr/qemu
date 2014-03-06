@@ -131,7 +131,7 @@ static void yagl_device_operate(YaGLState *s, int user_index, hwaddr buff_pa)
                 s->users[user_index].process_id = target_pid;
                 s->users[user_index].thread_id = target_tid;
 
-                YAGL_LOG_INFO("user %d activated", user_index);
+                YAGL_LOG_DEBUG("user %d activated", user_index);
 
                 /*
                  * The buff is now owned by client.
@@ -150,7 +150,7 @@ static void yagl_device_operate(YaGLState *s, int user_index, hwaddr buff_pa)
 
         memset(&s->users[user_index], 0, sizeof(s->users[user_index]));
 
-        YAGL_LOG_INFO("user %d deactivated", user_index);
+        YAGL_LOG_DEBUG("user %d deactivated", user_index);
     }
 
 out:

@@ -75,7 +75,7 @@ static void vigs_log_print_current_time(void)
 void vigs_log_init(void)
 {
     char *level_str = getenv("VIGS_DEBUG");
-    int level = level_str ? atoi(level_str) : vigs_log_level_off;
+    int level = level_str ? atoi(level_str) : vigs_log_level_info;
 
     if (level < 0) {
         g_log_level = vigs_log_level_off;
