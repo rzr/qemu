@@ -54,7 +54,8 @@ struct yagl_eglb_display
 
     struct yagl_eglb_context *(*create_context)(struct yagl_eglb_display */*dpy*/,
                                                 const struct yagl_egl_native_config */*cfg*/,
-                                                struct yagl_eglb_context */*share_context*/);
+                                                struct yagl_eglb_context */*share_context*/,
+                                                int /*version*/);
 
     /*
      * 'pixels' are locked in target's memory, no page fault possible.

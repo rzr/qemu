@@ -1,5 +1,5 @@
 /*
- * yagl
+ * vigs
  *
  * Copyright (c) 2000 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -27,39 +27,29 @@
  *
  */
 
-#include <GL/gl.h>
-#include "yagl_gles_api_ts.h"
-#include "yagl_gles_driver.h"
-#include "yagl_process.h"
-#include "yagl_thread.h"
+#ifndef _QEMU_VIGS_PLANE_H
+#define _QEMU_VIGS_PLANE_H
 
-void yagl_gles_api_ts_init(struct yagl_gles_api_ts *gles_api_ts,
-                           struct yagl_gles_driver *driver,
-                           struct yagl_gles_api_ps *ps)
+#include "vigs_types.h"
+
+struct vigs_surface;
+
+struct vigs_plane
 {
-    gles_api_ts->driver = driver;
-    gles_api_ts->ps = ps;
-    gles_api_ts->use_map_buffer_range = -1;
-}
+    struct vigs_surface *sfc;
 
-void yagl_gles_api_ts_cleanup(struct yagl_gles_api_ts *gles_api_ts)
-{
-    if (gles_api_ts->num_arrays > 0) {
-        uint32_t i;
+    struct vigsp_rect src_rect;
 
-        yagl_ensure_ctx(0);
+    int dst_x;
+    int dst_y;
+    struct vigsp_size dst_size;
 
-        if (gles_api_ts->ebo) {
-            gles_api_ts->driver->DeleteBuffers(1, &gles_api_ts->ebo);
-        }
+    int z_pos;
 
-        for (i = 0; i < gles_api_ts->num_arrays; ++i) {
-            gles_api_ts->driver->DeleteBuffers(1,
-                                               &gles_api_ts->arrays[i].vbo);
-        }
+    /*
+     * Plane moved/resized, need to recomposite.
+     */
+    bool is_dirty;
+};
 
-        yagl_unensure_ctx(0);
-    }
-
-    g_free(gles_api_ts->arrays);
-}
+#endif

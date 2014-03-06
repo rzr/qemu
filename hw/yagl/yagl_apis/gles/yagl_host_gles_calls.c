@@ -39,6 +39,7 @@
 #include "yagl_thread.h"
 #include "yagl_vector.h"
 #include "yagl_object_map.h"
+#include "yagl_transport.h"
 
 static YAGL_DEFINE_TLS(struct yagl_gles_api_ts*, gles_api_ts);
 
@@ -47,6 +48,8 @@ struct yagl_gles_object
     struct yagl_object base;
 
     struct yagl_gles_driver *driver;
+
+    uint32_t ctx_id;
 };
 
 typedef enum
@@ -58,12 +61,42 @@ typedef enum
     yagl_gles1_array_texcoord,
 } yagl_gles1_array_type;
 
-static void *yagl_gles_get_array(uint32_t indx, uint32_t size)
+static bool yagl_gles_use_map_buffer_range(void)
 {
-    struct yagl_vector *array;
+    YAGL_LOG_FUNC_SET(yagl_gles_use_map_buffer_range);
+
+    if (gles_api_ts->use_map_buffer_range == -1) {
+        if (gles_api_ts->driver->gl_version > yagl_gl_2) {
+            gles_api_ts->use_map_buffer_range = 1;
+        } else {
+            const char *tmp = (const char*)gles_api_ts->driver->GetString(GL_EXTENSIONS);
+
+            gles_api_ts->use_map_buffer_range =
+                (tmp && (strstr(tmp, "GL_ARB_map_buffer_range ") != NULL));
+
+            if (!gles_api_ts->use_map_buffer_range) {
+                YAGL_LOG_WARN("glMapBufferRange not supported, using glBufferSubData");
+            }
+        }
+    }
+
+    return gles_api_ts->use_map_buffer_range;
+}
+
+static GLuint yagl_gles_bind_array(uint32_t indx,
+                                   GLint first,
+                                   GLsizei stride,
+                                   const GLvoid *data,
+                                   int32_t data_count)
+{
+    GLuint current_vbo;
+    uint32_t size;
+    void *ptr;
+
+    YAGL_LOG_FUNC_SET(yagl_gles_bind_array);
 
     if (indx >= gles_api_ts->num_arrays) {
-        struct yagl_vector *arrays;
+        struct yagl_gles_array *arrays;
         uint32_t i;
 
         arrays = g_malloc((indx + 1) * sizeof(arrays[0]));
@@ -72,8 +105,9 @@ static void *yagl_gles_get_array(uint32_t indx, uint32_t size)
                gles_api_ts->arrays,
                gles_api_ts->num_arrays * sizeof(arrays[0]));
 
-        for (i = gles_api_ts->num_arrays; i < (indx + 1); ++i) {
-            yagl_vector_init(&arrays[i], 1, 0);
+        for (i = gles_api_ts->num_arrays; i <= indx; ++i) {
+            gles_api_ts->driver->GenBuffers(1, &arrays[i].vbo);
+            arrays[i].size = 0;
         }
 
         g_free(gles_api_ts->arrays);
@@ -82,11 +116,86 @@ static void *yagl_gles_get_array(uint32_t indx, uint32_t size)
         gles_api_ts->num_arrays = indx + 1;
     }
 
-    array = &gles_api_ts->arrays[indx];
+    gles_api_ts->driver->GetIntegerv(GL_ARRAY_BUFFER_BINDING,
+                                     (GLint*)&current_vbo);
 
-    yagl_vector_resize(array, size);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, gles_api_ts->arrays[indx].vbo);
 
-    return yagl_vector_data(array);
+    size = first * stride + data_count;
+
+    if (size > gles_api_ts->arrays[indx].size) {
+        gles_api_ts->driver->BufferData(GL_ARRAY_BUFFER,
+                                        size, NULL,
+                                        GL_STREAM_DRAW);
+        gles_api_ts->arrays[indx].size = size;
+    }
+
+    if (yagl_gles_use_map_buffer_range()) {
+        ptr = gles_api_ts->driver->MapBufferRange(GL_ARRAY_BUFFER,
+                                                  first * stride,
+                                                  data_count,
+                                                  GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+        if (ptr) {
+            memcpy(ptr, data, data_count);
+
+            gles_api_ts->driver->UnmapBuffer(GL_ARRAY_BUFFER);
+        } else {
+            YAGL_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        gles_api_ts->driver->Finish();
+        gles_api_ts->driver->BufferSubData(GL_ARRAY_BUFFER,
+                                           first * stride, data_count,
+                                           data);
+    }
+
+    return current_vbo;
+}
+
+static GLuint yagl_gles_bind_ebo(const GLvoid *data, int32_t size)
+{
+    GLuint current_ebo;
+    void *ptr;
+
+    YAGL_LOG_FUNC_SET(yagl_gles_bind_ebo);
+
+    if (!gles_api_ts->ebo) {
+        gles_api_ts->driver->GenBuffers(1, &gles_api_ts->ebo);
+    }
+
+    gles_api_ts->driver->GetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING,
+                                     (GLint*)&current_ebo);
+
+    gles_api_ts->driver->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, gles_api_ts->ebo);
+
+    if (size > gles_api_ts->ebo_size) {
+        gles_api_ts->driver->BufferData(GL_ELEMENT_ARRAY_BUFFER,
+                                        size, NULL,
+                                        GL_STREAM_DRAW);
+        gles_api_ts->ebo_size = size;
+    }
+
+    if (yagl_gles_use_map_buffer_range()) {
+        ptr = gles_api_ts->driver->MapBufferRange(GL_ELEMENT_ARRAY_BUFFER,
+                                                  0,
+                                                  size,
+                                                  GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+        if (ptr) {
+            memcpy(ptr, data, size);
+
+            gles_api_ts->driver->UnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+        } else {
+            YAGL_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        gles_api_ts->driver->Finish();
+        gles_api_ts->driver->BufferSubData(GL_ELEMENT_ARRAY_BUFFER,
+                                           0, size, data);
+    }
+
+    return current_ebo;
 }
 
 static bool yagl_gles_program_get_uniform_type(GLuint program,
@@ -174,6 +283,29 @@ static bool yagl_gles_get_uniform_type_count(GLenum uniform_type, int *count)
     case GL_BOOL_VEC4: *count = 4; break;
     case GL_SAMPLER_2D: *count = 1; break;
     case GL_SAMPLER_CUBE: *count = 1; break;
+    case GL_UNSIGNED_INT: *count = 1; break;
+    case GL_UNSIGNED_INT_VEC2: *count = 2; break;
+    case GL_UNSIGNED_INT_VEC3: *count = 3; break;
+    case GL_UNSIGNED_INT_VEC4: *count = 4; break;
+    case GL_FLOAT_MAT2x3: *count = 2*3; break;
+    case GL_FLOAT_MAT2x4: *count = 2*4; break;
+    case GL_FLOAT_MAT3x2: *count = 3*2; break;
+    case GL_FLOAT_MAT3x4: *count = 3*4; break;
+    case GL_FLOAT_MAT4x2: *count = 4*2; break;
+    case GL_FLOAT_MAT4x3: *count = 4*3; break;
+    case GL_SAMPLER_3D: *count = 1; break;
+    case GL_SAMPLER_2D_SHADOW: *count = 1; break;
+    case GL_SAMPLER_2D_ARRAY: *count = 1; break;
+    case GL_SAMPLER_2D_ARRAY_SHADOW: *count = 1; break;
+    case GL_SAMPLER_CUBE_SHADOW: *count = 1; break;
+    case GL_INT_SAMPLER_2D: *count = 1; break;
+    case GL_INT_SAMPLER_3D: *count = 1; break;
+    case GL_INT_SAMPLER_CUBE: *count = 1; break;
+    case GL_INT_SAMPLER_2D_ARRAY: *count = 1; break;
+    case GL_UNSIGNED_INT_SAMPLER_2D: *count = 1; break;
+    case GL_UNSIGNED_INT_SAMPLER_3D: *count = 1; break;
+    case GL_UNSIGNED_INT_SAMPLER_CUBE: *count = 1; break;
+    case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY: *count = 1; break;
     default: return false;
     }
     return true;
@@ -182,12 +314,6 @@ static bool yagl_gles_get_uniform_type_count(GLenum uniform_type, int *count)
 static bool yagl_gles_get_array_param_count(GLenum pname, int *count)
 {
     switch (pname) {
-    case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: *count = 1; break;
-    case GL_VERTEX_ATTRIB_ARRAY_ENABLED: *count = 1; break;
-    case GL_VERTEX_ATTRIB_ARRAY_SIZE: *count = 1; break;
-    case GL_VERTEX_ATTRIB_ARRAY_STRIDE: *count = 1; break;
-    case GL_VERTEX_ATTRIB_ARRAY_TYPE: *count = 1; break;
-    case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED: *count = 1; break;
     case GL_CURRENT_VERTEX_ATTRIB: *count = 4; break;
     default: return false;
     }
@@ -196,6 +322,7 @@ static bool yagl_gles_get_array_param_count(GLenum pname, int *count)
 
 static void yagl_gles_object_add(GLuint local_name,
                                  GLuint global_name,
+                                 uint32_t ctx_id,
                                  void (*destroy_func)(struct yagl_object */*obj*/))
 {
     struct yagl_gles_object *obj;
@@ -205,6 +332,7 @@ static void yagl_gles_object_add(GLuint local_name,
     obj->base.global_name = global_name;
     obj->base.destroy = destroy_func;
     obj->driver = gles_api_ts->driver;
+    obj->ctx_id = ctx_id;
 
     yagl_object_map_add(cur_ts->ps->object_map,
                         local_name,
@@ -217,9 +345,9 @@ static void yagl_gles_buffer_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_buffer_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteBuffers(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -232,9 +360,9 @@ static void yagl_gles_texture_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_texture_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteTextures(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -247,9 +375,9 @@ static void yagl_gles_framebuffer_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_framebuffer_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(gles_obj->ctx_id);
     gles_obj->driver->DeleteFramebuffers(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(gles_obj->ctx_id);
 
     g_free(gles_obj);
 
@@ -262,9 +390,9 @@ static void yagl_gles_renderbuffer_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_renderbuffer_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteRenderbuffers(1, &obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -277,9 +405,9 @@ static void yagl_gles_program_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_program_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteProgram(obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -292,9 +420,69 @@ static void yagl_gles_shader_destroy(struct yagl_object *obj)
 
     YAGL_LOG_FUNC_ENTER(yagl_gles_shader_destroy, "%u", obj->global_name);
 
-    yagl_ensure_ctx();
+    yagl_ensure_ctx(0);
     gles_obj->driver->DeleteShader(obj->global_name);
-    yagl_unensure_ctx();
+    yagl_unensure_ctx(0);
+
+    g_free(gles_obj);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_gles_vertex_array_destroy(struct yagl_object *obj)
+{
+    struct yagl_gles_object *gles_obj = (struct yagl_gles_object*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_gles_vertex_array_destroy, "%u", obj->global_name);
+
+    yagl_ensure_ctx(gles_obj->ctx_id);
+    gles_obj->driver->DeleteVertexArrays(1, &obj->global_name);
+    yagl_unensure_ctx(gles_obj->ctx_id);
+
+    g_free(gles_obj);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_gles_transform_feedback_destroy(struct yagl_object *obj)
+{
+    struct yagl_gles_object *gles_obj = (struct yagl_gles_object*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_gles_transform_feedback_destroy, "%u", obj->global_name);
+
+    yagl_ensure_ctx(gles_obj->ctx_id);
+    gles_obj->driver->DeleteTransformFeedbacks(1, &obj->global_name);
+    yagl_unensure_ctx(gles_obj->ctx_id);
+
+    g_free(gles_obj);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_gles_query_destroy(struct yagl_object *obj)
+{
+    struct yagl_gles_object *gles_obj = (struct yagl_gles_object*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_gles_query_destroy, "%u", obj->global_name);
+
+    yagl_ensure_ctx(gles_obj->ctx_id);
+    gles_obj->driver->DeleteQueries(1, &obj->global_name);
+    yagl_unensure_ctx(gles_obj->ctx_id);
+
+    g_free(gles_obj);
+
+    YAGL_LOG_FUNC_EXIT(NULL);
+}
+
+static void yagl_gles_sampler_destroy(struct yagl_object *obj)
+{
+    struct yagl_gles_object *gles_obj = (struct yagl_gles_object*)obj;
+
+    YAGL_LOG_FUNC_ENTER(yagl_gles_sampler_destroy, "%u", obj->global_name);
+
+    yagl_ensure_ctx(0);
+    gles_obj->driver->DeleteSamplers(1, &obj->global_name);
+    yagl_unensure_ctx(0);
 
     g_free(gles_obj);
 
@@ -407,14 +595,18 @@ void yagl_host_glDrawElements(GLenum mode,
     const GLvoid *indices, int32_t indices_count)
 {
     if (indices) {
-        gles_api_ts->driver->DrawElements(mode, count, type, indices);
+        GLuint current_ebo = yagl_gles_bind_ebo(indices, indices_count);
+
+        gles_api_ts->driver->DrawElements(mode, count, type, NULL);
+
+        gles_api_ts->driver->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, current_ebo);
     } else {
         gles_api_ts->driver->DrawElements(mode, count, type,
                                           (const GLvoid*)(uintptr_t)indices_count);
     }
 }
 
-void yagl_host_glReadPixels(GLint x,
+void yagl_host_glReadPixelsData(GLint x,
     GLint y,
     GLsizei width,
     GLsizei height,
@@ -422,15 +614,6 @@ void yagl_host_glReadPixels(GLint x,
     GLenum type,
     GLvoid *pixels, int32_t pixels_maxcount, int32_t *pixels_count)
 {
-    GLuint current_pbo = 0;
-
-    gles_api_ts->driver->GetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_ARB,
-                                     (GLint*)&current_pbo);
-    if (current_pbo != 0) {
-        gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
-                                        0);
-    }
-
     gles_api_ts->driver->ReadPixels(x,
                                     y,
                                     width,
@@ -440,11 +623,92 @@ void yagl_host_glReadPixels(GLint x,
                                     pixels);
 
     *pixels_count = pixels_maxcount;
+}
 
-    if (current_pbo != 0) {
-        gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
-                                        current_pbo);
+void yagl_host_glReadPixelsOffset(GLint x,
+    GLint y,
+    GLsizei width,
+    GLsizei height,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->ReadPixels(x,
+                                    y,
+                                    width,
+                                    height,
+                                    format,
+                                    type,
+                                    (GLvoid*)(uintptr_t)pixels);
+}
+
+void yagl_host_glDrawArraysInstanced(GLenum mode,
+    GLint start,
+    GLsizei count,
+    GLsizei primcount)
+{
+    gles_api_ts->driver->DrawArraysInstanced(mode, start, count, primcount);
+}
+
+void yagl_host_glDrawElementsInstanced(GLenum mode,
+    GLsizei count,
+    GLenum type,
+    const void *indices, int32_t indices_count,
+    GLsizei primcount)
+{
+    if (indices) {
+        GLuint current_ebo = yagl_gles_bind_ebo(indices, indices_count);
+
+        gles_api_ts->driver->DrawElementsInstanced(mode, count, type, NULL, primcount);
+
+        gles_api_ts->driver->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, current_ebo);
+    } else {
+        gles_api_ts->driver->DrawElementsInstanced(mode,
+                                                   count,
+                                                   type,
+                                                   (const GLvoid*)(uintptr_t)indices_count,
+                                                   primcount);
     }
+}
+
+void yagl_host_glDrawRangeElements(GLenum mode,
+    GLuint start,
+    GLuint end,
+    GLsizei count,
+    GLenum type,
+    const GLvoid *indices, int32_t indices_count)
+{
+    if (indices) {
+        GLuint current_ebo = yagl_gles_bind_ebo(indices, indices_count);
+
+        gles_api_ts->driver->DrawRangeElements(mode, start, end, count, type, NULL);
+
+        gles_api_ts->driver->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, current_ebo);
+    } else {
+        gles_api_ts->driver->DrawRangeElements(mode, start, end, count, type,
+                                               (const GLvoid*)(uintptr_t)indices_count);
+    }
+}
+
+void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count)
+{
+    int i;
+
+    for (i = 0; i < arrays_count; ++i) {
+        GLuint global_name;
+
+        gles_api_ts->driver->GenVertexArrays(1, &global_name);
+
+        yagl_gles_object_add(arrays[i],
+                             global_name,
+                             yagl_get_ctx_id(),
+                             &yagl_gles_vertex_array_destroy);
+    }
+}
+
+void yagl_host_glBindVertexArray(GLuint array)
+{
+    gles_api_ts->driver->BindVertexArray(yagl_gles_object_get(array));
 }
 
 void yagl_host_glDisableVertexAttribArray(GLuint index)
@@ -465,12 +729,14 @@ void yagl_host_glVertexAttribPointerData(GLuint indx,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(indx, first * stride + data_count);
-
-    memcpy(array_data + (first * stride), data, data_count);
+    GLuint current_vbo = yagl_gles_bind_array(indx, first, stride,
+                                              data, data_count);
 
     gles_api_ts->driver->VertexAttribPointer(indx, size, type, normalized,
-                                             stride, array_data);
+                                             stride,
+                                             NULL);
+
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glVertexAttribPointerOffset(GLuint indx,
@@ -481,7 +747,8 @@ void yagl_host_glVertexAttribPointerOffset(GLuint indx,
     GLsizei offset)
 {
     gles_api_ts->driver->VertexAttribPointer(indx, size, type, normalized,
-                                             stride, (const GLvoid*)(uintptr_t)offset);
+                                             stride,
+                                             (const GLvoid*)(uintptr_t)offset);
 }
 
 void yagl_host_glVertexPointerData(GLint size,
@@ -490,11 +757,13 @@ void yagl_host_glVertexPointerData(GLint size,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(yagl_gles1_array_vertex, first * stride + data_count);
+    GLuint current_vbo = yagl_gles_bind_array(yagl_gles1_array_vertex,
+                                              first, stride,
+                                              data, data_count);
 
-    memcpy(array_data + (first * stride), data, data_count);
+    gles_api_ts->driver->VertexPointer(size, type, stride, NULL);
 
-    gles_api_ts->driver->VertexPointer(size, type, stride, array_data);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glVertexPointerOffset(GLint size,
@@ -510,11 +779,13 @@ void yagl_host_glNormalPointerData(GLenum type,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(yagl_gles1_array_normal, first * stride + data_count);
+    GLuint current_vbo = yagl_gles_bind_array(yagl_gles1_array_normal,
+                                              first, stride,
+                                              data, data_count);
 
-    memcpy(array_data + (first * stride), data, data_count);
+    gles_api_ts->driver->NormalPointer(type, stride, NULL);
 
-    gles_api_ts->driver->NormalPointer(type, stride, array_data);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glNormalPointerOffset(GLenum type,
@@ -530,11 +801,13 @@ void yagl_host_glColorPointerData(GLint size,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(yagl_gles1_array_color, first * stride + data_count);
+    GLuint current_vbo = yagl_gles_bind_array(yagl_gles1_array_color,
+                                              first, stride,
+                                              data, data_count);
 
-    memcpy(array_data + (first * stride), data, data_count);
+    gles_api_ts->driver->ColorPointer(size, type, stride, NULL);
 
-    gles_api_ts->driver->ColorPointer(size, type, stride, array_data);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glColorPointerOffset(GLint size,
@@ -552,12 +825,13 @@ void yagl_host_glTexCoordPointerData(GLint tex_id,
     GLint first,
     const GLvoid *data, int32_t data_count)
 {
-    void *array_data = yagl_gles_get_array(yagl_gles1_array_texcoord + tex_id,
-                                           first * stride + data_count);
+    GLuint current_vbo = yagl_gles_bind_array(yagl_gles1_array_texcoord + tex_id,
+                                              first, stride,
+                                              data, data_count);
 
-    memcpy(array_data + (first * stride), data, data_count);
+    gles_api_ts->driver->TexCoordPointer(size, type, stride, NULL);
 
-    gles_api_ts->driver->TexCoordPointer(size, type, stride, array_data);
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
 }
 
 void yagl_host_glTexCoordPointerOffset(GLint size,
@@ -578,6 +852,38 @@ void yagl_host_glEnableClientState(GLenum array)
     gles_api_ts->driver->EnableClientState(array);
 }
 
+void yagl_host_glVertexAttribDivisor(GLuint index,
+    GLuint divisor)
+{
+    gles_api_ts->driver->VertexAttribDivisor(index, divisor);
+}
+
+void yagl_host_glVertexAttribIPointerData(GLuint index,
+    GLint size,
+    GLenum type,
+    GLsizei stride,
+    GLint first,
+    const GLvoid *data, int32_t data_count)
+{
+    GLuint current_vbo = yagl_gles_bind_array(index, first, stride,
+                                              data, data_count);
+
+    gles_api_ts->driver->VertexAttribIPointer(index, size, type, stride, NULL);
+
+    gles_api_ts->driver->BindBuffer(GL_ARRAY_BUFFER, current_vbo);
+}
+
+void yagl_host_glVertexAttribIPointerOffset(GLuint index,
+    GLint size,
+    GLenum type,
+    GLsizei stride,
+    GLsizei offset)
+{
+    gles_api_ts->driver->VertexAttribIPointer(index, size, type,
+                                              stride,
+                                              (const GLvoid*)(uintptr_t)offset);
+}
+
 void yagl_host_glGenBuffers(const GLuint *buffers, int32_t buffers_count)
 {
     int i;
@@ -589,6 +895,7 @@ void yagl_host_glGenBuffers(const GLuint *buffers, int32_t buffers_count)
 
         yagl_gles_object_add(buffers[i],
                              global_name,
+                             0,
                              &yagl_gles_buffer_destroy);
     }
 }
@@ -610,7 +917,106 @@ void yagl_host_glBufferSubData(GLenum target,
     GLsizei offset,
     const GLvoid *data, int32_t data_count)
 {
-    gles_api_ts->driver->BufferSubData(target, offset, data_count, data);
+    void *ptr;
+
+    YAGL_LOG_FUNC_SET(glBufferSubData);
+
+    if (yagl_gles_use_map_buffer_range()) {
+        ptr = gles_api_ts->driver->MapBufferRange(target,
+                                                  offset,
+                                                  data_count,
+                                                  GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+        if (ptr) {
+            memcpy(ptr, data, data_count);
+
+            gles_api_ts->driver->UnmapBuffer(target);
+        } else {
+            YAGL_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        gles_api_ts->driver->Finish();
+        gles_api_ts->driver->BufferSubData(target, offset, data_count, data);
+    }
+}
+
+void yagl_host_glBindBufferBase(GLenum target,
+    GLuint index,
+    GLuint buffer)
+{
+    gles_api_ts->driver->BindBufferBase(target, index,
+                                        yagl_gles_object_get(buffer));
+}
+
+void yagl_host_glBindBufferRange(GLenum target,
+    GLuint index,
+    GLuint buffer,
+    GLint offset,
+    GLsizei size)
+{
+    gles_api_ts->driver->BindBufferRange(target, index,
+                                         yagl_gles_object_get(buffer),
+                                         offset, size);
+}
+
+void yagl_host_glMapBuffer(GLuint buffer,
+    const GLuint *ranges, int32_t ranges_count,
+    GLvoid *data, int32_t data_maxcount, int32_t *data_count)
+{
+    GLuint current_pbo;
+    GLvoid *data_ptr = data, *map_ptr;
+    GLint i;
+
+    YAGL_LOG_FUNC_SET(glMapBuffer);
+
+    gles_api_ts->driver->GetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_ARB,
+                                     (GLint*)&current_pbo);
+
+    gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, yagl_gles_object_get(buffer));
+
+    map_ptr = gles_api_ts->driver->MapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+
+    if (!map_ptr) {
+        YAGL_LOG_ERROR("glMapBuffer failed");
+        goto out1;
+    }
+
+    for (i = 0; i < (ranges_count / 2); ++i) {
+        GLuint offset = ranges[(i * 2) + 0];
+        GLuint size = ranges[(i * 2) + 1];
+
+        map_ptr += offset;
+
+        if (i > 0) {
+            data_ptr += offset;
+        }
+
+        if ((data_ptr + size) > (data + data_maxcount)) {
+            YAGL_LOG_ERROR("read out of range");
+            goto out2;
+        }
+
+        memcpy(data_ptr, map_ptr, size);
+
+        data_ptr += size;
+    }
+
+    *data_count = data_ptr - data;
+
+out2:
+    gles_api_ts->driver->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
+out1:
+    gles_api_ts->driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, current_pbo);
+}
+
+void yagl_host_glCopyBufferSubData(GLenum readTarget,
+    GLenum writeTarget,
+    GLint readOffset,
+    GLint writeOffset,
+    GLsizei size)
+{
+    gles_api_ts->driver->CopyBufferSubData(readTarget, writeTarget,
+                                           readOffset, writeOffset, size);
 }
 
 void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count)
@@ -625,12 +1031,13 @@ void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count)
          * might be called without an active context, but
          * which needs to create a texture.
          */
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         gles_api_ts->driver->GenTextures(1, &global_name);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
 
         yagl_gles_object_add(textures[i],
                              global_name,
+                             0,
                              &yagl_gles_texture_destroy);
     }
 }
@@ -644,44 +1051,6 @@ void yagl_host_glBindTexture(GLenum target,
 void yagl_host_glActiveTexture(GLenum texture)
 {
     gles_api_ts->driver->ActiveTexture(texture);
-}
-
-void yagl_host_glCompressedTexImage2D(GLenum target,
-    GLint level,
-    GLenum internalformat,
-    GLsizei width,
-    GLsizei height,
-    GLint border,
-    const GLvoid *data, int32_t data_count)
-{
-    gles_api_ts->driver->CompressedTexImage2D(target,
-                                              level,
-                                              internalformat,
-                                              width,
-                                              height,
-                                              border,
-                                              data_count,
-                                              data);
-}
-
-void yagl_host_glCompressedTexSubImage2D(GLenum target,
-    GLint level,
-    GLint xoffset,
-    GLint yoffset,
-    GLsizei width,
-    GLsizei height,
-    GLenum format,
-    const GLvoid *data, int32_t data_count)
-{
-    gles_api_ts->driver->CompressedTexSubImage2D(target,
-                                                 level,
-                                                 xoffset,
-                                                 yoffset,
-                                                 width,
-                                                 height,
-                                                 format,
-                                                 data_count,
-                                                 data);
 }
 
 void yagl_host_glCopyTexImage2D(GLenum target,
@@ -752,7 +1121,7 @@ void yagl_host_glGetTexParameteriv(GLenum target,
     }
 }
 
-void yagl_host_glTexImage2D(GLenum target,
+void yagl_host_glTexImage2DData(GLenum target,
     GLint level,
     GLint internalformat,
     GLsizei width,
@@ -771,6 +1140,27 @@ void yagl_host_glTexImage2D(GLenum target,
                                     format,
                                     type,
                                     pixels);
+}
+
+void yagl_host_glTexImage2DOffset(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->TexImage2D(target,
+                                    level,
+                                    internalformat,
+                                    width,
+                                    height,
+                                    border,
+                                    format,
+                                    type,
+                                    (const GLvoid*)(uintptr_t)pixels);
 }
 
 void yagl_host_glTexParameterf(GLenum target,
@@ -821,7 +1211,7 @@ void yagl_host_glTexParameteriv(GLenum target,
                                         (params ? tmp : NULL));
 }
 
-void yagl_host_glTexSubImage2D(GLenum target,
+void yagl_host_glTexSubImage2DData(GLenum target,
     GLint level,
     GLint xoffset,
     GLint yoffset,
@@ -831,6 +1221,27 @@ void yagl_host_glTexSubImage2D(GLenum target,
     GLenum type,
     const GLvoid *pixels, int32_t pixels_count)
 {
+    GLint row_length;
+
+    /*
+     * Nvidia Windows OpenGL drivers don't account for GL_UNPACK_ALIGNMENT
+     * parameter when glTexSubImage2D function is called with format GL_ALPHA.
+     * Work around this by setting row length.
+     */
+    if (format == GL_ALPHA) {
+        GLint alignment;
+
+        gles_api_ts->driver->GetIntegerv(GL_UNPACK_ROW_LENGTH, &row_length);
+        gles_api_ts->driver->GetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+
+        if (alignment == 0) {
+            alignment = 1;
+        }
+
+        gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH,
+            (((row_length == 0) ? width : row_length) + alignment - 1) & ~(alignment - 1));
+    }
+
     gles_api_ts->driver->TexSubImage2D(target,
                                        level,
                                        xoffset,
@@ -840,6 +1251,56 @@ void yagl_host_glTexSubImage2D(GLenum target,
                                        format,
                                        type,
                                        pixels);
+
+    if (format == GL_ALPHA) {
+        gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    }
+}
+
+void yagl_host_glTexSubImage2DOffset(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLsizei width,
+    GLsizei height,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    GLint row_length;
+
+    /*
+     * Nvidia Windows OpenGL drivers don't account for GL_UNPACK_ALIGNMENT
+     * parameter when glTexSubImage2D function is called with format GL_ALPHA.
+     * Work around this by setting row length.
+     */
+    if (format == GL_ALPHA) {
+        GLint alignment;
+
+        gles_api_ts->driver->GetIntegerv(GL_UNPACK_ROW_LENGTH, &row_length);
+        gles_api_ts->driver->GetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+
+        if (alignment == 0) {
+            alignment = 1;
+        }
+
+        gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH,
+            (((row_length == 0) ? width : row_length) + alignment - 1) & ~(alignment - 1));
+    }
+
+    gles_api_ts->driver->TexSubImage2D(target,
+                                       level,
+                                       xoffset,
+                                       yoffset,
+                                       width,
+                                       height,
+                                       format,
+                                       type,
+                                       (const GLvoid*)(uintptr_t)pixels);
+
+    if (format == GL_ALPHA) {
+        gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    }
 }
 
 void yagl_host_glClientActiveTexture(GLenum texture)
@@ -900,6 +1361,123 @@ void yagl_host_glGetTexEnvfv(GLenum env,
     *params_count = params_maxcount;
 }
 
+void yagl_host_glTexImage3DData(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    const void *pixels, int32_t pixels_count)
+{
+    gles_api_ts->driver->TexImage3D(target,
+                                    level,
+                                    internalformat,
+                                    width,
+                                    height,
+                                    depth,
+                                    border,
+                                    format,
+                                    type,
+                                    pixels);
+}
+
+void yagl_host_glTexImage3DOffset(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->TexImage3D(target,
+                                    level,
+                                    internalformat,
+                                    width,
+                                    height,
+                                    depth,
+                                    border,
+                                    format,
+                                    type,
+                                    (const void*)(uintptr_t)pixels);
+}
+
+void yagl_host_glTexSubImage3DData(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLenum format,
+    GLenum type,
+    const void *pixels, int32_t pixels_count)
+{
+    gles_api_ts->driver->TexSubImage3D(target,
+                                       level,
+                                       xoffset,
+                                       yoffset,
+                                       zoffset,
+                                       width,
+                                       height,
+                                       depth,
+                                       format,
+                                       type,
+                                       pixels);
+}
+
+void yagl_host_glTexSubImage3DOffset(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels)
+{
+    gles_api_ts->driver->TexSubImage3D(target,
+                                       level,
+                                       xoffset,
+                                       yoffset,
+                                       zoffset,
+                                       width,
+                                       height,
+                                       depth,
+                                       format,
+                                       type,
+                                       (const void*)(uintptr_t)pixels);
+}
+
+void yagl_host_glCopyTexSubImage3D(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLint x,
+    GLint y,
+    GLsizei width,
+    GLsizei height)
+{
+    gles_api_ts->driver->CopyTexSubImage3D(target,
+                                           level,
+                                           xoffset,
+                                           yoffset,
+                                           zoffset,
+                                           x,
+                                           y,
+                                           width,
+                                           height);
+}
+
 void yagl_host_glGenFramebuffers(const GLuint *framebuffers, int32_t framebuffers_count)
 {
     int i;
@@ -911,6 +1489,7 @@ void yagl_host_glGenFramebuffers(const GLuint *framebuffers, int32_t framebuffer
 
         yagl_gles_object_add(framebuffers[i],
                              global_name,
+                             yagl_get_ctx_id(),
                              &yagl_gles_framebuffer_destroy);
     }
 }
@@ -945,6 +1524,85 @@ void yagl_host_glFramebufferRenderbuffer(GLenum target,
                                                  yagl_gles_object_get(renderbuffer));
 }
 
+void yagl_host_glBlitFramebuffer(GLint srcX0,
+    GLint srcY0,
+    GLint srcX1,
+    GLint srcY1,
+    GLint dstX0,
+    GLint dstY0,
+    GLint dstX1,
+    GLint dstY1,
+    GLbitfield mask,
+    GLenum filter)
+{
+    gles_api_ts->driver->BlitFramebuffer(srcX0, srcY0, srcX1, srcY1,
+                                         dstX0, dstY0, dstX1, dstY1,
+                                         mask, filter);
+}
+
+void yagl_host_glDrawBuffers(const GLenum *bufs, int32_t bufs_count)
+{
+    gles_api_ts->driver->DrawBuffers(bufs_count, bufs);
+}
+
+void yagl_host_glReadBuffer(GLenum mode)
+{
+    gles_api_ts->driver->ReadBuffer(mode);
+}
+
+void yagl_host_glFramebufferTexture3D(GLenum target,
+    GLenum attachment,
+    GLenum textarget,
+    GLuint texture,
+    GLint level,
+    GLint zoffset)
+{
+    gles_api_ts->driver->FramebufferTexture3D(target, attachment,
+                                              textarget,
+                                              yagl_gles_object_get(texture),
+                                              level, zoffset);
+}
+
+void yagl_host_glFramebufferTextureLayer(GLenum target,
+    GLenum attachment,
+    GLuint texture,
+    GLint level,
+    GLint layer)
+{
+    gles_api_ts->driver->FramebufferTextureLayer(target, attachment,
+                                                 yagl_gles_object_get(texture),
+                                                 level, layer);
+}
+
+void yagl_host_glClearBufferiv(GLenum buffer,
+    GLint drawbuffer,
+    const GLint *value, int32_t value_count)
+{
+    gles_api_ts->driver->ClearBufferiv(buffer, drawbuffer, value);
+}
+
+void yagl_host_glClearBufferuiv(GLenum buffer,
+    GLint drawbuffer,
+    const GLuint *value, int32_t value_count)
+{
+    gles_api_ts->driver->ClearBufferuiv(buffer, drawbuffer, value);
+}
+
+void yagl_host_glClearBufferfi(GLenum buffer,
+    GLint drawbuffer,
+    GLfloat depth,
+    GLint stencil)
+{
+    gles_api_ts->driver->ClearBufferfi(buffer, drawbuffer, depth, stencil);
+}
+
+void yagl_host_glClearBufferfv(GLenum buffer,
+    GLint drawbuffer,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->ClearBufferfv(buffer, drawbuffer, value);
+}
+
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count)
 {
     int i;
@@ -956,6 +1614,7 @@ void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuf
 
         yagl_gles_object_add(renderbuffers[i],
                              global_name,
+                             0,
                              &yagl_gles_renderbuffer_destroy);
     }
 }
@@ -990,12 +1649,22 @@ void yagl_host_glGetRenderbufferParameteriv(GLenum target,
     }
 }
 
+void yagl_host_glRenderbufferStorageMultisample(GLenum target,
+    GLsizei samples,
+    GLenum internalformat,
+    GLsizei width,
+    GLsizei height)
+{
+    gles_api_ts->driver->RenderbufferStorageMultisample(target, samples, internalformat, width, height);
+}
+
 void yagl_host_glCreateProgram(GLuint program)
 {
     GLuint global_name = gles_api_ts->driver->CreateProgram();
 
     yagl_gles_object_add(program,
                          global_name,
+                         0,
                          &yagl_gles_program_destroy);
 }
 
@@ -1006,6 +1675,7 @@ void yagl_host_glCreateShader(GLuint shader,
 
     yagl_gles_object_add(shader,
                          global_name,
+                         0,
                          &yagl_gles_shader_destroy);
 }
 
@@ -1052,7 +1722,7 @@ void yagl_host_glBindAttribLocation(GLuint program,
                                             name);
 }
 
-GLboolean yagl_host_glGetActiveAttrib(GLuint program,
+void yagl_host_glGetActiveAttrib(GLuint program,
     GLuint index,
     GLint *size,
     GLenum *type,
@@ -1070,13 +1740,10 @@ GLboolean yagl_host_glGetActiveAttrib(GLuint program,
 
     if (tmp >= 0) {
         *name_count = MIN(tmp + 1, name_maxcount);
-        return GL_TRUE;
-    } else {
-        return GL_FALSE;
     }
 }
 
-GLboolean yagl_host_glGetActiveUniform(GLuint program,
+void yagl_host_glGetActiveUniform(GLuint program,
     GLuint index,
     GLint *size,
     GLenum *type,
@@ -1094,9 +1761,6 @@ GLboolean yagl_host_glGetActiveUniform(GLuint program,
 
     if (tmp >= 0) {
         *name_count = MIN(tmp + 1, name_maxcount);
-        return GL_TRUE;
-    } else {
-        return GL_FALSE;
     }
 }
 
@@ -1242,9 +1906,32 @@ void yagl_host_glGetVertexAttribiv(GLuint index,
     gles_api_ts->driver->GetVertexAttribiv(index, pname, params);
 }
 
-void yagl_host_glLinkProgram(GLuint program)
+void yagl_host_glLinkProgram(GLuint program,
+    GLint *params, int32_t params_maxcount, int32_t *params_count)
 {
-    gles_api_ts->driver->LinkProgram(yagl_gles_object_get(program));
+    GLuint obj = yagl_gles_object_get(program);
+
+    gles_api_ts->driver->LinkProgram(obj);
+
+    if (!params || (params_maxcount != 8)) {
+        return;
+    }
+
+    gles_api_ts->driver->GetProgramiv(obj, GL_LINK_STATUS, &params[0]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_INFO_LOG_LENGTH, &params[1]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_ATTRIBUTES, &params[2]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &params[3]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORMS, &params[4]);
+    gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORM_MAX_LENGTH, &params[5]);
+
+    *params_count = 6;
+
+    if (gles_api_ts->driver->gl_version > yagl_gl_2) {
+        gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORM_BLOCKS, &params[6]);
+        gles_api_ts->driver->GetProgramiv(obj, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &params[7]);
+
+        *params_count = 8;
+    }
 }
 
 void yagl_host_glUniform1f(GLboolean tl,
@@ -1496,6 +2183,383 @@ void yagl_host_glVertexAttrib4fv(GLuint indx,
     gles_api_ts->driver->VertexAttrib4fv(indx, values);
 }
 
+void yagl_host_glGetActiveUniformsiv(GLuint program,
+    const GLuint *uniformIndices, int32_t uniformIndices_count,
+    GLint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    const GLenum pnames[] =
+    {
+        GL_UNIFORM_TYPE,
+        GL_UNIFORM_SIZE,
+        GL_UNIFORM_NAME_LENGTH,
+        GL_UNIFORM_BLOCK_INDEX,
+        GL_UNIFORM_OFFSET,
+        GL_UNIFORM_ARRAY_STRIDE,
+        GL_UNIFORM_MATRIX_STRIDE,
+        GL_UNIFORM_IS_ROW_MAJOR
+    };
+    GLuint obj = yagl_gles_object_get(program);
+    int i, num_pnames = sizeof(pnames)/sizeof(pnames[0]);
+
+    if (params_maxcount != (uniformIndices_count * num_pnames)) {
+        return;
+    }
+
+    for (i = 0; i < num_pnames; ++i) {
+        gles_api_ts->driver->GetActiveUniformsiv(obj,
+                                                 uniformIndices_count,
+                                                 uniformIndices,
+                                                 pnames[i],
+                                                 params);
+        params += uniformIndices_count;
+    }
+
+    *params_count = uniformIndices_count * num_pnames;
+}
+
+void yagl_host_glGetUniformIndices(GLuint program,
+    const GLchar *uniformNames, int32_t uniformNames_count,
+    GLuint *uniformIndices, int32_t uniformIndices_maxcount, int32_t *uniformIndices_count)
+{
+    GLuint obj = yagl_gles_object_get(program);
+    int max_active_uniform_bufsize = 1, i;
+    const GLchar **name_pointers;
+
+    gles_api_ts->driver->GetProgramiv(obj,
+                                      GL_ACTIVE_UNIFORM_MAX_LENGTH,
+                                      &max_active_uniform_bufsize);
+
+    name_pointers = g_malloc(uniformIndices_maxcount * sizeof(*name_pointers));
+
+    for (i = 0; i < uniformIndices_maxcount; ++i) {
+        name_pointers[i] = &uniformNames[max_active_uniform_bufsize * i];
+    }
+
+    gles_api_ts->driver->GetUniformIndices(obj,
+                                           uniformIndices_maxcount,
+                                           name_pointers,
+                                           uniformIndices);
+
+    g_free(name_pointers);
+
+    *uniformIndices_count = uniformIndices_maxcount;
+}
+
+GLuint yagl_host_glGetUniformBlockIndex(GLuint program,
+    const GLchar *uniformBlockName, int32_t uniformBlockName_count)
+{
+    return gles_api_ts->driver->GetUniformBlockIndex(yagl_gles_object_get(program),
+                                                     uniformBlockName);
+}
+
+void yagl_host_glUniformBlockBinding(GLuint program,
+    GLuint uniformBlockIndex,
+    GLuint uniformBlockBinding)
+{
+    gles_api_ts->driver->UniformBlockBinding(yagl_gles_object_get(program),
+                                             uniformBlockIndex,
+                                             uniformBlockBinding);
+}
+
+void yagl_host_glGetActiveUniformBlockName(GLuint program,
+    GLuint uniformBlockIndex,
+    GLchar *uniformBlockName, int32_t uniformBlockName_maxcount, int32_t *uniformBlockName_count)
+{
+    GLsizei tmp = -1;
+
+    gles_api_ts->driver->GetActiveUniformBlockName(yagl_gles_object_get(program),
+                                                   uniformBlockIndex,
+                                                   uniformBlockName_maxcount,
+                                                   &tmp,
+                                                   uniformBlockName);
+
+    if (tmp >= 0) {
+        *uniformBlockName_count = MIN(tmp + 1, uniformBlockName_maxcount);
+    }
+}
+
+void yagl_host_glGetActiveUniformBlockiv(GLuint program,
+    GLuint uniformBlockIndex,
+    GLenum pname,
+    GLint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    GLuint obj;
+    const GLenum pnames[] =
+    {
+        GL_UNIFORM_BLOCK_DATA_SIZE,
+        GL_UNIFORM_BLOCK_NAME_LENGTH,
+        GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS,
+        GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER,
+        GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER
+    };
+    int i, num_pnames = sizeof(pnames)/sizeof(pnames[0]);
+
+    if (!params) {
+        return;
+    }
+
+    obj = yagl_gles_object_get(program);
+
+    switch (pname) {
+    case 0:
+        /*
+         * Return everything else.
+         */
+        if (params_maxcount != num_pnames) {
+            return;
+        }
+
+        for (i = 0; i < num_pnames; ++i) {
+            gles_api_ts->driver->GetActiveUniformBlockiv(obj,
+                                                         uniformBlockIndex,
+                                                         pnames[i],
+                                                         &params[i]);
+        }
+
+        *params_count = num_pnames;
+
+        break;
+    case GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES:
+        /*
+         * Return active uniform indices only.
+         */
+
+        gles_api_ts->driver->GetActiveUniformBlockiv(obj,
+                                                     uniformBlockIndex,
+                                                     GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES,
+                                                     params);
+
+        *params_count = params_maxcount;
+
+        break;
+    default:
+        break;
+    }
+}
+
+void yagl_host_glGetVertexAttribIiv(GLuint index,
+    GLenum pname,
+    GLint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    if (!yagl_gles_get_array_param_count(pname, params_count)) {
+        return;
+    }
+
+    gles_api_ts->driver->GetVertexAttribIiv(index, pname, params);
+}
+
+void yagl_host_glGetVertexAttribIuiv(GLuint index,
+    GLenum pname,
+    GLuint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    if (!yagl_gles_get_array_param_count(pname, params_count)) {
+        return;
+    }
+
+    gles_api_ts->driver->GetVertexAttribIuiv(index, pname, params);
+}
+
+void yagl_host_glVertexAttribI4i(GLuint index,
+    GLint x,
+    GLint y,
+    GLint z,
+    GLint w)
+{
+    gles_api_ts->driver->VertexAttribI4i(index, x, y, z, w);
+}
+
+void yagl_host_glVertexAttribI4ui(GLuint index,
+    GLuint x,
+    GLuint y,
+    GLuint z,
+    GLuint w)
+{
+    gles_api_ts->driver->VertexAttribI4ui(index, x, y, z, w);
+}
+
+void yagl_host_glVertexAttribI4iv(GLuint index,
+    const GLint *v, int32_t v_count)
+{
+    gles_api_ts->driver->VertexAttribI4iv(index, v);
+}
+
+void yagl_host_glVertexAttribI4uiv(GLuint index,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->VertexAttribI4uiv(index, v);
+}
+
+void yagl_host_glGetUniformuiv(GLboolean tl,
+    GLuint program,
+    uint32_t location,
+    GLuint *params, int32_t params_maxcount, int32_t *params_count)
+{
+    GLenum type;
+    GLuint global_name = yagl_gles_object_get(program);
+    GLint actual_location = yagl_gles_api_ps_translate_location(gles_api_ts->ps,
+                                                                tl,
+                                                                location);
+
+    if (!yagl_gles_program_get_uniform_type(global_name,
+                                            actual_location,
+                                            &type)) {
+        return;
+    }
+
+    if (!yagl_gles_get_uniform_type_count(type, params_count)) {
+        return;
+    }
+
+    gles_api_ts->driver->GetUniformuiv(global_name,
+                                       actual_location,
+                                       params);
+}
+
+void yagl_host_glUniform1ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0)
+{
+    gles_api_ts->driver->Uniform1ui(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v0);
+}
+
+void yagl_host_glUniform2ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1)
+{
+    gles_api_ts->driver->Uniform2ui(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v0, v1);
+}
+
+void yagl_host_glUniform3ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1,
+    GLuint v2)
+{
+    gles_api_ts->driver->Uniform3ui(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v0, v1, v2);
+}
+
+void yagl_host_glUniform4ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1,
+    GLuint v2,
+    GLuint v3)
+{
+    gles_api_ts->driver->Uniform4ui(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v0, v1, v2, v3);
+}
+
+void yagl_host_glUniform1uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->Uniform1uiv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        v_count, v);
+}
+
+void yagl_host_glUniform2uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->Uniform2uiv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        (v_count / 2), v);
+}
+
+void yagl_host_glUniform3uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->Uniform3uiv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        (v_count / 3), v);
+}
+
+void yagl_host_glUniform4uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count)
+{
+    gles_api_ts->driver->Uniform4uiv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        (v_count / 4), v);
+}
+
+void yagl_host_glUniformMatrix2x3fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix2x3fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (2 * 3), transpose, value);
+}
+
+void yagl_host_glUniformMatrix2x4fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix2x4fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (2 * 4), transpose, value);
+}
+
+void yagl_host_glUniformMatrix3x2fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix3x2fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (3 * 2), transpose, value);
+}
+
+void yagl_host_glUniformMatrix3x4fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix3x4fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (3 * 4), transpose, value);
+}
+
+void yagl_host_glUniformMatrix4x2fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix4x2fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (4 * 2), transpose, value);
+}
+
+void yagl_host_glUniformMatrix4x3fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count)
+{
+    gles_api_ts->driver->UniformMatrix4x3fv(
+        yagl_gles_api_ps_translate_location(gles_api_ts->ps, tl, location),
+        value_count / (4 * 3), transpose, value);
+}
+
+int yagl_host_glGetFragDataLocation(GLuint program,
+    const GLchar *name, int32_t name_count)
+{
+    return gles_api_ts->driver->GetFragDataLocation(yagl_gles_object_get(program),
+                                                    name);
+}
+
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count)
 {
@@ -1515,7 +2579,49 @@ void yagl_host_glGetFloatv(GLenum pname,
 void yagl_host_glGetString(GLenum name,
     GLchar *str, int32_t str_maxcount, int32_t *str_count)
 {
-    const char *tmp = (const char*)gles_api_ts->driver->GetString(name);
+    const char *tmp;
+
+    if ((name == GL_EXTENSIONS) &&
+        (gles_api_ts->driver->gl_version > yagl_gl_2)) {
+        struct yagl_vector v;
+        GLint i, num_extensions = 0;
+        char nb = '\0';
+
+        yagl_vector_init(&v, 1, 0);
+
+        gles_api_ts->driver->GetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+
+        for (i = 0; i < num_extensions; ++i) {
+            tmp = (const char*)gles_api_ts->driver->GetStringi(name, i);
+            int size = yagl_vector_size(&v);
+            int ext_len = strlen(tmp);
+
+            yagl_vector_resize(&v, size + ext_len + 1);
+
+            memcpy(yagl_vector_data(&v) + size, tmp, ext_len);
+
+            *(char*)(yagl_vector_data(&v) + size + ext_len) = ' ';
+        }
+
+        yagl_vector_push_back(&v, &nb);
+
+        tmp = yagl_vector_data(&v);
+
+        if (str_count) {
+            *str_count = strlen(tmp) + 1;
+        }
+
+        if (str && (str_maxcount > 0)) {
+            strncpy(str, tmp, str_maxcount);
+            str[str_maxcount - 1] = '\0';
+        }
+
+        yagl_vector_cleanup(&v);
+
+        return;
+    }
+
+    tmp = (const char*)gles_api_ts->driver->GetString(name);
 
     if (str_count) {
         *str_count = strlen(tmp) + 1;
@@ -1530,6 +2636,189 @@ void yagl_host_glGetString(GLenum name,
 GLboolean yagl_host_glIsEnabled(GLenum cap)
 {
     return gles_api_ts->driver->IsEnabled(cap);
+}
+
+void yagl_host_glGenTransformFeedbacks(const GLuint *ids, int32_t ids_count)
+{
+    int i;
+
+    for (i = 0; i < ids_count; ++i) {
+        GLuint global_name;
+
+        gles_api_ts->driver->GenTransformFeedbacks(1, &global_name);
+
+        yagl_gles_object_add(ids[i],
+                             global_name,
+                             yagl_get_ctx_id(),
+                             &yagl_gles_transform_feedback_destroy);
+    }
+}
+
+void yagl_host_glBindTransformFeedback(GLenum target,
+    GLuint id)
+{
+    gles_api_ts->driver->BindTransformFeedback(target,
+                                               yagl_gles_object_get(id));
+}
+
+void yagl_host_glBeginTransformFeedback(GLenum primitiveMode)
+{
+    gles_api_ts->driver->BeginTransformFeedback(primitiveMode);
+}
+
+void yagl_host_glEndTransformFeedback(void)
+{
+    gles_api_ts->driver->EndTransformFeedback();
+}
+
+void yagl_host_glPauseTransformFeedback(void)
+{
+    gles_api_ts->driver->PauseTransformFeedback();
+}
+
+void yagl_host_glResumeTransformFeedback(void)
+{
+    gles_api_ts->driver->ResumeTransformFeedback();
+}
+
+void yagl_host_glTransformFeedbackVaryings(GLuint program,
+    const GLchar *varyings, int32_t varyings_count,
+    GLenum bufferMode)
+{
+    const char **strings;
+    int32_t num_strings = 0;
+
+    strings = yagl_transport_get_out_string_array(varyings,
+                                                  varyings_count,
+                                                  &num_strings);
+
+    gles_api_ts->driver->TransformFeedbackVaryings(yagl_gles_object_get(program),
+                                                   num_strings,
+                                                   strings,
+                                                   bufferMode);
+
+    g_free(strings);
+}
+
+void yagl_host_glGetTransformFeedbackVaryings(GLuint program,
+    GLsizei *sizes, int32_t sizes_maxcount, int32_t *sizes_count,
+    GLenum *types, int32_t types_maxcount, int32_t *types_count)
+{
+    GLuint obj = yagl_gles_object_get(program);
+    int32_t i;
+
+    if (sizes_maxcount != types_maxcount) {
+        return;
+    }
+
+    for (i = 0; i < sizes_maxcount; ++i) {
+        GLsizei length = -1;
+        GLchar c[2];
+
+        gles_api_ts->driver->GetTransformFeedbackVarying(obj,
+                                                         i, sizeof(c), &length,
+                                                         &sizes[i], &types[i],
+                                                         c);
+
+        if (length <= 0) {
+            sizes[i] = 0;
+            types[i] = 0;
+        }
+    }
+
+    *sizes_count = *types_count = sizes_maxcount;
+}
+
+void yagl_host_glGenQueries(const GLuint *ids, int32_t ids_count)
+{
+    int i;
+
+    for (i = 0; i < ids_count; ++i) {
+        GLuint global_name;
+
+        gles_api_ts->driver->GenQueries(1, &global_name);
+
+        yagl_gles_object_add(ids[i],
+                             global_name,
+                             yagl_get_ctx_id(),
+                             &yagl_gles_query_destroy);
+    }
+}
+
+void yagl_host_glBeginQuery(GLenum target,
+    GLuint id)
+{
+    gles_api_ts->driver->BeginQuery(target, yagl_gles_object_get(id));
+}
+
+void yagl_host_glEndQuery(GLenum target)
+{
+    gles_api_ts->driver->EndQuery(target);
+}
+
+GLboolean yagl_host_glGetQueryObjectuiv(GLuint id,
+    GLuint *result)
+{
+    GLuint obj = yagl_gles_object_get(id);
+    GLuint tmp = 0;
+
+    gles_api_ts->driver->GetQueryObjectuiv(obj, GL_QUERY_RESULT_AVAILABLE, &tmp);
+
+    if (tmp) {
+        gles_api_ts->driver->GetQueryObjectuiv(obj, GL_QUERY_RESULT, result);
+    }
+
+    return tmp;
+}
+
+void yagl_host_glGenSamplers(const GLuint *samplers, int32_t samplers_count)
+{
+    int i;
+
+    for (i = 0; i < samplers_count; ++i) {
+        GLuint global_name;
+
+        gles_api_ts->driver->GenSamplers(1, &global_name);
+
+        yagl_gles_object_add(samplers[i],
+                             global_name,
+                             0,
+                             &yagl_gles_sampler_destroy);
+    }
+}
+
+void yagl_host_glBindSampler(GLuint unit,
+    GLuint sampler)
+{
+    gles_api_ts->driver->BindSampler(unit, yagl_gles_object_get(sampler));
+}
+
+void yagl_host_glSamplerParameteri(GLuint sampler,
+    GLenum pname,
+    GLint param)
+{
+    gles_api_ts->driver->SamplerParameteri(yagl_gles_object_get(sampler), pname, param);
+}
+
+void yagl_host_glSamplerParameteriv(GLuint sampler,
+    GLenum pname,
+    const GLint *param, int32_t param_count)
+{
+    gles_api_ts->driver->SamplerParameteriv(yagl_gles_object_get(sampler), pname, param);
+}
+
+void yagl_host_glSamplerParameterf(GLuint sampler,
+    GLenum pname,
+    GLfloat param)
+{
+    gles_api_ts->driver->SamplerParameterf(yagl_gles_object_get(sampler), pname, param);
+}
+
+void yagl_host_glSamplerParameterfv(GLuint sampler,
+    GLenum pname,
+    const GLfloat *param, int32_t param_count)
+{
+    gles_api_ts->driver->SamplerParameterfv(yagl_gles_object_get(sampler), pname, param);
 }
 
 void yagl_host_glDeleteObjects(const GLuint *objects, int32_t objects_count)
@@ -1976,7 +3265,7 @@ void yagl_host_glUpdateOffscreenImageYAGL(GLuint texture,
 {
     GLenum format = 0;
     GLuint cur_tex = 0;
-    GLsizei unpack_alignment = 0;
+    GLsizei unpack[3];
 
     YAGL_LOG_FUNC_SET(glUpdateOffscreenImageYAGL);
 
@@ -1995,10 +3284,13 @@ void yagl_host_glUpdateOffscreenImageYAGL(GLuint texture,
     gles_api_ts->driver->GetIntegerv(GL_TEXTURE_BINDING_2D,
                                      (GLint*)&cur_tex);
 
-    gles_api_ts->driver->GetIntegerv(GL_UNPACK_ALIGNMENT,
-                                     &unpack_alignment);
+    gles_api_ts->driver->GetIntegerv(GL_UNPACK_ALIGNMENT, &unpack[0]);
+    gles_api_ts->driver->GetIntegerv(GL_UNPACK_ROW_LENGTH, &unpack[1]);
+    gles_api_ts->driver->GetIntegerv(GL_UNPACK_IMAGE_HEIGHT, &unpack[2]);
 
     gles_api_ts->driver->PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, 0);
 
     gles_api_ts->driver->BindTexture(GL_TEXTURE_2D,
                                      yagl_gles_object_get(texture));
@@ -2016,8 +3308,9 @@ void yagl_host_glUpdateOffscreenImageYAGL(GLuint texture,
                                     GL_UNSIGNED_INT_8_8_8_8_REV,
                                     pixels);
 
-    gles_api_ts->driver->PixelStorei(GL_UNPACK_ALIGNMENT,
-                                     unpack_alignment);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_ALIGNMENT, unpack[0]);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_ROW_LENGTH, unpack[1]);
+    gles_api_ts->driver->PixelStorei(GL_UNPACK_IMAGE_HEIGHT, unpack[2]);
 
     gles_api_ts->driver->BindTexture(GL_TEXTURE_2D, cur_tex);
 }

@@ -34,7 +34,17 @@
 
 struct yagl_gles_driver;
 struct yagl_gles_api_ps;
-struct yagl_vector;
+
+/*
+ * OpenGL 3.1+ core profile doesn't allow one to
+ * call glVertexAttribPointer and friends without a VBO, thus,
+ * we need to have a backing VBO in order to support GLESv2.
+ */
+struct yagl_gles_array
+{
+    GLuint vbo;
+    uint32_t size;
+};
 
 struct yagl_gles_api_ts
 {
@@ -42,8 +52,19 @@ struct yagl_gles_api_ts
 
     struct yagl_gles_api_ps *ps;
 
-    struct yagl_vector *arrays;
+    struct yagl_gles_array *arrays;
     uint32_t num_arrays;
+
+    /*
+     * See above comments regarding VBO.
+     */
+    GLuint ebo;
+    uint32_t ebo_size;
+
+    /*
+     * -1 when undecided, 0/1 when decided.
+     */
+    int use_map_buffer_range;
 };
 
 void yagl_gles_api_ts_init(struct yagl_gles_api_ts *gles_api_ts,

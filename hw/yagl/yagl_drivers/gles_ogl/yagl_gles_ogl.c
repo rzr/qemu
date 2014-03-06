@@ -46,7 +46,8 @@ static void yagl_gles_ogl_destroy(struct yagl_gles_driver *driver)
     YAGL_LOG_FUNC_EXIT(NULL);
 }
 
-struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
+struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
+                                              yagl_gl_version gl_version)
 {
     struct yagl_gles_driver *driver = NULL;
 
@@ -54,7 +55,7 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
 
     driver = g_malloc0(sizeof(*driver));
 
-    yagl_gles_driver_init(driver);
+    yagl_gles_driver_init(driver, gl_version);
 
     YAGL_GLES_OGL_GET_PROC(driver, DrawArrays, glDrawArrays);
     YAGL_GLES_OGL_GET_PROC(driver, DrawElements, glDrawElements);
@@ -77,8 +78,6 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(driver, BindTexture, glBindTexture);
     YAGL_GLES_OGL_GET_PROC(driver, DeleteTextures, glDeleteTextures);
     YAGL_GLES_OGL_GET_PROC(driver, ActiveTexture, glActiveTexture);
-    YAGL_GLES_OGL_GET_PROC(driver, CompressedTexImage2D, glCompressedTexImage2D);
-    YAGL_GLES_OGL_GET_PROC(driver, CompressedTexSubImage2D, glCompressedTexSubImage2D);
     YAGL_GLES_OGL_GET_PROC(driver, CopyTexImage2D, glCopyTexImage2D);
     YAGL_GLES_OGL_GET_PROC(driver, CopyTexSubImage2D, glCopyTexSubImage2D);
     YAGL_GLES_OGL_GET_PROC(driver, GetTexParameterfv, glGetTexParameterfv);
@@ -97,11 +96,18 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(driver, TexEnvfv, glTexEnvfv);
     YAGL_GLES_OGL_GET_PROC(driver, GetTexEnviv, glGetTexEnviv);
     YAGL_GLES_OGL_GET_PROC(driver, GetTexEnvfv, glGetTexEnvfv);
+    YAGL_GLES_OGL_GET_PROC(driver, TexImage3D, glTexImage3D);
+    YAGL_GLES_OGL_GET_PROC(driver, TexSubImage3D, glTexSubImage3D);
+    YAGL_GLES_OGL_GET_PROC(driver, CopyTexSubImage3D, glCopyTexSubImage3D);
     YAGL_GLES_OGL_GET_PROC(driver, GenFramebuffers, glGenFramebuffersEXT);
     YAGL_GLES_OGL_GET_PROC(driver, BindFramebuffer, glBindFramebufferEXT);
     YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture2D, glFramebufferTexture2DEXT);
     YAGL_GLES_OGL_GET_PROC(driver, FramebufferRenderbuffer, glFramebufferRenderbufferEXT);
     YAGL_GLES_OGL_GET_PROC(driver, DeleteFramebuffers, glDeleteFramebuffersEXT);
+    YAGL_GLES_OGL_GET_PROC(driver, BlitFramebuffer, glBlitFramebufferEXT);
+    YAGL_GLES_OGL_GET_PROC(driver, DrawBuffers, glDrawBuffers);
+    YAGL_GLES_OGL_GET_PROC(driver, ReadBuffer, glReadBuffer);
+    YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture3D, glFramebufferTexture3DEXT);
     YAGL_GLES_OGL_GET_PROC(driver, GenRenderbuffers, glGenRenderbuffersEXT);
     YAGL_GLES_OGL_GET_PROC(driver, BindRenderbuffer, glBindRenderbufferEXT);
     YAGL_GLES_OGL_GET_PROC(driver, RenderbufferStorage, glRenderbufferStorageEXT);
@@ -194,11 +200,6 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(driver, StencilFuncSeparate, glStencilFuncSeparate);
     YAGL_GLES_OGL_GET_PROC(driver, StencilMaskSeparate, glStencilMaskSeparate);
     YAGL_GLES_OGL_GET_PROC(driver, StencilOpSeparate, glStencilOpSeparate);
-    YAGL_GLES_OGL_GET_PROC(driver, PushClientAttrib, glPushClientAttrib);
-    YAGL_GLES_OGL_GET_PROC(driver, PopClientAttrib, glPopClientAttrib);
-    YAGL_GLES_OGL_GET_PROC(driver, MapBuffer, glMapBuffer);
-    YAGL_GLES_OGL_GET_PROC(driver, UnmapBuffer, glUnmapBuffer);
-    YAGL_GLES_OGL_GET_PROC(driver, Finish, glFinish);
     YAGL_GLES_OGL_GET_PROC(driver, PointSize, glPointSize);
     YAGL_GLES_OGL_GET_PROC(driver, AlphaFunc, glAlphaFunc);
     YAGL_GLES_OGL_GET_PROC(driver, MatrixMode, glMatrixMode);
@@ -231,6 +232,85 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib)
     YAGL_GLES_OGL_GET_PROC(driver, LoadMatrixf, glLoadMatrixf);
     YAGL_GLES_OGL_GET_PROC(driver, ClipPlane, glClipPlane);
     YAGL_GLES_OGL_GET_PROC(driver, GetClipPlane, glGetClipPlane);
+    YAGL_GLES_OGL_GET_PROC(driver, MapBuffer, glMapBuffer);
+    YAGL_GLES_OGL_GET_PROC(driver, UnmapBuffer, glUnmapBuffer);
+    YAGL_GLES_OGL_GET_PROC(driver, Finish, glFinish);
+
+    if (gl_version > yagl_gl_2) {
+        YAGL_GLES_OGL_GET_PROC(driver, MapBufferRange, glMapBufferRange);
+        YAGL_GLES_OGL_GET_PROC(driver, GetStringi, glGetStringi);
+        YAGL_GLES_OGL_GET_PROC(driver, GenVertexArrays, glGenVertexArrays);
+        YAGL_GLES_OGL_GET_PROC(driver, BindVertexArray, glBindVertexArray);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteVertexArrays, glDeleteVertexArrays);
+    } else {
+        YAGL_GLES_OGL_GET_PROC_OPT(driver, MapBufferRange, glMapBufferRange);
+    }
+
+    if (gl_version >= yagl_gl_3_1_es3) {
+        YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformsiv, glGetActiveUniformsiv);
+        YAGL_GLES_OGL_GET_PROC(driver, GetUniformIndices, glGetUniformIndices);
+        YAGL_GLES_OGL_GET_PROC(driver, GetUniformBlockIndex, glGetUniformBlockIndex);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformBlockBinding, glUniformBlockBinding);
+        YAGL_GLES_OGL_GET_PROC(driver, BindBufferBase, glBindBufferBase);
+        YAGL_GLES_OGL_GET_PROC(driver, BindBufferRange, glBindBufferRange);
+        YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformBlockName, glGetActiveUniformBlockName);
+        YAGL_GLES_OGL_GET_PROC(driver, GetActiveUniformBlockiv, glGetActiveUniformBlockiv);
+        YAGL_GLES_OGL_GET_PROC(driver, GenTransformFeedbacks, glGenTransformFeedbacks);
+        YAGL_GLES_OGL_GET_PROC(driver, BindTransformFeedback, glBindTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, BeginTransformFeedback, glBeginTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, EndTransformFeedback, glEndTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, PauseTransformFeedback, glPauseTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, ResumeTransformFeedback, glResumeTransformFeedback);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteTransformFeedbacks, glDeleteTransformFeedbacks);
+        YAGL_GLES_OGL_GET_PROC(driver, TransformFeedbackVaryings, glTransformFeedbackVaryings);
+        YAGL_GLES_OGL_GET_PROC(driver, GetTransformFeedbackVarying, glGetTransformFeedbackVarying);
+        YAGL_GLES_OGL_GET_PROC(driver, GenQueries, glGenQueries);
+        YAGL_GLES_OGL_GET_PROC(driver, BeginQuery, glBeginQuery);
+        YAGL_GLES_OGL_GET_PROC(driver, EndQuery, glEndQuery);
+        YAGL_GLES_OGL_GET_PROC(driver, GetQueryObjectuiv, glGetQueryObjectuiv);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteQueries, glDeleteQueries);
+        YAGL_GLES_OGL_GET_PROC(driver, DrawArraysInstanced, glDrawArraysInstanced);
+        YAGL_GLES_OGL_GET_PROC(driver, DrawElementsInstanced, glDrawElementsInstanced);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribDivisor, glVertexAttribDivisor);
+        YAGL_GLES_OGL_GET_PROC(driver, FramebufferTextureLayer, glFramebufferTextureLayer);
+        YAGL_GLES_OGL_GET_PROC(driver, GenSamplers, glGenSamplers);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteSamplers, glDeleteSamplers);
+        YAGL_GLES_OGL_GET_PROC(driver, BindSampler, glBindSampler);
+        YAGL_GLES_OGL_GET_PROC(driver, SamplerParameteri, glSamplerParameteri);
+        YAGL_GLES_OGL_GET_PROC(driver, SamplerParameteriv, glSamplerParameteriv);
+        YAGL_GLES_OGL_GET_PROC(driver, SamplerParameterf, glSamplerParameterf);
+        YAGL_GLES_OGL_GET_PROC(driver, SamplerParameterfv, glSamplerParameterfv);
+        YAGL_GLES_OGL_GET_PROC(driver, RenderbufferStorageMultisample, glRenderbufferStorageMultisample);
+        YAGL_GLES_OGL_GET_PROC(driver, CopyBufferSubData, glCopyBufferSubData);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribIPointer, glVertexAttribIPointer);
+        YAGL_GLES_OGL_GET_PROC(driver, GetVertexAttribIiv, glGetVertexAttribIiv);
+        YAGL_GLES_OGL_GET_PROC(driver, GetVertexAttribIuiv, glGetVertexAttribIuiv);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribI4i, glVertexAttribI4i);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribI4ui, glVertexAttribI4ui);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribI4iv, glVertexAttribI4iv);
+        YAGL_GLES_OGL_GET_PROC(driver, VertexAttribI4uiv, glVertexAttribI4uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, GetUniformuiv, glGetUniformuiv);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform1ui, glUniform1ui);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform2ui, glUniform2ui);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform3ui, glUniform3ui);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform4ui, glUniform4ui);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform1uiv, glUniform1uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform2uiv, glUniform2uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform3uiv, glUniform3uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, Uniform4uiv, glUniform4uiv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix2x3fv, glUniformMatrix2x3fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix2x4fv, glUniformMatrix2x4fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix3x2fv, glUniformMatrix3x2fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix3x4fv, glUniformMatrix3x4fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix4x2fv, glUniformMatrix4x2fv);
+        YAGL_GLES_OGL_GET_PROC(driver, UniformMatrix4x3fv, glUniformMatrix4x3fv);
+        YAGL_GLES_OGL_GET_PROC(driver, ClearBufferiv, glClearBufferiv);
+        YAGL_GLES_OGL_GET_PROC(driver, ClearBufferuiv, glClearBufferuiv);
+        YAGL_GLES_OGL_GET_PROC(driver, ClearBufferfi, glClearBufferfi);
+        YAGL_GLES_OGL_GET_PROC(driver, ClearBufferfv, glClearBufferfv);
+        YAGL_GLES_OGL_GET_PROC(driver, GetFragDataLocation, glGetFragDataLocation);
+        YAGL_GLES_OGL_GET_PROC(driver, DrawRangeElements, glDrawRangeElements);
+    }
 
     driver->destroy = &yagl_gles_ogl_destroy;
 

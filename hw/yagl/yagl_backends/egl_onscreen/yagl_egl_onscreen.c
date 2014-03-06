@@ -56,15 +56,16 @@ static void yagl_egl_onscreen_setup_framebuffer_zero(struct yagl_egl_onscreen *e
 
     yagl_egl_onscreen_surface_setup(egl_onscreen_ts->sfc_draw);
 
-    egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+    egl_onscreen->gles_driver->GetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
                                            (GLint*)&cur_fb);
 
-    egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+    egl_onscreen->gles_driver->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
                                                egl_onscreen_ts->ctx->fb);
 
-    yagl_egl_onscreen_surface_attach_to_framebuffer(egl_onscreen_ts->sfc_draw);
+    yagl_egl_onscreen_surface_attach_to_framebuffer(egl_onscreen_ts->sfc_draw,
+                                                    GL_DRAW_FRAMEBUFFER);
 
-    egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+    egl_onscreen->gles_driver->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
                                                cur_fb);
 }
 
@@ -177,7 +178,7 @@ static bool yagl_egl_onscreen_make_current(struct yagl_egl_backend *backend,
 
         yagl_egl_onscreen_setup_framebuffer_zero(egl_onscreen);
 
-        egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+        egl_onscreen->gles_driver->GetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
                                                (GLint*)&cur_fb);
 
         if (cur_fb == 0) {
@@ -265,10 +266,6 @@ static void yagl_egl_onscreen_ensure_current(struct yagl_egl_backend *backend)
 {
     struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
 
-    if (egl_onscreen_ts && egl_onscreen_ts->dpy) {
-        return;
-    }
-
     egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
                                            egl_onscreen->ensure_dpy,
                                            egl_onscreen->ensure_sfc,
@@ -281,14 +278,26 @@ static void yagl_egl_onscreen_unensure_current(struct yagl_egl_backend *backend)
     struct yagl_egl_onscreen *egl_onscreen = (struct yagl_egl_onscreen*)backend;
 
     if (egl_onscreen_ts && egl_onscreen_ts->dpy) {
-        return;
+        if (egl_onscreen_ts->sfc_draw && egl_onscreen_ts->sfc_read) {
+            egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                                   egl_onscreen_ts->dpy->native_dpy,
+                                                   egl_onscreen_ts->sfc_draw->dummy_native_sfc,
+                                                   egl_onscreen_ts->sfc_read->dummy_native_sfc,
+                                                   egl_onscreen_ts->ctx->native_ctx);
+        } else {
+            egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                                   egl_onscreen_ts->dpy->native_dpy,
+                                                   egl_onscreen_ts->ctx->null_sfc,
+                                                   egl_onscreen_ts->ctx->null_sfc,
+                                                   egl_onscreen_ts->ctx->native_ctx);
+        }
+    } else {
+        egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
+                                               egl_onscreen->ensure_dpy,
+                                               EGL_NO_SURFACE,
+                                               EGL_NO_SURFACE,
+                                               EGL_NO_CONTEXT);
     }
-
-    egl_onscreen->egl_driver->make_current(egl_onscreen->egl_driver,
-                                           egl_onscreen->ensure_dpy,
-                                           EGL_NO_SURFACE,
-                                           EGL_NO_SURFACE,
-                                           EGL_NO_CONTEXT);
 }
 
 static void yagl_egl_onscreen_destroy(struct yagl_egl_backend *backend)
@@ -341,7 +350,9 @@ struct yagl_egl_backend *yagl_egl_onscreen_create(struct winsys_interface *wsi,
 
     yagl_egl_pbuffer_attribs_init(&attribs);
 
-    yagl_egl_backend_init(&egl_onscreen->base, yagl_render_type_onscreen);
+    yagl_egl_backend_init(&egl_onscreen->base,
+                          yagl_render_type_onscreen,
+                          egl_driver->gl_version);
 
     dpy = egl_driver->display_open(egl_driver);
 
@@ -363,13 +374,13 @@ struct yagl_egl_backend *yagl_egl_onscreen_create(struct winsys_interface *wsi,
     }
 
     ctx = egl_driver->context_create(egl_driver, dpy, &configs[0],
-                                     (EGLContext)ws_info->context);
+                                     (EGLContext)ws_info->context, 0);
 
     if (ctx == EGL_NO_CONTEXT) {
         goto fail;
     }
 
-    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx);
+    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx, 0);
 
     if (global_ctx == EGL_NO_CONTEXT) {
         goto fail;

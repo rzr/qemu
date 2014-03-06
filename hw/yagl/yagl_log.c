@@ -216,7 +216,7 @@ static bool yagl_log_match(const char* str, const char* expr)
 void yagl_log_init(void)
 {
     char* level_str = getenv("YAGL_DEBUG");
-    int level = level_str ? atoi(level_str) : yagl_log_level_off;
+    int level = level_str ? atoi(level_str) : yagl_log_level_info;
     char* facilities;
     char* func_trace;
 

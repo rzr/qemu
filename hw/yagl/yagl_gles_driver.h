@@ -62,6 +62,9 @@ void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2);
 #define YAGL_GLES_DRIVER_FUNC4(func, arg0_type, arg1_type, arg2_type, arg3_type, arg0, arg1, arg2, arg3) \
 void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3);
 
+#define YAGL_GLES_DRIVER_FUNC_RET4(ret_type, func, arg0_type, arg1_type, arg2_type, arg3_type, arg0, arg1, arg2, arg3) \
+ret_type (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3);
+
 #define YAGL_GLES_DRIVER_FUNC5(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg0, arg1, arg2, arg3, arg4) \
 void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, arg4_type arg4);
 
@@ -87,6 +90,11 @@ void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, 
      arg4_type arg4, arg5_type arg5, arg6_type arg6, arg7_type arg7, \
      arg8_type arg8, arg9_type arg9);
 
+#define YAGL_GLES_DRIVER_FUNC11(func, arg0_type, arg1_type, arg2_type, arg3_type, arg4_type, arg5_type, arg6_type, arg7_type, arg8_type, arg9_type, arg10_type, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) \
+void (YAGL_GLES_APIENTRY *func)(arg0_type arg0, arg1_type arg1, arg2_type arg2, arg3_type arg3, \
+     arg4_type arg4, arg5_type arg5, arg6_type arg6, arg7_type arg7, \
+     arg8_type arg8, arg9_type arg9, arg10_type arg10);
+
 /* We need this because we can't include <GL/gl.h> (which has GLdouble
  * definition) and <GLES/gl.h> (which has GLfixed definition) simultaneously */
 typedef double yagl_GLdouble;
@@ -98,6 +106,11 @@ typedef double yagl_GLdouble;
 
 struct yagl_gles_driver
 {
+    /*
+     * OpenGL 2.1
+     * @{
+     */
+
     YAGL_GLES_DRIVER_FUNC3(DrawArrays, GLenum, GLint, GLsizei, mode, first, count)
     YAGL_GLES_DRIVER_FUNC4(DrawElements, GLenum, GLsizei, GLenum, const GLvoid*, mode, count, type, indices)
     YAGL_GLES_DRIVER_FUNC7(ReadPixels, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, GLvoid*, x, y, width, height, format, type, pixels)
@@ -119,8 +132,6 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC2(BindTexture, GLenum, GLuint, target, texture)
     YAGL_GLES_DRIVER_FUNC2(DeleteTextures, GLsizei, const GLuint*, n, textures)
     YAGL_GLES_DRIVER_FUNC1(ActiveTexture, GLenum, texture)
-    YAGL_GLES_DRIVER_FUNC8(CompressedTexImage2D, GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid*, target, level, internalformat, width, height, border, imageSize, data)
-    YAGL_GLES_DRIVER_FUNC9(CompressedTexSubImage2D, GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, const GLvoid*, target, level, xoffset, yoffset, width, height, format, imageSize, data)
     YAGL_GLES_DRIVER_FUNC8(CopyTexImage2D, GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLsizei, GLint, target, level, internalformat, x, y, width, height, border)
     YAGL_GLES_DRIVER_FUNC8(CopyTexSubImage2D, GLenum, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei, target, level, xoffset, yoffset, x, y, width, height)
     YAGL_GLES_DRIVER_FUNC3(GetTexParameterfv, GLenum, GLenum, GLfloat*, target, pname, params)
@@ -139,11 +150,18 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC3(TexEnvfv, GLenum, GLenum, const GLfloat*, target, pname, params)
     YAGL_GLES_DRIVER_FUNC3(GetTexEnviv, GLenum, GLenum, GLint*, env, pname, params)
     YAGL_GLES_DRIVER_FUNC3(GetTexEnvfv, GLenum, GLenum, GLfloat*, env, pname, params)
+    YAGL_GLES_DRIVER_FUNC10(TexImage3D, GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const void*, target, level, internalformat, width, height, depth, border, format, type, pixels);
+    YAGL_GLES_DRIVER_FUNC11(TexSubImage3D, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLenum, const void*, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+    YAGL_GLES_DRIVER_FUNC9(CopyTexSubImage3D, GLenum, GLint, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei, target, level, xoffset, yoffset, zoffset, x, y, width, height);
     YAGL_GLES_DRIVER_FUNC2(GenFramebuffers, GLsizei, GLuint*, n, framebuffers)
     YAGL_GLES_DRIVER_FUNC2(BindFramebuffer, GLenum, GLuint, target, framebuffer)
     YAGL_GLES_DRIVER_FUNC5(FramebufferTexture2D, GLenum, GLenum, GLenum, GLuint, GLint, target, attachment, textarget, texture, level)
     YAGL_GLES_DRIVER_FUNC4(FramebufferRenderbuffer, GLenum, GLenum, GLenum, GLuint, target, attachment, renderbuffertarget, renderbuffer)
     YAGL_GLES_DRIVER_FUNC2(DeleteFramebuffers, GLsizei, const GLuint*, n, framebuffers)
+    YAGL_GLES_DRIVER_FUNC10(BlitFramebuffer, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
+    YAGL_GLES_DRIVER_FUNC2(DrawBuffers, GLsizei, const GLenum*, n, bufs)
+    YAGL_GLES_DRIVER_FUNC1(ReadBuffer, GLenum, mode)
+    YAGL_GLES_DRIVER_FUNC6(FramebufferTexture3D, GLenum, GLenum, GLenum, GLuint, GLint, GLint, target, attachment, textarget, texture, level, zoffset);
     YAGL_GLES_DRIVER_FUNC2(GenRenderbuffers, GLsizei, GLuint*, n, renderbuffers)
     YAGL_GLES_DRIVER_FUNC2(BindRenderbuffer, GLenum, GLuint, target, renderbuffer)
     YAGL_GLES_DRIVER_FUNC4(RenderbufferStorage, GLenum, GLenum, GLsizei, GLsizei, target, internalformat, width, height)
@@ -268,17 +286,117 @@ struct yagl_gles_driver
     YAGL_GLES_DRIVER_FUNC1(LoadMatrixf, const GLfloat*, m)
     YAGL_GLES_DRIVER_FUNC2(ClipPlane, GLenum, const yagl_GLdouble *, plane, equation)
     YAGL_GLES_DRIVER_FUNC2(GetClipPlane, GLenum, const yagl_GLdouble *, plane, equation)
-
-    YAGL_GLES_DRIVER_FUNC1(PushClientAttrib, GLbitfield, mask)
-    YAGL_GLES_DRIVER_FUNC0(PopClientAttrib)
     YAGL_GLES_DRIVER_FUNC_RET2(void*, MapBuffer, GLenum, GLenum, target, access)
     YAGL_GLES_DRIVER_FUNC_RET1(GLboolean, UnmapBuffer, GLenum, target)
     YAGL_GLES_DRIVER_FUNC0(Finish)
 
+    /*
+     * Only OpenGL 2.1 + GL_ARB_map_buffer_range or OpenGL 3.1+ core.
+     */
+    YAGL_GLES_DRIVER_FUNC_RET4(GLvoid*, MapBufferRange, GLenum, GLintptr, GLsizeiptr, GLbitfield, target, offset, length, access)
+
+    /*
+     * @}
+     */
+
+    /*
+     * OpenGL 3.1+ core.
+     */
+
+    YAGL_GLES_DRIVER_FUNC_RET2(const GLubyte*, GetStringi, GLenum, GLuint, name, index)
+    YAGL_GLES_DRIVER_FUNC2(GenVertexArrays, GLsizei, GLuint*, n, arrays)
+    YAGL_GLES_DRIVER_FUNC1(BindVertexArray, GLuint, array)
+    YAGL_GLES_DRIVER_FUNC2(DeleteVertexArrays, GLsizei, const GLuint*, n, arrays)
+    YAGL_GLES_DRIVER_FUNC5(GetActiveUniformsiv, GLuint, GLsizei, const GLuint*, GLenum, GLint*, program, uniformCount, uniformIndices, pname, params)
+    YAGL_GLES_DRIVER_FUNC4(GetUniformIndices, GLuint, GLsizei, const GLchar* const*, GLuint*, program, uniformCount, uniformNames, uniformIndices)
+    YAGL_GLES_DRIVER_FUNC_RET2(GLuint, GetUniformBlockIndex, GLuint, const GLchar*, program, uniformBlockName);
+    YAGL_GLES_DRIVER_FUNC3(UniformBlockBinding, GLuint, GLuint, GLuint, program, uniformBlockIndex, uniformBlockBinding);
+    YAGL_GLES_DRIVER_FUNC5(GetActiveUniformBlockName, GLuint, GLuint, GLsizei, GLsizei*, GLchar*, program, uniformBlockIndex, bufSize, length, uniformBlockName);
+    YAGL_GLES_DRIVER_FUNC4(GetActiveUniformBlockiv, GLuint, GLuint, GLenum, GLint*, program, uniformBlockIndex, pname, params);
+    YAGL_GLES_DRIVER_FUNC3(BindBufferBase, GLenum, GLuint, GLuint, target, index, buffer)
+    YAGL_GLES_DRIVER_FUNC5(BindBufferRange, GLenum, GLuint, GLuint, GLintptr, GLsizeiptr, target, index, buffer, offset, size)
+    YAGL_GLES_DRIVER_FUNC2(GenTransformFeedbacks, GLsizei, GLuint*, n, ids)
+    YAGL_GLES_DRIVER_FUNC2(BindTransformFeedback, GLenum, GLuint, target, id)
+    YAGL_GLES_DRIVER_FUNC1(BeginTransformFeedback, GLenum, primitiveMode)
+    YAGL_GLES_DRIVER_FUNC0(EndTransformFeedback)
+    YAGL_GLES_DRIVER_FUNC0(PauseTransformFeedback)
+    YAGL_GLES_DRIVER_FUNC0(ResumeTransformFeedback)
+    YAGL_GLES_DRIVER_FUNC2(DeleteTransformFeedbacks, GLsizei, const GLuint*, n, ids)
+    YAGL_GLES_DRIVER_FUNC4(TransformFeedbackVaryings, GLuint, GLsizei, const GLchar* const*, GLenum, program, count, varyings, bufferMode)
+    YAGL_GLES_DRIVER_FUNC7(GetTransformFeedbackVarying, GLuint, GLuint, GLsizei, GLsizei*, GLsizei*, GLenum*, GLchar*, program, index, bufSize, length, size, type, name)
+    YAGL_GLES_DRIVER_FUNC2(GenQueries, GLsizei, GLuint*, n, ids)
+    YAGL_GLES_DRIVER_FUNC2(BeginQuery, GLenum, GLuint, target, id)
+    YAGL_GLES_DRIVER_FUNC1(EndQuery, GLenum, target)
+    YAGL_GLES_DRIVER_FUNC3(GetQueryObjectuiv, GLuint, GLenum, GLuint*, id, pname, params)
+    YAGL_GLES_DRIVER_FUNC2(DeleteQueries, GLsizei, const GLuint*, n, ids)
+    YAGL_GLES_DRIVER_FUNC4(DrawArraysInstanced, GLenum, GLint, GLsizei, GLsizei, mode, start, count, primcount);
+    YAGL_GLES_DRIVER_FUNC5(DrawElementsInstanced, GLenum, GLsizei, GLenum, const void*, GLsizei, mode, count, type, indices, primcount);
+    YAGL_GLES_DRIVER_FUNC2(VertexAttribDivisor, GLuint, GLuint, index, divisor);
+    YAGL_GLES_DRIVER_FUNC5(FramebufferTextureLayer, GLenum, GLenum, GLuint, GLint, GLint, target, attachment, texture, level, layer);
+
+    /*
+     * These are actually OpenGL 3.3+ core or
+     * OpenGL 3.2+ core with GL_ARB_sampler_objects.
+     *
+     * TODO: Check if samplers are actually supported on host
+     * and workaround if they're not.
+     * @{
+     */
+
+    YAGL_GLES_DRIVER_FUNC2(GenSamplers, GLsizei, GLuint*, count, samplers);
+    YAGL_GLES_DRIVER_FUNC2(DeleteSamplers, GLsizei, const GLuint*, count, samplers);
+    YAGL_GLES_DRIVER_FUNC2(BindSampler, GLuint, GLuint, unit, sampler);
+    YAGL_GLES_DRIVER_FUNC3(SamplerParameteri, GLuint, GLenum, GLint, sampler, pname, param);
+    YAGL_GLES_DRIVER_FUNC3(SamplerParameteriv, GLuint, GLenum, const GLint*, sampler, pname, param);
+    YAGL_GLES_DRIVER_FUNC3(SamplerParameterf, GLuint, GLenum, GLfloat, sampler, pname, param);
+    YAGL_GLES_DRIVER_FUNC3(SamplerParameterfv, GLuint, GLenum, const GLfloat*, sampler, pname, param);
+
+    /*
+     * @}
+     */
+
+    YAGL_GLES_DRIVER_FUNC5(RenderbufferStorageMultisample, GLenum, GLsizei, GLenum, GLsizei, GLsizei, target, samples, internalformat, width, height);
+    YAGL_GLES_DRIVER_FUNC5(CopyBufferSubData, GLenum, GLenum, GLintptr, GLintptr, GLsizeiptr, readTarget, writeTarget, readOffset, writeOffset, size);
+    YAGL_GLES_DRIVER_FUNC5(VertexAttribIPointer, GLuint, GLint, GLenum, GLsizei, const GLvoid*, index, size, type, stride, pointer);
+    YAGL_GLES_DRIVER_FUNC3(GetVertexAttribIiv, GLuint, GLenum, GLint*, index, pname, params);
+    YAGL_GLES_DRIVER_FUNC3(GetVertexAttribIuiv, GLuint, GLenum, GLuint*, index, pname, params);
+    YAGL_GLES_DRIVER_FUNC5(VertexAttribI4i, GLuint, GLint, GLint, GLint, GLint, index, x, y, z, w);
+    YAGL_GLES_DRIVER_FUNC5(VertexAttribI4ui, GLuint, GLuint, GLuint, GLuint, GLuint, index, x, y, z, w);
+    YAGL_GLES_DRIVER_FUNC2(VertexAttribI4iv, GLuint, const GLint*, index, v);
+    YAGL_GLES_DRIVER_FUNC2(VertexAttribI4uiv, GLuint, const GLuint*, index, v);
+    YAGL_GLES_DRIVER_FUNC3(GetUniformuiv, GLuint, GLint, GLuint*, program, location, params)
+    YAGL_GLES_DRIVER_FUNC2(Uniform1ui, GLint, GLuint, location, v0)
+    YAGL_GLES_DRIVER_FUNC3(Uniform2ui, GLint, GLuint, GLuint, location, v0, v1)
+    YAGL_GLES_DRIVER_FUNC4(Uniform3ui, GLint, GLuint, GLuint, GLuint, location, v0, v1, v2)
+    YAGL_GLES_DRIVER_FUNC5(Uniform4ui, GLint, GLuint, GLuint, GLuint, GLuint, location, v0, v1, v2, v3)
+    YAGL_GLES_DRIVER_FUNC3(Uniform1uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC3(Uniform2uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC3(Uniform3uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC3(Uniform4uiv, GLint, GLsizei, const GLuint*, location, count, v)
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix2x3fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix2x4fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix3x2fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix3x4fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix4x2fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC4(UniformMatrix4x3fv, GLint, GLsizei, GLboolean, const GLfloat*, location, count, transpose, value);
+    YAGL_GLES_DRIVER_FUNC3(ClearBufferiv, GLenum, GLint, const GLint*, buffer, drawbuffer, value);
+    YAGL_GLES_DRIVER_FUNC3(ClearBufferuiv, GLenum, GLint, const GLuint*, buffer, drawbuffer, value);
+    YAGL_GLES_DRIVER_FUNC4(ClearBufferfi, GLenum, GLint, GLfloat, GLint, buffer, drawbuffer, depth, stencil);
+    YAGL_GLES_DRIVER_FUNC3(ClearBufferfv, GLenum, GLint, const GLfloat*, buffer, drawbuffer, value);
+    YAGL_GLES_DRIVER_FUNC_RET2(int, GetFragDataLocation, GLuint, const GLchar*, program, name);
+    YAGL_GLES_DRIVER_FUNC6(DrawRangeElements, GLenum, GLuint, GLuint, GLsizei, GLenum, const GLvoid*, mode, start, end, count, type, indices);
+
+    /*
+     * @}
+     */
+
+    yagl_gl_version gl_version;
+
     void (*destroy)(struct yagl_gles_driver */*driver*/);
 };
 
-void yagl_gles_driver_init(struct yagl_gles_driver *driver);
+void yagl_gles_driver_init(struct yagl_gles_driver *driver,
+                           yagl_gl_version gl_version);
 void yagl_gles_driver_cleanup(struct yagl_gles_driver *driver);
 
 /*
@@ -290,8 +408,9 @@ void yagl_gles_driver_cleanup(struct yagl_gles_driver *driver);
  * @{
  */
 
-void yagl_ensure_ctx(void);
-void yagl_unensure_ctx(void);
+uint32_t yagl_get_ctx_id(void);
+void yagl_ensure_ctx(uint32_t ctx_id);
+void yagl_unensure_ctx(uint32_t ctx_id);
 
 /*
  * @}

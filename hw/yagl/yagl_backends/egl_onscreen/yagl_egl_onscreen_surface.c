@@ -69,9 +69,9 @@ static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
     if (((osfc->ws_sfc->base.width != ws_sfc->base.width) ||
          (osfc->ws_sfc->base.height != ws_sfc->base.height)) &&
          osfc->rb) {
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         egl_onscreen->gles_driver->DeleteRenderbuffers(1, &osfc->rb);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
         osfc->rb = 0;
     }
 
@@ -83,15 +83,16 @@ static void yagl_egl_onscreen_surface_invalidate(struct yagl_eglb_surface *sfc,
 
         yagl_egl_onscreen_surface_setup(osfc);
 
-        egl_onscreen->gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+        egl_onscreen->gles_driver->GetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
                                                (GLint*)&cur_fb);
 
-        egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+        egl_onscreen->gles_driver->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
                                                    egl_onscreen_ts->ctx->fb);
 
-        yagl_egl_onscreen_surface_attach_to_framebuffer(osfc);
+        yagl_egl_onscreen_surface_attach_to_framebuffer(osfc,
+                                                        GL_DRAW_FRAMEBUFFER);
 
-        egl_onscreen->gles_driver->BindFramebuffer(GL_FRAMEBUFFER,
+        egl_onscreen->gles_driver->BindFramebuffer(GL_DRAW_FRAMEBUFFER,
                                                    cur_fb);
     }
 
@@ -176,9 +177,9 @@ static void yagl_egl_onscreen_surface_destroy(struct yagl_eglb_surface *sfc)
     }
 
     if (osfc->rb) {
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         egl_onscreen->gles_driver->DeleteRenderbuffers(1, &osfc->rb);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
     }
 
     yagl_eglb_surface_cleanup(sfc);
@@ -411,21 +412,22 @@ void yagl_egl_onscreen_surface_setup(struct yagl_egl_onscreen_surface *sfc)
     egl_onscreen->gles_driver->BindRenderbuffer(GL_RENDERBUFFER, cur_rb);
 }
 
-void yagl_egl_onscreen_surface_attach_to_framebuffer(struct yagl_egl_onscreen_surface *sfc)
+void yagl_egl_onscreen_surface_attach_to_framebuffer(struct yagl_egl_onscreen_surface *sfc,
+                                                     GLenum target)
 {
     struct yagl_egl_onscreen *egl_onscreen =
         (struct yagl_egl_onscreen*)sfc->base.dpy->backend;
 
-    egl_onscreen->gles_driver->FramebufferTexture2D(GL_FRAMEBUFFER,
+    egl_onscreen->gles_driver->FramebufferTexture2D(target,
                                                     GL_COLOR_ATTACHMENT0,
                                                     GL_TEXTURE_2D,
                                                     sfc->ws_sfc->get_texture(sfc->ws_sfc),
                                                     0);
-    egl_onscreen->gles_driver->FramebufferRenderbuffer(GL_FRAMEBUFFER,
+    egl_onscreen->gles_driver->FramebufferRenderbuffer(target,
                                                        GL_DEPTH_ATTACHMENT,
                                                        GL_RENDERBUFFER,
                                                        sfc->rb);
-    egl_onscreen->gles_driver->FramebufferRenderbuffer(GL_FRAMEBUFFER,
+    egl_onscreen->gles_driver->FramebufferRenderbuffer(target,
                                                        GL_STENCIL_ATTACHMENT,
                                                        GL_RENDERBUFFER,
                                                        sfc->rb);

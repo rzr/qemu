@@ -30,6 +30,9 @@
 #include "yagl_transport.h"
 #include "yagl_compiled_transfer.h"
 #include "yagl_mem.h"
+#include "yagl_log.h"
+#include "yagl_thread.h"
+#include "yagl_process.h"
 
 typedef enum
 {
@@ -334,4 +337,40 @@ void yagl_transport_get_in_array(struct yagl_transport *t,
 
         t->ptr += (size + 7U) & ~7U;
     }
+}
+
+const char **yagl_transport_get_out_string_array(const char *data,
+                                                 int32_t data_count,
+                                                 int32_t *array_count)
+{
+    struct yagl_vector v;
+    char *tmp;
+
+    YAGL_LOG_FUNC_SET(yagl_transport_get_out_string_array);
+
+    if (!data) {
+        *array_count = 0;
+        return NULL;
+    }
+
+    yagl_vector_init(&v, sizeof(char*), 0);
+
+    while (data_count > 0) {
+        tmp = memchr(data, '\0', data_count);
+
+        if (!tmp) {
+            YAGL_LOG_ERROR("0 not found in string array");
+            break;
+        }
+
+        yagl_vector_push_back(&v, &data);
+
+        data_count -= tmp - data + 1;
+
+        data = tmp + 1;
+    }
+
+    *array_count = yagl_vector_size(&v);
+
+    return (const char**)yagl_vector_detach(&v);
 }

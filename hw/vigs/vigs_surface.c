@@ -40,6 +40,7 @@ void vigs_surface_init(struct vigs_surface *sfc,
     ws_sfc->acquire(ws_sfc);
     sfc->ws_sfc = ws_sfc;
     sfc->backend = backend;
+    sfc->ptr = NULL;
     sfc->stride = stride;
     sfc->format = format;
     sfc->id = id;
@@ -48,4 +49,9 @@ void vigs_surface_init(struct vigs_surface *sfc,
 void vigs_surface_cleanup(struct vigs_surface *sfc)
 {
     sfc->ws_sfc->release(sfc->ws_sfc);
+}
+
+void vigs_surface_set_scanout(struct vigs_surface *sfc, uint8_t *ptr)
+{
+    sfc->ptr = ptr;
 }

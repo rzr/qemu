@@ -88,7 +88,8 @@ struct yagl_egl_driver
     EGLContext (*context_create)(struct yagl_egl_driver */*driver*/,
                                  EGLNativeDisplayType /*dpy*/,
                                  const struct yagl_egl_native_config */*cfg*/,
-                                 EGLContext /*share_context*/);
+                                 EGLContext /*share_context*/,
+                                 int /*version*/);
 
     void (*context_destroy)(struct yagl_egl_driver */*driver*/,
                             EGLNativeDisplayType /*dpy*/,
@@ -103,6 +104,8 @@ struct yagl_egl_driver
     void (*destroy)(struct yagl_egl_driver */*driver*/);
 
     struct yagl_dyn_lib *dyn_lib;
+
+    yagl_gl_version gl_version;
 };
 
 /*

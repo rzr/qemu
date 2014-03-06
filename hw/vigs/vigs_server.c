@@ -49,6 +49,7 @@ struct vigs_server_set_root_surface_work_item
     struct vigs_server *server;
 
     vigsp_surface_id id;
+    bool scanout;
     vigsp_offset offset;
 };
 
@@ -62,13 +63,25 @@ static void vigs_server_surface_destroy_func(gpointer data)
 static void vigs_server_unuse_surface(struct vigs_server *server,
                                       struct vigs_surface *sfc)
 {
+    int i;
+
     /*
      * If it was root surface then root surface is now NULL.
      */
 
     if (server->root_sfc == sfc) {
+        vigs_surface_set_scanout(server->root_sfc, NULL);
         server->root_sfc = NULL;
-        server->root_sfc_ptr = NULL;
+    }
+
+    /*
+     * If it was attached to a plane then detach it.
+     */
+    for (i = 0; i < VIGS_MAX_PLANES; ++i) {
+        if (server->planes[i].sfc == sfc) {
+            server->planes[i].sfc = NULL;
+            server->planes[i].is_dirty = true;
+        }
     }
 }
 
@@ -194,7 +207,9 @@ static void vigs_server_dispatch_update_vram(void *user_data,
     vigs_sfc->read_pixels(vigs_sfc,
                           server->vram_ptr + offset);
 
-    vigs_sfc->is_dirty = false;
+    if (vigs_sfc->ptr) {
+        vigs_sfc->is_dirty = false;
+    }
 }
 
 static void vigs_server_dispatch_update_gpu(void *user_data,
@@ -290,6 +305,46 @@ static void vigs_server_dispatch_solid_fill(void *user_data,
     sfc->is_dirty = true;
 }
 
+static void vigs_server_dispatch_set_plane(void *user_data,
+                                           vigsp_u32 plane,
+                                           vigsp_surface_id sfc_id,
+                                           const struct vigsp_rect *src_rect,
+                                           int dst_x,
+                                           int dst_y,
+                                           const struct vigsp_size *dst_size,
+                                           int z_pos)
+{
+    struct vigs_server *server = user_data;
+    struct vigs_surface *sfc = NULL;
+
+    if (!server->initialized) {
+        VIGS_LOG_ERROR("not initialized");
+        return;
+    }
+
+    if (sfc_id) {
+        sfc = g_hash_table_lookup(server->surfaces, GUINT_TO_POINTER(sfc_id));
+
+        if (!sfc) {
+            VIGS_LOG_ERROR("surface %u not found", sfc_id);
+            return;
+        }
+    }
+
+    if (plane >= VIGS_MAX_PLANES) {
+        VIGS_LOG_ERROR("bad plane %u", plane);
+        return;
+    }
+
+    server->planes[plane].sfc = sfc;
+    server->planes[plane].src_rect = *src_rect;
+    server->planes[plane].dst_x = dst_x;
+    server->planes[plane].dst_y = dst_y;
+    server->planes[plane].dst_size = *dst_size;
+    server->planes[plane].z_pos = z_pos;
+    server->planes[plane].is_dirty = true;
+}
+
 static void vigs_server_dispatch_batch_end(void *user_data,
                                            vigsp_fence_seq fence_seq)
 {
@@ -311,6 +366,7 @@ static struct vigs_comm_batch_ops vigs_server_dispatch_batch_ops =
     .update_gpu = &vigs_server_dispatch_update_gpu,
     .copy = &vigs_server_dispatch_copy,
     .solid_fill = &vigs_server_dispatch_solid_fill,
+    .set_plane = &vigs_server_dispatch_set_plane,
     .end = &vigs_server_dispatch_batch_end
 };
 
@@ -339,8 +395,10 @@ static void vigs_server_set_root_surface_work(struct work_queue_item *wq_item)
     }
 
     if (item->id == 0) {
+        if (server->root_sfc) {
+            vigs_surface_set_scanout(server->root_sfc, NULL);
+        }
         server->root_sfc = NULL;
-        server->root_sfc_ptr = NULL;
 
         VIGS_LOG_TRACE("root surface reset");
 
@@ -355,39 +413,55 @@ static void vigs_server_set_root_surface_work(struct work_queue_item *wq_item)
     }
 
     server->root_sfc = sfc;
-    server->root_sfc_ptr = server->vram_ptr + item->offset;
+
+    if (item->scanout) {
+        vigs_surface_set_scanout(server->root_sfc,
+                                 server->vram_ptr + item->offset);
+    } else {
+        vigs_surface_set_scanout(server->root_sfc, NULL);
+
+        /*
+         * We want to display it on next display update.
+         */
+        server->root_sfc->is_dirty = true;
+    }
 
 out:
     g_free(item);
 }
 
-static void vigs_server_update_display_cb(void *user_data,
-                                          uint8_t *pixels,
-                                          uint32_t width,
-                                          uint32_t height,
-                                          uint32_t stride,
-                                          vigsp_surface_format format)
+static uint8_t *vigs_server_update_display_start_cb(void *user_data,
+                                                    uint32_t width,
+                                                    uint32_t height,
+                                                    uint32_t stride,
+                                                    vigsp_surface_format format)
+{
+    struct vigs_server *server = user_data;
+
+    qemu_mutex_lock(&server->capture_mutex);
+
+    if ((server->captured.stride != stride) ||
+        (server->captured.height != height)) {
+        g_free(server->captured.data);
+        server->captured.data = g_malloc(stride * height);
+    }
+
+    server->captured.width = width;
+    server->captured.height = height;
+    server->captured.stride = stride;
+    server->captured.format = format;
+
+    return server->captured.data;
+}
+
+static void vigs_server_update_display_end_cb(void *user_data,
+                                              bool was_started)
 {
     struct vigs_server *server = user_data;
     uint32_t capture_fence_seq;
 
-    qemu_mutex_lock(&server->capture_mutex);
-
-    if (pixels) {
-        if ((server->captured.stride != stride) ||
-            (server->captured.height != height)) {
-            g_free(server->captured.data);
-            server->captured.data = g_malloc(stride * height);
-        }
-
-        memcpy(server->captured.data,
-               pixels,
-               stride * height);
-
-        server->captured.width = width;
-        server->captured.height = height;
-        server->captured.stride = stride;
-        server->captured.format = format;
+    if (!was_started) {
+        qemu_mutex_lock(&server->capture_mutex);
     }
 
     server->is_capturing = false;
@@ -407,32 +481,85 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
     struct vigs_server_work_item *item = (struct vigs_server_work_item*)wq_item;
     struct vigs_server *server = item->server;
     struct vigs_surface *root_sfc = server->root_sfc;
+    int i;
+    bool planes_on = false;
+    bool planes_dirty = false;
 
     if (!root_sfc) {
-        vigs_server_update_display_cb(server,
-                                      NULL,
-                                      0,
-                                      0,
-                                      0,
-                                      vigsp_surface_bgrx8888);
+        /*
+         * If no root surface then this is a no-op.
+         * TODO: Can planes be enabled without a root surface ?
+         */
+        vigs_server_update_display_end_cb(server, false);
         goto out;
     }
 
-    if (root_sfc->is_dirty) {
-        root_sfc->is_dirty = false;
+    for (i = 0; i < VIGS_MAX_PLANES; ++i) {
+        /*
+         * If plane was moved/resized or turned on/off
+         * then we're dirty.
+         */
+        if (server->planes[i].is_dirty) {
+            planes_dirty = true;
+        }
+
+        if (server->planes[i].sfc) {
+            planes_on = true;
+
+            /*
+             * If plane's surface is dirty then we're dirty.
+             */
+            if (server->planes[i].sfc->is_dirty) {
+                planes_dirty = true;
+            }
+        }
+    }
+
+    if (root_sfc->ptr && !root_sfc->is_dirty && !planes_on) {
+        /*
+         * Root surface is scanout, it's not dirty and planes not on,
+         * finish immediately.
+         */
+        uint8_t *buff = vigs_server_update_display_start_cb(server,
+                                                            root_sfc->ws_sfc->width,
+                                                            root_sfc->ws_sfc->height,
+                                                            root_sfc->stride,
+                                                            root_sfc->format);
+
+        memcpy(buff,
+               root_sfc->ptr,
+               root_sfc->stride * root_sfc->ws_sfc->height);
+
+        vigs_server_update_display_end_cb(server, true);
+    } else if (root_sfc->ptr || root_sfc->is_dirty || planes_dirty) {
+        /*
+         * Composite root surface and planes.
+         */
         server->backend->batch_start(server->backend);
-        server->backend->read_pixels(root_sfc,
-                                     server->root_sfc_ptr,
-                                     &vigs_server_update_display_cb,
-                                     server);
+        server->backend->composite(root_sfc,
+                                   &server->planes[0],
+                                   &vigs_server_update_display_start_cb,
+                                   &vigs_server_update_display_end_cb,
+                                   server);
         server->backend->batch_end(server->backend);
+
+        root_sfc->is_dirty = false;
+
+        for (i = 0; i < VIGS_MAX_PLANES; ++i) {
+            if (server->planes[i].is_dirty) {
+                server->planes[i].is_dirty = false;
+            }
+
+            if (server->planes[i].sfc &&
+                server->planes[i].sfc->is_dirty) {
+                server->planes[i].sfc->is_dirty = false;
+            }
+        }
     } else {
-        vigs_server_update_display_cb(server,
-                                      server->root_sfc_ptr,
-                                      root_sfc->ws_sfc->width,
-                                      root_sfc->ws_sfc->height,
-                                      root_sfc->stride,
-                                      root_sfc->format);
+        /*
+         * No changes, no-op.
+         */
+        vigs_server_update_display_end_cb(server, false);
     }
 
 out:
@@ -493,6 +620,7 @@ static void vigs_server_dispatch_exit(void *user_data)
 
 static void vigs_server_dispatch_set_root_surface(void *user_data,
                                                   vigsp_surface_id id,
+                                                  bool scanout,
                                                   vigsp_offset offset,
                                                   vigsp_fence_seq fence_seq)
 {
@@ -506,6 +634,7 @@ static void vigs_server_dispatch_set_root_surface(void *user_data,
 
     item->server = server;
     item->id = id;
+    item->scanout = scanout;
     item->offset = offset;
 
     work_queue_add_item(server->render_queue, &item->base);

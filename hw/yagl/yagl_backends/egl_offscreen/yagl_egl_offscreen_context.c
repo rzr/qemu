@@ -50,9 +50,9 @@ static void yagl_egl_offscreen_context_destroy(struct yagl_eglb_context *ctx)
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_context_destroy, NULL);
 
     if (egl_offscreen_ctx->rp_pbo) {
-        yagl_ensure_ctx();
+        yagl_ensure_ctx(0);
         egl_offscreen->gles_driver->DeleteBuffers(1, &egl_offscreen_ctx->rp_pbo);
-        yagl_unensure_ctx();
+        yagl_unensure_ctx(0);
     }
 
     egl_offscreen->egl_driver->context_destroy(egl_offscreen->egl_driver,
@@ -69,7 +69,8 @@ static void yagl_egl_offscreen_context_destroy(struct yagl_eglb_context *ctx)
 struct yagl_egl_offscreen_context
     *yagl_egl_offscreen_context_create(struct yagl_egl_offscreen_display *dpy,
                                        const struct yagl_egl_native_config *cfg,
-                                       struct yagl_egl_offscreen_context *share_context)
+                                       struct yagl_egl_offscreen_context *share_context,
+                                       int version)
 {
     struct yagl_egl_offscreen *egl_offscreen =
         (struct yagl_egl_offscreen*)dpy->base.backend;
@@ -77,15 +78,17 @@ struct yagl_egl_offscreen_context
     EGLContext native_ctx;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_context_create,
-                        "dpy = %p, cfg = %d",
+                        "dpy = %p, cfg = %d, version = %d",
                         dpy,
-                        cfg->config_id);
+                        cfg->config_id,
+                        version);
 
     native_ctx = egl_offscreen->egl_driver->context_create(
         egl_offscreen->egl_driver,
         dpy->native_dpy,
         cfg,
-        egl_offscreen->global_ctx);
+        egl_offscreen->global_ctx,
+        version);
 
     if (!native_ctx) {
         YAGL_LOG_FUNC_EXIT(NULL);
@@ -115,21 +118,25 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
         ((struct yagl_egl_offscreen*)ctx->base.dpy->backend)->gles_driver;
     bool ret = false;
     GLuint current_fb = 0;
+    GLint current_pack[3];
     GLuint current_pbo = 0;
     uint32_t rp_line_size = width * bpp;
     uint32_t rp_size = rp_line_size * height;
     GLenum format = 0;
-    bool pop_attrib = false;
     void *mapped_pixels = NULL;
     uint32_t i;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_offscreen_context_read_pixels,
                         "%ux%ux%u", width, height, bpp);
 
-    gles_driver->GetIntegerv(GL_FRAMEBUFFER_BINDING,
+    gles_driver->GetIntegerv(GL_READ_FRAMEBUFFER_BINDING,
                              (GLint*)&current_fb);
 
-    gles_driver->BindFramebuffer(GL_FRAMEBUFFER, 0);
+    gles_driver->BindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    gles_driver->GetIntegerv(GL_PACK_ALIGNMENT, &current_pack[0]);
+    gles_driver->GetIntegerv(GL_PACK_ROW_LENGTH, &current_pack[1]);
+    gles_driver->GetIntegerv(GL_PACK_IMAGE_HEIGHT, &current_pack[2]);
 
     if (!ctx->rp_pbo) {
         /*
@@ -149,10 +156,7 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
     gles_driver->GetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_ARB,
                              (GLint*)&current_pbo);
 
-    if (current_pbo != ctx->rp_pbo) {
-        YAGL_LOG_TRACE("Binding pbo");
-        gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, ctx->rp_pbo);
-    }
+    gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, ctx->rp_pbo);
 
     if ((width != ctx->rp_pbo_width) ||
         (height != ctx->rp_pbo_height) ||
@@ -185,11 +189,9 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
         goto out;
     }
 
-    gles_driver->PushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
-
-    pop_attrib = true;
-
     gles_driver->PixelStorei(GL_PACK_ALIGNMENT, 1);
+    gles_driver->PixelStorei(GL_PACK_ROW_LENGTH, 0);
+    gles_driver->PixelStorei(GL_PACK_IMAGE_HEIGHT, 0);
 
     gles_driver->ReadPixels(0, 0,
                             width, height, format, GL_UNSIGNED_INT_8_8_8_8_REV,
@@ -206,8 +208,7 @@ bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *c
     if (height > 0) {
         pixels += (height - 1) * rp_line_size;
 
-        for (i = 0; i < height; ++i)
-        {
+        for (i = 0; i < height; ++i) {
             memcpy(pixels, mapped_pixels, rp_line_size);
             pixels -= rp_line_size;
             mapped_pixels += rp_line_size;
@@ -220,17 +221,12 @@ out:
     if (mapped_pixels) {
         gles_driver->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
     }
-    if (pop_attrib) {
-        gles_driver->PopClientAttrib();
-    }
-    if ((current_pbo != 0) &&
-        (current_pbo != ctx->rp_pbo)) {
-        YAGL_LOG_ERROR("Target binded a pbo ?");
-        gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
-                                current_pbo);
-    }
-
-    gles_driver->BindFramebuffer(GL_FRAMEBUFFER, current_fb);
+    gles_driver->PixelStorei(GL_PACK_ALIGNMENT, current_pack[0]);
+    gles_driver->PixelStorei(GL_PACK_ROW_LENGTH, current_pack[1]);
+    gles_driver->PixelStorei(GL_PACK_IMAGE_HEIGHT, current_pack[2]);
+    gles_driver->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB,
+                            current_pbo);
+    gles_driver->BindFramebuffer(GL_READ_FRAMEBUFFER, current_fb);
 
     YAGL_LOG_FUNC_EXIT(NULL);
 

@@ -184,10 +184,6 @@ static void yagl_egl_offscreen_ensure_current(struct yagl_egl_backend *backend)
 {
     struct yagl_egl_offscreen *egl_offscreen = (struct yagl_egl_offscreen*)backend;
 
-    if (egl_offscreen_ts && egl_offscreen_ts->dpy) {
-        return;
-    }
-
     egl_offscreen->egl_driver->make_current(egl_offscreen->egl_driver,
                                             egl_offscreen->ensure_dpy,
                                             egl_offscreen->ensure_sfc,
@@ -200,14 +196,18 @@ static void yagl_egl_offscreen_unensure_current(struct yagl_egl_backend *backend
     struct yagl_egl_offscreen *egl_offscreen = (struct yagl_egl_offscreen*)backend;
 
     if (egl_offscreen_ts && egl_offscreen_ts->dpy) {
-        return;
+        egl_offscreen->egl_driver->make_current(egl_offscreen->egl_driver,
+                                                egl_offscreen_ts->dpy->native_dpy,
+                                                egl_offscreen_ts->sfc_draw,
+                                                egl_offscreen_ts->sfc_read,
+                                                egl_offscreen_ts->ctx->native_ctx);
+    } else {
+        egl_offscreen->egl_driver->make_current(egl_offscreen->egl_driver,
+                                                egl_offscreen->ensure_dpy,
+                                                EGL_NO_SURFACE,
+                                                EGL_NO_SURFACE,
+                                                EGL_NO_CONTEXT);
     }
-
-    egl_offscreen->egl_driver->make_current(egl_offscreen->egl_driver,
-                                            egl_offscreen->ensure_dpy,
-                                            EGL_NO_SURFACE,
-                                            EGL_NO_SURFACE,
-                                            EGL_NO_CONTEXT);
 }
 
 static void yagl_egl_offscreen_destroy(struct yagl_egl_backend *backend)
@@ -258,7 +258,9 @@ struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *egl_d
 
     yagl_egl_pbuffer_attribs_init(&attribs);
 
-    yagl_egl_backend_init(&egl_offscreen->base, yagl_render_type_offscreen);
+    yagl_egl_backend_init(&egl_offscreen->base,
+                          yagl_render_type_offscreen,
+                          egl_driver->gl_version);
 
     dpy = egl_driver->display_open(egl_driver);
 
@@ -279,13 +281,13 @@ struct yagl_egl_backend *yagl_egl_offscreen_create(struct yagl_egl_driver *egl_d
         goto fail;
     }
 
-    ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], NULL);
+    ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], NULL, 0);
 
     if (ctx == EGL_NO_CONTEXT) {
         goto fail;
     }
 
-    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx);
+    global_ctx = egl_driver->context_create(egl_driver, dpy, &configs[0], ctx, 0);
 
     if (global_ctx == EGL_NO_CONTEXT) {
         goto fail;

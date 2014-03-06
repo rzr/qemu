@@ -2,7 +2,7 @@
 #define __eglplatform_h_
 
 /*
-** Copyright (c) 2007-2009 The Khronos Group Inc.
+** Copyright (c) 2007-2013 The Khronos Group Inc.
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a
 ** copy of this software and/or associated documentation files (the
@@ -25,7 +25,7 @@
 */
 
 /* Platform-specific types and definitions for egl.h
- * $Revision: 12306 $ on $Date: 2010-08-25 09:51:28 -0700 (Wed, 25 Aug 2010) $
+ * $Revision: 23432 $ on $Date: 2013-10-09 00:57:24 -0700 (Wed, 09 Oct 2013) $
  *
  * Adopters may modify khrplatform.h and this file to suit their platform.
  * You are encouraged to submit all modifications to the Khronos group so that
@@ -83,26 +83,15 @@ typedef int   EGLNativeDisplayType;
 typedef void *EGLNativeWindowType;
 typedef void *EGLNativePixmapType;
 
-#elif defined(WL_EGL_PLATFORM)
+#elif defined(__ANDROID__) || defined(ANDROID)
 
-typedef struct wl_display     *EGLNativeDisplayType;
-typedef struct wl_egl_pixmap  *EGLNativePixmapType;
-typedef struct wl_egl_window  *EGLNativeWindowType;
+#include <android/native_window.h>
 
-#elif defined(__GBM__)
-
-typedef struct gbm_device  *EGLNativeDisplayType;
-typedef struct gbm_bo      *EGLNativePixmapType;
-typedef void               *EGLNativeWindowType;
-
-#elif defined(ANDROID) /* Android */
-
-struct ANativeWindow;
 struct egl_native_pixmap_t;
 
-typedef struct ANativeWindow        *EGLNativeWindowType;
-typedef struct egl_native_pixmap_t  *EGLNativePixmapType;
-typedef void                        *EGLNativeDisplayType;
+typedef struct ANativeWindow*           EGLNativeWindowType;
+typedef struct egl_native_pixmap_t*     EGLNativePixmapType;
+typedef void*                           EGLNativeDisplayType;
 
 #elif defined(__APPLE__) && defined (__MACH__) /* Mac OS X */
 
@@ -112,14 +101,6 @@ typedef void                *EGLNativeWindowType;
 
 #elif defined(__unix__)
 
-#ifdef MESA_EGL_NO_X11_HEADERS
-
-typedef void            *EGLNativeDisplayType;
-typedef khronos_uint32_t EGLNativePixmapType;
-typedef khronos_uint32_t EGLNativeWindowType;
-
-#else
-
 /* X11 (tentative)  */
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -127,8 +108,6 @@ typedef khronos_uint32_t EGLNativeWindowType;
 typedef Display *EGLNativeDisplayType;
 typedef Pixmap   EGLNativePixmapType;
 typedef Window   EGLNativeWindowType;
-
-#endif /* MESA_EGL_NO_X11_HEADERS */
 
 #else
 #error "Platform not recognized"

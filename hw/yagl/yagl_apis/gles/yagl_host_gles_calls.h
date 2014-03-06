@@ -42,13 +42,37 @@ void yagl_host_glDrawElements(GLenum mode,
     GLsizei count,
     GLenum type,
     const GLvoid *indices, int32_t indices_count);
-void yagl_host_glReadPixels(GLint x,
+void yagl_host_glReadPixelsData(GLint x,
     GLint y,
     GLsizei width,
     GLsizei height,
     GLenum format,
     GLenum type,
     GLvoid *pixels, int32_t pixels_maxcount, int32_t *pixels_count);
+void yagl_host_glReadPixelsOffset(GLint x,
+    GLint y,
+    GLsizei width,
+    GLsizei height,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels);
+void yagl_host_glDrawArraysInstanced(GLenum mode,
+    GLint start,
+    GLsizei count,
+    GLsizei primcount);
+void yagl_host_glDrawElementsInstanced(GLenum mode,
+    GLsizei count,
+    GLenum type,
+    const void *indices, int32_t indices_count,
+    GLsizei primcount);
+void yagl_host_glDrawRangeElements(GLenum mode,
+    GLuint start,
+    GLuint end,
+    GLsizei count,
+    GLenum type,
+    const GLvoid *indices, int32_t indices_count);
+void yagl_host_glGenVertexArrays(const GLuint *arrays, int32_t arrays_count);
+void yagl_host_glBindVertexArray(GLuint array);
 void yagl_host_glDisableVertexAttribArray(GLuint index);
 void yagl_host_glEnableVertexAttribArray(GLuint index);
 void yagl_host_glVertexAttribPointerData(GLuint indx,
@@ -101,6 +125,19 @@ void yagl_host_glTexCoordPointerOffset(GLint size,
     GLsizei offset);
 void yagl_host_glDisableClientState(GLenum array);
 void yagl_host_glEnableClientState(GLenum array);
+void yagl_host_glVertexAttribDivisor(GLuint index,
+    GLuint divisor);
+void yagl_host_glVertexAttribIPointerData(GLuint index,
+    GLint size,
+    GLenum type,
+    GLsizei stride,
+    GLint first,
+    const GLvoid *data, int32_t data_count);
+void yagl_host_glVertexAttribIPointerOffset(GLuint index,
+    GLint size,
+    GLenum type,
+    GLsizei stride,
+    GLsizei offset);
 void yagl_host_glGenBuffers(const GLuint *buffers, int32_t buffers_count);
 void yagl_host_glBindBuffer(GLenum target,
     GLuint buffer);
@@ -110,25 +147,26 @@ void yagl_host_glBufferData(GLenum target,
 void yagl_host_glBufferSubData(GLenum target,
     GLsizei offset,
     const GLvoid *data, int32_t data_count);
+void yagl_host_glBindBufferBase(GLenum target,
+    GLuint index,
+    GLuint buffer);
+void yagl_host_glBindBufferRange(GLenum target,
+    GLuint index,
+    GLuint buffer,
+    GLint offset,
+    GLsizei size);
+void yagl_host_glMapBuffer(GLuint buffer,
+    const GLuint *ranges, int32_t ranges_count,
+    GLvoid *data, int32_t data_maxcount, int32_t *data_count);
+void yagl_host_glCopyBufferSubData(GLenum readTarget,
+    GLenum writeTarget,
+    GLint readOffset,
+    GLint writeOffset,
+    GLsizei size);
 void yagl_host_glGenTextures(const GLuint *textures, int32_t textures_count);
 void yagl_host_glBindTexture(GLenum target,
     GLuint texture);
 void yagl_host_glActiveTexture(GLenum texture);
-void yagl_host_glCompressedTexImage2D(GLenum target,
-    GLint level,
-    GLenum internalformat,
-    GLsizei width,
-    GLsizei height,
-    GLint border,
-    const GLvoid *data, int32_t data_count);
-void yagl_host_glCompressedTexSubImage2D(GLenum target,
-    GLint level,
-    GLint xoffset,
-    GLint yoffset,
-    GLsizei width,
-    GLsizei height,
-    GLenum format,
-    const GLvoid *data, int32_t data_count);
 void yagl_host_glCopyTexImage2D(GLenum target,
     GLint level,
     GLenum internalformat,
@@ -151,7 +189,7 @@ void yagl_host_glGetTexParameterfv(GLenum target,
 void yagl_host_glGetTexParameteriv(GLenum target,
     GLenum pname,
     GLint *param);
-void yagl_host_glTexImage2D(GLenum target,
+void yagl_host_glTexImage2DData(GLenum target,
     GLint level,
     GLint internalformat,
     GLsizei width,
@@ -160,6 +198,15 @@ void yagl_host_glTexImage2D(GLenum target,
     GLenum format,
     GLenum type,
     const GLvoid *pixels, int32_t pixels_count);
+void yagl_host_glTexImage2DOffset(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels);
 void yagl_host_glTexParameterf(GLenum target,
     GLenum pname,
     GLfloat param);
@@ -172,7 +219,7 @@ void yagl_host_glTexParameteri(GLenum target,
 void yagl_host_glTexParameteriv(GLenum target,
     GLenum pname,
     const GLint *params, int32_t params_count);
-void yagl_host_glTexSubImage2D(GLenum target,
+void yagl_host_glTexSubImage2DData(GLenum target,
     GLint level,
     GLint xoffset,
     GLint yoffset,
@@ -181,6 +228,15 @@ void yagl_host_glTexSubImage2D(GLenum target,
     GLenum format,
     GLenum type,
     const GLvoid *pixels, int32_t pixels_count);
+void yagl_host_glTexSubImage2DOffset(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLsizei width,
+    GLsizei height,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels);
 void yagl_host_glClientActiveTexture(GLenum texture);
 void yagl_host_glTexEnvi(GLenum target,
     GLenum pname,
@@ -205,6 +261,57 @@ void yagl_host_glGetTexEnviv(GLenum env,
 void yagl_host_glGetTexEnvfv(GLenum env,
     GLenum pname,
     GLfloat *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glTexImage3DData(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    const void *pixels, int32_t pixels_count);
+void yagl_host_glTexImage3DOffset(GLenum target,
+    GLint level,
+    GLint internalformat,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels);
+void yagl_host_glTexSubImage3DData(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLenum format,
+    GLenum type,
+    const void *pixels, int32_t pixels_count);
+void yagl_host_glTexSubImage3DOffset(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLsizei width,
+    GLsizei height,
+    GLsizei depth,
+    GLenum format,
+    GLenum type,
+    GLsizei pixels);
+void yagl_host_glCopyTexSubImage3D(GLenum target,
+    GLint level,
+    GLint xoffset,
+    GLint yoffset,
+    GLint zoffset,
+    GLint x,
+    GLint y,
+    GLsizei width,
+    GLsizei height);
 void yagl_host_glGenFramebuffers(const GLuint *framebuffers, int32_t framebuffers_count);
 void yagl_host_glBindFramebuffer(GLenum target,
     GLuint framebuffer);
@@ -217,6 +324,42 @@ void yagl_host_glFramebufferRenderbuffer(GLenum target,
     GLenum attachment,
     GLenum renderbuffertarget,
     GLuint renderbuffer);
+void yagl_host_glBlitFramebuffer(GLint srcX0,
+    GLint srcY0,
+    GLint srcX1,
+    GLint srcY1,
+    GLint dstX0,
+    GLint dstY0,
+    GLint dstX1,
+    GLint dstY1,
+    GLbitfield mask,
+    GLenum filter);
+void yagl_host_glDrawBuffers(const GLenum *bufs, int32_t bufs_count);
+void yagl_host_glReadBuffer(GLenum mode);
+void yagl_host_glFramebufferTexture3D(GLenum target,
+    GLenum attachment,
+    GLenum textarget,
+    GLuint texture,
+    GLint level,
+    GLint zoffset);
+void yagl_host_glFramebufferTextureLayer(GLenum target,
+    GLenum attachment,
+    GLuint texture,
+    GLint level,
+    GLint layer);
+void yagl_host_glClearBufferiv(GLenum buffer,
+    GLint drawbuffer,
+    const GLint *value, int32_t value_count);
+void yagl_host_glClearBufferuiv(GLenum buffer,
+    GLint drawbuffer,
+    const GLuint *value, int32_t value_count);
+void yagl_host_glClearBufferfi(GLenum buffer,
+    GLint drawbuffer,
+    GLfloat depth,
+    GLint stencil);
+void yagl_host_glClearBufferfv(GLenum buffer,
+    GLint drawbuffer,
+    const GLfloat *value, int32_t value_count);
 void yagl_host_glGenRenderbuffers(const GLuint *renderbuffers, int32_t renderbuffers_count);
 void yagl_host_glBindRenderbuffer(GLenum target,
     GLuint renderbuffer);
@@ -227,6 +370,11 @@ void yagl_host_glRenderbufferStorage(GLenum target,
 void yagl_host_glGetRenderbufferParameteriv(GLenum target,
     GLenum pname,
     GLint *param);
+void yagl_host_glRenderbufferStorageMultisample(GLenum target,
+    GLsizei samples,
+    GLenum internalformat,
+    GLsizei width,
+    GLsizei height);
 void yagl_host_glCreateProgram(GLuint program);
 void yagl_host_glCreateShader(GLuint shader,
     GLenum type);
@@ -240,12 +388,12 @@ void yagl_host_glCompileShader(GLuint shader);
 void yagl_host_glBindAttribLocation(GLuint program,
     GLuint index,
     const GLchar *name, int32_t name_count);
-GLboolean yagl_host_glGetActiveAttrib(GLuint program,
+void yagl_host_glGetActiveAttrib(GLuint program,
     GLuint index,
     GLint *size,
     GLenum *type,
     GLchar *name, int32_t name_maxcount, int32_t *name_count);
-GLboolean yagl_host_glGetActiveUniform(GLuint program,
+void yagl_host_glGetActiveUniform(GLuint program,
     GLuint index,
     GLint *size,
     GLenum *type,
@@ -278,7 +426,8 @@ void yagl_host_glGetVertexAttribfv(GLuint index,
 void yagl_host_glGetVertexAttribiv(GLuint index,
     GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
-void yagl_host_glLinkProgram(GLuint program);
+void yagl_host_glLinkProgram(GLuint program,
+    GLint *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glUniform1f(GLboolean tl,
     uint32_t location,
     GLfloat x);
@@ -375,13 +524,145 @@ void yagl_host_glVertexAttrib4f(GLuint indx,
     GLfloat w);
 void yagl_host_glVertexAttrib4fv(GLuint indx,
     const GLfloat *values, int32_t values_count);
+void yagl_host_glGetActiveUniformsiv(GLuint program,
+    const GLuint *uniformIndices, int32_t uniformIndices_count,
+    GLint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glGetUniformIndices(GLuint program,
+    const GLchar *uniformNames, int32_t uniformNames_count,
+    GLuint *uniformIndices, int32_t uniformIndices_maxcount, int32_t *uniformIndices_count);
+GLuint yagl_host_glGetUniformBlockIndex(GLuint program,
+    const GLchar *uniformBlockName, int32_t uniformBlockName_count);
+void yagl_host_glUniformBlockBinding(GLuint program,
+    GLuint uniformBlockIndex,
+    GLuint uniformBlockBinding);
+void yagl_host_glGetActiveUniformBlockName(GLuint program,
+    GLuint uniformBlockIndex,
+    GLchar *uniformBlockName, int32_t uniformBlockName_maxcount, int32_t *uniformBlockName_count);
+void yagl_host_glGetActiveUniformBlockiv(GLuint program,
+    GLuint uniformBlockIndex,
+    GLenum pname,
+    GLint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glGetVertexAttribIiv(GLuint index,
+    GLenum pname,
+    GLint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glGetVertexAttribIuiv(GLuint index,
+    GLenum pname,
+    GLuint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glVertexAttribI4i(GLuint index,
+    GLint x,
+    GLint y,
+    GLint z,
+    GLint w);
+void yagl_host_glVertexAttribI4ui(GLuint index,
+    GLuint x,
+    GLuint y,
+    GLuint z,
+    GLuint w);
+void yagl_host_glVertexAttribI4iv(GLuint index,
+    const GLint *v, int32_t v_count);
+void yagl_host_glVertexAttribI4uiv(GLuint index,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glGetUniformuiv(GLboolean tl,
+    GLuint program,
+    uint32_t location,
+    GLuint *params, int32_t params_maxcount, int32_t *params_count);
+void yagl_host_glUniform1ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0);
+void yagl_host_glUniform2ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1);
+void yagl_host_glUniform3ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1,
+    GLuint v2);
+void yagl_host_glUniform4ui(GLboolean tl,
+    uint32_t location,
+    GLuint v0,
+    GLuint v1,
+    GLuint v2,
+    GLuint v3);
+void yagl_host_glUniform1uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glUniform2uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glUniform3uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glUniform4uiv(GLboolean tl,
+    uint32_t location,
+    const GLuint *v, int32_t v_count);
+void yagl_host_glUniformMatrix2x3fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix2x4fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix3x2fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix3x4fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix4x2fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
+void yagl_host_glUniformMatrix4x3fv(GLboolean tl,
+    uint32_t location,
+    GLboolean transpose,
+    const GLfloat *value, int32_t value_count);
 void yagl_host_glGetIntegerv(GLenum pname,
     GLint *params, int32_t params_maxcount, int32_t *params_count);
+int yagl_host_glGetFragDataLocation(GLuint program,
+    const GLchar *name, int32_t name_count);
 void yagl_host_glGetFloatv(GLenum pname,
     GLfloat *params, int32_t params_maxcount, int32_t *params_count);
 void yagl_host_glGetString(GLenum name,
     GLchar *str, int32_t str_maxcount, int32_t *str_count);
 GLboolean yagl_host_glIsEnabled(GLenum cap);
+void yagl_host_glGenTransformFeedbacks(const GLuint *ids, int32_t ids_count);
+void yagl_host_glBindTransformFeedback(GLenum target,
+    GLuint id);
+void yagl_host_glBeginTransformFeedback(GLenum primitiveMode);
+void yagl_host_glEndTransformFeedback(void);
+void yagl_host_glPauseTransformFeedback(void);
+void yagl_host_glResumeTransformFeedback(void);
+void yagl_host_glTransformFeedbackVaryings(GLuint program,
+    const GLchar *varyings, int32_t varyings_count,
+    GLenum bufferMode);
+void yagl_host_glGetTransformFeedbackVaryings(GLuint program,
+    GLsizei *sizes, int32_t sizes_maxcount, int32_t *sizes_count,
+    GLenum *types, int32_t types_maxcount, int32_t *types_count);
+void yagl_host_glGenQueries(const GLuint *ids, int32_t ids_count);
+void yagl_host_glBeginQuery(GLenum target,
+    GLuint id);
+void yagl_host_glEndQuery(GLenum target);
+GLboolean yagl_host_glGetQueryObjectuiv(GLuint id,
+    GLuint *result);
+void yagl_host_glGenSamplers(const GLuint *samplers, int32_t samplers_count);
+void yagl_host_glBindSampler(GLuint unit,
+    GLuint sampler);
+void yagl_host_glSamplerParameteri(GLuint sampler,
+    GLenum pname,
+    GLint param);
+void yagl_host_glSamplerParameteriv(GLuint sampler,
+    GLenum pname,
+    const GLint *param, int32_t param_count);
+void yagl_host_glSamplerParameterf(GLuint sampler,
+    GLenum pname,
+    GLfloat param);
+void yagl_host_glSamplerParameterfv(GLuint sampler,
+    GLenum pname,
+    const GLfloat *param, int32_t param_count);
 void yagl_host_glDeleteObjects(const GLuint *objects, int32_t objects_count);
 void yagl_host_glBlendEquation(GLenum mode);
 void yagl_host_glBlendEquationSeparate(GLenum modeRGB,

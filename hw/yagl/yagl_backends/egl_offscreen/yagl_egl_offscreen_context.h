@@ -51,7 +51,8 @@ struct yagl_egl_offscreen_context
 struct yagl_egl_offscreen_context
     *yagl_egl_offscreen_context_create(struct yagl_egl_offscreen_display *dpy,
                                        const struct yagl_egl_native_config *cfg,
-                                       struct yagl_egl_offscreen_context *share_context);
+                                       struct yagl_egl_offscreen_context *share_context,
+                                       int version);
 
 bool yagl_egl_offscreen_context_read_pixels(struct yagl_egl_offscreen_context *ctx,
                                             uint32_t width,

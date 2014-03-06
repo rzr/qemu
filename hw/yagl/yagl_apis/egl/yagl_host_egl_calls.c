@@ -69,19 +69,36 @@ struct yagl_egl_interface_impl
     struct yagl_egl_backend *backend;
 };
 
-static void yagl_egl_ensure_current(struct yagl_egl_interface *iface)
-{
-    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
-    egl_iface->backend->ensure_current(egl_iface->backend);
-}
-
-static void yagl_egl_unensure_current(struct yagl_egl_interface *iface)
-{
-    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
-    egl_iface->backend->unensure_current(egl_iface->backend);
-}
-
 static YAGL_DEFINE_TLS(struct yagl_egl_api_ts*, egl_api_ts);
+
+static uint32_t yagl_egl_get_ctx_id(struct yagl_egl_interface *iface)
+{
+    if (egl_api_ts) {
+        return egl_api_ts->context ? egl_api_ts->context->res.handle : 0;
+    } else {
+        return 0;
+    }
+}
+
+static void yagl_egl_ensure_ctx(struct yagl_egl_interface *iface, uint32_t ctx_id)
+{
+    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
+    uint32_t current_ctx_id = yagl_egl_get_ctx_id(iface);
+
+    if (!current_ctx_id || (ctx_id && (current_ctx_id != ctx_id))) {
+        egl_iface->backend->ensure_current(egl_iface->backend);
+    }
+}
+
+static void yagl_egl_unensure_ctx(struct yagl_egl_interface *iface, uint32_t ctx_id)
+{
+    struct yagl_egl_interface_impl *egl_iface = (struct yagl_egl_interface_impl*)iface;
+    uint32_t current_ctx_id = yagl_egl_get_ctx_id(iface);
+
+    if (!current_ctx_id || (ctx_id && (current_ctx_id != ctx_id))) {
+        egl_iface->backend->unensure_current(egl_iface->backend);
+    }
+}
 
 static __inline bool yagl_validate_display(yagl_host_handle dpy_,
                                            struct yagl_egl_display **dpy,
@@ -268,8 +285,9 @@ struct yagl_api_ps *yagl_host_egl_process_init(struct yagl_api *api)
 
     egl_iface = g_malloc0(sizeof(*egl_iface));
 
-    egl_iface->base.ensure_ctx = &yagl_egl_ensure_current;
-    egl_iface->base.unensure_ctx = &yagl_egl_unensure_current;
+    egl_iface->base.get_ctx_id = &yagl_egl_get_ctx_id;
+    egl_iface->base.ensure_ctx = &yagl_egl_ensure_ctx;
+    egl_iface->base.unensure_ctx = &yagl_egl_unensure_ctx;
     egl_iface->backend = egl_api->backend;
 
     /*
@@ -433,42 +451,48 @@ EGLBoolean yagl_host_eglChooseConfig(yagl_host_handle dpy_,
                 dummy.frame_buffer_level = attrib_list[i + 1];
                 break;
             case EGL_BUFFER_SIZE:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.buffer_size = attrib_list[i + 1];
                 break;
             case EGL_RED_SIZE:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.red_size = attrib_list[i + 1];
                 break;
             case EGL_GREEN_SIZE:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.green_size = attrib_list[i + 1];
                 break;
             case EGL_BLUE_SIZE:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.blue_size = attrib_list[i + 1];
                 break;
             case EGL_ALPHA_SIZE:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.alpha_size = attrib_list[i + 1];
                 break;
             case EGL_CONFIG_CAVEAT:
-                if ((attrib_list[i + 1] != EGL_NONE) &&
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] != EGL_NONE) &&
                     (attrib_list[i + 1] != EGL_SLOW_CONFIG) &&
                     (attrib_list[i + 1] != EGL_NON_CONFORMANT_CONFIG)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
@@ -477,42 +501,52 @@ EGLBoolean yagl_host_eglChooseConfig(yagl_host_handle dpy_,
                 dummy.caveat = attrib_list[i + 1];
                 break;
             case EGL_CONFIG_ID:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
-                config_id = attrib_list[i + 1];
-                has_config_id = true;
+                if (attrib_list[i + 1] != EGL_DONT_CARE) {
+                    config_id = attrib_list[i + 1];
+                    has_config_id = true;
+                }
                 break;
             case EGL_DEPTH_SIZE:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.depth_size = attrib_list[i + 1];
                 break;
             case EGL_MAX_SWAP_INTERVAL:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.max_swap_interval = attrib_list[i + 1];
                 break;
             case EGL_MIN_SWAP_INTERVAL:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.min_swap_interval = attrib_list[i + 1];
                 break;
             case EGL_CONFORMANT:
-                if ((attrib_list[i + 1] &
-                    ~(EGL_OPENGL_ES_BIT|
-                      EGL_OPENVG_BIT|
-                      EGL_OPENGL_ES2_BIT|
-                      EGL_OPENGL_BIT)) != 0) {
-                    YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
-                    goto out;
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    ((attrib_list[i + 1] &
+                     ~(EGL_OPENGL_ES_BIT|
+                       EGL_OPENVG_BIT|
+                       EGL_OPENGL_ES2_BIT|
+                       EGL_OPENGL_BIT)) != 0)) {
+                    if (((attrib_list[i + 1] & EGL_OPENGL_ES3_BIT_KHR) == 0) ||
+                        (dpy->backend->gl_version < yagl_gl_3_1_es3)) {
+                        YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
+                        goto out;
+                    }
                 }
                 dummy.conformant = attrib_list[i + 1];
                 break;
@@ -524,34 +558,39 @@ EGLBoolean yagl_host_eglChooseConfig(yagl_host_handle dpy_,
                 break;
             case EGL_NATIVE_VISUAL_TYPE:
                 dummy.native_visual_type = attrib_list[i + 1];
-                if ((attrib_list[i + 1] < 0) || (attrib_list[i + 1] > 1)) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    ((attrib_list[i + 1] < 0) || (attrib_list[i + 1] > 1))) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 break;
             case EGL_SAMPLE_BUFFERS:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.sample_buffers_num = attrib_list[i + 1];
                 break;
             case EGL_SAMPLES:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.samples_per_pixel = attrib_list[i + 1];
                 break;
             case EGL_STENCIL_SIZE:
-                if (attrib_list[i + 1] < 0) {
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] < 0)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
                 }
                 dummy.stencil_size = attrib_list[i + 1];
                 break;
             case EGL_TRANSPARENT_TYPE:
-                if ((attrib_list[i + 1] != EGL_NONE) &&
+                if ((attrib_list[i + 1] != EGL_DONT_CARE) &&
+                    (attrib_list[i + 1] != EGL_NONE) &&
                     (attrib_list[i + 1] != EGL_TRANSPARENT_RGB)) {
                     YAGL_SET_ERR(EGL_BAD_ATTRIBUTE);
                     goto out;
@@ -872,6 +911,7 @@ yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
     const EGLint *attrib_list, int32_t attrib_list_count,
     EGLint *error)
 {
+    int i = 0, version = 1;
     yagl_host_handle res = 0;
     struct yagl_egl_display *dpy = NULL;
     struct yagl_egl_config *config = NULL;
@@ -888,6 +928,22 @@ yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
         goto out;
     }
 
+    if (egl_api_ts->api == EGL_OPENGL_ES_API) {
+        if (!yagl_egl_is_attrib_list_empty(attrib_list)) {
+            while (attrib_list[i] != EGL_NONE) {
+                switch (attrib_list[i]) {
+                case EGL_CONTEXT_CLIENT_VERSION:
+                    version = attrib_list[i + 1];
+                    break;
+                default:
+                    break;
+                }
+
+                i += 2;
+            }
+        }
+    }
+
     if (share_context_) {
         if (!yagl_validate_context(dpy, share_context_, &share_context, error)) {
             goto out;
@@ -897,7 +953,8 @@ yagl_host_handle yagl_host_eglCreateContext(yagl_host_handle dpy_,
     ctx = yagl_egl_context_create(dpy,
                                   config,
                                   (share_context ? share_context->backend_ctx
-                                                 : NULL));
+                                                 : NULL),
+                                  version);
 
     if (!ctx) {
         YAGL_SET_ERR(EGL_BAD_MATCH);

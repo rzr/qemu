@@ -61,18 +61,17 @@ typedef enum
 
 #define YAGL_NUM_APIS 2
 
-/*
- * EGL client APIs.
- */
 typedef enum
 {
-    yagl_client_api_ogl = 0,
-    yagl_client_api_gles1 = 1,
-    yagl_client_api_gles2 = 2,
-    yagl_client_api_ovg = 3
-} yagl_client_api;
-
-#define YAGL_NUM_CLIENT_APIS 4
+    /* OpenGL 2.1 or OpenGL >= 3.1 compatibility. */
+    yagl_gl_2 = 0,
+    /* OpenGL >= 3.1 core. */
+    yagl_gl_3_1 = 1,
+    /* OpenGL >= 3.1 core, GL_ARB_ES3_compatibility support. */
+    yagl_gl_3_1_es3 = 2,
+    /* OpenGL >= 3.2 core, no GL_ARB_ES3_compatibility support. */
+    yagl_gl_3_2 = 3
+} yagl_gl_version;
 
 typedef void (*yagl_api_func)(struct yagl_transport */*t*/);
 
