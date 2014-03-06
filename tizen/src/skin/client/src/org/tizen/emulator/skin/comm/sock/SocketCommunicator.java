@@ -454,7 +454,7 @@ public class SocketCommunicator implements ICommunicator {
 					Image imageGuide = skin.getImageRegistry().getResourceImage(
 							ResourceImageName.RESOURCE_BLANK_GUIDE);
 					if (imageGuide != null) {
-						skin.drawImageToDisplay(imageGuide);
+						skin.setCoverImage(imageGuide);
 					}
 
 					break;

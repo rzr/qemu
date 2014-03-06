@@ -35,6 +35,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
@@ -97,15 +98,15 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	public native int getPixels(int[] array);
 
 	private PaletteData palette;
-	private PollFBThread pollThread;
-	private Image imageGuide;
+	private BufferPainter bufferPainter;
+	private Image imageCover;
 
 	private int maxTouchPoint;
 	private EmulatorFingers finger;
 	private int multiTouchKey;
 	private int multiTouchKeySub;
 
-	class PollFBThread extends Thread {
+	class BufferPainter extends Thread {
 		private Display display;
 		private int widthFB;
 		private int heightFB;
@@ -121,7 +122,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		/**
 		 *  Constructor
 		 */
-		public PollFBThread(PaletteData paletteDisplay, int widthFB, int heightFB) {
+		public BufferPainter(PaletteData paletteDisplay, int widthFB, int heightFB) {
 			this.display = Display.getDefault();
 			this.widthFB = widthFB;
 			this.heightFB = heightFB;
@@ -133,14 +134,13 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			this.imageFramebuffer =
 					new Image(Display.getDefault(), dataFramebuffer);
 
-			setName("PollFBThread");
+			setName("BufferPainter");
 			setDaemon(true);
 			setWaitIntervalTime(0);
 
 			this.runnable = new Runnable() {
 				@Override
 				public void run() {
-					// logger.info("update display framebuffer");
 					if (lcdCanvas.isDisposed() == false) {
 						lcdCanvas.redraw();
 					}
@@ -175,7 +175,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				}
 
 				if (display.isDisposed() == false) {
-					/* redraw canvas */
+					/* canvas update */
 					display.asyncExec(runnable);
 				}
 			}
@@ -209,8 +209,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		public void stopRequest() {
 			stopRequest = true;
 
-			synchronized(pollThread) {
-				pollThread.notify();
+			synchronized(bufferPainter) {
+				bufferPainter.notify();
 			}
 		}
 	}
@@ -232,7 +232,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	@Override
 	protected void skinFinalize() {
-		pollThread.stopRequest();
+		bufferPainter.stopRequest();
 
 		/* remove multi-touch finger points */
 		finger.cleanupMultiTouchState();
@@ -307,7 +307,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		}
 
 		/* display updater thread */
-		pollThread = new PollFBThread(palette,
+		bufferPainter = new BufferPainter(palette,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight());
 
@@ -321,24 +321,29 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				final int screen_width = lcdCanvas.getSize().x;
 				final int screen_height = lcdCanvas.getSize().y;
 
-				/* if (pollThread.getWaitIntervalTime() == 0) {
-					logger.info("draw black screen");
+				/* blank guide */
+				if (imageCover != null) {
+					logger.info("draw cover image");
 
-					e.gc.drawRectangle(-1, -1, x + 1, y + 1);
+					drawImage(e.gc, imageCover, screen_width, screen_height);
+
+					imageCover = null;
 					return;
-				}*/
+				}
 
 				if (isOnInterpolation == false) {
 					/* Mac - NSImageInterpolationNone */
+					/* Ubuntu - CAIRO_FILTER_NEAREST */
 					e.gc.setInterpolation(SWT.NONE);
 				} else {
 					/* Mac - NSImageInterpolationHigh */
+					/* Ubuntu - CAIRO_FILTER_BEST */
 					e.gc.setInterpolation(SWT.HIGH);
 				}
 
 				if (currentState.getCurrentAngle() == 0) { /* portrait */
-					e.gc.drawImage(pollThread.imageFramebuffer,
-							0, 0, pollThread.widthFB, pollThread.heightFB,
+					e.gc.drawImage(bufferPainter.imageFramebuffer,
+							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
 							0, 0, screen_width, screen_height);
 				} else { /* non-portrait */
 					Transform newTransform = new Transform(lcdCanvas.getDisplay());
@@ -364,8 +369,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					e.gc.getTransform(oldTransform);
 					/* set to new transform */
 					e.gc.setTransform(newTransform);
-					e.gc.drawImage(pollThread.imageFramebuffer,
-							0, 0, pollThread.widthFB, pollThread.heightFB,
+					e.gc.drawImage(bufferPainter.imageFramebuffer,
+							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
 							0, 0, frame_width, frame_height);
 					/* back to old transform */
 					e.gc.setTransform(oldTransform);
@@ -374,67 +379,62 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					oldTransform.dispose();
 				}
 
-				/* blank guide */
-				if (imageGuide != null) {
-					logger.info("draw blank guide");
-
-					int widthImage = imageGuide.getImageData().width;
-					int heightImage = imageGuide.getImageData().height;
-					int margin_w = screen_width - widthImage;
-					int margin_h = screen_height - heightImage;
-					int margin = Math.min(margin_w, margin_h);
-
-					int scaledWidthImage = widthImage;
-					int scaledHeightImage = heightImage;
-					if (margin < 0) {
-						scaledWidthImage += margin;
-						scaledHeightImage += margin;
-					}
-
-					e.gc.drawImage(imageGuide, 0, 0,
-							widthImage, heightImage,
-							(screen_width - scaledWidthImage) / 2,
-							(screen_height - scaledHeightImage) / 2,
-							scaledWidthImage, scaledHeightImage);
-
-					imageGuide = null;
-				} else {
-					/* draw finger image for when rotate while use multitouch */
-					if (finger.getMultiTouchEnable() == 1 ||
-							finger.getMultiTouchEnable() == 2) {
-						finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(),
-								currentState.getCurrentResolutionHeight(),
-								currentState.getCurrentScale(),
-								currentState.getCurrentRotationId());
-					}
-
-					finger.drawFingerPoints(e.gc);
+				/* draw finger image for when rotate while use multitouch */
+				if (finger.getMultiTouchEnable() == 1 ||
+						finger.getMultiTouchEnable() == 2) {
+					finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(),
+							currentState.getCurrentResolutionHeight(),
+							currentState.getCurrentScale(),
+							currentState.getCurrentRotationId());
 				}
+
+				finger.drawFingerPoints(e.gc);
 			}
 		});
 
-		pollThread.start();
+		bufferPainter.start();
 	}
 
 	@Override
 	public void updateDisplay() {
-		pollThread.getPixelsFromSharedMemory();
+		bufferPainter.getPixelsFromSharedMemory();
 
-		synchronized(pollThread) {
-			pollThread.notify();
+		synchronized(bufferPainter) {
+			bufferPainter.notify();
 		}
 	}
 
 	@Override
-	public void drawImageToDisplay(Image image) {
-		imageGuide = image;
-
+	public void setCoverImage(final Image image) {
 		Display.getDefault().syncExec(new Runnable() {
 			@Override
 			public void run() {
+				imageCover = image;
+
 				lcdCanvas.redraw();
 			}
 		});
+	}
+
+	private void drawImage(GC gc, final Image imageSrc, int widthDst, int heightDst) {
+		int widthSrc = imageSrc.getImageData().width;
+		int heightSrc = imageSrc.getImageData().height;
+		int margin_w = widthDst - widthSrc;
+		int margin_h = heightDst - heightSrc;
+		int margin = Math.min(margin_w, margin_h);
+
+		int widthScaledImage = widthSrc;
+		int heightScaledImage = heightSrc;
+		if (margin < 0) {
+			widthScaledImage += margin;
+			heightScaledImage += margin;
+		}
+
+		gc.drawImage(imageSrc, 0, 0,
+				widthSrc, heightSrc,
+				(widthDst - widthScaledImage) / 2,
+				(heightDst - heightScaledImage) / 2,
+				widthScaledImage, heightScaledImage);
 	}
 
 	@Override
