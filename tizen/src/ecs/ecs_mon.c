@@ -569,7 +569,7 @@ out:
     QDECREF(input);
     QDECREF(args);
 }
-
+#if 0
 static int check_key(QObject *input_obj, const char *key) {
     const QDictEntry *ent;
     QDict *input_dict;
@@ -591,7 +591,7 @@ static int check_key(QObject *input_obj, const char *key) {
 
     return 0;
 }
-#if 0
+
 static QObject* get_data_object(QObject *input_obj) {
     const QDictEntry *ent;
     QDict *input_dict;
@@ -614,7 +614,7 @@ static QObject* get_data_object(QObject *input_obj) {
 
     return NULL;
 }
-#endif
+
 static int ijcount = 0;
 
 static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
@@ -775,7 +775,7 @@ void handle_ecs_command(JSONMessageParser *parser, QList *tokens,
         LOG("handler not found");
     }
 }
-
+#endif
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
 {
     LOG(">> monitor req: data = %s", msg->command);

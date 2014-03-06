@@ -44,6 +44,8 @@
 #include "../tizen/src/hw/maru_virtio_touchscreen.h"
 #include "../tizen/src/hw/virtio-gl.h"
 #include "../tizen/src/hw/maru_virtio_sensor.h"
+#include "../tizen/src/hw/maru_virtio_jack.h"
+#include "../tizen/src/hw/maru_virtio_power.h"
 #include "../tizen/src/hw/maru_virtio_nfc.h"
 #endif
 
@@ -65,6 +67,8 @@ typedef struct VirtIOHWKeyPCI VirtIOHWKeyPCI;
 typedef struct VirtIOKeyboardPCI VirtIOKeyboardPCI;
 typedef struct VirtIOSENSORPCI VirtIOSENSORPCI;
 typedef struct VirtIONFCPCI VirtIONFCPCI;
+typedef struct VirtIOPOWERPCI VirtIOPOWERPCI;
+typedef struct VirtIOJACKPCI VirtIOJACKPCI;
 #endif
 
 /* virtio-pci-bus */
@@ -321,6 +325,30 @@ struct VirtIOSENSORPCI {
 struct VirtIONFCPCI {
     VirtIOPCIProxy parent_obj;
     VirtIONFC vdev;
+};
+
+/*
+ * virtio-jack-pci: This extends VirtioPCIProxy.
+ */
+#define TYPE_VIRTIO_JACK_PCI "virtio-jack-pci"
+#define VIRTIO_JACK_PCI(obj) \
+        OBJECT_CHECK(VirtIOJACKPCI, (obj), TYPE_VIRTIO_JACK_PCI)
+
+struct VirtIOJACKPCI {
+    VirtIOPCIProxy parent_obj;
+    VirtIOJACK vdev;
+};
+
+/*
+ * virtio-power-pci: This extends VirtioPCIProxy.
+ */
+#define TYPE_VIRTIO_POWER_PCI "virtio-power-pci"
+#define VIRTIO_POWER_PCI(obj) \
+        OBJECT_CHECK(VirtIOPOWERPCI, (obj), TYPE_VIRTIO_POWER_PCI)
+
+struct VirtIOPOWERPCI {
+    VirtIOPCIProxy parent_obj;
+    VirtIOPOWER vdev;
 };
 
 #endif

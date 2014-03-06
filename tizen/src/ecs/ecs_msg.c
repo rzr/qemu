@@ -62,6 +62,8 @@
 
 #include "hw/maru_virtio_evdi.h"
 #include "hw/maru_virtio_sensor.h"
+#include "hw/maru_virtio_jack.h"
+#include "hw/maru_virtio_power.h"
 #include "hw/maru_virtio_nfc.h"
 #include "skin/maruskin_operation.h"
 #include "skin/maruskin_server.h"
@@ -145,6 +147,39 @@ static bool send_to_single_client(ECS__Master* master, ECS_Client *ccli)
     return true;
 }
 #endif
+
+static void send_status_injector_ntf(const char* cmd, int cmdlen, int act, char* on)
+{
+    int msglen = 0, datalen = 0;
+    type_length length  = 0;
+    type_group group = GROUP_STATUS;
+    type_action action = act;
+
+    if (cmd == NULL || on == NULL || cmdlen > 10)
+        return;
+
+    datalen = strlen(on);
+    length  = (unsigned short)datalen;
+
+    msglen = datalen + 15;
+    char* status_msg = (char*) malloc(msglen);
+    if(!status_msg)
+        return;
+
+    memset(status_msg, 0, msglen);
+
+    memcpy(status_msg, cmd, cmdlen);
+    memcpy(status_msg + 10, &length, sizeof(unsigned short));
+    memcpy(status_msg + 12, &group, sizeof(unsigned char));
+    memcpy(status_msg + 13, &action, sizeof(unsigned char));
+    memcpy(status_msg + 14, on, datalen);
+
+    send_injector_ntf(status_msg, msglen);
+
+    if (status_msg)
+        free(status_msg);
+}
+
 static void msgproc_injector_ans(ECS_Client* ccli, const char* category, bool succeed)
 {
     if (ccli == NULL) {
@@ -173,7 +208,10 @@ static void msgproc_injector_ans(ECS_Client* ccli, const char* category, bool su
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
 {
     char cmd[10];
+    char data[10];
     bool ret = false;
+    int sndlen = 0;
+    char* sndbuf;
     memset(cmd, 0, 10);
     strcpy(cmd, msg->category);
     type_length length = (type_length) msg->length;
@@ -191,9 +229,29 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
             action, group);
 
+    if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
+        if (group == MSG_GROUP_STATUS) {
+            memset(data, 0, 10);
+            if (action == MSG_ACT_BATTERY_LEVEL) {
+                sprintf(data, "%d", get_power_capacity());
+            } else if (action == MSG_ACT_BATTERY_CHARGER){
+                sprintf(data, "%d", get_jack_charger());
+            } else {
+                goto injector_send;
+            }
+            LOG("status : %s", data);
+            send_status_injector_ntf(MSG_TYPE_SENSOR, MSG_TYPE_SENSOR_LEN, action, data);
+            goto injector_req_success;
+        } else {
+            if (msg->data.data && datalen > 0){
+                set_injector_data((char*)msg->data.data);
+            }
+        }
+    }
 
-    int sndlen = datalen + 14;
-    char* sndbuf = (char*) g_malloc(sndlen + 1);
+injector_send:
+    sndlen = datalen + 14;
+    sndbuf = (char*) g_malloc(sndlen + 1);
     if (!sndbuf) {
         goto injector_req_fail;
     }
@@ -224,6 +282,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     if (!ret)
         goto injector_req_fail;
 
+injector_req_success:
     msgproc_injector_ans(ccli, cmd, ret);
     return true;
 
@@ -334,20 +393,20 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 
     if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
         if (group == MSG_GROUP_STATUS) {
-            if (action == MSG_ACTION_ACCEL) {
+            if (action == MSG_ACT_ACCEL) {
                 get_sensor_accel();
-            } else if (action == MSG_ACTION_GYRO) {
+            } else if (action == MSG_ACT_GYRO) {
                 get_sensor_gyro();
-            } else if (action == MSG_ACTION_MAG) {
+            } else if (action == MSG_ACT_MAG) {
                 get_sensor_mag();
-            } else if (action == MSG_ACTION_LIGHT) {
+            } else if (action == MSG_ACT_LIGHT) {
                 get_sensor_light();
-            } else if (action == MSG_ACTION_PROXI) {
+            } else if (action == MSG_ACT_PROXI) {
                 get_sensor_proxi();
             }
         } else {
             if (data != NULL) {
-                set_sensor_data(length, data);
+                set_injector_data(data);
             }
         }
     } else if (!strncmp(cmd, "Network", 7)) {

@@ -55,14 +55,6 @@
 #define LOG(fmt, arg...)
 #endif
 
-#ifndef _WIN32
-#define LOG_HOME                "HOME"
-#define LOG_PATH                "/tizen-sdk-data/emulator/vms/ecs.log"
-#else
-#define LOG_HOME                "LOCALAPPDATA"
-#define LOG_PATH                "\\tizen-sdk-data\\emulator\\vms\\ecs.log"
-#endif
-
 #define ECS_OPTS_NAME           "ecs"
 #define HOST_LISTEN_ADDR        "127.0.0.1"
 #define HOST_LISTEN_PORT        0
@@ -77,37 +69,44 @@
 #define COMMAND_TYPE_MONITOR    "monitor"
 #define COMMAND_TYPE_DEVICE     "device"
 
-//
 #define COMMAND_TYPE_TETHERING  "tethering"
 
-#define ECS_MSG_STARTINFO_REQ   "startinfo_req"
-#define ECS_MSG_STARTINFO_ANS   "startinfo_ans"
-
 #define MSG_TYPE_SENSOR         "sensor"
+#define MSG_TYPE_SENSOR_LEN     10
 #define MSG_TYPE_NFC            "nfc"
 #define MSG_TYPE_SIMUL_NFC      "simul_nfc"
 
 #define MSG_GROUP_STATUS        15
 
-#define MSG_ACTION_ACCEL        110
-#define MSG_ACTION_GYRO         111
-#define MSG_ACTION_MAG          112
-#define MSG_ACTION_LIGHT        113
-#define MSG_ACTION_PROXI        114
+enum message_action {
+    MSG_ACT_BATTERY_LEVEL = 100,
+    MSG_ACT_BATTERY_CHARGER = 101,
+    MSG_ACT_USB = 102,
+    MSG_ACT_EARJACK = 103,
+    MSG_ACT_RSSI = 104,
+    MSG_ACT_ACCEL = 110,
+    MSG_ACT_GYRO = 111,
+    MSG_ACT_MAG = 112,
+    MSG_ACT_LIGHT = 113,
+    MSG_ACT_PROXI = 114,
+    MSG_ACT_MOTION = 115
+};
 
 #define TIMER_ALIVE_S           60
 #define TYPE_DATA_SELF          "self"
 
-enum sensor_level {
+enum injector_level {
     level_accel = 1,
     level_proxi = 2,
     level_light = 3,
     level_gyro = 4,
     level_geo = 5,
+    level_battery = 8,
     level_tilt = 12,
     level_magnetic = 13
 };
 
+#define MAX_CATEGORY_LEN        10
 typedef unsigned short  type_length;
 typedef unsigned char   type_group;
 typedef unsigned char   type_action;
@@ -119,7 +118,7 @@ typedef struct sbuf
 {
     int _netlen;
     int _use;
-    char _buf[4096];
+    char _buf[OUT_BUF_SIZE];
 }sbuf;
 
 struct Monitor {
@@ -229,10 +228,9 @@ void send_host_keyboard_ntf(int on);
 /* request */
 int accel_min_max(double value);
 void req_set_sensor_accel(int x, int y, int z);
-void set_sensor_data(int length, const char* data);
+void set_injector_data(const char* data);
 
 /* Monitor */
-void handle_ecs_command(JSONMessageParser *parser, QList *tokens, void *opaque);
 void handle_qmp_command(JSONMessageParser *parser, QList *tokens, void *opaque);
 
 static QemuOptsList qemu_ecs_opts = {

@@ -53,10 +53,12 @@
 #define PCI_DEVICE_ID_VIRTIO_KEYBOARD    0x1020
 #define PCI_DEVICE_ID_VIRTIO_ESM         0x1024
 #define PCI_DEVICE_ID_VIRTIO_HWKEY       0x1028
-#define PCI_DEVICE_ID_VIRTIO_EVDI        0x1032
-#define PCI_DEVICE_ID_VIRTIO_GL          0x1036
-#define PCI_DEVICE_ID_VIRTIO_SENSOR      0x103A
-#define PCI_DEVICE_ID_VIRTIO_NFC         0x103E
+#define PCI_DEVICE_ID_VIRTIO_EVDI        0x102C
+#define PCI_DEVICE_ID_VIRTIO_GL          0x1030
+#define PCI_DEVICE_ID_VIRTIO_SENSOR      0x1034
+#define PCI_DEVICE_ID_VIRTIO_POWER       0x1035
+#define PCI_DEVICE_ID_VIRTIO_JACK        0x1036
+#define PCI_DEVICE_ID_VIRTIO_NFC         0x1038
 #define PCI_DEVICE_ID_VIRTUAL_BRILL_CODEC  0x1040
 
 /* Virtio */
@@ -95,5 +97,7 @@
 #define VIRTIO_ID_GL			36
 #define VIRTIO_ID_SENSOR        37
 #define VIRTIO_ID_NFC           38
+#define VIRTIO_ID_JACK          39
+#define VIRTIO_ID_POWER         40
 
 #endif /* MARU_DEVICE_IDS_H_ */

@@ -37,6 +37,8 @@
 
 #include "ecs.h"
 #include "hw/maru_virtio_sensor.h"
+#include "hw/maru_virtio_power.h"
+#include "hw/maru_virtio_jack.h"
 
 #define TEMP_BUF_SIZE   255
 #define MAX_VAL_LENGTH  40
@@ -293,7 +295,40 @@ static void _req_set_sensor_mag(int len, const char* data)
     set_sensor_mag(tmp, strlen(tmp));
 }
 
-void set_sensor_data(int length, const char* data)
+static void set_battery_data(int len, const char* data) {
+    char tmp[TEMP_BUF_SIZE];
+    int id = 0, status = 0, level = 0;
+
+    // remove item size
+    len += get_parse_val(data + len, tmp);
+
+    // id
+    len += get_parse_val(data + len, tmp);
+    id = atoi(tmp);
+
+    // status
+    len += get_parse_val(data + len, tmp);
+    status = atoi(tmp);
+
+    if (id == 1) {
+        set_power_capacity(status);
+        if (status == 100) {
+            set_power_charge_full(1);
+        } else {
+            set_power_charge_full(0);
+        }
+    } else if (id == 2) {
+        level = get_power_capacity();
+        set_jack_charger(status);
+        if (level != 100 && status == 1) {
+            set_power_charge_now(1);
+        } else {
+            set_power_charge_now(0);
+        }
+    }
+}
+
+void set_injector_data(const char* data)
 {
     char tmpbuf[TEMP_BUF_SIZE];
     int len = get_parse_val(data, tmpbuf);
@@ -313,6 +348,9 @@ void set_sensor_data(int length, const char* data)
             break;
         case level_geo:
             _req_set_sensor_geo(len, data);
+            break;
+        case level_battery:
+            set_battery_data(len, data);
             break;
         case level_tilt:
             _req_set_sensor_tilt(len, data);

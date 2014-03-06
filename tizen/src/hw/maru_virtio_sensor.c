@@ -39,8 +39,22 @@
 MULTI_DEBUG_CHANNEL(qemu, virtio-sensor);
 
 #define SENSOR_DEVICE_NAME  "sensor"
-#define _MAX_BUF                    1024
+#define _MAX_BUF            1024
+#define __MAX_BUF_SENSOR    32
 
+static char accel_xyz [__MAX_BUF_SENSOR] = {'0',',','9','8','0','6','6','5',',','0'};
+
+static char geo_raw [__MAX_BUF_SENSOR] = {'0',' ','-','9','0',' ','0',' ','3'};
+static char geo_tesla [__MAX_BUF_SENSOR] = {'1',' ','0',' ','-','1','0'};
+
+static int gyro_x_raw = 0;
+static int gyro_y_raw = 0;
+static int gyro_z_raw = 0;
+
+static int light_adc = 65535;
+static int light_level = 10;
+
+static int proxi_vo = 8;
 
 VirtIOSENSOR* vsensor;
 
@@ -49,105 +63,7 @@ typedef struct msg_info {
 
     uint16_t type;
     uint16_t req;
-
-    QTAILQ_ENTRY(msg_info) next;
 } msg_info;
-
-
-static QTAILQ_HEAD(msgInfoRecvHead , msg_info) sensor_msg_queue =
-    QTAILQ_HEAD_INITIALIZER(sensor_msg_queue);
-
-static pthread_mutex_t buf_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static void add_msg_queue(msg_info* msg)
-{
-    pthread_mutex_lock(&buf_mutex);
-    QTAILQ_INSERT_TAIL(&sensor_msg_queue, msg, next);
-    pthread_mutex_unlock(&buf_mutex);
-
-    qemu_bh_schedule(vsensor->bh);
-}
-
-void req_sensor_data (enum sensor_types type, enum request_cmd req, char* data, int len)
-{
-    if (type >= sensor_type_max || (req != request_get && req != request_set)) {
-        ERR("unavailable sensor type request.\n");
-    }
-
-    msg_info* msg = (msg_info*) malloc(sizeof(msg_info));
-    if (!msg) {
-        ERR("The allocation of msg_info is failed.\n");
-        return;
-    }
-
-    memset(msg, 0, sizeof(msg_info));
-
-    if (req == request_set) {
-        if (len > _MAX_BUF) {
-            ERR("The data is too big to send.\n");
-			free(msg);
-            return;
-        }
-        memcpy(msg->buf, data, len);
-    }
-
-    msg->type = type;
-    msg->req = req;
-
-    add_msg_queue(msg);
-}
-
-static void flush_sensor_recv_queue(void)
-{
-    int index;
-
-    if (unlikely(!virtio_queue_ready(vsensor->rvq))) {
-        INFO("virtio queue is not ready\n");
-        return;
-    }
-
-    if (unlikely(virtio_queue_empty(vsensor->rvq))) {
-        INFO("virtqueue is empty\n");
-        return;
-    }
-
-    pthread_mutex_lock(&buf_mutex);
-    while (!QTAILQ_EMPTY(&sensor_msg_queue))
-    {
-        msg_info* msginfo = QTAILQ_FIRST(&sensor_msg_queue);
-        if (!msginfo) {
-            ERR("msginfo is NULL!\n");
-            break;
-        }
-
-        INFO("sending message: %s, type: %d, req: %d\n", msginfo->buf, msginfo->type, msginfo->req);
-
-        VirtQueueElement elem;
-        index = virtqueue_pop(vsensor->rvq, &elem);
-        if (index == 0)
-            break;
-
-        memcpy(elem.in_sg[0].iov_base, msginfo, sizeof(struct msg_info));
-
-        virtqueue_push(vsensor->rvq, &elem, sizeof(msg_info));
-        virtio_notify(&vsensor->vdev, vsensor->rvq);
-
-        QTAILQ_REMOVE(&sensor_msg_queue, msginfo, next);
-        if (msginfo)
-            free(msginfo);
-    }
-    pthread_mutex_unlock(&buf_mutex);
-}
-
-static void virtio_sensor_recv(VirtIODevice *vdev, VirtQueue *vq)
-{
-    flush_sensor_recv_queue();
-}
-
-static void maru_sensor_bh(void *opaque)
-{
-    flush_sensor_recv_queue();
-}
 
 static type_action get_action(enum sensor_types type)
 {
@@ -176,13 +92,12 @@ static type_action get_action(enum sensor_types type)
     return action;
 }
 
-static void send_to_ecs(struct msg_info* msg)
+static void send_sensor_to_ecs(const char* data, enum sensor_types type)
 {
     type_length length = 0;
     type_group group = GROUP_STATUS;
     type_action action = 0;
-
-    int buf_len = strlen(msg->buf);
+    int buf_len = strlen(data);
     int message_len =  buf_len + 14;
 
     char* ecs_message = (char*) malloc(message_len + 1);
@@ -192,15 +107,15 @@ static void send_to_ecs(struct msg_info* msg)
     memset(ecs_message, 0, message_len + 1);
 
     length = (unsigned short) buf_len;
-    action = get_action(msg->type);
+    action = get_action(type);
 
     memcpy(ecs_message, MESSAGE_TYPE_SENSOR, 10);
     memcpy(ecs_message + 10, &length, sizeof(unsigned short));
     memcpy(ecs_message + 12, &group, sizeof(unsigned char));
     memcpy(ecs_message + 13, &action, sizeof(unsigned char));
-    memcpy(ecs_message + 14, msg->buf, buf_len);
+    memcpy(ecs_message + 14, data, buf_len);
 
-    INFO("ntf_to_injector- len: %d, group: %d, action: %d, data: %s\n", length, group, action, msg->buf);
+    INFO("ntf_to_injector- len: %d, group: %d, action: %d, data: %s\n", length, group, action, data);
 
     send_device_ntf(ecs_message, message_len);
 
@@ -208,31 +123,185 @@ static void send_to_ecs(struct msg_info* msg)
         free(ecs_message);
 }
 
-static void virtio_sensor_send(VirtIODevice *vdev, VirtQueue *vq)
+static void __set_sensor_data (enum sensor_types type, char* data, int len)
+{
+    if (len < 0 || len > __MAX_BUF_SENSOR) {
+        ERR("sensor data size is wrong.\n");
+        return;
+    }
+
+    if (data == NULL) {
+        ERR("sensor data is NULL.\n");
+        return;
+    }
+
+    switch (type) {
+        case sensor_type_accel:
+            strcpy(accel_xyz, data);
+            break;
+        case sensor_type_gyro_x:
+            sscanf(data, "%d", &gyro_x_raw);
+            break;
+        case sensor_type_gyro_y:
+            sscanf(data, "%d", &gyro_y_raw);
+            break;
+        case sensor_type_gyro_z:
+            sscanf(data, "%d", &gyro_z_raw);
+            break;
+        case sensor_type_light_adc:
+            sscanf(data, "%d", &light_adc);
+            light_level = (light_adc / 6554) % 10 + 1;
+            break;
+        case sensor_type_light_level:
+            sscanf(data, "%d", &light_level);
+            break;
+        case sensor_type_proxi:
+            sscanf(data, "%d", &proxi_vo);
+            break;
+        case sensor_type_mag:
+            strcpy(geo_tesla, data);
+            break;
+        case sensor_type_tilt:
+            strcpy(geo_raw, data);
+            break;
+        default:
+            return;
+    }
+}
+
+static void __get_sensor_data(enum sensor_types type, char* msg_info)
+{
+    if (msg_info == NULL) {
+        return;
+    }
+
+    switch (type) {
+        case sensor_type_accel:
+            strcpy(msg_info, accel_xyz);
+            break;
+        case sensor_type_mag:
+            strcpy(msg_info, geo_tesla);
+            break;
+        case sensor_type_tilt:
+            strcpy(msg_info, geo_raw);
+            break;
+        case sensor_type_gyro:
+            sprintf(msg_info, "%d, %d, %d", gyro_x_raw, gyro_y_raw, gyro_z_raw);
+            break;
+        case sensor_type_gyro_x:
+            sprintf(msg_info, "%d", gyro_x_raw);
+            break;
+        case sensor_type_gyro_y:
+            sprintf(msg_info, "%d", gyro_y_raw);
+            break;
+        case sensor_type_gyro_z:
+            sprintf(msg_info, "%d", gyro_z_raw);
+            break;
+        case sensor_type_light:
+        case sensor_type_light_adc:
+            sprintf(msg_info, "%d", light_adc);
+            break;
+        case sensor_type_light_level:
+            sprintf(msg_info, "%d", light_level);
+            break;
+        case sensor_type_proxi:
+            sprintf(msg_info, "%d", proxi_vo);
+            break;
+        default:
+            return;
+    }
+}
+
+void req_sensor_data (enum sensor_types type, enum request_cmd req, char* data, int len)
+{
+    char msg_info [__MAX_BUF_SENSOR];
+    memset(msg_info, 0, __MAX_BUF_SENSOR);
+
+    if (type >= sensor_type_max || (req != request_get && req != request_set)) {
+        ERR("unavailable sensor type request.\n");
+        return;
+    }
+
+    if (req == request_set) {
+        __set_sensor_data (type, data, len);
+    } else if (req == request_get) {
+        __get_sensor_data(type, msg_info);
+        send_sensor_to_ecs(msg_info, type);
+    }
+}
+
+static void answer_sensor_data_request(int type, char* data, VirtQueueElement *elem)
+{
+    msg_info* msginfo = (msg_info*) malloc(sizeof(msg_info));
+    if (!msginfo) {
+        ERR("msginfo is NULL!\n");
+        return;
+    }
+
+    msginfo->req = request_answer;
+    msginfo->type = type;
+    __get_sensor_data(type, msginfo->buf);
+
+    INFO("sending message: %s, type: %d, req: %d\n", msginfo->buf, msginfo->type, msginfo->req);
+
+    memset(elem->in_sg[0].iov_base, 0, elem->in_sg[0].iov_len);
+    memcpy(elem->in_sg[0].iov_base, msginfo, sizeof(struct msg_info));
+
+    if (msginfo)
+        free(msginfo);
+}
+
+static void handle_msg(struct msg_info *msg, VirtQueueElement *elem)
+{
+    unsigned int len = 0;
+
+	if (msg == NULL) {
+        INFO("msg info structure is NULL.\n");
+        return;
+    }
+
+    if (msg->req == request_set) {
+        __set_sensor_data (msg->type, msg->buf, strlen(msg->buf));
+    } else if (msg->req == request_get) {
+        answer_sensor_data_request(msg->type, msg->buf, elem);
+        len = sizeof(msg_info);
+    }
+
+    virtqueue_push(vsensor->vq, elem, len);
+    virtio_notify(&vsensor->vdev, vsensor->vq);
+}
+
+static void virtio_sensor_vq(VirtIODevice *vdev, VirtQueue *vq)
 {
     VirtIOSENSOR *vsensor = (VirtIOSENSOR*)vdev;
     struct msg_info msg;
     VirtQueueElement elem;
     int index = 0;
 
-    if (virtio_queue_empty(vsensor->svq)) {
-        INFO("<< virtqueue is empty.\n");
+    if (vsensor->vq == NULL) {
+        ERR("virt queue is not ready.\n");
+        return;
+    }
+
+    if (!virtio_queue_ready(vsensor->vq)) {
+        ERR("virtqueue is not ready.");
+        return;
+    }
+
+    if (virtio_queue_empty(vsensor->vq)) {
+        ERR("<< virtqueue is empty.\n");
         return;
     }
 
     while ((index = virtqueue_pop(vq, &elem))) {
-
         memset(&msg, 0x00, sizeof(msg));
         memcpy(&msg, elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
 
-        INFO("send to ecs: %s, len: %d, type: %d, req: %d\n", msg.buf, strlen(msg.buf), msg.type, msg.req);
-        send_to_ecs(&msg);
+        INFO("handling msg from driver: %s, len: %d, type: %d, req: %d, index: %d\n", msg.buf, strlen(msg.buf), msg.type, msg.req, index);
+
+        handle_msg(&msg, &elem);
     }
-
-    virtqueue_push(vq, &elem, sizeof(VirtIOSENSOR));
-    virtio_notify(&vsensor->vdev, vq);
 }
-
 
 static int virtio_sensor_init(VirtIODevice *vdev)
 {
@@ -247,10 +316,7 @@ static int virtio_sensor_init(VirtIODevice *vdev)
         return -1;
     }
 
-    vsensor->rvq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_recv);
-    vsensor->svq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_send);
-
-    vsensor->bh = qemu_bh_new(maru_sensor_bh, vsensor);
+    vsensor->vq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_vq);
 
     return 0;
 }
@@ -259,9 +325,6 @@ static int virtio_sensor_exit(DeviceState *dev)
 {
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     INFO("destroy sensor device\n");
-
-    if (vsensor->bh)
-        qemu_bh_delete(vsensor->bh);
 
     virtio_cleanup(vdev);
 
@@ -281,7 +344,6 @@ static uint32_t virtio_sensor_get_features(VirtIODevice *vdev,
     return 0;
 }
 
-
 static void virtio_sensor_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -291,8 +353,6 @@ static void virtio_sensor_class_init(ObjectClass *klass, void *data)
     vdc->get_features = virtio_sensor_get_features;
     vdc->reset = virtio_sensor_reset;
 }
-
-
 
 static const TypeInfo virtio_device_info = {
     .name = TYPE_VIRTIO_SENSOR,

@@ -141,42 +141,16 @@ static inline void start_logging(void) {
 
     stdout[0] = flog[0];
     stderr[0] = flog[0];
-
-    g_free(path);
 #else
-    log_fd = open("/dev/null", O_RDONLY);
-    if(log_fd < 0) {
-        fprintf(stderr, "failed to open() /dev/null\n");
-        return;
-    }
-    if(dup2(log_fd, 0) < 0) {
-        fprintf(stderr, "failed to dup2(log_fd, 0)\n");
-        return;
-    }
-
     log_fd = creat(path, 0640);
     if (log_fd < 0) {
         log_fd = open("/dev/null", O_WRONLY);
-        if(log_fd < 0) {
-            fprintf(stderr, "failed to open(/dev/null, O_WRONLY)\n");
-            g_free(path);
-            return;
-        }
     }
-
-    if(dup2(log_fd, 1) < 0) {
-        fprintf(stderr, "failed to dup2(log_fd, 1)\n");
-        g_free(path);
+    if (log_fd < 0) {
         return;
     }
-
-    if(dup2(log_fd, 2) < 0) {
-        fprintf(stderr, "failed to dup2(log_fd, 2)\n");
-        g_free(path);
-        return;
-    }
-
-    g_free(path);
+    dup2(log_fd, 1);
+    dup2(log_fd, 2);
 #endif
 }
 
@@ -383,6 +357,11 @@ static void ecs_read(ECS_Client *cli) {
     int read = 0;
     int to_read_bytes = 0;
 
+    if (cli == NULL)
+    {
+        LOG("client is null.");
+        return;
+    }
 #ifndef __WIN32
     if (ioctl(cli->client_fd, FIONREAD, &to_read_bytes) < 0)
     {
@@ -396,11 +375,11 @@ static void ecs_read(ECS_Client *cli) {
         LOG("ioctl failed");
          return;
     }
-     to_read_bytes = (int)to_read_bytes_long;
+    to_read_bytes = (int)to_read_bytes_long;
 #endif
 
     if (to_read_bytes == 0) {
-        LOG("ioctl FIONREAD: 0");
+        LOG("ioctl FIONREAD: 0\n");
         goto fail;
     }
 

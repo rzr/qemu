@@ -5,7 +5,7 @@
  *
  * Contact:
  *  KiTae Kim       <kt920.kim@samsung.com>
- *  JiHey Kim       <jihye1128.kim@samsung.com>
+ *  JiHye Kim       <jihye1128.kim@samsung.com>
  *  YeongKyoon Lee  <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -222,7 +222,7 @@ static bool send_tethering_ntf(const char *data)
 
 void send_tethering_sensor_data(const char *data, int len)
 {
-    set_sensor_data(len, data);
+    set_injector_data(data);
 }
 
 void send_tethering_touch_data(int x, int y, int index, int status)
