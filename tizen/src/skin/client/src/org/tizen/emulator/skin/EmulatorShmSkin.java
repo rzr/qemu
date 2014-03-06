@@ -550,7 +550,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	/* keyboard event */
 	@Override
-	protected void keyReleasedDelivery(int keyCode, int stateMask, int keyLocation) {
+	protected void keyReleasedDelivery(int keyCode,
+			int stateMask, int keyLocation, boolean remove) {
 		/* check multi-touch */
 		if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
 			int tempStateMask = stateMask & ~SWT.BUTTON1;
@@ -571,11 +572,14 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		communicator.sendToQEMU(
 				SendCommand.SEND_KEYBOARD_KEY_EVENT, keyEventData, false);
 
-		removePressedKeyFromList(keyEventData);
+		if (remove == true) {
+			removePressedKeyFromList(keyEventData);
+		}
 	}
 
 	@Override
-	protected void keyPressedDelivery(int keyCode, int stateMask, int keyLocation) {
+	protected void keyPressedDelivery(int keyCode,
+			int stateMask, int keyLocation, boolean add) {
 		/* TODO: (finger.getMaxTouchPoint() > 1) */
 
 		int tempStateMask = stateMask & ~SWT.BUTTON1;
@@ -619,7 +623,9 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		communicator.sendToQEMU(
 				SendCommand.SEND_KEYBOARD_KEY_EVENT, keyEventData, false);
 
-		addPressedKeyToList(keyEventData);
+		if (add == true) {
+			addPressedKeyToList(keyEventData);
+		}
 	}
 
 	@Override
