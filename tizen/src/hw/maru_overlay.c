@@ -75,7 +75,6 @@ typedef struct OverlayState {
     MemoryRegion    mmio_addr;
 } OverlayState;
 
-
 static uint64_t overlay_reg_read(void *opaque,
                                  hwaddr addr,
                                  unsigned size)
@@ -88,12 +87,12 @@ static uint64_t overlay_reg_read(void *opaque,
     case OVERLAY_POSITION:
         TRACE("GET => overlay0 position, left(%d):top(%d)\n",
               overlay0_left, overlay0_top);
-        return overlay0_left | overlay0_top << 16;
+        return (uint64_t)overlay0_left | ((uint64_t)overlay0_top << 16);
         break;
     case OVERLAY_SIZE:
         TRACE("GET => overlay0 size, width(%d):height(%d)\n",
               overlay0_width, overlay0_height);
-        return overlay0_width | overlay0_height << 16;
+        return (uint64_t)overlay0_width | ((uint64_t)overlay0_height << 16);
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POWER:
         TRACE("GET => overlay1 power status(%d)\n", overlay1_power);
@@ -102,12 +101,12 @@ static uint64_t overlay_reg_read(void *opaque,
     case OVERLAY1_REG_OFFSET + OVERLAY_POSITION:
         TRACE("GET => overlay1 position, left(%d):top(%d)\n",
               overlay1_left, overlay1_top);
-        return overlay1_left | overlay1_top << 16;
+        return (uint64_t)overlay1_left | ((uint64_t)overlay1_top << 16);
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_SIZE:
         TRACE("GET => overlay1 size, width(%d):height(%d)\n",
               overlay1_width, overlay1_height);
-        return overlay1_width | overlay1_height << 16;
+        return (uint64_t)overlay1_width | ((uint64_t)overlay1_height << 16);
         break;
     default:
         ERR("wrong overlay register read - addr : %d\n", (int)addr);
