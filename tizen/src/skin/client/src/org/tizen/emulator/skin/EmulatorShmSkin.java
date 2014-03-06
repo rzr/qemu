@@ -39,7 +39,6 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
-import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
@@ -312,7 +311,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				currentState.getCurrentResolutionHeight());
 
 		lcdCanvas.addPaintListener(new PaintListener() {
-			public void paintControl(PaintEvent e) { //TODO: optimize
+			public void paintControl(PaintEvent e) {
 				/* e.gc.setAdvanced(true);
 				if (!e.gc.getAdvanced()) {
 					logger.info("Advanced graphics not supported");
@@ -341,54 +340,39 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					e.gc.setInterpolation(SWT.HIGH);
 				}
 
-				if (currentState.getCurrentAngle() == 0) { /* portrait */
+				switch(currentState.getCurrentAngle()) {
+				case -90: /* landscape */
+					e.gc.setTransform(displayTransform);
+					e.gc.drawImage(bufferPainter.imageFramebuffer,
+							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
+							0, 0, screen_height, screen_width);
+					e.gc.setTransform(null); /* set to the identity transform */
+					break;
+				case 180: /* reverse-portrait */
+					e.gc.setTransform(displayTransform);
 					e.gc.drawImage(bufferPainter.imageFramebuffer,
 							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
 							0, 0, screen_width, screen_height);
-				} else { /* non-portrait */
-					Transform newTransform = new Transform(lcdCanvas.getDisplay());
-					Transform oldTransform = new Transform(lcdCanvas.getDisplay());
-					newTransform.rotate(currentState.getCurrentAngle());
-
-					int frame_width = 0, frame_height = 0;
-					if (currentState.getCurrentAngle() == 90) { /* reverse landscape */
-						frame_width = screen_height;
-						frame_height = screen_width;
-						newTransform.translate(0, frame_height * -1);
-					} else if (currentState.getCurrentAngle() == 180) { /* reverse portrait */
-						frame_width = screen_width;
-						frame_height = screen_height;
-						newTransform.translate(frame_width * -1, frame_height * -1);
-					} else if (currentState.getCurrentAngle() == -90) { /* landscape */
-						frame_width = screen_height;
-						frame_height = screen_width;
-						newTransform.translate(frame_width * -1, 0);
-					}
-
-					/* save current transform as oldTransform */
-					e.gc.getTransform(oldTransform);
-					/* set to new transform */
-					e.gc.setTransform(newTransform);
+					e.gc.setTransform(null);
+					break;
+				case 90: /* reverse-landscape */
+					e.gc.setTransform(displayTransform);
 					e.gc.drawImage(bufferPainter.imageFramebuffer,
 							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
-							0, 0, frame_width, frame_height);
-					/* back to old transform */
-					e.gc.setTransform(oldTransform);
-
-					newTransform.dispose();
-					oldTransform.dispose();
+							0, 0, screen_height, screen_width);
+					e.gc.setTransform(null);
+					break;
+				default: /* portrait */
+					e.gc.drawImage(bufferPainter.imageFramebuffer,
+							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
+							0, 0, screen_width, screen_height);
+					break;
 				}
 
-				/* draw finger image for when rotate while use multitouch */
-				if (finger.getMultiTouchEnable() == 1 ||
-						finger.getMultiTouchEnable() == 2) {
-					finger.rearrangeFingerPoints(currentState.getCurrentResolutionWidth(),
-							currentState.getCurrentResolutionHeight(),
-							currentState.getCurrentScale(),
-							currentState.getCurrentRotationId());
+				if (finger != null && finger.getMultiTouchEnable() != 0) {
+					/* draw points for multi-touch */
+					finger.drawFingerPoints(e.gc);
 				}
-
-				finger.drawFingerPoints(e.gc);
 			}
 		});
 
@@ -401,6 +385,19 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 		synchronized(bufferPainter) {
 			bufferPainter.notify();
+		}
+	}
+
+	@Override
+	public void setSuitableTransform() {
+		super.setSuitableTransform();
+
+		if (finger != null) {
+			finger.rearrangeFingerPoints(
+					currentState.getCurrentResolutionWidth(),
+					currentState.getCurrentResolutionHeight(),
+					currentState.getCurrentScale(),
+					currentState.getCurrentRotationId());
 		}
 	}
 

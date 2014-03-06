@@ -424,6 +424,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 			public void paintControl(final PaintEvent e) {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
+
+					logger.info("shell transform was changed");
+
+					skin.setSuitableTransform();
 				}
 
 				/* set window size once again (for ubuntu 12.04) */
