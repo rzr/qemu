@@ -348,9 +348,13 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 				if (currentState.isNeedToUpdateDisplay() == true) {
 					currentState.setNeedToUpdateDisplay(false);
 
+					logger.info("shell transform was changed");
+
 					if (SwtUtil.isMacPlatform() == false) {
 						lcdCanvas.setBounds(currentState.getDisplayBounds());
 					}
+
+					skin.setSuitableTransform();
 				}
 
 				/* set window size once again (for ubuntu 12.04) */

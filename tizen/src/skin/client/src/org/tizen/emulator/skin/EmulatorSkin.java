@@ -63,6 +63,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -146,6 +147,7 @@ public class EmulatorSkin {
 	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
 	private int displayCanvasStyle;
+	public Transform displayTransform;
 	public SkinInformation skinInfo;
 	protected ISkinComposer skinComposer;
 
@@ -1257,6 +1259,27 @@ public class EmulatorSkin {
 
 	public void updateDisplay() {
 		/* abstract */
+	}
+
+	public void setSuitableTransform() {
+		if (displayTransform != null) {
+			displayTransform.dispose();
+		}
+
+		displayTransform = new Transform(lcdCanvas.getDisplay());
+		displayTransform.rotate(currentState.getCurrentAngle());
+
+		if (currentState.getCurrentAngle() == -90) { /* landscape */
+			displayTransform.translate(
+					lcdCanvas.getSize().y * -1, 0);
+		} else if (currentState.getCurrentAngle() == 180) { /* reverse-portrait */
+			displayTransform.translate(
+					lcdCanvas.getSize().x * -1,
+					lcdCanvas.getSize().y * -1);
+		} else if (currentState.getCurrentAngle() == 90) { /* reverse-landscape */
+			displayTransform.translate(
+					0, lcdCanvas.getSize().x * -1);
+		}
 	}
 
 	public void setCoverImage(Image image) {
