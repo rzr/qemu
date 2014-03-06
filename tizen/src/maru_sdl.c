@@ -188,12 +188,11 @@ static SDL_Surface *maru_do_pixman_rotate(SDL_Surface *rz_src,
                                          0.0, (double)rz_dst->w);
             break;
         default:
-            fprintf(stdout, "not supported angle factor (angle=%d)\n", angle);
+            ERR("Not supported angle factor (angle=%d)\n", angle);
             break;
     }
     pixman_transform_from_pixman_f_transform(&matrix, &matrix_f);
     pixman_image_set_transform(src, &matrix);
-    //pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
     pixman_image_composite(PIXMAN_OP_SRC, src, NULL, dst,
                            0, 0, 0, 0, 0, 0,
                            rz_dst->w, rz_dst->h);
