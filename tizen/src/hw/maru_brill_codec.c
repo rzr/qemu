@@ -213,6 +213,7 @@ static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_inde
 
     qemu_mutex_lock(&s->context_mutex);
 
+#if 0
     if (ioparam->api_index == CODEC_DEINIT) {
         if (s->context[ioparam->ctx_index].occupied_thread) {
             s->context[ioparam->ctx_index].requested_close = true;
@@ -220,7 +221,10 @@ static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_inde
             qemu_mutex_unlock(&s->context_mutex);
             return;
         }
-    } else if (ioparam->api_index != CODEC_INIT) {
+    } else
+#endif
+
+    if (ioparam->api_index != CODEC_INIT) {
         if (!s->context[ioparam->ctx_index].opened_context) {
             INFO("abandon api %d for context %d\n",
                     ioparam->api_index, ioparam->ctx_index);
@@ -318,7 +322,8 @@ static void *maru_brill_codec_threads(void *opaque)
         qemu_mutex_lock(&s->context_mutex);
         if (s->context[ctx_id].requested_close) {
             INFO("make worker thread to handle deinit\n");
-            codec_deinit(s, ctx_id, NULL);
+            // codec_deinit(s, ctx_id, NULL);
+            maru_brill_codec_release_context(s, ctx_id);
             s->context[ctx_id].requested_close = false;
         }
         qemu_mutex_unlock(&s->context_mutex);
@@ -1283,7 +1288,7 @@ static bool codec_picture_copy (MaruBrillCodecState *s, int ctx_id, void *elem)
 
     avctx = s->context[ctx_id].avctx;
     src = (AVPicture *)s->context[ctx_id].frame;
-    if (!avctx || !src) {
+    if (!avctx) {
         ERR("picture_copy. %d of AVCodecContext is NULL.\n", ctx_id);
         ret = false;
     } else if (!avctx->codec) {
@@ -1742,7 +1747,17 @@ static void maru_brill_codec_write(void *opaque, hwaddr addr,
         break;
 
     case CODEC_CMD_RELEASE_CONTEXT:
-        maru_brill_codec_release_context(s, (int32_t)value);
+    {
+        int ctx_index = (int32_t)value;
+
+        if (s->context[ctx_index].occupied_thread) {
+            s->context[ctx_index].requested_close = true;
+            INFO("make running thread to handle deinit\n");
+            qemu_mutex_unlock(&s->context_mutex);
+        } else {
+            maru_brill_codec_release_context(s, ctx_index);
+        }
+    }
         break;
 
     case CODEC_CMD_GET_DATA_FROM_QUEUE:
