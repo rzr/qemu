@@ -60,7 +60,6 @@ import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.KeyEventData;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
-import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.custom.SkinWindow;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.SpecialKeyWindowImageRegistry;
@@ -70,9 +69,9 @@ import org.tizen.emulator.skin.keywindow.dbi.KeyMapType;
 import org.tizen.emulator.skin.keywindow.dbi.KeyWindowUI;
 import org.tizen.emulator.skin.keywindow.dbi.RegionType;
 import org.tizen.emulator.skin.layout.HWKey;
+import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
-import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -127,11 +126,9 @@ public class SpecialKeyWindow extends SkinWindow {
 		/* get keywindow image */
 		//TODO: null
 		this.keyWindowImage = imageRegistry.getKeyWindowImage(
-				EmulatorConfig.DEFAULT_WINDOW_ROTATION,
-				SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);
+				(short)0, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_NORMAL);
 		this.keyWindowPressedImage = imageRegistry.getKeyWindowImage(
-				EmulatorConfig.DEFAULT_WINDOW_ROTATION,
-				SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
+				(short)0, SpecailKeyWindowImageType.SPECIAL_IMAGE_TYPE_PRESSED);
 
 		/* set window size */
 		if (keyWindowImage != null) {

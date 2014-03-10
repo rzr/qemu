@@ -30,7 +30,6 @@
 package org.tizen.emulator.skin.comm;
 
 import org.tizen.emulator.skin.comm.sock.data.ISendData;
-import org.tizen.emulator.skin.dbi.RotationNameType;
 
 /**
  * 
@@ -163,46 +162,6 @@ public interface ICommunicator extends Runnable {
 			throw new IllegalArgumentException( Integer.toString(val) );
 		}
 
-	}
-
-	public enum RotationInfo {
-		PORTRAIT( RotationNameType.PORTRAIT.value(), (short)0, 0 ),
-		LANDSCAPE( RotationNameType.LANDSCAPE.value(), (short)1, -90 ),
-		REVERSE_PORTRAIT( RotationNameType.REVERSE_PORTRAIT.value(), (short)2, 180 ),
-		REVERSE_LANDSCAPE( RotationNameType.REVERSE_LANDSCAPE.value(), (short)3, 90 );
-
-		private String value;
-		private short id;
-		private int angle;
-
-		RotationInfo( String value, short id, int ratio ) {
-			this.value = value;
-			this.id = id;
-			this.angle = ratio;
-		}
-
-		public String value() {
-			return this.value;
-		}
-
-		public int angle() {
-			return this.angle;
-		}
-
-		public short id() {
-			return this.id;
-		}
-
-		public static RotationInfo getValue(short id) {
-			RotationInfo[] values = RotationInfo.values();
-			for (int i = 0; i < values.length; i++) {
-				if (values[i].id == id) {
-					return values[i];
-				}
-			}
-
-			throw new IllegalArgumentException(Integer.toString(id));
-		}
 	}
 
 	public enum SendCommand {

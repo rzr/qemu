@@ -42,7 +42,6 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.MenuItemType;
 import org.tizen.emulator.skin.dbi.PopupMenuType;
@@ -159,8 +158,7 @@ public class PopupMenu {
 						ROTATE_MENUITEM_NAME : rotationMenuType.getItemName());
 			} else {
 				/* do not rotate */
-				skin.getEmulatorSkinState().setCurrentRotationId(
-						RotationInfo.PORTRAIT.id());
+				skin.getEmulatorSkinState().setCurrentRotationId();
 			}
 		}
 

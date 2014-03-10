@@ -88,6 +88,10 @@ public class ProfileSkinImageRegistry {
 			logger.info("get skin image from " + skinPath);
 
 			RotationType targetRotation = SkinRotation.getRotation(id);
+			if (targetRotation == null) {
+				return null;
+			}
+
 			List<RotationType> rotationList = rotations.getRotation();
 
 			for (RotationType rotation : rotationList) {

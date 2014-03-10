@@ -39,7 +39,6 @@ import java.util.logging.Logger;
 
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.exception.ConfigException;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -60,7 +59,6 @@ public class EmulatorConfig {
 	public static final int DEFAULT_WINDOW_SCALE = 50;
 	public static final int MIN_SCALE_FACTOR = 25;
 	public static final int MAX_SCALE_FACTOR = 200;
-	public static final short DEFAULT_WINDOW_ROTATION = RotationInfo.PORTRAIT.id();
 	public static final int DEFAULT_WINDOW_X = 50;
 	public static final int DEFAULT_WINDOW_Y = 50;
 	public static final SkinLogLevel DEFAULT_LOG_LEVEL = SkinLogLevel.DEBUG;

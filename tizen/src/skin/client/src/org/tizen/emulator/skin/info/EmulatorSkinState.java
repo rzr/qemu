@@ -53,7 +53,7 @@ public class EmulatorSkinState {
 	public EmulatorSkinState() {
 		this.currentResolution = new Point(720, 1280);
 		this.currentScale = EmulatorConfig.DEFAULT_WINDOW_SCALE;
-		this.currentRotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
+		this.currentRotationId = SkinRotation.PORTRAIT_ID;
 
 		this.displayBounds = null;
 		this.updateDisplayBounds = false;
@@ -105,8 +105,8 @@ public class EmulatorSkinState {
 		return currentRotationId;
 	}
 
-	public synchronized int getCurrentAngle() {
-		return SkinRotation.getAngle(currentRotationId);
+	public synchronized void setCurrentRotationId() {
+		this.currentRotationId = SkinRotation.PORTRAIT_ID;
 	}
 
 	public synchronized void setCurrentRotationId(short rotationId) {

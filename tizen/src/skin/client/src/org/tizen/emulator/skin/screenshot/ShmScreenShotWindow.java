@@ -35,7 +35,6 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.EmulatorShmSkin;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.log.SkinLogger;
@@ -74,8 +73,7 @@ public class ShmScreenShotWindow extends ScreenShotDialog {
 		imageData.setPixels(0, 0,
 				width * height, arrayFramebuffer, 0);
 
-		RotationInfo rotation = getCurrentRotation();
-		imageData = rotateImageData(imageData, rotation);
+		imageData = getRotateImageData(imageData);
 
 		Image tempImage = imageShot;
 		imageShot = new Image(Display.getDefault(), imageData);

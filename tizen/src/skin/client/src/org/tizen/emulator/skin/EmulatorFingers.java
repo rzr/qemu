@@ -40,12 +40,12 @@ import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.info.EmulatorSkinState;
 import org.tizen.emulator.skin.log.SkinLogger;
+import org.tizen.emulator.skin.util.SkinRotation;
 
 public class EmulatorFingers {
 	private static final int MAX_FINGER_CNT = 10;
@@ -417,7 +417,7 @@ public class EmulatorFingers {
 
 	private Boolean calculateOriginCoordinates(
 			int scaledDisplayWitdh, int scaledDisplayHeight,
-			double scaleFactor, int rotationType, FingerPoint finger) {
+			double scaleFactor, short rotationId, FingerPoint finger) {
 		int pointX = 0, pointY = 0;
 		int rotatedPointX = 0, rotatedPointY = 0;
 		int flag = 0;
@@ -432,13 +432,13 @@ public class EmulatorFingers {
 		/* logger.info("rotatedPointX:" + rotatedPointX +
 				" rotatedPointY:" + rotatedPointY); */
 
-		if (rotationType == RotationInfo.LANDSCAPE.id()) {
+		if (rotationId == SkinRotation.LANDSCAPE_ID) {
 			rotatedPointX = pointY;
 			rotatedPointY = scaledDisplayWitdh - pointX;
-		} else if (rotationType == RotationInfo.REVERSE_PORTRAIT.id()) {
+		} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
 			rotatedPointX = scaledDisplayWitdh - pointX;
 			rotatedPointY = scaledDisplayHeight - pointY;
-		} else if (rotationType == RotationInfo.REVERSE_LANDSCAPE.id()) {
+		} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
 			rotatedPointX = scaledDisplayHeight - pointY;
 			rotatedPointY = pointX;
 		} else {
@@ -463,8 +463,8 @@ public class EmulatorFingers {
 		return false;
 	}
 
-	public int rearrangeFingerPoints(
-			int displayWidth, int displayHeight, double scaleFactor, int rotationType) {
+	public int rearrangeFingerPoints(int displayWidth, int displayHeight,
+			double scaleFactor, short rotationId) {
 		if (multiTouchEnable == 0) {
 			return 0;
 		}
@@ -479,8 +479,8 @@ public class EmulatorFingers {
 		for (int i = 0; i < fingerCnt; i++) {
 			finger = getFingerPointFromSlot(i);
 			if (finger != null && finger.id != 0) {
-				if (calculateOriginCoordinates(
-						displayWidth, displayHeight, scaleFactor, rotationType, finger) == true) {
+				if (calculateOriginCoordinates(displayWidth, displayHeight,
+						scaleFactor, rotationId, finger) == true) {
 					count++;
 				}
 			}

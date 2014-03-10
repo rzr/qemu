@@ -35,7 +35,6 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.widgets.Display;
 import org.tizen.emulator.skin.EmulatorSdlSkin;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator.DataTranfer;
 import org.tizen.emulator.skin.config.EmulatorConfig;
@@ -73,8 +72,7 @@ public class SdlScreenShotWindow extends ScreenShotDialog {
 			ImageData imageData = new ImageData(width, height,
 					EmulatorSdlSkin.DISPLAY_COLOR_DEPTH, palette, 1, receivedData);
 
-			RotationInfo rotation = getCurrentRotation();
-			imageData = rotateImageData(imageData, rotation);
+			imageData = getRotateImageData(imageData);
 
 			Image tempImage = imageShot;
 			imageShot = new Image(Display.getDefault(), imageData);

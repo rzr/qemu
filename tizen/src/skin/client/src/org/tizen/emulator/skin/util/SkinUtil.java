@@ -49,7 +49,6 @@ import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.dbi.EventInfoType;
@@ -177,7 +176,7 @@ public class SkinUtil {
 		KeyMapListType list = rotation.getKeyMapList();
 		if (list == null) {
 			/* try to using a KeyMapList of portrait */
-			rotation = SkinRotation.getRotation(RotationInfo.PORTRAIT.id());
+			rotation = SkinRotation.getRotation(SkinRotation.PORTRAIT_ID);
 			if (rotation == null) {
 				return null;
 			}
@@ -294,7 +293,7 @@ public class SkinUtil {
 
 	public static int[] convertMouseGeometry(
 			int originalX, int originalY, int displayWidth, int displayHeight,
-			int scale, int angle) {
+			int scale, short rotationId) {
 		float convertedScale = convertScale(scale);
 
 		int x = (int) (originalX * (1 / convertedScale));
@@ -303,13 +302,13 @@ public class SkinUtil {
 		int rotatedX = x;
 		int rotatedY = y;
 
-		if (RotationInfo.LANDSCAPE.angle() == angle) {
+		if (rotationId == SkinRotation.LANDSCAPE_ID) {
 			rotatedX = displayWidth - y;
 			rotatedY = x;
-		} else if (RotationInfo.REVERSE_PORTRAIT.angle() == angle) {
+		} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
 			rotatedX = displayWidth - x;
 			rotatedY = displayHeight - y;
-		} else if (RotationInfo.REVERSE_LANDSCAPE.angle() == angle) {
+		} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
 			rotatedX = y;
 			rotatedY = displayHeight - x;
 		}

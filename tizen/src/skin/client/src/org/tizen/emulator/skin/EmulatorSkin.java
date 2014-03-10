@@ -74,7 +74,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.comm.ICommunicator.KeyEventType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseButtonType;
 import org.tizen.emulator.skin.comm.ICommunicator.MouseEventType;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.BooleanData;
@@ -99,6 +98,7 @@ import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.layout.GeneralPurposeSkinComposer;
 import org.tizen.emulator.skin.layout.ISkinComposer;
 import org.tizen.emulator.skin.layout.ProfileSpecificSkinComposer;
+import org.tizen.emulator.skin.layout.rotation.Rotation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
@@ -260,9 +260,7 @@ public class EmulatorSkin {
 		currentState.setCurrentResolutionHeight(config.getValidResolutionHeight());
 
 		currentState.setCurrentScale(config.getValidScale());
-
-		short rotationId = EmulatorConfig.DEFAULT_WINDOW_ROTATION;
-		currentState.setCurrentRotationId(rotationId);
+		currentState.setCurrentRotationId();
 
 		/* create and attach a popup menu */
 		popupMenu = new PopupMenu(config, this);
@@ -832,7 +830,7 @@ public class EmulatorSkin {
 						currentState.getCurrentResolutionWidth(),
 						currentState.getCurrentResolutionHeight(),
 						currentState.getCurrentScale(),
-						currentState.getCurrentAngle());
+						currentState.getCurrentRotationId());
 				logger.info("mouseWheel in display" + " x:" + geometry[0]
 						+ " y:" + geometry[1] + " value:" + e.count);
 
@@ -1121,7 +1119,8 @@ public class EmulatorSkin {
 		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(),
-				currentState.getCurrentScale(), currentState.getCurrentAngle());
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
 
 		MouseEventData mouseEventData = new MouseEventData(
 				MouseButtonType.LEFT.value(), eventType,
@@ -1135,7 +1134,8 @@ public class EmulatorSkin {
 		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(),
-				currentState.getCurrentScale(), currentState.getCurrentAngle());
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
 		logger.info("mouseUp in display" +
 				" x:" + geometry[0] + " y:" + geometry[1]);
 
@@ -1151,7 +1151,8 @@ public class EmulatorSkin {
 		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(),
-				currentState.getCurrentScale(), currentState.getCurrentAngle());
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
 		logger.info("mouseDown in display" +
 				" x:" + geometry[0] + " y:" + geometry[1]);
 
@@ -1271,16 +1272,21 @@ public class EmulatorSkin {
 		}
 
 		displayTransform = new Transform(lcdCanvas.getDisplay());
-		displayTransform.rotate(currentState.getCurrentAngle());
 
-		if (currentState.getCurrentAngle() == -90) { /* landscape */
+		short rotationId = currentState.getCurrentRotationId();
+		displayTransform.rotate(SkinRotation.getAngle(rotationId));
+
+		if (rotationId == SkinRotation.LANDSCAPE_ID) {
+			/* landscape */
 			displayTransform.translate(
 					lcdCanvas.getSize().y * -1, 0);
-		} else if (currentState.getCurrentAngle() == 180) { /* reverse-portrait */
+		} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
+			/* reverse-portrait */
 			displayTransform.translate(
 					lcdCanvas.getSize().x * -1,
 					lcdCanvas.getSize().y * -1);
-		} else if (currentState.getCurrentAngle() == 90) { /* reverse-landscape */
+		} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
+			/* reverse-landscape */
 			displayTransform.translate(
 					0, lcdCanvas.getSize().x * -1);
 		}
@@ -1410,11 +1416,11 @@ public class EmulatorSkin {
 
 		final List<MenuItem> rotationList = new ArrayList<MenuItem>();
 
-		Iterator<Entry<Short, RotationType>> iterator =
+		Iterator<Entry<Short, Rotation>> iterator =
 				SkinRotation.getRotationIterator();
 
 		while (iterator.hasNext()) {
-			Entry<Short, RotationType> entry = iterator.next();
+			Entry<Short, Rotation> entry = iterator.next();
 			Short rotationId = entry.getKey();
 			RotationType section = entry.getValue();
 
@@ -1435,21 +1441,21 @@ public class EmulatorSkin {
 			for (MenuItem m : rotationList) {
 				short rotationId = (Short) m.getData();
 
-				if (rotationId == RotationInfo.PORTRAIT.id()) {
+				if (rotationId == SkinRotation.PORTRAIT_ID) {
 					String landscape = SkinRotation.getRotation(
-							RotationInfo.LANDSCAPE.id()).getName().value();
+							SkinRotation.LANDSCAPE_ID).getName().value();
 					m.setText(landscape);
-				} else if (rotationId == RotationInfo.LANDSCAPE.id()) {
+				} else if (rotationId == SkinRotation.LANDSCAPE_ID) {
 					String portrait = SkinRotation.getRotation(
-							RotationInfo.PORTRAIT.id()).getName().value();
+							SkinRotation.PORTRAIT_ID).getName().value();
 					m.setText(portrait);
-				} else if (rotationId == RotationInfo.REVERSE_PORTRAIT.id()) {
+				} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
 					String landscapeReverse = SkinRotation.getRotation(
-							RotationInfo.REVERSE_LANDSCAPE.id()).getName().value();
+							SkinRotation.REVERSE_LANDSCAPE_ID).getName().value();
 					m.setText(landscapeReverse);
-				} else if (rotationId == RotationInfo.REVERSE_LANDSCAPE.id()) {
+				} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
 					String portraitReverse = SkinRotation.getRotation(
-							RotationInfo.REVERSE_PORTRAIT.id()).getName().value();
+							SkinRotation.REVERSE_PORTRAIT_ID).getName().value();
 					m.setText(portraitReverse);
 				}
 			}

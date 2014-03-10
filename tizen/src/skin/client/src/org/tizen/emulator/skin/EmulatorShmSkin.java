@@ -57,6 +57,7 @@ import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ShmScreenShotWindow;
+import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -340,29 +341,33 @@ public class EmulatorShmSkin extends EmulatorSkin {
 					e.gc.setInterpolation(SWT.HIGH);
 				}
 
-				switch(currentState.getCurrentAngle()) {
-				case -90: /* landscape */
+				switch(currentState.getCurrentRotationId()) {
+				case SkinRotation.LANDSCAPE_ID:
+					/* landscape */
 					e.gc.setTransform(displayTransform);
 					e.gc.drawImage(bufferPainter.imageFramebuffer,
 							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
 							0, 0, screen_height, screen_width);
 					e.gc.setTransform(null); /* set to the identity transform */
 					break;
-				case 180: /* reverse-portrait */
+				case SkinRotation.REVERSE_PORTRAIT_ID:
+					/* reverse-portrait */
 					e.gc.setTransform(displayTransform);
 					e.gc.drawImage(bufferPainter.imageFramebuffer,
 							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
 							0, 0, screen_width, screen_height);
 					e.gc.setTransform(null);
 					break;
-				case 90: /* reverse-landscape */
+				case SkinRotation.REVERSE_LANDSCAPE_ID:
+					/* reverse-landscape */
 					e.gc.setTransform(displayTransform);
 					e.gc.drawImage(bufferPainter.imageFramebuffer,
 							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
 							0, 0, screen_height, screen_width);
 					e.gc.setTransform(null);
 					break;
-				default: /* portrait */
+				default:
+					/* portrait */
 					e.gc.drawImage(bufferPainter.imageFramebuffer,
 							0, 0, bufferPainter.widthFB, bufferPainter.heightFB,
 							0, 0, screen_width, screen_height);
@@ -461,7 +466,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(),
-				currentState.getCurrentScale(), currentState.getCurrentAngle());
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
 
 		//eventType = MouseEventType.DRAG.value();
 		if (finger.getMultiTouchEnable() == 1) {
@@ -487,7 +493,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(),
-				currentState.getCurrentScale(), currentState.getCurrentAngle());
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
 		logger.info("mouseUp in display" +
 				" x:" + geometry[0] + " y:" + geometry[1]);
 
@@ -519,7 +526,8 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		int[] geometry = SkinUtil.convertMouseGeometry(e.x, e.y,
 				currentState.getCurrentResolutionWidth(),
 				currentState.getCurrentResolutionHeight(),
-				currentState.getCurrentScale(), currentState.getCurrentAngle());
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
 		logger.info("mouseDown in display" +
 				" x:" + geometry[0] + " y:" + geometry[1]);
 

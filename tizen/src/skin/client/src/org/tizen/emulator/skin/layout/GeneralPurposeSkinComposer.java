@@ -49,7 +49,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.EmulatorSkinMain;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.ColorTag;
@@ -64,6 +63,7 @@ import org.tizen.emulator.skin.info.EmulatorSkinState;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
+import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -267,21 +267,21 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* arrange the pair tag */
-		if (rotationId == RotationInfo.PORTRAIT.id()) {
+		if (rotationId == SkinRotation.PORTRAIT_ID) {
 			pairTag.setBounds(
 					PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
 					pairTag.getWidth(), pairTag.getHeight());
-		} else if (rotationId == RotationInfo.LANDSCAPE.id()) {
+		} else if (rotationId == SkinRotation.LANDSCAPE_ID) {
 			pairTag.setBounds(
 					PAIR_TAG_POSITION_Y,
 					shell.getSize().y - PAIR_TAG_POSITION_X - pairTag.getHeight(),
 					pairTag.getWidth(), pairTag.getHeight());
-		} else if (rotationId == RotationInfo.REVERSE_PORTRAIT.id()) {
+		} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
 			pairTag.setBounds(
 					shell.getSize().x - PAIR_TAG_POSITION_X - pairTag.getWidth(),
 					shell.getSize().y - PAIR_TAG_POSITION_Y - pairTag.getHeight(),
 					pairTag.getWidth(), pairTag.getHeight());
-		} else if (rotationId == RotationInfo.REVERSE_LANDSCAPE.id()) {
+		} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
 			pairTag.setBounds(
 					shell.getSize().x - PAIR_TAG_POSITION_Y - pairTag.getWidth(),
 					PAIR_TAG_POSITION_X,
@@ -306,11 +306,10 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 				frameMaker.getPatchWidth(), frameMaker.getPatchHeight(), 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
-		RotationInfo rotation = RotationInfo.getValue(rotationId);
 
 		/* resoultion, that is display size in general skin mode */
-		if (RotationInfo.LANDSCAPE == rotation ||
-				RotationInfo.REVERSE_LANDSCAPE == rotation) {
+		if (SkinRotation.LANDSCAPE_ID == rotationId ||
+				SkinRotation.REVERSE_LANDSCAPE_ID == rotationId) {
 			displayBounds.width = (int)(resolutionH * convertedScale);
 			displayBounds.height = (int)(resolutionW * convertedScale);
 		} else {

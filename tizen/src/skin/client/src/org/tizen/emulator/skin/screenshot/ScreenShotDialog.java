@@ -72,13 +72,13 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.tizen.emulator.skin.EmulatorSkin;
-import org.tizen.emulator.skin.comm.ICommunicator.RotationInfo;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
+import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -343,19 +343,19 @@ public class ScreenShotDialog {
 		}
 	}
 
-	protected ImageData rotateImageData(ImageData srcData, RotationInfo rotation) {
+	protected ImageData getRotateImageData(ImageData srcData) {
 		int direction = SWT.NONE;
 
-		switch (rotation) {
-		case PORTRAIT:
+		switch (skin.getEmulatorSkinState().getCurrentRotationId()) {
+		case SkinRotation.PORTRAIT_ID:
 			return srcData;
-		case LANDSCAPE:
+		case SkinRotation.LANDSCAPE_ID:
 			direction = SWT.LEFT;
 			break;
-		case REVERSE_PORTRAIT:
+		case SkinRotation.REVERSE_PORTRAIT_ID:
 			direction = SWT.DOWN;
 			break;
-		case REVERSE_LANDSCAPE:
+		case SkinRotation.REVERSE_LANDSCAPE_ID:
 			direction = SWT.RIGHT;
 			break;
 		default:
@@ -411,14 +411,6 @@ public class ScreenShotDialog {
 		 * to ensure that no padding is required */
 		return new ImageData(srcWidth, srcHeight,
 				srcData.depth, srcData.palette, destBytesPerLine, newData);
-	}
-
-	protected RotationInfo getCurrentRotation() {
-		short currentRotationId =
-				skin.getEmulatorSkinState().getCurrentRotationId();
-		RotationInfo rotationInfo = RotationInfo.getValue(currentRotationId);
-
-		return rotationInfo;
 	}
 
 	private void createToolBar(final Shell parent) {

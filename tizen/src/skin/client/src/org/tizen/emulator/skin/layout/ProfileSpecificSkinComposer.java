@@ -270,6 +270,9 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 		float convertedScale = SkinUtil.convertScale(scale);
 		RotationType rotation = SkinRotation.getRotation(rotationId);
+		if (rotation == null) {
+			return null;
+		}
 
 		DisplayType display = rotation.getDisplay(); /* from dbi */
 		if (display == null) {
