@@ -55,9 +55,9 @@ import org.tizen.emulator.skin.dbi.OptionType;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.SkinInformation;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.screenshot.ShmScreenShotWindow;
-import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -342,7 +342,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				}
 
 				switch(currentState.getCurrentRotationId()) {
-				case SkinRotation.LANDSCAPE_ID:
+				case SkinRotations.LANDSCAPE_ID:
 					/* landscape */
 					e.gc.setTransform(displayTransform);
 					e.gc.drawImage(bufferPainter.imageFramebuffer,
@@ -350,7 +350,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 							0, 0, screen_height, screen_width);
 					e.gc.setTransform(null); /* set to the identity transform */
 					break;
-				case SkinRotation.REVERSE_PORTRAIT_ID:
+				case SkinRotations.REVERSE_PORTRAIT_ID:
 					/* reverse-portrait */
 					e.gc.setTransform(displayTransform);
 					e.gc.drawImage(bufferPainter.imageFramebuffer,
@@ -358,7 +358,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 							0, 0, screen_width, screen_height);
 					e.gc.setTransform(null);
 					break;
-				case SkinRotation.REVERSE_LANDSCAPE_ID:
+				case SkinRotations.REVERSE_LANDSCAPE_ID:
 					/* reverse-landscape */
 					e.gc.setTransform(displayTransform);
 					e.gc.drawImage(bufferPainter.imageFramebuffer,

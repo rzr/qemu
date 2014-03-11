@@ -76,9 +76,9 @@ import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.util.IOUtil;
-import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -347,15 +347,15 @@ public class ScreenShotDialog {
 		int direction = SWT.NONE;
 
 		switch (skin.getEmulatorSkinState().getCurrentRotationId()) {
-		case SkinRotation.PORTRAIT_ID:
+		case SkinRotations.PORTRAIT_ID:
 			return srcData;
-		case SkinRotation.LANDSCAPE_ID:
+		case SkinRotations.LANDSCAPE_ID:
 			direction = SWT.LEFT;
 			break;
-		case SkinRotation.REVERSE_PORTRAIT_ID:
+		case SkinRotations.REVERSE_PORTRAIT_ID:
 			direction = SWT.DOWN;
 			break;
-		case SkinRotation.REVERSE_LANDSCAPE_ID:
+		case SkinRotations.REVERSE_LANDSCAPE_ID:
 			direction = SWT.RIGHT;
 			break;
 		default:

@@ -64,11 +64,11 @@ import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
 import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
 import org.tizen.emulator.skin.info.EmulatorSkinState;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.util.HWKeyRegion;
-import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -269,7 +269,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		Rectangle displayBounds = new Rectangle(0, 0, 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
-		RotationType rotation = SkinRotation.getRotation(rotationId);
+		RotationType rotation = SkinRotations.getRotation(rotationId);
 		if (rotation == null) {
 			return null;
 		}

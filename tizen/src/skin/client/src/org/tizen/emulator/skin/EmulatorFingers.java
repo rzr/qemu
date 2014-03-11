@@ -44,8 +44,8 @@ import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
 import org.tizen.emulator.skin.comm.sock.SocketCommunicator;
 import org.tizen.emulator.skin.comm.sock.data.MouseEventData;
 import org.tizen.emulator.skin.info.EmulatorSkinState;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
-import org.tizen.emulator.skin.util.SkinRotation;
 
 public class EmulatorFingers {
 	private static final int MAX_FINGER_CNT = 10;
@@ -432,13 +432,13 @@ public class EmulatorFingers {
 		/* logger.info("rotatedPointX:" + rotatedPointX +
 				" rotatedPointY:" + rotatedPointY); */
 
-		if (rotationId == SkinRotation.LANDSCAPE_ID) {
+		if (rotationId == SkinRotations.LANDSCAPE_ID) {
 			rotatedPointX = pointY;
 			rotatedPointY = scaledDisplayWitdh - pointX;
-		} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
+		} else if (rotationId == SkinRotations.REVERSE_PORTRAIT_ID) {
 			rotatedPointX = scaledDisplayWitdh - pointX;
 			rotatedPointY = scaledDisplayHeight - pointY;
-		} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
+		} else if (rotationId == SkinRotations.REVERSE_LANDSCAPE_ID) {
 			rotatedPointX = scaledDisplayHeight - pointY;
 			rotatedPointY = pointX;
 		} else {

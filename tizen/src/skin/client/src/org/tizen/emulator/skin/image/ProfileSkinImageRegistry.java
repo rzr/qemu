@@ -42,8 +42,8 @@ import org.tizen.emulator.skin.dbi.EmulatorUI;
 import org.tizen.emulator.skin.dbi.ImageListType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.dbi.RotationsType;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
-import org.tizen.emulator.skin.util.SkinRotation;
 
 public class ProfileSkinImageRegistry {
 	private static Logger logger = SkinLogger.getSkinLogger(
@@ -87,7 +87,7 @@ public class ProfileSkinImageRegistry {
 
 			logger.info("get skin image from " + skinPath);
 
-			RotationType targetRotation = SkinRotation.getRotation(id);
+			RotationType targetRotation = SkinRotations.getRotation(id);
 			if (targetRotation == null) {
 				return null;
 			}
