@@ -27,7 +27,7 @@
  *
  */
 
-package org.tizen.emulator.skin.util;
+package org.tizen.emulator.skin.layout;
 
 /**
  * 

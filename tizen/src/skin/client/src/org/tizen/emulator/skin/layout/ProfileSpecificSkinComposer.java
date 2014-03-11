@@ -59,16 +59,15 @@ import org.tizen.emulator.skin.config.EmulatorConfig.SkinPropertiesConstants;
 import org.tizen.emulator.skin.custom.CustomProgressBar;
 import org.tizen.emulator.skin.dbi.DisplayType;
 import org.tizen.emulator.skin.dbi.RegionType;
-import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.image.ProfileSkinImageRegistry;
 import org.tizen.emulator.skin.image.ProfileSkinImageRegistry.SkinImageType;
 import org.tizen.emulator.skin.info.EmulatorSkinState;
+import org.tizen.emulator.skin.layout.rotation.Rotation;
 import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
-import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -269,7 +268,7 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 		Rectangle displayBounds = new Rectangle(0, 0, 0, 0);
 
 		float convertedScale = SkinUtil.convertScale(scale);
-		RotationType rotation = SkinRotations.getRotation(rotationId);
+		Rotation rotation = SkinRotations.getRotation(rotationId);
 		if (rotation == null) {
 			return null;
 		}
@@ -434,7 +433,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 				}
 
 				final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
-						currentState.getCurrentRotationId(), currentState.getCurrentScale());
+						currentState.getCurrentScale(),
+						currentState.getCurrentRotationId());
 
 				if (hwKey == null) {
 					shell.setToolTipText(null);
@@ -521,7 +521,8 @@ public class ProfileSpecificSkinComposer implements ISkinComposer {
 
 					/* HW key handling */
 					final HWKey hwKey = SkinUtil.getHWKey(e.x, e.y,
-							currentState.getCurrentRotationId(), currentState.getCurrentScale());
+							currentState.getCurrentScale(),
+							currentState.getCurrentRotationId());
 					if (hwKey == null) {
 						logger.info("mouseDown in Skin : " + e.x + ", " + e.y);
 

@@ -69,7 +69,7 @@ import org.tizen.emulator.skin.keywindow.dbi.KeyMapType;
 import org.tizen.emulator.skin.keywindow.dbi.KeyWindowUI;
 import org.tizen.emulator.skin.keywindow.dbi.RegionType;
 import org.tizen.emulator.skin.layout.HWKey;
-import org.tizen.emulator.skin.util.HWKeyRegion;
+import org.tizen.emulator.skin.layout.HWKeyRegion;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
 import org.tizen.emulator.skin.util.SkinUtil;

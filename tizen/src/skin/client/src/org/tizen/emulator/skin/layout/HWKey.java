@@ -28,7 +28,6 @@
 
 package org.tizen.emulator.skin.layout;
 
-import org.tizen.emulator.skin.util.HWKeyRegion;
 import org.tizen.emulator.skin.util.SkinUtil;
 
 public class HWKey {

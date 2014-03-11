@@ -28,17 +28,44 @@
 
 package org.tizen.emulator.skin.layout.rotation;
 
+import java.util.List;
+
+import org.tizen.emulator.skin.dbi.KeyMapListType;
+import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RotationType;
 
 
 public class Rotation extends RotationType {
 	private int angle;
+	private List<KeyMapType> listHWKey;
+
+	public int getAngle() {
+		return angle;
+	}
 
 	public void setAngle(int degree) {
 		this.angle = degree;
 	}
 
-	public int getAngle() {
-		return angle;
+	public List<KeyMapType> getListHWKey() {
+		if (listHWKey == null) {
+			KeyMapListType list = getKeyMapList();
+			if (list == null) {
+				/* try to using a KeyMapList of portrait */
+				Rotation rotation = SkinRotations.getRotation(SkinRotations.PORTRAIT_ID);
+				if (rotation == null) {
+					return null;
+				}
+
+				list = rotation.getKeyMapList();
+				if (list == null) {
+					return null;
+				}
+			}
+
+			listHWKey = list.getKeyMap();
+		}
+
+		return listHWKey;
 	}
 }

@@ -567,11 +567,11 @@ public class EmulatorSkin {
 					}
 				}
 
-				DisplayStateData lcdStateData = new DisplayStateData(
+				DisplayStateData stateData = new DisplayStateData(
 						currentState.getCurrentScale(),
 						currentState.getCurrentRotationId());
 				communicator.sendToQEMU(SendCommand.SEND_DISPLAY_STATE,
-						lcdStateData, false);
+						stateData, false);
 			}
 		};
 
@@ -1509,10 +1509,10 @@ public class EmulatorSkin {
 					}
 				});
 
-				DisplayStateData lcdStateData = new DisplayStateData(
+				DisplayStateData stateData = new DisplayStateData(
 						currentState.getCurrentScale(), rotationId);
 				communicator.sendToQEMU(SendCommand.SEND_DISPLAY_STATE,
-						lcdStateData, false);
+						stateData, false);
 			}
 		};
 
@@ -1553,10 +1553,10 @@ public class EmulatorSkin {
 					}
 				});
 
-				DisplayStateData lcdStateData = new DisplayStateData(scale,
+				DisplayStateData stateData = new DisplayStateData(scale,
 						currentState.getCurrentRotationId());
 				communicator.sendToQEMU(SendCommand.SEND_DISPLAY_STATE,
-						lcdStateData, false);
+						stateData, false);
 
 			}
 		};

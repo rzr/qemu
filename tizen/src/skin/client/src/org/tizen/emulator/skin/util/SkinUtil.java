@@ -52,11 +52,11 @@ import org.eclipse.swt.widgets.Shell;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.dbi.EventInfoType;
-import org.tizen.emulator.skin.dbi.KeyMapListType;
 import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RegionType;
-import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.layout.HWKey;
+import org.tizen.emulator.skin.layout.HWKeyRegion;
+import org.tizen.emulator.skin.layout.rotation.Rotation;
 import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 
@@ -169,30 +169,16 @@ public class SkinUtil {
 	}
 
 	public static List<KeyMapType> getHWKeyMapList(short rotationId) {
-		RotationType rotation = SkinRotations.getRotation(rotationId);
+		Rotation rotation = SkinRotations.getRotation(rotationId);
 		if (rotation == null) {
 			return null;
 		}
 
-		KeyMapListType list = rotation.getKeyMapList();
-		if (list == null) {
-			/* try to using a KeyMapList of portrait */
-			rotation = SkinRotations.getRotation(SkinRotations.PORTRAIT_ID);
-			if (rotation == null) {
-				return null;
-			}
-
-			list = rotation.getKeyMapList();
-			if (list == null) {
-				return null;
-			}
-		}
-
-		return list.getKeyMap();
+		return rotation.getListHWKey();
 	}
 
-	public static HWKey getHWKey(
-			int currentX, int currentY, short rotationId, int scale) {
+	public static HWKey getHWKey(int currentX, int currentY,
+			int scale, short rotationId) {
 		float convertedScale = convertScale(scale);
 
 		List<KeyMapType> keyMapList = getHWKeyMapList(rotationId);
@@ -200,8 +186,9 @@ public class SkinUtil {
 			return null;
 		}
 
+		RegionType region = null;
 		for (KeyMapType keyEntry : keyMapList) {
-			RegionType region = keyEntry.getRegion();
+			region = keyEntry.getRegion();
 
 			int scaledX = (int) (region.getLeft() * convertedScale);
 			int scaledY = (int) (region.getTop() * convertedScale);
