@@ -258,6 +258,7 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
 # A GCC might have a bug related with omitting frame pointer. It generates weird instructions.
 exec ./configure \
  --extra-cflags=-fno-omit-frame-pointer \
+ --extra-ldflags=-Wl,--large-address-aware \
  --cc=gcc \
  --audio-drv-list=winwave \
  --enable-hax \
