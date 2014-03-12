@@ -575,8 +575,12 @@ void marucam_device_close(MaruCamState *state)
     param->top = 0;
 
     if (mcd != NULL) {
+        if (is_streamon()) {
+            marucam_device_stop_preview(state);
+        }
         [mcd->driver dealloc];
         free(mcd);
+        mcd = NULL;
     }
 
     /* marucam_reset_controls(); */

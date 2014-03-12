@@ -463,13 +463,13 @@ const gchar * prepare_maru_devices(const gchar *kernel_cmdline)
 
     g_strlcpy(maru_kernel_cmdline, kernel_cmdline, LEN_MARU_KERNEL_CMDLINE);
 
-    // Prepare basic features
-    prepare_basic_features();
-
     // Prepare GL acceleration
 #ifdef CONFIG_GL_BACKEND
     prepare_opengl_acceleration();
 #endif
+
+    // Prepare basic features
+    prepare_basic_features();
 
     // Prepare host webcam
     prepare_host_webcam();

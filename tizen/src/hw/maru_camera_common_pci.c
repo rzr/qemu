@@ -253,6 +253,19 @@ static void marucam_exitfn(PCIDevice *pci_dev)
     INFO("[%s] camera device was released.\n", __func__);
 }
 
+static void marucam_resetfn(DeviceState *d)
+{
+    MaruCamState *s = (MaruCamState *)d;
+
+    marucam_device_close(s);
+    qemu_mutex_lock(&s->thread_mutex);
+    s->isr = s->streamon = s->req_frame = s->buf_size = 0;
+    qemu_mutex_unlock(&s->thread_mutex);
+    memset(s->vaddr, 0, MARUCAM_MEM_SIZE);
+    memset(s->param, 0x00, sizeof(MaruCamParam));
+    INFO("[%s]\n", __func__);
+}
+
 int maru_camera_pci_init(PCIBus *bus)
 {
     INFO("[%s] camera device was initialized.\n", __func__);
@@ -271,6 +284,7 @@ static void maru_camera_pci_class_init(ObjectClass *klass, void *data)
     k->vendor_id = PCI_VENDOR_ID_TIZEN;
     k->device_id = PCI_DEVICE_ID_VIRTUAL_CAMERA;
     k->class_id = PCI_CLASS_OTHERS;
+    dc->reset = marucam_resetfn;
     dc->desc = "MARU Virtual Camera device for Tizen emulator";
 }
 
