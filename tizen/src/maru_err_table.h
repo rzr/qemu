@@ -54,4 +54,5 @@ void maru_atexit(void);
 char *maru_convert_path(char *msg, const char *path);
 void maru_dump_backtrace(void *ptr, int depth);
 
+void maru_register_exception_handler(void);
 #endif /* __EMUL_ERR_TABLE_H__ */

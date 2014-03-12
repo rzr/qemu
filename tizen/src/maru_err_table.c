@@ -31,6 +31,7 @@
 #include "qemu-common.h"
 #include "maru_common.h"
 #include "maru_err_table.h"
+#include "debug_ch.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +44,8 @@
 #include <execinfo.h>
 #endif
 
+
+MULTI_DEBUG_CHANNEL(qemu, backtrace);
 /* This table must match the enum definition */
 static char _maru_string_table[][JAVA_MAX_COMMAND_LENGTH] = {
     /* 0 */ "",
@@ -61,6 +64,16 @@ A problem caused the program to stop working correctly.",
 
 static int maru_exit_status = MARU_EXIT_NORMAL;
 static char maru_exit_msg[JAVA_MAX_COMMAND_LENGTH] = { 0, };
+
+#ifdef CONFIG_WIN32
+static LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter;
+#endif
+
+#ifdef CONFIG_LINUX
+static pthread_spinlock_t siglock;
+void maru_sighandler(int sig);
+#endif
+
 
 void maru_register_exit_msg(int maru_exit_index, char const *const additional_msg)
 {
@@ -117,10 +130,16 @@ The time of internal heartbeat has expired.\n");
 
 void maru_atexit(void)
 {
+
+#if 0
     if (maru_exit_status != MARU_EXIT_NORMAL || strlen(maru_exit_msg) != 0) {
         maru_dump_backtrace(NULL, 0);
         start_simple_client(maru_exit_msg);
     }
+#else
+    INFO("call exit codes\n");
+    maru_dump_backtrace(NULL, 0);
+#endif
 }
 
 char *maru_convert_path(char *msg, const char *path)
@@ -253,9 +272,8 @@ void maru_dump_backtrace(void *ptr, int depth)
     currentFrame.pReturnAddr = ((struct frame_layout *)pTopFrame)->pReturnAddr;
     pCurrentFrame = (struct frame_layout *)pTopFrame;
 
-    fprintf(stderr, "\nBacktrace Dump Start :\n");
+    ERR("\nBacktrace Dump Start :\n");
     if (pContext) {
-        fprintf(stderr, "[%02d]Addr = 0x%p", nCount, ((PCONTEXT)pContext)->Eip);
         memset(module_buf, 0, sizeof(module_buf));
         hModule = aqua_get_module_handle((DWORD)((PCONTEXT)pContext)->Eip);
         if (hModule) {
@@ -263,7 +281,7 @@ void maru_dump_backtrace(void *ptr, int depth)
                 memset(module_buf, 0, sizeof(module_buf));
             }
         }
-        fprintf(stderr, " : %s\n", aqua_get_filename_from_path(module_buf));
+        ERR("[%02d]Addr = 0x%p : %s\n", nCount, ((PCONTEXT)pContext)->Eip, aqua_get_filename_from_path(module_buf));
         nCount++;
     }
 
@@ -273,7 +291,6 @@ void maru_dump_backtrace(void *ptr, int depth)
             break;
         }
 
-        fprintf(stderr, "[%02d]Addr = 0x%p", nCount, currentFrame.pReturnAddr);
         memset(module_buf, 0, sizeof(module_buf));
         hModule = aqua_get_module_handle((DWORD)currentFrame.pReturnAddr);
         if (hModule) {
@@ -281,7 +298,7 @@ void maru_dump_backtrace(void *ptr, int depth)
                 memset(module_buf, 0, sizeof(module_buf));
             }
         }
-        fprintf(stderr, " : %s\n", aqua_get_filename_from_path(module_buf));
+        ERR("[%02d]Addr = 0x%p : %s\n", nCount, currentFrame.pReturnAddr, aqua_get_filename_from_path(module_buf));
 
     if (!ReadProcessMemory(GetCurrentProcess(), currentFrame.pNext,
             (void *)&currentFrame, sizeof(struct frame_layout), NULL)) {
@@ -297,25 +314,88 @@ void maru_dump_backtrace(void *ptr, int depth)
         nCount++;
     }
 #else
-    int i, ndepth;
     void *trace[1024];
-    char **symbols;
+    int ndepth = backtrace(trace, 1024);
+    ERR("Backtrace depth is %d.\n", ndepth);
 
-    fprintf(stderr, "\n Backtrace Dump Start :\n");
-
-    ndepth = backtrace(trace, 1024);
-    fprintf(stderr, "Backtrace depth is %d.\n", ndepth);
-
-    symbols = backtrace_symbols(trace, ndepth);
-    if (symbols == NULL) {
-        fprintf(stderr, "'backtrace_symbols()' return error");
-        return;
-    }
-
-    for (i = 0; i < ndepth; i++) {
-        fprintf(stderr, "%s\n", symbols[i]);
-    }
-    free(symbols);
+    backtrace_symbols_fd(trace, ndepth, fileno(stderr));
 #endif
 }
 
+#ifdef CONFIG_WIN32
+static LONG maru_unhandled_exception_filter(PEXCEPTION_POINTERS pExceptionInfo){
+    char module_buf[1024];
+    DWORD dwException = pExceptionInfo->ExceptionRecord->ExceptionCode;
+    ERR("%d\n ", (int)dwException);
+
+    PEXCEPTION_RECORD pExceptionRecord;
+    HMODULE hModule;
+    PCONTEXT pContext;
+
+    pExceptionRecord = pExceptionInfo->ExceptionRecord;
+
+    memset(module_buf, 0, sizeof(module_buf));
+    hModule = aqua_get_module_handle((DWORD)pExceptionRecord->ExceptionAddress);
+    if(hModule){
+        if(!GetModuleFileNameA(hModule, module_buf, sizeof(module_buf))){
+            memset(module_buf, 0, sizeof(module_buf));
+        }
+    }
+
+    ERR("Exception [%X] occured at %s:0x%08x, running badaEmulator.exe\n",
+        pExceptionRecord->ExceptionCode,
+        aqua_get_filename_from_path(module_buf),
+        pExceptionRecord->ExceptionAddress
+       );
+
+
+    pContext = pExceptionInfo->ContextRecord;
+    maru_dump_backtrace(pContext, 0);
+
+
+
+
+
+    _exit(0);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
+#ifdef CONFIG_LINUX
+void maru_sighandler(int sig)
+{
+    pthread_spin_lock(&siglock);
+    ERR("Got signal %d\n", sig);
+    maru_dump_backtrace(NULL, 0);
+    pthread_spin_unlock(&siglock);
+    _exit(0);
+}
+#endif
+
+
+void maru_register_exception_handler(void)
+{
+#ifdef CONFIG_WIN32
+    prevExceptionFilter = SetUnhandledExceptionFilter(maru_unhandled_exception_filter);
+#else
+
+    void *trace[1];
+    struct sigaction sa;
+
+    // make dummy call to explicitly load glibc library
+    backtrace(trace, 1);
+
+    pthread_spin_init(&siglock,0);
+    sa.sa_handler = (void*) maru_sighandler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGBUS, &sa, NULL);
+    sigaction(SIGILL, &sa, NULL);
+    sigaction(SIGFPE, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
+    // main thread only
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+#endif
+}

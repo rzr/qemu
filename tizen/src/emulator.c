@@ -563,6 +563,7 @@ static int emulator_main(int argc, char *argv[])
 #ifndef CONFIG_DARWIN
 int main(int argc, char *argv[])
 {
+    maru_register_exception_handler();
     return emulator_main(argc, argv);
 }
 #else
