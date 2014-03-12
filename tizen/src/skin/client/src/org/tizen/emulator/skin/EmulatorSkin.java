@@ -99,11 +99,11 @@ import org.tizen.emulator.skin.layout.GeneralPurposeSkinComposer;
 import org.tizen.emulator.skin.layout.ISkinComposer;
 import org.tizen.emulator.skin.layout.ProfileSpecificSkinComposer;
 import org.tizen.emulator.skin.layout.rotation.Rotation;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
 import org.tizen.emulator.skin.screenshot.ScreenShotDialog;
-import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -1274,18 +1274,18 @@ public class EmulatorSkin {
 		displayTransform = new Transform(lcdCanvas.getDisplay());
 
 		short rotationId = currentState.getCurrentRotationId();
-		displayTransform.rotate(SkinRotation.getAngle(rotationId));
+		displayTransform.rotate(SkinRotations.getAngle(rotationId));
 
-		if (rotationId == SkinRotation.LANDSCAPE_ID) {
+		if (rotationId == SkinRotations.LANDSCAPE_ID) {
 			/* landscape */
 			displayTransform.translate(
 					lcdCanvas.getSize().y * -1, 0);
-		} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
+		} else if (rotationId == SkinRotations.REVERSE_PORTRAIT_ID) {
 			/* reverse-portrait */
 			displayTransform.translate(
 					lcdCanvas.getSize().x * -1,
 					lcdCanvas.getSize().y * -1);
-		} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
+		} else if (rotationId == SkinRotations.REVERSE_LANDSCAPE_ID) {
 			/* reverse-landscape */
 			displayTransform.translate(
 					0, lcdCanvas.getSize().x * -1);
@@ -1417,7 +1417,7 @@ public class EmulatorSkin {
 		final List<MenuItem> rotationList = new ArrayList<MenuItem>();
 
 		Iterator<Entry<Short, Rotation>> iterator =
-				SkinRotation.getRotationIterator();
+				SkinRotations.getRotationIterator();
 
 		while (iterator.hasNext()) {
 			Entry<Short, Rotation> entry = iterator.next();
@@ -1441,21 +1441,21 @@ public class EmulatorSkin {
 			for (MenuItem m : rotationList) {
 				short rotationId = (Short) m.getData();
 
-				if (rotationId == SkinRotation.PORTRAIT_ID) {
-					String landscape = SkinRotation.getRotation(
-							SkinRotation.LANDSCAPE_ID).getName().value();
+				if (rotationId == SkinRotations.PORTRAIT_ID) {
+					String landscape = SkinRotations.getRotation(
+							SkinRotations.LANDSCAPE_ID).getName().value();
 					m.setText(landscape);
-				} else if (rotationId == SkinRotation.LANDSCAPE_ID) {
-					String portrait = SkinRotation.getRotation(
-							SkinRotation.PORTRAIT_ID).getName().value();
+				} else if (rotationId == SkinRotations.LANDSCAPE_ID) {
+					String portrait = SkinRotations.getRotation(
+							SkinRotations.PORTRAIT_ID).getName().value();
 					m.setText(portrait);
-				} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
-					String landscapeReverse = SkinRotation.getRotation(
-							SkinRotation.REVERSE_LANDSCAPE_ID).getName().value();
+				} else if (rotationId == SkinRotations.REVERSE_PORTRAIT_ID) {
+					String landscapeReverse = SkinRotations.getRotation(
+							SkinRotations.REVERSE_LANDSCAPE_ID).getName().value();
 					m.setText(landscapeReverse);
-				} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
-					String portraitReverse = SkinRotation.getRotation(
-							SkinRotation.REVERSE_PORTRAIT_ID).getName().value();
+				} else if (rotationId == SkinRotations.REVERSE_LANDSCAPE_ID) {
+					String portraitReverse = SkinRotations.getRotation(
+							SkinRotations.REVERSE_PORTRAIT_ID).getName().value();
 					m.setText(portraitReverse);
 				}
 			}

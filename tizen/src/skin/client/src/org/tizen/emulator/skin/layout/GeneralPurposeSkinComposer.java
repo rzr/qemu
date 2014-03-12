@@ -60,10 +60,10 @@ import org.tizen.emulator.skin.image.GeneralSkinImageRegistry;
 import org.tizen.emulator.skin.image.GeneralSkinImageRegistry.GeneralSkinImageName;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
 import org.tizen.emulator.skin.info.EmulatorSkinState;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.menu.KeyWindowKeeper;
 import org.tizen.emulator.skin.menu.PopupMenu;
-import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
@@ -267,21 +267,21 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		}
 
 		/* arrange the pair tag */
-		if (rotationId == SkinRotation.PORTRAIT_ID) {
+		if (rotationId == SkinRotations.PORTRAIT_ID) {
 			pairTag.setBounds(
 					PAIR_TAG_POSITION_X, PAIR_TAG_POSITION_Y,
 					pairTag.getWidth(), pairTag.getHeight());
-		} else if (rotationId == SkinRotation.LANDSCAPE_ID) {
+		} else if (rotationId == SkinRotations.LANDSCAPE_ID) {
 			pairTag.setBounds(
 					PAIR_TAG_POSITION_Y,
 					shell.getSize().y - PAIR_TAG_POSITION_X - pairTag.getHeight(),
 					pairTag.getWidth(), pairTag.getHeight());
-		} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
+		} else if (rotationId == SkinRotations.REVERSE_PORTRAIT_ID) {
 			pairTag.setBounds(
 					shell.getSize().x - PAIR_TAG_POSITION_X - pairTag.getWidth(),
 					shell.getSize().y - PAIR_TAG_POSITION_Y - pairTag.getHeight(),
 					pairTag.getWidth(), pairTag.getHeight());
-		} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
+		} else if (rotationId == SkinRotations.REVERSE_LANDSCAPE_ID) {
 			pairTag.setBounds(
 					shell.getSize().x - PAIR_TAG_POSITION_Y - pairTag.getWidth(),
 					PAIR_TAG_POSITION_X,
@@ -308,8 +308,8 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		float convertedScale = SkinUtil.convertScale(scale);
 
 		/* resoultion, that is display size in general skin mode */
-		if (SkinRotation.LANDSCAPE_ID == rotationId ||
-				SkinRotation.REVERSE_LANDSCAPE_ID == rotationId) {
+		if (SkinRotations.LANDSCAPE_ID == rotationId ||
+				SkinRotations.REVERSE_LANDSCAPE_ID == rotationId) {
 			displayBounds.width = (int)(resolutionH * convertedScale);
 			displayBounds.height = (int)(resolutionW * convertedScale);
 		} else {

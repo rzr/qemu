@@ -57,12 +57,12 @@ import org.tizen.emulator.skin.dbi.RotationsType;
 import org.tizen.emulator.skin.exception.JaxbException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.info.SkinInformation;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 import org.tizen.emulator.skin.log.SkinLogger.SkinLogLevel;
 import org.tizen.emulator.skin.util.CocoaUtil;
 import org.tizen.emulator.skin.util.IOUtil;
 import org.tizen.emulator.skin.util.JaxbUtil;
-import org.tizen.emulator.skin.util.SkinRotation;
 import org.tizen.emulator.skin.util.SkinUtil;
 import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
@@ -442,7 +442,7 @@ public class EmulatorSkinMain {
 				List<RotationType> rotationList = rotations.getRotation();
 
 				for (RotationType rotation : rotationList) {
-					SkinRotation.put(rotation);
+					SkinRotations.put(rotation);
 				}
 			} else {
 				logger.severe("Fail to loading rotations element from XML");

@@ -27,7 +27,7 @@
  *
  */
 
-package org.tizen.emulator.skin.util;
+package org.tizen.emulator.skin.layout.rotation;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -36,13 +36,12 @@ import java.util.Map.Entry;
 
 import org.tizen.emulator.skin.dbi.RotationNameType;
 import org.tizen.emulator.skin.dbi.RotationType;
-import org.tizen.emulator.skin.layout.rotation.Rotation;
 
 /**
  * 
  *
  */
-public class SkinRotation {
+public class SkinRotations {
 	public static final short PORTRAIT_ID = 0;
 	public static final short LANDSCAPE_ID = 1;
 	public static final short REVERSE_PORTRAIT_ID = 2;
@@ -51,7 +50,7 @@ public class SkinRotation {
 	private static Map<Short, Rotation> rotationMap =
 			new LinkedHashMap<Short, Rotation>();
 
-	private SkinRotation() {
+	private SkinRotations() {
 		/* do nothing */
 	}
 

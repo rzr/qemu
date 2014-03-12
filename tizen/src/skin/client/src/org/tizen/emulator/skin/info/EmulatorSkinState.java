@@ -33,7 +33,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.tizen.emulator.skin.config.EmulatorConfig;
-import org.tizen.emulator.skin.util.SkinRotation;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 
 public class EmulatorSkinState {
 	private Point currentResolution;
@@ -53,7 +53,7 @@ public class EmulatorSkinState {
 	public EmulatorSkinState() {
 		this.currentResolution = new Point(720, 1280);
 		this.currentScale = EmulatorConfig.DEFAULT_WINDOW_SCALE;
-		this.currentRotationId = SkinRotation.PORTRAIT_ID;
+		this.currentRotationId = SkinRotations.PORTRAIT_ID;
 
 		this.displayBounds = null;
 		this.updateDisplayBounds = false;
@@ -106,7 +106,7 @@ public class EmulatorSkinState {
 	}
 
 	public synchronized void setCurrentRotationId() {
-		this.currentRotationId = SkinRotation.PORTRAIT_ID;
+		this.currentRotationId = SkinRotations.PORTRAIT_ID;
 	}
 
 	public synchronized void setCurrentRotationId(short rotationId) {

@@ -57,6 +57,7 @@ import org.tizen.emulator.skin.dbi.KeyMapType;
 import org.tizen.emulator.skin.dbi.RegionType;
 import org.tizen.emulator.skin.dbi.RotationType;
 import org.tizen.emulator.skin.layout.HWKey;
+import org.tizen.emulator.skin.layout.rotation.SkinRotations;
 import org.tizen.emulator.skin.log.SkinLogger;
 
 
@@ -168,7 +169,7 @@ public class SkinUtil {
 	}
 
 	public static List<KeyMapType> getHWKeyMapList(short rotationId) {
-		RotationType rotation = SkinRotation.getRotation(rotationId);
+		RotationType rotation = SkinRotations.getRotation(rotationId);
 		if (rotation == null) {
 			return null;
 		}
@@ -176,7 +177,7 @@ public class SkinUtil {
 		KeyMapListType list = rotation.getKeyMapList();
 		if (list == null) {
 			/* try to using a KeyMapList of portrait */
-			rotation = SkinRotation.getRotation(SkinRotation.PORTRAIT_ID);
+			rotation = SkinRotations.getRotation(SkinRotations.PORTRAIT_ID);
 			if (rotation == null) {
 				return null;
 			}
@@ -302,13 +303,13 @@ public class SkinUtil {
 		int rotatedX = x;
 		int rotatedY = y;
 
-		if (rotationId == SkinRotation.LANDSCAPE_ID) {
+		if (rotationId == SkinRotations.LANDSCAPE_ID) {
 			rotatedX = displayWidth - y;
 			rotatedY = x;
-		} else if (rotationId == SkinRotation.REVERSE_PORTRAIT_ID) {
+		} else if (rotationId == SkinRotations.REVERSE_PORTRAIT_ID) {
 			rotatedX = displayWidth - x;
 			rotatedY = displayHeight - y;
-		} else if (rotationId == SkinRotation.REVERSE_LANDSCAPE_ID) {
+		} else if (rotationId == SkinRotations.REVERSE_LANDSCAPE_ID) {
 			rotatedX = y;
 			rotatedY = displayHeight - x;
 		}
