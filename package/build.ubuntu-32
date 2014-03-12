@@ -46,6 +46,8 @@ prepare()
 # build
 build()
 {
+        export PKG_CONFIG_PATH=${ROOTDIR}/remote/lib/pkgconfig:${PKG_CONFIG_PATH}
+
 	cd $SRCDIR/tizen/
 	./emulator_configure.sh x86
 	make all_dibs

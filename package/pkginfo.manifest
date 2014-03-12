@@ -1,4 +1,4 @@
-Version: 1.7.24
+Version: 1.7.25
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
 Source: emulator
 
@@ -29,8 +29,8 @@ Description: Common binaries for Tizen Emulator
 Package: emulator-qemu-x86
 OS: ubuntu-32
 Build-host-os: ubuntu-32
-Build-dependency: emulator-lib [ ubuntu-32 ]
-Install-dependency: emulator-kernel-x86 [ ubuntu-32 ], vgabios [ ubuntu-32 ]
+Build-dependency: emulator-lib [ ubuntu-32 ], emulator-spice-server-dev [ ubuntu-32 ]
+Install-dependency: emulator-kernel-x86 [ ubuntu-32 ], vgabios [ ubuntu-32 ], emulator-spice-server [ ubuntu-32 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
@@ -43,8 +43,8 @@ Description: Tizen x86 Emulator
 Package: emulator-qemu-x86
 OS: ubuntu-64
 Build-host-os: ubuntu-64
-Build-dependency: emulator-lib [ ubuntu-64 ]
-Install-dependency: emulator-kernel-x86 [ ubuntu-64 ], vgabios [ ubuntu-64 ]
+Build-dependency: emulator-lib [ ubuntu-64 ], emulator-spice-server-dev [ ubuntu-64 ]
+Install-dependency: emulator-kernel-x86 [ ubuntu-64 ], vgabios [ ubuntu-64 ], emulator-spice-server [ ubuntu-64 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
