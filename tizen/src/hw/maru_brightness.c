@@ -64,7 +64,6 @@ pixman_color_t level_color;
 pixman_image_t *brightness_image;
 
 /* level : 1 ~ 100, interval : 1 or 2 */
-/* skip 100 level, set to default alpha */
 uint8_t brightness_tbl[] = {155, /* level 0 : for dimming */
 /* level 01 ~ 10 */         149, 147, 146, 144, 143, 141, 140, 138, 137, 135,
 /* level 11 ~ 20 */         134, 132, 131, 129, 128, 126, 125, 123, 122, 120,
@@ -75,7 +74,7 @@ uint8_t brightness_tbl[] = {155, /* level 0 : for dimming */
 /* level 61 ~ 70 */          59,  57,  56,  54,  53,  51,  50,  48,  47,  45,
 /* level 71 ~ 80 */          44,  42,  41,  39,  38,  36,  35,  33,  32,  30,
 /* level 81 ~ 90 */          29,  27,  26,  24,  23,  21,  20,  18,  17,  15,
-/* level 91 ~ 99 */          14,  12,  11,   9,   8,   6,   5,   3,   2};
+/* level 91 ~ 99 */          14,  12,  11,   9,   8,   6,   5,   3,   2,   0};
 
 QEMUBH *bh;
 
