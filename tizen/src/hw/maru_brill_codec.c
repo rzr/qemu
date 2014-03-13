@@ -501,6 +501,11 @@ static void serialize_video_data(const struct video_data *video,
     if (video->ticks_per_frame) {
         avctx->ticks_per_frame = video->ticks_per_frame;
     }
+
+    INFO("video. res:i %dx%d fps: %d/%d pixel_fmt: %d, bpp: %d\n",
+        avctx->width, avctx->height,
+        avctx->time_base.num, avctx->time_base.den,
+        avctx->pix_fmt, avctx->bits_per_coded_sample);
 }
 
 static void deserialize_video_data (const AVCodecContext *avctx,
@@ -1064,6 +1069,21 @@ static bool codec_init(MaruBrillCodecState *s, int ctx_id, void *data_buf)
         ERR("[%d] failed to allocate context.\n", __LINE__);
         ret = -1;
     } else {
+#if 0
+        avcodec_get_context_defaults(avctx);
+
+        avctx->rc_strategy = 2;
+        avctx->b_frame_strategy = 0;
+        avctx->coder_type = 0;
+        avctx->context_model = 0;
+        avctx->scenechange_threshold = 0;
+        avctx->inter_threshold = 0;
+
+        avctx->gop_size = DEFAULT_VIDEO_GOP_SIZE;
+        avctx->lmin = (2 * FF_QP2LAMBDA + 0.5);
+        avctx->lmax = (31 * FF_QP2LAMBDA + 0.5);
+#endif
+
         codec = maru_brill_codec_find_avcodec(elem->buf);
         if (codec) {
             size = sizeof(int32_t) + 32; // buffer size of codec_name
@@ -1175,7 +1195,7 @@ static bool codec_flush_buffers(MaruBrillCodecState *s, int ctx_id, void *data_b
         ERR("%d of AVCodec is NULL.\n", ctx_id);
         ret = false;
     } else {
-        TRACE("flush %d context of buffers.\n", ctx_id);
+        INFO("flush %d context of buffers.\n", ctx_id);
         avcodec_flush_buffers(avctx);
     }
 
@@ -1215,7 +1235,7 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
             inbuf = elem->buf + size;
         }
     } else {
-        TRACE("decode_audio. no input buffer\n");
+        TRACE("decode_video. no input buffer\n");
         // FIXME: improve error handling
         // return false;
     }
@@ -1234,15 +1254,17 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
         ERR("decode_video. %d of AVFrame is NULL.\n", ctx_id);
     } else {
         // in case of skipping frames
-        picture->pict_type = -1;
+        // picture->pict_type = -1;
+
+        TRACE("decode_video. bitrate %d\n", avctx->bit_rate);
+        // avctx->reordered_opaque = idx;
+        // picture->reordered_opaque = idx;
+
         len =
             avcodec_decode_video2(avctx, picture, &got_picture, &avpkt);
-        TRACE("decode_video. len %d, frame_size %d\n", len, got_picture);
+        TRACE("decode_video. in_size %d len %d, frame_size %d\n", avpkt.size, len, got_picture);
         // TODO: check requested_close ?
     }
-
-    TRACE("after decoding video. len: %d, have_data: %d\n",
-        len, got_picture);
 
     tempbuf_size =
             sizeof(len) + sizeof(got_picture) + sizeof(struct video_data);
@@ -1437,6 +1459,7 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     int inbuf_size, outbuf_size, len = -1;
     int ret, size = 0;
     int64_t in_timestamp = 0;
+    int coded_frame = 0, key_frame = 0;
 
     DeviceMemEntry *elem = NULL;
     uint8_t *tempbuf = NULL;
@@ -1450,13 +1473,13 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
         size += sizeof(inbuf_size);
         memcpy(&in_timestamp, elem->buf + size, sizeof(in_timestamp));
         size += sizeof(in_timestamp);
-        TRACE("encode_video. inbuf_size %d\n", inbuf_size);
+        TRACE("encode video. inbuf_size %d\n", inbuf_size);
 
         if (inbuf_size > 0) {
             inbuf = elem->buf + size;
         }
     } else {
-        TRACE("encode_video. no input buffer.\n");
+        TRACE("encode video. no input buffer.\n");
         // FIXME: improve error handling
         // return false;
     }
@@ -1486,6 +1509,8 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
                             {1, (G_USEC_PER_SEC * G_GINT64_CONSTANT(1000))};
                 pict->pts = av_rescale_q(in_timestamp, bq, avctx->time_base);
             }
+            TRACE("encode video. ticks_per_frame:%d, pts:%lld\n",
+                avctx->ticks_per_frame, pict->pts);
 
             outbuf_size =
                 (avctx->width * avctx->height * 6) + FF_MIN_BUFFER_SIZE;
@@ -1494,33 +1519,43 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
             if (!outbuf) {
                 ERR("failed to allocate a buffer of encoding video.\n");
             } else {
-                TRACE("encode video 1. ticks_per_frame:%d, pts:%lld\n",
-                    avctx->ticks_per_frame, pict->pts);
-
                 len = avcodec_encode_video(avctx, outbuf, outbuf_size, pict);
 
-                TRACE("encode video 2. len %d pts %lld  outbuf size %d\n",
-                    len, pict->pts, outbuf, outbuf_size);
-                // TODO: check requested_close ?
+                TRACE("encode video. len %d pts %lld\n", len, pict->pts);
+                if (avctx->coded_frame) {
+                    TRACE("encode video. keyframe %d\n", avctx->coded_frame->key_frame);
+                }
             }
         }
     }
 
     tempbuf_size = sizeof(len);
     if (len < 0) {
-        ERR("failed to encode audio. ctx_id: %d len: %d\n", ctx_id, len);
+        ERR("failed to encode video. ctx_id: %d len: %d\n", ctx_id, len);
     } else {
-        tempbuf_size += len;
+        tempbuf_size += len + sizeof(coded_frame) + sizeof(key_frame);
     }
 
     // write encoded video data
     tempbuf = g_malloc0(tempbuf_size);
     if (!tempbuf) {
-        ERR("encode_video. failed to allocate encoded out buffer.\n");
+        ERR("encode video. failed to allocate encoded out buffer.\n");
     } else {
         memcpy(tempbuf, &len, sizeof(len));
         size = sizeof(len);
+
         if ((len > 0) && outbuf) {
+            // inform gstreamer plugin about the status of encoded frames
+            // A flag for output buffer in gstreamer is depending on the status.
+            if (avctx->coded_frame) {
+                coded_frame = 1;
+                // if key_frame is 0, this frame cannot be decoded independently.
+                key_frame = avctx->coded_frame->key_frame;
+            }
+            memcpy(tempbuf + size, &coded_frame, sizeof(coded_frame));
+            size += sizeof(coded_frame);
+            memcpy(tempbuf + size, &key_frame, sizeof(key_frame));
+            size += sizeof(key_frame);
             memcpy(tempbuf + size, outbuf, len);
         }
     }
