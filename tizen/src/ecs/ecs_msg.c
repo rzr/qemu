@@ -371,6 +371,45 @@ void send_host_keyboard_ntf (int on)
         free(keyboard_msg);
 }
 
+extern char tizen_target_img_path[];
+void send_target_image_information(ECS_Client* ccli) {
+    ECS__Master master = ECS__MASTER__INIT;
+    ECS__DeviceAns ans = ECS__DEVICE_ANS__INIT;
+    int length = strlen(tizen_target_img_path); // ??
+
+    ans.category = (char*) g_malloc(10 + 1);
+    strncpy(ans.category, "info", 10);
+
+    ans.errcode = 0;
+    ans.length = length;
+    ans.group = 1;
+    ans.action = 1;
+
+    if (length > 0)
+    {
+        ans.has_data = 1;
+
+        ans.data.data = g_malloc(length);
+        ans.data.len = length;
+        memcpy(ans.data.data, tizen_target_img_path, length);
+
+        LOG("data = %s, length = %hu", tizen_target_img_path, length);
+    }
+
+    master.type = ECS__MASTER__TYPE__DEVICE_ANS;
+    master.device_ans = &ans;
+
+    send_single_msg(&master, ccli);
+
+    if (ans.data.len > 0)
+    {
+        g_free(ans.data.data);
+    }
+
+    g_free(ans.category);
+
+}
+
 bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 {
     int is_on = 0;
@@ -463,6 +502,10 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 
             do_mouse_event(1/* LEFT */, event_type, 0, 0, xx, yy, zz);
         }
+    } else if (!strncmp(cmd, "info", 4)) {
+        // check to emulator target image path
+        LOG("receive info message %s", tizen_target_img_path);
+        send_target_image_information(ccli);
     }
 
     if (data) {
@@ -619,13 +662,12 @@ bool send_injector_ntf(const char* data, const int len)
 
     send_to_ecp(&master);
 
-    if (ntf.data.data && ntf.data.len > 0)
+    if (ntf.data.len > 0)
     {
         g_free(ntf.data.data);
     }
 
-    if (ntf.category)
-        g_free(ntf.category);
+    g_free(ntf.category);
 
     return true;
 }

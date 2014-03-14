@@ -225,6 +225,8 @@ void ecs_suspend_lock_state(int state);
 
 void send_host_keyboard_ntf(int on);
 
+void send_target_image_information(ECS_Client* ccli);
+
 /* request */
 int accel_min_max(double value);
 void req_set_sensor_accel(int x, int y, int z);
