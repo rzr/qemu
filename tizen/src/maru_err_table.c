@@ -131,15 +131,12 @@ The time of internal heartbeat has expired.\n");
 void maru_atexit(void)
 {
 
-#if 0
     if (maru_exit_status != MARU_EXIT_NORMAL || strlen(maru_exit_msg) != 0) {
-        maru_dump_backtrace(NULL, 0);
         start_simple_client(maru_exit_msg);
     }
-#else
-    INFO("call exit codes\n");
+    INFO("normal exit called\n");
+    // dump backtrace log no matter what
     maru_dump_backtrace(NULL, 0);
-#endif
 }
 
 char *maru_convert_path(char *msg, const char *path)
@@ -342,22 +339,16 @@ static LONG maru_unhandled_exception_filter(PEXCEPTION_POINTERS pExceptionInfo){
         }
     }
 
-    ERR("Exception [%X] occured at %s:0x%08x, running badaEmulator.exe\n",
+    ERR("Exception [%X] occured at %s:0x%08x\n",
         pExceptionRecord->ExceptionCode,
         aqua_get_filename_from_path(module_buf),
         pExceptionRecord->ExceptionAddress
        );
 
-
     pContext = pExceptionInfo->ContextRecord;
     maru_dump_backtrace(pContext, 0);
-
-
-
-
-
     _exit(0);
-    return EXCEPTION_CONTINUE_SEARCH;
+    //return EXCEPTION_CONTINUE_SEARCH;
 }
 #endif
 
