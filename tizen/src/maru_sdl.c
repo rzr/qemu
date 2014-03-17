@@ -234,16 +234,17 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
         return;
     }
 
-    dpy_surface = new_surface;
     console_width = surface_width(new_surface);
     console_height = surface_height(new_surface);
 
-    INFO("qemu_ds_sdl_switch : (%d, %d)\n",
-        console_width, console_height);
+    INFO("qemu_ds_sdl_switch : (%d, %d)\n", console_width, console_height);
 
 #ifdef SDL_THREAD
     pthread_mutex_lock(&sdl_mutex);
 #endif
+
+    /* switch */
+    dpy_surface = new_surface;
 
     if (surface_qemu != NULL) {
         SDL_FreeSurface(surface_qemu);
@@ -614,7 +615,7 @@ void maruskin_sdl_interpolation(bool on)
 
 static void qemu_update(void)
 {
-    if (sdl_alteration == -1) {
+    if (sdl_alteration < 0) {
         SDL_FreeSurface(scaled_screen);
         SDL_FreeSurface(rotated_screen);
         SDL_FreeSurface(surface_qemu);
