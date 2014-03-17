@@ -439,6 +439,19 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 					}
 				}
 
+				/* display should be redrawn When host OS wakes up from suspend
+				 on Ubuntu */
+				if (SwtUtil.isLinuxPlatform() == true) {
+					if (shell.getRegion().getBounds().x == e.x
+							&& shell.getRegion().getBounds().y == e.y
+							&& shell.getRegion().getBounds().width == e.width
+							&& shell.getRegion().getBounds().height == e.height) {
+						logger.info("shell re-painting is required");
+
+						skin.updateDisplay();
+					}
+				}
+
 				/* swt shell does not support native transparency,
 				 so draw image with GC */
 				if (currentState.getCurrentImage() != null) {
