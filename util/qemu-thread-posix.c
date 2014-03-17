@@ -409,13 +409,20 @@ void qemu_thread_create(QemuThread *thread,
 
     /* Leave signal handling to the iothread.  */
     sigfillset(&set);
+#define DO_NOT_MASK_SYNC_SIGS
+#ifdef DO_NOT_MASK_SYNC_SIGS
+    sigdelset(&set, SIGSEGV);
+    sigdelset(&set, SIGBUS);
+    sigdelset(&set, SIGABRT);
+    sigdelset(&set, SIGFPE);
+    sigdelset(&set, SIGILL);
+#endif
     pthread_sigmask(SIG_SETMASK, &set, &oldset);
     err = pthread_create(&thread->thread, &attr, start_routine, arg);
     if (err)
         error_exit(err, __func__);
 
     pthread_sigmask(SIG_SETMASK, &oldset, NULL);
-
     pthread_attr_destroy(&attr);
 }
 
