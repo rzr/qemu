@@ -75,6 +75,7 @@ struct audio_data {
     int32_t sample_fmt;
     int32_t frame_size;
     int32_t bits_per_smp_fmt;
+    int32_t reserved;
     int64_t channel_layout;
 };
 
