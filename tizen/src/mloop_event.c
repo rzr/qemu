@@ -95,7 +95,7 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
 {
     struct sockaddr sa;
     socklen_t sa_size;
-    int ret;
+    int ret, opt = 1;
     unsigned long nonblock = 1;
 
     if (ev == NULL) {
@@ -110,13 +110,34 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
     }
 
 #ifdef _WIN32
-    ioctlsocket(ev->sockno, FIONBIO, &nonblock);
+    ret = ioctlsocket(ev->sockno, FIONBIO, &nonblock);
 #else
-    ioctl(ev->sockno, FIONBIO, &nonblock);
+    ret = ioctl(ev->sockno, FIONBIO, &nonblock);
 #endif // _WIN32
+    if (ret != 0) {
+        ERR("ioctl() failed to use FIONBIO\n");
+#ifdef _WIN32
+        closesocket(ev->sockno);
+#else
+        close(ev->sockno);
+#endif
+        ev->sockno = -1;
+        ev->status = 0;
+        return ret;
+    }
 
-    nonblock = 1;
-    setsockopt(ev->sockno, SOL_SOCKET, SO_REUSEADDR, (char *)&nonblock, sizeof(nonblock));
+    ret = qemu_setsockopt(ev->sockno, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    if (ret != 0) {
+        ERR("setsockopt() failed\n");
+#ifdef _WIN32
+        closesocket(ev->sockno);
+#else
+        close(ev->sockno);
+#endif
+        ev->sockno = -1;
+        ev->status = 0;
+        return ret;
+    }
 
     memset(&sa, '\0', sizeof(sa));
     ((struct sockaddr_in *) &sa)->sin_family = AF_INET;
@@ -139,7 +160,18 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
 
     if (ev->portno == 0) {
         memset(&sa, '\0', sizeof(sa));
-        getsockname(ev->sockno, (struct sockaddr *) &sa, &sa_size);
+        ret = getsockname(ev->sockno, (struct sockaddr *) &sa, &sa_size);
+        if (ret) {
+            ERR("getsockname() failed\n");
+#ifdef _WIN32
+            closesocket(ev->sockno);
+#else
+            close(ev->sockno);
+#endif
+            ev->sockno = -1;
+            ev->status = 0;
+            return ret;
+        }
         ev->portno = ntohs(((struct sockaddr_in *) &sa)->sin_port);
     }
 
@@ -455,7 +487,7 @@ static void mloop_evhandle_ramdump(struct mloop_evpack* pack)
 
 static void mloop_evcb_recv(struct mloop_evsock *ev)
 {
-    struct mloop_evpack pack;
+    struct mloop_evpack pack = {0, };
     int ret;
 
     do {
