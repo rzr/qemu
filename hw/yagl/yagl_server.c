@@ -340,15 +340,17 @@ void yagl_server_dispatch_update(struct yagl_server_state *ss,
     goto out;
 
 fail:
-    for (i = count; i > 0; --i) {
-        if (pages[i - 1]) {
-            cpu_physical_memory_unmap(pages[i - 1],
-                                      TARGET_PAGE_SIZE,
-                                      false,
-                                      TARGET_PAGE_SIZE);
+    if (pages) {
+        for (i = count; i > 0; --i) {
+            if (pages[i - 1]) {
+                cpu_physical_memory_unmap(pages[i - 1],
+                                          TARGET_PAGE_SIZE,
+                                          false,
+                                          TARGET_PAGE_SIZE);
+            }
         }
+        g_free(pages);
     }
-    g_free(pages);
 
 out:
     YAGL_LOG_FUNC_EXIT(NULL);
