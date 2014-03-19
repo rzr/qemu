@@ -104,19 +104,19 @@ static int mloop_evsock_create(struct mloop_evsock *ev)
     }
 
     ev->sockno = socket(AF_INET, SOCK_DGRAM, 0);
-    if ( ev->sockno == -1 ) {
+    if (ev->sockno == -1) {
         ERR("socket() failed\n");
         return -1;
     }
 
 #ifdef _WIN32
-    ioctlsocket(ev->sockno, FIONBIO, &nonblock );
+    ioctlsocket(ev->sockno, FIONBIO, &nonblock);
 #else
     ioctl(ev->sockno, FIONBIO, &nonblock);
 #endif // _WIN32
 
-    nonblock = 1 ;
-    setsockopt( ev->sockno, SOL_SOCKET, SO_REUSEADDR, (char *)&nonblock, sizeof(nonblock) ) ;
+    nonblock = 1;
+    setsockopt(ev->sockno, SOL_SOCKET, SO_REUSEADDR, (char *)&nonblock, sizeof(nonblock));
 
     memset(&sa, '\0', sizeof(sa));
     ((struct sockaddr_in *) &sa)->sin_family = AF_INET;
@@ -491,7 +491,7 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
         mloop_evhandle_touch(&pack);
         break;
     case MLOOP_EVTYPE_KEYBOARD:
-        mloop_evhandle_keyboard(*(uint64_t*)&pack.data[0]);
+        mloop_evhandle_keyboard(*(long*)&pack.data[0]);
         break;
 #ifdef TARGET_I386
     case MLOOP_EVTYPE_KBD_ADD:
