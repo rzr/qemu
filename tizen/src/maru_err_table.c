@@ -364,12 +364,12 @@ void maru_sighandler(int sig)
 #endif
 
 
+#ifndef CONFIG_DARWIN
 void maru_register_exception_handler(void)
 {
 #ifdef CONFIG_WIN32
     prevExceptionFilter = SetUnhandledExceptionFilter(maru_unhandled_exception_filter);
-#else
-
+#else // LINUX
     void *trace[1];
     struct sigaction sa;
 
@@ -390,3 +390,4 @@ void maru_register_exception_handler(void)
     sigaction(SIGINT, &sa, NULL);
 #endif
 }
+#endif
