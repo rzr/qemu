@@ -244,7 +244,7 @@ endif
 
 # use GTK for CopyToClipboard on Ubuntu 12.04 64bit
 ifdef CONFIG_LINUX
-	cp -pP skin/client/native_src/libclipboard.so $(EMUL_DIR)/bin
+	cp -pP skin/client/native_src/libclipboard.so $(DIBS_COMMON_DIR)/bin
 endif
 
 # change loading path of dynamic shared libraries on MAC OS X

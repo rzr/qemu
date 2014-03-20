@@ -83,6 +83,7 @@
 		<javah classpath="build;lib/swt.jar" destdir="native_src">
 			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
+		<echo message="build libshared.so" />
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-c" />
 			<arg line="-fPIC" />
@@ -105,6 +106,7 @@
 		<javah classpath="build;lib/swt.jar" destdir="native_src">
 			<class name="org.tizen.emulator.skin.screenshot.ScreenShotDialog" />
 		</javah>
+		<echo message="build libclipboard.so" />
 		<exec executable="pkg-config" outputproperty="gtk" failifexecutionfails="false">
 			<arg line="--cflags" />
 			<arg line="--libs" />
