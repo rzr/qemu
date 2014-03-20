@@ -1,3 +1,6 @@
+* 1.7.26
+- added device option for sensor & jack device
+== Jinhyung Choi <jinhyung2.choi@samsung.com> 2014-03-20
 * 1.7.25
 - added build/install dependency for spice server
 == SungMin Ha <sungmin82.ha@samsung.com> 2014-03-12

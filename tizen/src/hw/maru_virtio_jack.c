@@ -49,6 +49,7 @@ static int hdmi_online = 0;
 static int usb_online = 0;
 
 VirtIOJACK* vjack;
+static int jack_capability = 0;
 
 typedef struct msg_info {
     char buf[_MAX_BUF];
@@ -119,6 +120,9 @@ static void get_jack_data(enum jack_types type, char* msg_info)
     }
 
     switch (type) {
+        case jack_type_list:
+            sprintf(msg_info, "%d", jack_capability);
+            break;
         case jack_type_charger:
             sprintf(msg_info, "%d", charger_online);
             break;
@@ -212,6 +216,42 @@ static void virtio_jack_vq(VirtIODevice *vdev, VirtQueue *vq)
     }
 }
 
+static int set_capability(char* jack)
+{
+    if (!strncmp(jack, JACK_NAME_CHARGER, 7)) {
+        return jack_cap_charger;
+    } else if (!strncmp(jack, JACK_NAME_EARJACK, 7)) {
+        return jack_cap_earjack;
+    } else if (!strncmp(jack, JACK_NAME_EARKEY, 6)) {
+        return jack_cap_earkey;
+    } else if (!strncmp(jack, JACK_NAME_HDMI, 4)) {
+        return jack_cap_hdmi;
+    } else if (!strncmp(jack, JACK_NAME_USB, 3)) {
+        return jack_cap_usb;
+    }
+
+    return 0;
+}
+
+static void parse_jack_capability(char* lists)
+{
+    char token[] = JACK_CAP_TOKEN;
+    char* data = NULL;
+
+    if (lists == NULL)
+        return;
+
+    data = strtok(lists, token);
+    if (data != NULL) {
+        jack_capability |= set_capability(data);
+        while ((data = strtok(NULL, token)) != NULL) {
+            jack_capability |= set_capability(data);
+        }
+    }
+
+    INFO("jack device capabilty enabled with %02x\n", jack_capability);
+}
+
 static int virtio_jack_init(VirtIODevice *vdev)
 {
     INFO("initialize virtio-jack device\n");
@@ -226,6 +266,12 @@ static int virtio_jack_init(VirtIODevice *vdev)
     }
 
     vjack->vq = virtio_add_queue(&vjack->vdev, 64, virtio_jack_vq);
+
+    INFO("initialized jack type: %s\n", vjack->jacks);
+
+    if (vjack->jacks) {
+        parse_jack_capability(vjack->jacks);
+    }
 
     return 0;
 }
@@ -253,11 +299,17 @@ static uint32_t virtio_jack_get_features(VirtIODevice *vdev,
     return 0;
 }
 
+static Property virtio_jack_properties[] = {
+    DEFINE_PROP_STRING(ATTRIBUTE_NAME_JACKS, VirtIOJACK, jacks),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static void virtio_jack_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
     dc->exit = virtio_jack_exit;
+    dc->props = virtio_jack_properties;
     vdc->init = virtio_jack_init;
     vdc->get_features = virtio_jack_get_features;
     vdc->reset = virtio_jack_reset;

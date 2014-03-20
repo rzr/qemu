@@ -43,7 +43,8 @@ enum request_cmd {
 };
 
 enum sensor_types {
-    sensor_type_accel = 0,
+    sensor_type_list = 0,
+    sensor_type_accel,
     sensor_type_geo,
     sensor_type_gyro,
     sensor_type_gyro_x,
@@ -58,6 +59,14 @@ enum sensor_types {
     sensor_type_max
 };
 
+enum sensor_capabilities {
+    sensor_cap_accel = 0x01,
+    sensor_cap_geo   = 0x02,
+    sensor_cap_gyro  = 0x04,
+    sensor_cap_light = 0x08,
+    sensor_cap_proxi = 0x10
+};
+
 #define MESSAGE_TYPE_SENSOR "sensor"
 
 #define GROUP_STATUS        15
@@ -68,6 +77,16 @@ enum sensor_types {
 #define ACTION_LIGHT        113
 #define ACTION_PROXI        114
 
+#define ATTRIBUTE_NAME_SENSORS "sensors"
+
+#define SENSOR_NAME_ACCEL "accel"
+#define SENSOR_NAME_GYRO  "gyro"
+#define SENSOR_NAME_GEO   "geo"
+#define SENSOR_NAME_LIGHT "light"
+#define SENSOR_NAME_PROXI "proxi"
+
+#define SENSOR_CAP_TOKEN "&"
+
 #define TYPE_VIRTIO_SENSOR "virtio-sensor-device"
 #define VIRTIO_SENSOR(obj) \
         OBJECT_CHECK(VirtIOSENSOR, (obj), TYPE_VIRTIO_SENSOR)
@@ -76,6 +95,8 @@ typedef struct VirtIOSENSOR {
     VirtIODevice    vdev;
     VirtQueue       *vq;
     DeviceState     *qdev;
+
+    char            *sensors;
 } VirtIOSENSOR;
 
 void req_sensor_data(enum sensor_types type, enum request_cmd req, char* data, int len);

@@ -41,7 +41,8 @@ extern "C" {
         OBJECT_CHECK(VirtIOJACK, (obj), TYPE_VIRTIO_JACK)
 
 enum jack_types {
-    jack_type_charger = 0,
+    jack_type_list = 0,
+    jack_type_charger,
     jack_type_earjack,
     jack_type_earkey,
     jack_type_hdmi,
@@ -49,13 +50,31 @@ enum jack_types {
     jack_type_max
 };
 
+enum jack_capabilities {
+    jack_cap_charger = 0x01,
+    jack_cap_earjack = 0x02,
+    jack_cap_earkey  = 0x04,
+    jack_cap_hdmi    = 0x08,
+    jack_cap_usb     = 0x10
+};
+
 typedef struct VirtIOJACK {
     VirtIODevice    vdev;
     VirtQueue       *vq;
     DeviceState     *qdev;
 
-    QEMUBH          *bh;
+    char            *jacks;
 } VirtIOJACK;
+
+#define ATTRIBUTE_NAME_JACKS "jacks"
+
+#define JACK_NAME_CHARGER "charger"
+#define JACK_NAME_EARJACK "earjack"
+#define JACK_NAME_EARKEY "earkey"
+#define JACK_NAME_HDMI "hdmi"
+#define JACK_NAME_USB "usb"
+
+#define JACK_CAP_TOKEN "&"
 
 void set_jack_charger(int online);
 int get_jack_charger(void);

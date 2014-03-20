@@ -57,6 +57,7 @@ static int light_level = 10;
 static int proxi_vo = 8;
 
 VirtIOSENSOR* vsensor;
+static int sensor_capability = 0;
 
 typedef struct msg_info {
     char buf[_MAX_BUF];
@@ -176,6 +177,9 @@ static void __get_sensor_data(enum sensor_types type, char* msg_info)
     }
 
     switch (type) {
+        case sensor_type_list:
+            sprintf(msg_info, "%d", sensor_capability);
+            break;
         case sensor_type_accel:
             strcpy(msg_info, accel_xyz);
             break;
@@ -255,7 +259,7 @@ static void handle_msg(struct msg_info *msg, VirtQueueElement *elem)
 {
     unsigned int len = 0;
 
-	if (msg == NULL) {
+    if (msg == NULL) {
         INFO("msg info structure is NULL.\n");
         return;
     }
@@ -303,6 +307,42 @@ static void virtio_sensor_vq(VirtIODevice *vdev, VirtQueue *vq)
     }
 }
 
+static int set_capability(char* sensor)
+{
+    if (!strncmp(sensor, SENSOR_NAME_ACCEL, 5)) {
+        return sensor_cap_accel;
+    } else if (!strncmp(sensor, SENSOR_NAME_GEO, 3)) {
+        return sensor_cap_geo;
+    } else if (!strncmp(sensor, SENSOR_NAME_GYRO, 4)) {
+        return sensor_cap_gyro;
+    } else if (!strncmp(sensor, SENSOR_NAME_LIGHT, 5)) {
+        return sensor_cap_light;
+    } else if (!strncmp(sensor, SENSOR_NAME_PROXI, 5)) {
+        return sensor_cap_proxi;
+    }
+
+    return 0;
+}
+
+static void parse_sensor_capability(char* lists)
+{
+    char token[] = SENSOR_CAP_TOKEN;
+    char* data = NULL;
+
+    if (lists == NULL)
+        return;
+
+    data = strtok(lists, token);
+    if (data != NULL) {
+        sensor_capability |= set_capability(data);
+        while ((data = strtok(NULL, token)) != NULL) {
+            sensor_capability |= set_capability(data);
+        }
+    }
+
+    INFO("sensor device capabilty enabled with %02x\n", sensor_capability);
+}
+
 static int virtio_sensor_init(VirtIODevice *vdev)
 {
     INFO("initialize virtio-sensor device\n");
@@ -317,6 +357,12 @@ static int virtio_sensor_init(VirtIODevice *vdev)
     }
 
     vsensor->vq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_vq);
+
+    INFO("initialized sensor type: %s\n", vsensor->sensors);
+
+    if (vsensor->sensors) {
+        parse_sensor_capability(vsensor->sensors);
+    }
 
     return 0;
 }
@@ -344,11 +390,17 @@ static uint32_t virtio_sensor_get_features(VirtIODevice *vdev,
     return 0;
 }
 
+static Property virtio_sensor_properties[] = {
+    DEFINE_PROP_STRING(ATTRIBUTE_NAME_SENSORS, VirtIOSENSOR, sensors),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static void virtio_sensor_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
     dc->exit = virtio_sensor_exit;
+    dc->props = virtio_sensor_properties;
     vdc->init = virtio_sensor_init;
     vdc->get_features = virtio_sensor_get_features;
     vdc->reset = virtio_sensor_reset;

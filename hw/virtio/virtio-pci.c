@@ -1769,8 +1769,15 @@ static int virtio_sensor_pci_init(VirtIOPCIProxy *vpci_dev)
     return 0;
 }
 
+static Property virtio_sensor_pci_properties[] = {
+    DEFINE_PROP_STRING(ATTRIBUTE_NAME_SENSORS, VirtIOSENSORPCI, vdev.sensors),
+    DEFINE_VIRTIO_COMMON_FEATURES(VirtIOPCIProxy, host_features),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static void virtio_sensor_pci_class_init(ObjectClass *klass, void *data)
 {
+    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
     PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
 
@@ -1779,6 +1786,7 @@ static void virtio_sensor_pci_class_init(ObjectClass *klass, void *data)
     pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_SENSOR;
     pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
     pcidev_k->class_id = PCI_CLASS_OTHERS;
+    dc->props = virtio_sensor_pci_properties;
 }
 
 static void virtio_sensor_pci_instance_init(Object *obj)
@@ -1851,8 +1859,15 @@ static int virtio_jack_pci_init(VirtIOPCIProxy *vpci_dev)
     return 0;
 }
 
+static Property virtio_jack_pci_properties[] = {
+    DEFINE_PROP_STRING(ATTRIBUTE_NAME_JACKS, VirtIOJACKPCI, vdev.jacks),
+    DEFINE_VIRTIO_COMMON_FEATURES(VirtIOPCIProxy, host_features),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static void virtio_jack_pci_class_init(ObjectClass *klass, void *data)
 {
+    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
     PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
 
@@ -1861,6 +1876,7 @@ static void virtio_jack_pci_class_init(ObjectClass *klass, void *data)
     pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_JACK;
     pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
     pcidev_k->class_id = PCI_CLASS_OTHERS;
+    dc->props = virtio_jack_pci_properties;
 }
 
 static void virtio_jack_pci_instance_init(Object *obj)
