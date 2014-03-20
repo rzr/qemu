@@ -129,6 +129,8 @@ void set_emul_max_touch_point(int cnt)
         cnt = 1;
     }
     _emul_info.max_touch_point = cnt;
+
+    INFO("set max touch point : %d\n", cnt);
 }
 
 int get_emul_max_touch_point(void)
