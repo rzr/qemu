@@ -29,8 +29,8 @@ Description: Common binaries for Tizen Emulator
 Package: emulator-qemu-x86
 OS: ubuntu-32
 Build-host-os: ubuntu-32
-Build-dependency: emulator-lib [ ubuntu-32 ], emulator-spice-server-dev [ ubuntu-32 ]
-Install-dependency: emulator-kernel-x86 [ ubuntu-32 ], vgabios [ ubuntu-32 ], emulator-spice-server [ ubuntu-32 ]
+Build-dependency: emulator-lib [ ubuntu-32 ], emulator-spice-server-dev [ ubuntu-32 ], libav-dev [ ubuntu-32 ]
+Install-dependency: emulator-kernel-x86 [ ubuntu-32 ], vgabios [ ubuntu-32 ], emulator-spice-server [ ubuntu-32 ], libav [ ubuntu-32 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
@@ -43,8 +43,8 @@ Description: Tizen x86 Emulator
 Package: emulator-qemu-x86
 OS: ubuntu-64
 Build-host-os: ubuntu-64
-Build-dependency: emulator-lib [ ubuntu-64 ], emulator-spice-server-dev [ ubuntu-64 ]
-Install-dependency: emulator-kernel-x86 [ ubuntu-64 ], vgabios [ ubuntu-64 ], emulator-spice-server [ ubuntu-64 ]
+Build-dependency: emulator-lib [ ubuntu-64 ], emulator-spice-server-dev [ ubuntu-64 ], libav-dev [ ubuntu-64]
+Install-dependency: emulator-kernel-x86 [ ubuntu-64 ], vgabios [ ubuntu-64 ], emulator-spice-server [ ubuntu-64 ], libav [ ubuntu-64 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
@@ -57,8 +57,8 @@ Description: Tizen x86 Emulator
 Package: emulator-qemu-x86
 OS: windows-32, windows-64
 Build-host-os: windows-32
-Build-dependency: emulator-lib-dev [ windows-32 ], emulator-lib [ windows-32 ]
-Install-dependency: emulator-kernel-x86, vgabios
+Build-dependency: emulator-lib-dev [ windows-32 ], emulator-lib [ windows-32 ], libav-dev [ windows-32 ]
+Install-dependency: emulator-kernel-x86, vgabios, libav [ windows-32 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm
@@ -71,8 +71,8 @@ Description: Tizen x86 Emulator
 Package: emulator-qemu-x86
 OS: macos-64
 Build-host-os: macos-64
-Build-dependency: emulator-lib [ macos-64 ], emulator-lib-dev [ macos-64 ]
-Install-dependency: emulator-kernel-x86 [ macos-64 ], vgabios [ macos-64 ]
+Build-dependency: emulator-lib [ macos-64 ], emulator-lib-dev [ macos-64 ], libav-dev [ macos-64 ]
+Install-dependency: emulator-kernel-x86 [ macos-64 ], vgabios [ macos-64 ], libav [ macos-64 ]
 Description: Tizen x86 Emulator
 
 #Package: emulator-qemu-arm

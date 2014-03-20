@@ -157,6 +157,10 @@ ifdef CONFIG_DARWIN
 		install_name_tool -change /opt/local/lib/libncurses.5.dylib @loader_path/libncurses.5.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libpixman-1.0.dylib @loader_path/libpixman-1.0.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change .//lib/libavformat-emul.54.dylib @loader_path/libavformat-emul.54.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change .//lib/libavcodec-emul.54.dylib @loader_path/libavcodec-emul.54.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change .//lib/libavresample-emul.1.dylib @loader_path/libavresample-emul.1.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change .//lib/libavutil-emul.52.dylib @loader_path/libavutil-emul.52.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		;; \
 	arm-softmmu) \
 		;; \
@@ -261,6 +265,10 @@ ifdef CONFIG_DARWIN
 		install_name_tool -change /opt/local/lib/libncurses.5.dylib @loader_path/libncurses.5.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libpixman-1.0.dylib @loader_path/libpixman-1.0.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change .//lib/libavformat-emul.54.dylib @loader_path/libavformat-emul.54.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change .//lib/libavcodec-emul.54.dylib @loader_path/libavcodec-emul.54.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change .//lib/libavresample-emul.1.dylib @loader_path/libavresample-emul.1.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
+		install_name_tool -change .//lib/libavutil-emul.52.dylib @loader_path/libavutil-emul.52.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		;; \
 	arm-softmmu) \
 		;; \

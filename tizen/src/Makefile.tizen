@@ -17,6 +17,9 @@ else
 CFLAGS += -g -O0
 endif
 
+# codec
+LIBS+= -lavformat-emul -lavcodec-emul -lavresample-emul -lavutil-emul
+
 ifdef CONFIG_WIN32
 LIBS += -lcurl -lopengl32 -lglu32 -lgdi32 -lpng14
 endif
@@ -119,7 +122,7 @@ obj-y += maru_virtio_nfc.o
 obj-y += maru_virtio_jack.o
 obj-y += maru_virtio_power.o
 obj-y += maru_virtio_esm.o
-#obj-y += maru_brill_codec.o
+obj-y += maru_brill_codec.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o

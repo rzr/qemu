@@ -36,7 +36,8 @@ prepare()
     BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/ncurses/include "
     BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/openssl/include "
     BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/pixman/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/zlib/include"
+    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/zlib/include "
+    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/include"
 
     BUILD_LDFLAGS="--extra-ldflags=-L$ROOTDIR/curl/lib "
     BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/libffi/lib "
@@ -47,7 +48,8 @@ prepare()
     BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/ncurses/lib "
     BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/openssl/lib "
     BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/pixman/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/zlib/lib"
+    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/zlib/lib "
+    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/lib"
 }
 
 modify_files(){
