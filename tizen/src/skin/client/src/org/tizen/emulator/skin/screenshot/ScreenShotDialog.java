@@ -43,7 +43,6 @@ import java.util.logging.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.dnd.Clipboard;
-import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.ImageTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.MouseEvent;
@@ -69,12 +68,12 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.tizen.emulator.skin.EmulatorSkin;
 import org.tizen.emulator.skin.config.EmulatorConfig;
+import org.tizen.emulator.skin.config.EmulatorConfig.ArgsConstants;
 import org.tizen.emulator.skin.exception.ScreenShotException;
 import org.tizen.emulator.skin.image.ImageRegistry;
 import org.tizen.emulator.skin.image.ImageRegistry.IconName;
@@ -97,30 +96,6 @@ public class ScreenShotDialog {
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(ScreenShotDialog.class).getLogger();
-
-	static {
-		/* load JNI library file */
-		try {
-			if (SwtUtil.isLinuxPlatform() == true &&
-					SwtUtil.is64bitPlatform() == true) {
-				System.loadLibrary(JNI_LIBRARY_FILE);
-			}
-		} catch (UnsatisfiedLinkError e) {
-			logger.severe("Failed to load a " + JNI_LIBRARY_FILE + " file.\n" + e);
-
-			Shell temp = new Shell(Display.getDefault());
-			MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
-			messageBox.setText("Emulator");
-			messageBox.setMessage(
-					"Failed to load a JNI library file from "
-					+ System.getProperty("java.library.path") + ".\n\n" + e);
-			messageBox.open();
-			temp.dispose();
-		}
-	}
-
-	/* define JNI function */
-	public native int copyToClipboard(int width, int height, byte buf[]);
 
 	protected EmulatorSkin skin;
 	protected EmulatorConfig config;
@@ -527,21 +502,46 @@ public class ScreenShotDialog {
 
 				loader.data = new ImageData[] { shotData };
 
-				ByteArrayOutputStream bao = new ByteArrayOutputStream();
-				loader.save(bao, SWT.IMAGE_PNG);
-
-				ImageData pngData = new ImageData(
-						new ByteArrayInputStream(bao.toByteArray()));
-
 				if (SwtUtil.isLinuxPlatform() == true &&
 						SwtUtil.is64bitPlatform() == true) {
-					/* use JNI for Ubuntu 12.04 64bit */
-					int result = copyToClipboard(
-							pngData.width, pngData.height, pngData.data);
-					if (result < 0) {
-						DND.error(DND.ERROR_CANNOT_SET_CLIPBOARD);
+					/* use Python for Ubuntu 64bit */
+					FileOutputStream fos = null;
+					String fileName = "screenshot" +
+							skin.config.getArgInt(ArgsConstants.VM_BASE_PORT) + ".png";
+
+					try {
+						fos = new FileOutputStream(fileName, false);
+					} catch (FileNotFoundException ee) {
+						logger.log(Level.SEVERE, ee.getMessage(), ee);
+						SkinUtil.openMessage(shell, null,
+								"Failed to copy to clipboard : \n" + ee.getMessage(),
+								SWT.ICON_ERROR, config);
+						return;
+					}
+
+					loader.save(fos, SWT.IMAGE_PNG);
+					IOUtil.close(fos);
+
+					ProcessBuilder procPy = new ProcessBuilder();
+					procPy.command("python", "clipboard.py", fileName);
+
+					logger.info(procPy.command().toString());
+
+					try {
+						procPy.start();
+					} catch (Exception ee) {
+						logger.log(Level.SEVERE, ee.getMessage(), ee);
+						SkinUtil.openMessage(shell, null,
+								"Failed to copy to clipboard : \n" + ee.getMessage(),
+								SWT.ICON_ERROR, config);
 					}
 				} else {
+					ByteArrayOutputStream bao = new ByteArrayOutputStream();
+					loader.save(bao, SWT.IMAGE_PNG);
+
+					ImageData pngData = new ImageData(
+							new ByteArrayInputStream(bao.toByteArray()));
+
 					Object[] imageObject = new Object[] { pngData };
 
 					Transfer[] transfer = new Transfer[] { ImageTransfer.getInstance() };

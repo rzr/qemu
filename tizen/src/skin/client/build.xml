@@ -100,6 +100,7 @@
 			<arg line="libshared.so" />
 		</exec>
 
+		<!--
 		<exec dir="native_src" executable="./check-gtk.sh" outputproperty="gtkabi" failifexecutionfails="false" />
 		<echo message="gtkversion : ${gtkabi}" />
 
@@ -108,8 +109,8 @@
 		</javah>
 		<echo message="build libclipboard.so" />
 		<exec executable="pkg-config" outputproperty="gtk" failifexecutionfails="false">
-			<arg line="--cflags" />
-			<arg line="--libs" />
+			<arg line="- -cflags" />
+			<arg line="- -libs" />
 			<arg line="${gtkabi}" />
 		</exec>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
@@ -128,6 +129,7 @@
 			<arg line="-o" />
 			<arg line="libclipboard.so" />
 		</exec>
+		-->
 
 		<delete>
 			<fileset dir="native_src" includes="**/*.h" />
