@@ -34,6 +34,8 @@ import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.PaletteData;
+import org.tizen.emulator.skin.comm.ICommunicator.SendCommand;
+import org.tizen.emulator.skin.comm.sock.data.DisplayStateData;
 import org.tizen.emulator.skin.comm.sock.data.StartData;
 import org.tizen.emulator.skin.config.EmulatorConfig;
 import org.tizen.emulator.skin.dbi.OptionType;
@@ -138,6 +140,17 @@ public class EmulatorSdlSkin extends EmulatorSkin {
 		}
 
 		return windowHandleId;
+	}
+
+	@Override
+	public void updateDisplay() {
+		logger.info("update display");
+
+		DisplayStateData stateData = new DisplayStateData(
+				currentState.getCurrentScale(),
+				currentState.getCurrentRotationId());
+		communicator.sendToQEMU(SendCommand.SEND_DISPLAY_STATE,
+				stateData, false);
 	}
 
 	@Override
