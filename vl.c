@@ -3909,7 +3909,6 @@ int main(int argc, char **argv, char **envp)
             case QEMU_OPTION_max_touch_point:
                 {
                     int cnt = atoi(optarg);
-                    fprintf(stderr, "maxTouchPoint:%d\n", cnt);
                     set_emul_max_touch_point(cnt);
                     break;
                 }
