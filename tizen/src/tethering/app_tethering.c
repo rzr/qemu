@@ -30,7 +30,7 @@
 #ifndef __WIN32
 #include <sys/ioctl.h>
 #else
-#define EISCONN	WSAEISCONN
+#define EISCONN WSAEISCONN
 #endif
 
 #include "qemu-common.h"
@@ -874,11 +874,15 @@ static int start_tethering_socket(int port)
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port); // i.e. 1234
-    inet_aton("127.0.0.1", &addr.sin_addr);
+    ret = inet_aton("127.0.0.1", &addr.sin_addr);
+    if (ret == 0) {
+        ERR("inet_aton failure\n");
+        return -1;
+    }
 
     sock = qemu_socket(PF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-//        set_tethering_connection_status(DISCONNECTED);
+        // set_tethering_connection_status(DISCONNECTED);
         ERR("tethering socket creation is failed\n", sock);
         return -1;
     }
@@ -894,7 +898,7 @@ static int start_tethering_socket(int port)
         } else {
             INFO("tethering socket is connected.\n");
             ret = 0;
-//          set_tethering_app_state(true);
+            // set_tethering_app_state(true);
             break;
         }
         TRACE("ret: %d\n", ret);
