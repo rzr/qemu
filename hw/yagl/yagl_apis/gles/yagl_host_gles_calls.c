@@ -61,28 +61,6 @@ typedef enum
     yagl_gles1_array_texcoord,
 } yagl_gles1_array_type;
 
-static bool yagl_gles_use_map_buffer_range(void)
-{
-    YAGL_LOG_FUNC_SET(yagl_gles_use_map_buffer_range);
-
-    if (gles_api_ts->use_map_buffer_range == -1) {
-        if (gles_api_ts->driver->gl_version > yagl_gl_2) {
-            gles_api_ts->use_map_buffer_range = 1;
-        } else {
-            const char *tmp = (const char*)gles_api_ts->driver->GetString(GL_EXTENSIONS);
-
-            gles_api_ts->use_map_buffer_range =
-                (tmp && (strstr(tmp, "GL_ARB_map_buffer_range ") != NULL));
-
-            if (!gles_api_ts->use_map_buffer_range) {
-                YAGL_LOG_WARN("glMapBufferRange not supported, using glBufferSubData");
-            }
-        }
-    }
-
-    return gles_api_ts->use_map_buffer_range;
-}
-
 static GLuint yagl_gles_bind_array(uint32_t indx,
                                    GLint first,
                                    GLsizei stride,
@@ -130,7 +108,7 @@ static GLuint yagl_gles_bind_array(uint32_t indx,
         gles_api_ts->arrays[indx].size = size;
     }
 
-    if (yagl_gles_use_map_buffer_range()) {
+    if (gles_api_ts->api->use_map_buffer_range) {
         ptr = gles_api_ts->driver->MapBufferRange(GL_ARRAY_BUFFER,
                                                   first * stride,
                                                   data_count,
@@ -176,7 +154,7 @@ static GLuint yagl_gles_bind_ebo(const GLvoid *data, int32_t size)
         gles_api_ts->ebo_size = size;
     }
 
-    if (yagl_gles_use_map_buffer_range()) {
+    if (gles_api_ts->api->use_map_buffer_range) {
         ptr = gles_api_ts->driver->MapBufferRange(GL_ELEMENT_ARRAY_BUFFER,
                                                   0,
                                                   size,
@@ -921,7 +899,7 @@ void yagl_host_glBufferSubData(GLenum target,
 
     YAGL_LOG_FUNC_SET(glBufferSubData);
 
-    if (yagl_gles_use_map_buffer_range()) {
+    if (gles_api_ts->api->use_map_buffer_range) {
         ptr = gles_api_ts->driver->MapBufferRange(target,
                                                   offset,
                                                   data_count,
@@ -2221,9 +2199,15 @@ void yagl_host_glGetUniformIndices(GLuint program,
     const GLchar *uniformNames, int32_t uniformNames_count,
     GLuint *uniformIndices, int32_t uniformIndices_maxcount, int32_t *uniformIndices_count)
 {
-    GLuint obj = yagl_gles_object_get(program);
-    int max_active_uniform_bufsize = 1, i;
+    GLuint obj;
+    int max_active_uniform_bufsize = 1, i, j;
     const GLchar **name_pointers;
+    int num_active_uniforms = 0;
+    GLchar *uniform_name;
+
+    YAGL_LOG_FUNC_SET(glGetUniformIndices);
+
+    obj = yagl_gles_object_get(program);
 
     gles_api_ts->driver->GetProgramiv(obj,
                                       GL_ACTIVE_UNIFORM_MAX_LENGTH,
@@ -2243,6 +2227,99 @@ void yagl_host_glGetUniformIndices(GLuint program,
     g_free(name_pointers);
 
     *uniformIndices_count = uniformIndices_maxcount;
+
+    if (!gles_api_ts->api->broken_ubo) {
+        return;
+    }
+
+    gles_api_ts->driver->GetProgramiv(obj,
+                                      GL_ACTIVE_UNIFORMS,
+                                      &num_active_uniforms);
+
+    uniform_name = g_malloc(max_active_uniform_bufsize + 1);
+
+    for (i = 0; i < num_active_uniforms; ++i) {
+        GLsizei length = 0;
+        GLint size = 0;
+        GLenum type = 0;
+        const GLchar *tmp;
+        size_t tmp_len;
+
+        gles_api_ts->driver->GetActiveUniform(obj,
+                                              i,
+                                              max_active_uniform_bufsize,
+                                              &length,
+                                              &size,
+                                              &type,
+                                              uniform_name);
+
+        if (length == 0) {
+            YAGL_LOG_ERROR("Cannot get active uniform %d for program %u", i, obj);
+            continue;
+        }
+
+        tmp = strchr(uniform_name, '.');
+
+        if (!tmp) {
+            continue;
+        }
+
+        tmp += 1;
+
+        tmp_len = strlen(tmp);
+
+        for (j = 0; j < uniformIndices_maxcount; ++j) {
+            const GLchar *test, *dot;
+            size_t test_len;
+
+            if (uniformIndices[j] != GL_INVALID_INDEX) {
+                continue;
+            }
+
+            /*
+             * This solution is not perfect, but it's better than nothing.
+             * It may yield incorrect index in cases like this:
+             *
+             * uniform myUB1
+             * {
+             *     mat4 myMatrix;
+             * } myName;
+             *
+             * uniform myUB2
+             * {
+             *     mat4 myMatrix;
+             * };
+             *
+             * A query for "myMatrix" may return index of
+             * "myUB1.myMatrix" instead of intended "myUB2.myMatrix".
+             * The problem is that we can't find out if UB is named or
+             * not from API, so if the uniform with same name is
+             * present in several UBs we might get the wrong one...
+             */
+
+            test = &uniformNames[max_active_uniform_bufsize * j];
+            test_len = strlen(test);
+
+            dot = strchr(test, '.');
+
+            if (dot &&
+                (strncmp(test,
+                         uniform_name,
+                         dot - test) == 0) &&
+                (uniform_name[dot - test] == '[')) {
+                test = dot + 1;
+                test_len = strlen(test);
+            }
+
+            if ((strncmp(test, tmp, test_len) == 0) &&
+                ((test_len == tmp_len) ||
+                 ((test_len < tmp_len) && (tmp[test_len] == '[')))) {
+                uniformIndices[j] = i;
+            }
+        }
+    }
+
+    g_free(uniform_name);
 }
 
 GLuint yagl_host_glGetUniformBlockIndex(GLuint program,

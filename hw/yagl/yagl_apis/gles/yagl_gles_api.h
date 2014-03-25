@@ -39,6 +39,11 @@ struct yagl_gles_api
     struct yagl_api base;
 
     struct yagl_gles_driver *driver;
+
+    bool checked;
+
+    bool use_map_buffer_range;
+    bool broken_ubo;
 };
 
 /*

@@ -34,6 +34,7 @@
 
 struct yagl_gles_driver;
 struct yagl_gles_api_ps;
+struct yagl_gles_api;
 
 /*
  * OpenGL 3.1+ core profile doesn't allow one to
@@ -52,6 +53,11 @@ struct yagl_gles_api_ts
 
     struct yagl_gles_api_ps *ps;
 
+    /*
+     * From 'ps->base.api' for speed.
+     */
+    struct yagl_gles_api *api;
+
     struct yagl_gles_array *arrays;
     uint32_t num_arrays;
 
@@ -60,11 +66,6 @@ struct yagl_gles_api_ts
      */
     GLuint ebo;
     uint32_t ebo_size;
-
-    /*
-     * -1 when undecided, 0/1 when decided.
-     */
-    int use_map_buffer_range;
 };
 
 void yagl_gles_api_ts_init(struct yagl_gles_api_ts *gles_api_ts,
