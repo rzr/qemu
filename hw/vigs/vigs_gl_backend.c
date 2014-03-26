@@ -1057,14 +1057,14 @@ static struct vigs_surface *vigs_gl_backend_create_surface(struct vigs_backend *
         break;
     default:
         assert(false);
-        goto fail;
+        return NULL;
     }
 
     tex_bpp = vigs_format_bpp(format);
 
     if ((width * tex_bpp) != stride) {
         VIGS_LOG_ERROR("Custom strides not supported yet");
-        goto fail;
+        return NULL;
     }
 
     gl_sfc = g_malloc0(sizeof(*gl_sfc));
@@ -1096,19 +1096,6 @@ static struct vigs_surface *vigs_gl_backend_create_surface(struct vigs_backend *
     gl_sfc->base.destroy = &vigs_gl_surface_destroy;
 
     return &gl_sfc->base;
-
-fail:
-    if (ws_sfc) {
-        vigs_winsys_gl_surface_orphan(ws_sfc);
-    }
-
-    if (gl_sfc) {
-        vigs_surface_cleanup(&gl_sfc->base);
-
-        g_free(gl_sfc);
-    }
-
-    return NULL;
 }
 
 static void vigs_gl_backend_read_pixels_work(struct work_queue_item *wq_item)

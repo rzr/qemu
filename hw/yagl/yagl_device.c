@@ -290,10 +290,6 @@ static int yagl_device_init(PCIDevice *dev)
     return 0;
 
 fail:
-    if (egl_backend) {
-        egl_backend->destroy(egl_backend);
-    }
-
     if (gles_driver) {
         gles_driver->destroy(gles_driver);
     }
