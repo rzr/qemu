@@ -151,7 +151,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		List<KeyMapType> keyMapList = SkinUtil.getHWKeyMapList(
 				skin.getEmulatorSkinState().getCurrentRotationId());
 
-		if (keyMapList.isEmpty() == false) {
+		if (keyMapList != null && keyMapList.isEmpty() == false) {
 			toggleButton = createToggleButton();
 			toggleButton.setBackground(backgroundColor);
 		}
