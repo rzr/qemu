@@ -121,6 +121,12 @@ static void vigs_hw_update(void *opaque)
 
     vigs_server_update_display(s->server);
 
+    /*
+     * 'vigs_server_update_display' could have updated the surface,
+     * so fetch it again.
+     */
+    ds = qemu_console_surface(s->con);
+
     dpy_gfx_update(s->con, 0, 0, surface_width(ds), surface_height(ds));
 
     if (s->reg_con & VIGS_REG_CON_VBLANK_ENABLE) {
