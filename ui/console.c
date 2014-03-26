@@ -29,6 +29,7 @@
 #include "sysemu/char.h"
 
 #ifdef SDL_THREAD
+#include <pthread.h>
 extern pthread_mutex_t sdl_mutex;
 #endif
 
