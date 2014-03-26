@@ -252,10 +252,6 @@ public class PopupMenu {
 			}
 
 			if (screenshotItem != null || hostKbdItem != null || diagnosisItem != null) {
-				advancedItem = new MenuItem(menu, SWT.CASCADE);
-				advancedItem.setText(ADVANCED_MENUITEM_NAME);
-				advancedItem.setImage(imageRegistry.getIcon(IconName.ADVANCED));
-
 				new MenuItem(advancedSubMenu, SWT.SEPARATOR);
 			}
 
@@ -270,8 +266,16 @@ public class PopupMenu {
 			/* Force close menu */
 			forceCloseItem = createForceCloseItem(
 					advancedSubMenu, FORCECLOSE_MENUITEM_NAME);
+
+			if (screenshotItem != null || hostKbdItem != null || diagnosisItem != null
+					|| aboutItem != null || forceCloseItem != null) {
+				advancedItem = new MenuItem(menu, SWT.CASCADE);
+				advancedItem.setText(ADVANCED_MENUITEM_NAME);
+				advancedItem.setImage(imageRegistry.getIcon(IconName.ADVANCED));
+
+				advancedItem.setMenu(advancedSubMenu);
+			}
 		}
-		advancedItem.setMenu(advancedSubMenu);
 
 		/* Shell menu */
 		if (itemProperties == null ||

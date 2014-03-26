@@ -10,6 +10,10 @@
 #include "qapi-types.h"
 #include "qapi/error.h"
 
+#if defined(CONFIG_MARU) && !defined(CONFIG_USE_SHM)
+#define SDL_THREAD
+#endif
+
 /* keyboard/mouse support */
 
 #define MOUSE_EVENT_LBUTTON 0x01

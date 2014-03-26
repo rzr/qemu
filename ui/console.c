@@ -28,6 +28,10 @@
 #include "qmp-commands.h"
 #include "sysemu/char.h"
 
+#ifdef SDL_THREAD
+extern pthread_mutex_t sdl_mutex;
+#endif
+
 //#define DEBUG_CONSOLE
 #define DEFAULT_BACKSCROLL 512
 #define MAX_CONSOLES 12
@@ -1315,6 +1319,10 @@ void register_displaychangelistener(DisplayChangeListener *dcl)
         con = active_console;
     }
     if (dcl->ops->dpy_gfx_switch) {
+#ifdef SDL_THREAD
+        pthread_mutex_lock(&sdl_mutex);
+#endif
+
         if (con) {
             dcl->ops->dpy_gfx_switch(dcl, con->surface);
         } else {
@@ -1323,6 +1331,10 @@ void register_displaychangelistener(DisplayChangeListener *dcl)
             }
             dcl->ops->dpy_gfx_switch(dcl, dummy);
         }
+
+#ifdef SDL_THREAD
+        pthread_mutex_unlock(&sdl_mutex);
+#endif
     }
 }
 
@@ -1382,6 +1394,10 @@ void dpy_gfx_replace_surface(QemuConsole *con,
     DisplaySurface *old_surface = con->surface;
     DisplayChangeListener *dcl;
 
+#ifdef SDL_THREAD
+    pthread_mutex_lock(&sdl_mutex);
+#endif
+
     con->surface = surface;
     QLIST_FOREACH(dcl, &s->listeners, next) {
         if (con != (dcl->con ? dcl->con : active_console)) {
@@ -1391,6 +1407,11 @@ void dpy_gfx_replace_surface(QemuConsole *con,
             dcl->ops->dpy_gfx_switch(dcl, surface);
         }
     }
+
+#ifdef SDL_THREAD
+    pthread_mutex_unlock(&sdl_mutex);
+#endif
+
     qemu_free_displaysurface(old_surface);
 }
 

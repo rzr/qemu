@@ -71,12 +71,9 @@ static unsigned int blank_cnt;
 #define BLANK_GUIDE_IMAGE_PATH "../images/"
 #define BLANK_GUIDE_IMAGE_NAME "blank-guide.png"
 
-
-#define SDL_THREAD
-
-static pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
 #ifdef SDL_THREAD
-static pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
 static int sdl_thread_initialized;
 #endif
 
@@ -239,10 +236,6 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
 
     INFO("qemu_ds_sdl_switch : (%d, %d)\n", console_width, console_height);
 
-#ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
-#endif
-
     /* switch */
     dpy_surface = new_surface;
 
@@ -276,10 +269,6 @@ static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
             surface_bits_per_pixel(dpy_surface),
             0, 0, 0, 0);
     }
-
-#ifdef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
-#endif
 
     if (surface_qemu == NULL) {
         ERR("Unable to set the RGBSurface: %s\n", SDL_GetError());
