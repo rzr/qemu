@@ -116,7 +116,7 @@ static void send_sensor_to_ecs(const char* data, enum sensor_types type)
     memcpy(ecs_message + 13, &action, sizeof(unsigned char));
     memcpy(ecs_message + 14, data, buf_len);
 
-    INFO("ntf_to_injector- len: %d, group: %d, action: %d, data: %s\n", length, group, action, data);
+    TRACE("ntf_to_injector- len: %d, group: %d, action: %d, data: %s\n", length, group, action, data);
 
     send_device_ntf(ecs_message, message_len);
 
@@ -246,7 +246,7 @@ static void answer_sensor_data_request(int type, char* data, VirtQueueElement *e
     msginfo->type = type;
     __get_sensor_data(type, msginfo->buf);
 
-    INFO("sending message: %s, type: %d, req: %d\n", msginfo->buf, msginfo->type, msginfo->req);
+    TRACE("sending message: %s, type: %d, req: %d\n", msginfo->buf, msginfo->type, msginfo->req);
 
     memset(elem->in_sg[0].iov_base, 0, elem->in_sg[0].iov_len);
     memcpy(elem->in_sg[0].iov_base, msginfo, sizeof(struct msg_info));
@@ -260,7 +260,7 @@ static void handle_msg(struct msg_info *msg, VirtQueueElement *elem)
     unsigned int len = 0;
 
     if (msg == NULL) {
-        INFO("msg info structure is NULL.\n");
+        ERR("msg info structure is NULL.\n");
         return;
     }
 
@@ -301,7 +301,7 @@ static void virtio_sensor_vq(VirtIODevice *vdev, VirtQueue *vq)
         memset(&msg, 0x00, sizeof(msg));
         memcpy(&msg, elem.out_sg[0].iov_base, elem.out_sg[0].iov_len);
 
-        INFO("handling msg from driver: %s, len: %d, type: %d, req: %d, index: %d\n", msg.buf, strlen(msg.buf), msg.type, msg.req, index);
+        TRACE("handling msg from driver: %s, len: %d, type: %d, req: %d, index: %d\n", msg.buf, strlen(msg.buf), msg.type, msg.req, index);
 
         handle_msg(&msg, &elem);
     }
