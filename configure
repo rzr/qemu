@@ -264,6 +264,7 @@ gl="yes"
 # for TIZEN-maru 
 maru="no"
 shm="no"
+libav="no"
 #
 glusterfs=""
 glusterfs_discard="no"
@@ -1014,6 +1015,8 @@ for opt do
   ;;
   --enable-shm) shm="yes"
   ;;
+  --enable-libav) libav="yes"
+  ;;
 #
   --disable-glusterfs) glusterfs="no"
   ;;
@@ -1298,6 +1301,8 @@ echo ""
 echo "TIZEN-maru options:"
 echo "  --enable-maru            enable maru board"
 echo "  --enable-shm             enable shared memory for framebuffer"
+echo "  --enable-libav           enable libav library"
+
 echo "NOTE: The object files are built at the place where configure is launched"
 exit 1
 fi
@@ -3613,6 +3618,73 @@ if compile_prog "" "" ; then
 fi
 
 ##########################################
+# libav probe
+
+if test "$libav" != "no"; then
+    libavcodec_package="libavcodec"
+    libavcodec_version="54.35.0"
+	libavutil_package="libavutil"
+	libavutil_version="52.3.0"
+	libavformat_package="libavformat"
+	libavformat_version="54.20.3"
+	libavresample_package="libavresample"
+	libavresample_version="1.0.1"
+
+    if $pkg_config --exists "$libavcodec_package >= $libavcodec_version" ; then
+		libav_cflags=`$pkg_config --cflags $libavcodec_package`
+		libav_libs=`$pkg_config --libs $libavcodec_package`
+		libs_softmmu="$libav_libs $libs_softmmu"
+	    QEMU_CFLAGS="$QEMU_CFLAGS $libav_cflags"
+		libav="yes"
+    else
+		if test "$libav" = "yes" ; then
+			feature_not_found "libav"
+		fi
+		libav="no"
+    fi
+
+    if $pkg_config --exists "$libavutil_package >= $libavutil_version" ; then
+		libav_cflags=`$pkg_config --cflags $libavutil_package`
+		libav_libs=`$pkg_config --libs $libavutil_package`
+		libs_softmmu="$libav_libs $libs_softmmu"
+	    QEMU_CFLAGS="$QEMU_CFLAGS $libav_cflags"
+		libav="yes"
+    else
+		if test "$libav" = "yes" ; then
+			feature_not_found "libav"
+		fi
+		libav="no"
+    fi
+
+    if $pkg_config --exists "$libavformat_package >= $libavformat_version" ; then
+		libav_cflags=`$pkg_config --cflags $libavformat_package`
+		libav_libs=`$pkg_config --libs $libavformat_package`
+		libs_softmmu="$libav_libs $libs_softmmu"
+	    qemu_cflags="$qemu_cflags $libav_cflags"
+		libav="yes"
+    else
+		if test "$libav" = "yes" ; then
+			feature_not_found "libav"
+		fi
+		libav="no"
+    fi
+
+	if $pkg_config --exists "$libavresample_package >= $libavresample_version" ; then
+		libav_cflags=`$pkg_config --cflags $libavresample_package`
+		libav_libs=`$pkg_config --libs $libavresample_package`
+		libs_softmmu="$libav_libs $libs_softmmu"
+	    qemu_cflags="$qemu_cflags $libav_cflags"
+		libav="yes"
+    else
+		if test "$libav" = "yes" ; then
+			feature_not_found "libav"
+		fi
+		libav="no"
+    fi
+
+fi
+
+##########################################
 # End of CC checks
 # After here, no more $cc or $ld runs
 
@@ -3872,6 +3944,7 @@ echo "vhdx              $vhdx"
 # for TIZEN-maru
 echo "TIZEN-maru support $maru"
 echo "TIZEN-maru shared framebuffer support $shm"
+echo "TIZEN-maru libav support $libav"
 #
 
 if test "$sdl_too_old" = "yes"; then
@@ -4315,6 +4388,10 @@ fi
 if test "$gl" = "yes" ; then
   echo "CONFIG_GL_BACKEND=y" >> $config_host_mak
 fi
+if test "$libav" = "yes" ; then
+  echo "CONFIG_LIBAV=y" >> $config_host_mak
+fi
+
 # TPM passthrough support?
 if test "$tpm" = "yes"; then
   echo 'CONFIG_TPM=$(CONFIG_SOFTMMU)' >> $config_host_mak

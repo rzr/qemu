@@ -4,6 +4,8 @@ clean()
 {
 	prepare
 
+	export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:${ROOTDIR}/libav/lib/pkgconfig
+
 	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
@@ -46,12 +48,10 @@ prepare()
 # build
 build()
 {
-	export PKG_CONFIG_PATH=${ROOTDIR}/remote/lib/pkgconfig:${PKG_CONFIG_PATH}
-	BUILD_CFLAGS=--extra-cflags="-I$ROOTDIR/include"
-	BUILD_LDFLAGS=--extra-ldflags="-L$ROOTDIR/lib"
+	export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:${ROOTDIR}/remote/lib/pkgconfig:${ROOTDIR}/libav/lib/pkgconfig
 
 	cd $SRCDIR/tizen/
-	./emulator_configure.sh x86 -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
+	./emulator_configure.sh x86
 	make all_dibs
 	if [ $? -eq 0 ]
 	then
