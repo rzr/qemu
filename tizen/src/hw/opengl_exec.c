@@ -1505,6 +1505,9 @@ static char *do_eglShaderPatch(const char *source, int length, int *patched_len)
                 patched = realloc(patched, patched_size + 1);
 
                 if (!patched) {
+                    if (p) {
+                        free(p);
+                    }
                     return NULL;
                 }
             }
@@ -2055,7 +2058,9 @@ int do_function_call(ProcessState *process, int func_number,
                     process->current_state = glstate;
 
                     ret.i = glo_surface_makecurrent(
-                                          glstate->current_qsurface->surface);
+                                            glstate->current_qsurface ?
+                                            glstate->current_qsurface->surface
+                                            : NULL);
 /*                    if (reset_texture) {
                         glo_surface_as_texture(
                                     process->current_state->context,
@@ -2902,10 +2907,12 @@ int do_function_call(ProcessState *process, int func_number,
                 acc_length += tab_length[i];
             }
 
-            shadersrc_gles_to_gl(args[1], (const char **)tab_prog,
-                                 tab_prog_new, tab_length, tab_length_new);
-
-            if (!tab_prog_new || !tab_length_new) {
+            if (shadersrc_gles_to_gl(args[1],
+                                     (const char **)tab_prog,
+                                     tab_prog_new,
+                                     tab_length,
+                                     tab_length_new) < 0) {
+                g_free(tab_prog);
                 break;
             }
 
@@ -2919,7 +2926,7 @@ int do_function_call(ProcessState *process, int func_number,
             free(tab_prog_new);
             free(tab_length_new);
 
-            free(tab_prog);
+            g_free(tab_prog);
 
             break;
         }

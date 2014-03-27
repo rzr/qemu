@@ -851,6 +851,7 @@ int parse(FILE *f, FuncDesc *funcDesc, int funcDescCount, int ignoreEXT)
       if (ignoreEXT == 1 && isExtByName(fonc)) {
         free(type);
         free(fonc);
+        free(args);
         continue;
       }
       n++;
