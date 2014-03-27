@@ -205,6 +205,31 @@ static void msgproc_injector_ans(ECS_Client* ccli, const char* category, bool su
         g_free(ans.category);
 }
 
+static void msgproc_device_ans(ECS_Client* ccli, const char* category, bool succeed)
+{
+    if (ccli == NULL) {
+        return;
+    }
+    int catlen = 0;
+    ECS__Master master = ECS__MASTER__INIT;
+    ECS__DeviceAns ans = ECS__DEVICE_ANS__INIT;
+
+    LOG("device ans - category : %s, succed : %d", category, succeed);
+
+    catlen = strlen(category);
+    ans.category = (char*) g_malloc0(catlen + 1);
+    memcpy(ans.category, category, catlen);
+
+    ans.errcode = !succeed;
+    master.type = ECS__MASTER__TYPE__DEVICE_ANS;
+    master.device_ans = &ans;
+
+    send_single_msg(&master, ccli);
+
+    if (ans.category)
+        g_free(ans.category);
+}
+
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
 {
     char cmd[10];
@@ -241,6 +266,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
             }
             LOG("status : %s", data);
             send_status_injector_ntf(MSG_TYPE_SENSOR, MSG_TYPE_SENSOR_LEN, action, data);
+            ret = true;
             goto injector_req_success;
         } else {
             if (msg->data.data && datalen > 0){
@@ -448,6 +474,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
                 set_injector_data(data);
             }
         }
+        msgproc_device_ans(ccli, cmd, true);
     } else if (!strncmp(cmd, "Network", 7)) {
         LOG(">>> Network msg: '%s'", data);
         if(net_slirp_redir(data) < 0) {
