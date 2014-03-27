@@ -119,7 +119,7 @@ static void maru_device_init(void)
 
     pci_maru_overlay_init(pci_bus);
     pci_maru_brightness_init(pci_bus);
-    // maru_brill_codec_pci_device_init(pci_bus);
+    maru_brill_codec_pci_device_init(pci_bus);
 
     if (enable_vigs || enable_yagl) {
         render_queue = work_queue_create();

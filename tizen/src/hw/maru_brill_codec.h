@@ -42,7 +42,11 @@
 #include "osutil.h"
 #include "tizen/src/debug_ch.h"
 #include "maru_device_ids.h"
+
 #include "libavformat/avformat.h"
+#include "libavresample/avresample.h"
+#include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 
 #define CODEC_CONTEXT_MAX           1024
 
