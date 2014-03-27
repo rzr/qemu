@@ -84,7 +84,6 @@ extern int enable_spice;
 
 #define MAX_IDE_BUS 2
 
-int codec_init(PCIBus *bus);
 int maru_brill_codec_pci_device_init(PCIBus *bus);
 
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
@@ -120,7 +119,7 @@ static void maru_device_init(void)
 
     pci_maru_overlay_init(pci_bus);
     pci_maru_brightness_init(pci_bus);
-    maru_brill_codec_pci_device_init(pci_bus);
+    // maru_brill_codec_pci_device_init(pci_bus);
 
     if (enable_vigs || enable_yagl) {
         render_queue = work_queue_create();

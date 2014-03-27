@@ -18,7 +18,7 @@ EXECUTABLE_EXTENSION=
 endif
 
 all: qemu skin_client
-qemu: build_info ffmpeg_install check_hax check_cam
+qemu: build_info check_hax check_cam
 	cd ../../ && $(MAKE)
 qemu_clean:
 	cd ../../ && $(MAKE) clean
@@ -60,22 +60,14 @@ build_info:
 	@echo "const char pkginfo_githead[] = \"`git rev-parse HEAD`\";" >> build_info.h
 	@echo "const char latest_gittag[] = \"`git for-each-ref --count=1 --sort=-taggerdate refs/tags/ --format='Latest Git Tag : %(refname:short) (%(subject))' | sed 's/\"//g'`\";" >> build_info.h
 
-ffmpeg:
-	cd ../distrib/libav/ && $(MAKE)
-ffmpeg_install: ffmpeg
-	cd ../distrib/libav/ && $(MAKE) install
-ffmpeg_clean:
-	cd ../distrib/libav/ && $(MAKE) clean
-ffmpeg_distclean:
-	cd ../distrib/libav/ && $(MAKE) clean && rm -rf $(ARCH)
 
-clean: ffmpeg_clean qemu_clean
+clean: qemu_clean
 ifndef CONFIG_LINUX
 	rm -f check-hax$(EXECUTABLE_EXTENSION) check-cam$(EXECUTABLE_EXTENSION)
 else
 	rm -f check-cam
 endif
-distclean: clean ffmpeg_distclean qemu_distclean
+distclean: clean qemu_distclean
 
 install: all
 	mkdir -p $(EMUL_DIR)/bin

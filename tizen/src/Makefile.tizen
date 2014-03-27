@@ -4,8 +4,6 @@
 $(call set-vpath, $(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw:$(SRC_PATH)/tizen/src:$(SRC_PATH)/tizen/src/hw:$(SRC_PATH)/tizen/src/skin:$(SRC_PATH)/tizen/src/SDL_gfx)
 
 QEMU_CFLAGS += -I$(SRC_PATH)/hw -I$(SRC_PATH)/tizen/src
-QEMU_CFLAGS += -I$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/include
-LDFLAGS += -L$(SRC_PATH)/tizen/distrib/libav/$(ARCH)/lib
 QEMU_CFLAGS += $(SDL_CFLAGS)
 QEMU_CFLAGS += $(GLIB_CFLAGS)
 ifdef CONFIG_DARWIN
@@ -20,14 +18,10 @@ CFLAGS += -g -O0
 endif
 
 ifdef CONFIG_WIN32
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lopengl32 -lglu32 -lgdi32 -lpng14
+LIBS += -lcurl -lopengl32 -lglu32 -lgdi32 -lpng14
 endif
 ifdef CONFIG_LINUX
-LIBS += -lavformat -lavcodec -lavutil -lm -lcurl -lGL -lXcomposite -lXext -lpng
-endif
-ifdef CONFIG_DARWIN
-# FIXME: disabled codec on Mac now
-LIBS += -lavformat -lavcodec -lavutil -lm
+LIBS += -lcurl -lGL -lXcomposite -lXext -lpng
 endif
 
 ifdef CONFIG_DEBUG_EXEC
@@ -118,7 +112,6 @@ obj-y += maru_brightness.o
 obj-y += maru_virtio_touchscreen.o
 #obj-y += maru_usb_touchscreen.o
 obj-y += maru_virtio_keyboard.o
-#obj-y += maru_codec.o
 obj-y += maru_virtio_hwkey.o
 obj-y += maru_virtio_evdi.o
 obj-y += maru_virtio_sensor.o
@@ -126,7 +119,7 @@ obj-y += maru_virtio_nfc.o
 obj-y += maru_virtio_jack.o
 obj-y += maru_virtio_power.o
 obj-y += maru_virtio_esm.o
-obj-y += maru_brill_codec.o
+#obj-y += maru_brill_codec.o
 
 obj-$(CONFIG_PCI) += maru_camera_common_pci.o
 obj-$(CONFIG_LINUX) += maru_camera_linux_pci.o
