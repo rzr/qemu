@@ -1,6 +1,6 @@
 /*
  *  Parse gl.h et glx.h to auto-generate source code
- * 
+ *
  *  Copyright (c) 2006,2007 Even Rouault
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,10 +28,10 @@
 #include <string.h>
 #include <assert.h>
 
-#define		GL_INCLUDE_PATH		"../tizen/src/hw/"
+#define GL_INCLUDE_PATH    "../tizen/src/hw/"
 
 
-int isExtByName(const char* name)
+int isExtByName(const char *name)
 {
   return (strstr(name, "ARB") != NULL) ||
          (strstr(name, "IBM") != NULL) ||
@@ -44,24 +44,26 @@ int isExtByName(const char* name)
          (strstr(name, "SGI") != NULL);
 }
 
-char* get_arg_type(char* s)
+char *get_arg_type(char *s)
 {
-  while(*s == ' ' || *s == '\t') s++;
-  char* n = s;
-  char* c = strstr(n, "const");
-  if (c)
+  while (*s == ' ' || *s == '\t') {
+    s++;
+  }
+  char *n = s;
+  char *c = strstr(n, "const");
+  if (c) {
     n += 6;
-    
-  char* t = strstr(n, " ");
-  if (t)
-  {
-    if (t[1] == '*')
+  }
+
+  char *t = strstr(n, " ");
+  if (t) {
+    if (t[1] == '*') {
       t += 2;
+    }
     t[0] = 0;
-    char* ori = t;
+    char *ori = t;
     t = strstr(t+1, "[");
-    if (t)
-    {
+    if (t) {
       memmove(ori, t, strlen(t));
       strstr(ori, "]")[1] = 0;
     }
@@ -69,149 +71,141 @@ char* get_arg_type(char* s)
   return strdup(s);
 }
 
-typedef struct
-{
-  char* type;
-  char* name;
+typedef struct {
+  char *type;
+  char *name;
   int nargs;
-  char** args;
+  char **args;
   int ok;
   int just_for_server_side;
   int has_out_parameters;
   int isExt;
 } FuncDesc;
 
-int isExt(FuncDesc* func)
+int isExt(FuncDesc *func)
 {
   return func->isExt;
 }
 
-char* get_type_string(char* type)
+char *get_type_string(char *type)
 {
-  if (strstr(type, "[16]"))
-  {
-    if (strstr(type, "float"))
-      return ("TYPE_16FLOAT");
-    else if (strstr(type, "double"))
-      return ("TYPE_16DOUBLE");
-    else
-    {
+  if (strstr(type, "[16]")) {
+    if (strstr(type, "float")) {
+      return "TYPE_16FLOAT";
+    } else if (strstr(type, "double")) {
+      return "TYPE_16DOUBLE";
+    } else {
       printf("inconnu %s\n", type);
       exit(-1);
     }
-  }
-  else if (strstr(type, "[128]") && strstr(type, "GLubyte"))
+  } else if (strstr(type, "[128]") && strstr(type, "GLubyte")) {
     return strstr(type, "const") ? "TYPE_128UCHAR" : "TYPE_OUT_128UCHAR";
-  else if (strstr(type, "const GLvoid *"))
+  } else if (strstr(type, "const GLvoid *")) {
     return "TYPE_ARRAY_VOID";
-  else if (strstr(type, "const GLchar *") ||
-           strstr(type, "const GLcharARB *"))
+  } else if (strstr(type, "const GLchar *") ||
+           strstr(type, "const GLcharARB *")) {
     return "TYPE_NULL_TERMINATED_STRING";
-  else if (strstr(type, "const GLbyte *"))
+  } else if (strstr(type, "const GLbyte *")) {
     return "TYPE_ARRAY_SIGNED_CHAR";
-  else if (strstr(type, "const GLubyte *"))
+  } else if (strstr(type, "const GLubyte *")) {
     return "TYPE_ARRAY_UNSIGNED_CHAR";
-  else if (strstr(type, "const GLshort *"))
+  } else if (strstr(type, "const GLshort *")) {
     return "TYPE_ARRAY_SHORT";
-  else if (strstr(type, "const GLushort *") ||
-           strstr(type, "const GLhalfNV *"))
+  } else if (strstr(type, "const GLushort *") ||
+           strstr(type, "const GLhalfNV *")) {
     return "TYPE_ARRAY_UNSIGNED_SHORT";
-  else if (strstr(type, "const GLint *"))
+  } else if (strstr(type, "const GLint *")) {
     return "TYPE_ARRAY_INT";
-  else if (strstr(type, "const GLuint *") ||
-           strstr(type, "const GLenum *"))
+  } else if (strstr(type, "const GLuint *") ||
+           strstr(type, "const GLenum *")) {
     return "TYPE_ARRAY_UNSIGNED_INT";
-  else if (strstr(type, "const GLfloat *") ||
-           strstr(type, "const GLclampf *"))
+  } else if (strstr(type, "const GLfloat *") ||
+           strstr(type, "const GLclampf *")) {
     return "TYPE_ARRAY_FLOAT";
-  else if (strstr(type, "const GLdouble *"))
+  } else if (strstr(type, "const GLdouble *")) {
     return "TYPE_ARRAY_DOUBLE";
-  else if (strstr(type, "GLvoid *"))
+  } else if (strstr(type, "GLvoid *")) {
     return "TYPE_OUT_ARRAY_VOID";
-  else if (strstr(type, "GLboolean *") ||
-           strstr(type, "GLubyte *"))
+  } else if (strstr(type, "GLboolean *") ||
+           strstr(type, "GLubyte *")) {
     return "TYPE_OUT_ARRAY_UNSIGNED_CHAR";
-  else if (strstr(type, "GLcharARB *") ||
-           strstr(type, "GLchar *"))
+  } else if (strstr(type, "GLcharARB *") ||
+           strstr(type, "GLchar *")) {
     return "TYPE_OUT_ARRAY_CHAR";
-  else if (strstr(type, "GLshort *"))
+  } else if (strstr(type, "GLshort *")) {
     return "TYPE_OUT_ARRAY_SHORT";
-  else if (strstr(type, "GLushort *"))
+  } else if (strstr(type, "GLushort *")) {
     return "TYPE_OUT_ARRAY_UNSIGNED_SHORT";
-  else if (strstr(type, "GLint *")||
-           strstr(type, "GLsizei *"))
+  } else if (strstr(type, "GLint *") ||
+           strstr(type, "GLsizei *")) {
     return "TYPE_OUT_ARRAY_INT";
-  else if (strstr(type, "GLuint *") ||
+  } else if (strstr(type, "GLuint *") ||
            strstr(type, "GLenum *") ||
-           strstr(type, "GLhandleARB *"))
+           strstr(type, "GLhandleARB *")) {
     return "TYPE_OUT_ARRAY_UNSIGNED_INT";
-  else if (strstr(type, "GLfloat *"))
+  } else if (strstr(type, "GLfloat *")) {
     return "TYPE_OUT_ARRAY_FLOAT";
-  else if (strstr(type, "GLdouble *"))
+  } else if (strstr(type, "GLdouble *")) {
     return "TYPE_OUT_ARRAY_DOUBLE";
-  else if (strcmp(type, "void") == 0)
-    return("TYPE_NONE");
-  else if (strcmp(type, "GLbyte") == 0)
-    return("TYPE_CHAR");
-  else if (strcmp(type, "GLubyte") == 0 ||
-           strcmp(type, "GLboolean") == 0)
-    return("TYPE_UNSIGNED_CHAR");
-  else if (strcmp(type, "GLshort") == 0)
-    return("TYPE_SHORT");
-  else if (strcmp(type, "GLushort") == 0 ||
-           strcmp(type, "GLhalfNV") == 0)
-    return("TYPE_UNSIGNED_SHORT");
-  else if (strcmp(type, "GLint") == 0 ||
+  } else if (strcmp(type, "void") == 0) {
+    return "TYPE_NONE";
+  } else if (strcmp(type, "GLbyte") == 0) {
+    return "TYPE_CHAR";
+  } else if (strcmp(type, "GLubyte") == 0 ||
+           strcmp(type, "GLboolean") == 0) {
+    return "TYPE_UNSIGNED_CHAR";
+  } else if (strcmp(type, "GLshort") == 0) {
+    return "TYPE_SHORT";
+  } else if (strcmp(type, "GLushort") == 0 ||
+           strcmp(type, "GLhalfNV") == 0) {
+    return "TYPE_UNSIGNED_SHORT";
+  } else if (strcmp(type, "GLint") == 0 ||
            strcmp(type, "GLsizei") == 0 ||
            strcmp(type, "GLintptr") == 0 ||
            strcmp(type, "GLsizeiptr") == 0 ||
            strcmp(type, "GLintptrARB") == 0 ||
-           strcmp(type, "GLsizeiptrARB") == 0)
-    return("TYPE_INT");
-  else if (strcmp(type, "GLenum") == 0 ||
+           strcmp(type, "GLsizeiptrARB") == 0) {
+    return "TYPE_INT";
+  } else if (strcmp(type, "GLenum") == 0 ||
            strcmp(type, "GLuint") == 0 ||
            strcmp(type, "GLhandleARB") == 0 ||
-           strcmp(type, "GLbitfield") == 0)
-    return("TYPE_UNSIGNED_INT");
-  else if (strcmp(type, "GLfloat") == 0 ||
-           strcmp(type, "GLclampf") == 0)
-    return("TYPE_FLOAT");
-  else if (strcmp(type, "GLdouble") == 0 ||
-           strcmp(type, "GLclampd") == 0)
-    return("TYPE_DOUBLE");
-  else
-  {
+           strcmp(type, "GLbitfield") == 0) {
+    return "TYPE_UNSIGNED_INT";
+  } else if (strcmp(type, "GLfloat") == 0 ||
+           strcmp(type, "GLclampf") == 0) {
+    return "TYPE_FLOAT";
+  } else if (strcmp(type, "GLdouble") == 0 ||
+           strcmp(type, "GLclampd") == 0) {
+    return "TYPE_DOUBLE";
+  } else {
     printf("inconnu %s\n", type);
     exit(-1);
   }
 }
 
-typedef struct
-{
-  char* letter;
-  char* signature_type_name;
-  char* gl_c_type_name;
-  char* c_type_name;
+typedef struct {
+  char *letter;
+  char *signature_type_name;
+  char *gl_c_type_name;
+  char *c_type_name;
 } ForIsKnownArgVector;
 
 #define N_ELEMENTS(x)  (sizeof(x)/sizeof(x[0]))
 #define N_FIELDS_IN_ARG_VECTOR  4
 
 
-typedef struct
-{
-  char* func_name;
-  char* signature_type_name;
+typedef struct {
+  char *func_name;
+  char *signature_type_name;
 } KnownLastArgFunc;
 
-static KnownLastArgFunc knownLastArgFuncs[] =
-{
+static KnownLastArgFunc knownLastArgFuncs[] = {
 {"glFogCoordfv", "TYPE_1FLOAT"},
 {"glFogCoorddv", "TYPE_1DOUBLE"},
 {"glFogCoordfvEXT", "TYPE_1FLOAT"},
 {"glFogCoorddvEXT", "TYPE_1DOUBLE"},
 {"glFogCoordhvNV", "TYPE_1USHORT"},
-  
+
 {"glGetFenceivNV", "TYPE_OUT_1INT"},
 
 {"glGetTexLevelParameteriv", "TYPE_OUT_1INT" },
@@ -321,10 +315,11 @@ static KnownLastArgFunc knownLastArgFuncs[] =
 
 };
 
-int is_known_arg_vector(FuncDesc* desc, char** p_signature_type_name, char** p_c_type_name)
+int is_known_arg_vector(FuncDesc *desc,
+                        char **p_signature_type_name,
+                        char **p_c_type_name)
 {
-  static ForIsKnownArgVector my_tab[] =
-  {
+  static ForIsKnownArgVector my_tab[] = {
     { "b", "CHAR", "GLbyte", "signed char" },
     { "Boolean", "CHAR", "GLboolean", "unsigned char" },
     { "s", "SHORT", "GLshort", "short" },
@@ -340,79 +335,80 @@ int is_known_arg_vector(FuncDesc* desc, char** p_signature_type_name, char** p_c
     { "Nub", "CHAR", "GLubyte", "unsigned char" },
     { "Nus", "SHORT", "GLushort", "unsigned short" },
     { "Nui", "INT", "GLuint", "unsigned int" },
-    
+
     { "f", "FLOAT", "GLfloat", "float" },
     { "Float", "FLOAT", "GLfloat", "float" },
     { "d", "DOUBLE", "GLdouble", "double" },
   };
-      
-  if (desc->nargs == 0)
+
+  if (desc->nargs == 0) {
     return 0;
-  
+  }
+
   int i , j;
-  
+
   if (strstr(desc->name, "glVertexAttribs") ||
       strstr(desc->name, "glProgramParameters") ||
       strstr(desc->name, "glProgramEnvParameters") ||
       strstr(desc->name, "glProgramLocalParameters") ||
-      (strstr(desc->name, "glUniform") && (strstr(desc->name, "iv") || strstr(desc->name, "fv"))))
+      (strstr(desc->name, "glUniform") && (strstr(desc->name, "iv") ||
+       strstr(desc->name, "fv")))) {
     return 0;
-  
+  }
+
   static char signatures[N_ELEMENTS(my_tab)][N_FIELDS_IN_ARG_VECTOR][20] = {0};
   char signature[10];
-  
-  for(i=0;i<N_ELEMENTS(knownLastArgFuncs);i++)
-  {
-    if (strcmp(desc->name, knownLastArgFuncs[i].func_name) == 0)
-    {
-      if (p_signature_type_name)
-      {
+
+  for (i = 0; i < N_ELEMENTS(knownLastArgFuncs); i++) {
+    if (strcmp(desc->name, knownLastArgFuncs[i].func_name) == 0) {
+      if (p_signature_type_name) {
         *p_signature_type_name = knownLastArgFuncs[i].signature_type_name;
       }
-      if (p_c_type_name)
-      {
-        if (strstr(knownLastArgFuncs[i].signature_type_name, "FLOAT"))
+      if (p_c_type_name) {
+        if (strstr(knownLastArgFuncs[i].signature_type_name, "FLOAT")) {
           *p_c_type_name = "float";
-        else if (strstr(knownLastArgFuncs[i].signature_type_name, "DOUBLE"))
+        } else if (strstr(knownLastArgFuncs[i].signature_type_name, "DOUBLE")) {
           *p_c_type_name = "double";
-        else if (strstr(knownLastArgFuncs[i].signature_type_name, "UINT"))
+        } else if (strstr(knownLastArgFuncs[i].signature_type_name, "UINT")) {
           *p_c_type_name = "unsigned int";
-        else if (strstr(knownLastArgFuncs[i].signature_type_name, "INT"))
+        } else if (strstr(knownLastArgFuncs[i].signature_type_name, "INT")) {
           *p_c_type_name = "int";
-        else if (strstr(knownLastArgFuncs[i].signature_type_name, "USHORT"))
+        } else if (strstr(knownLastArgFuncs[i].signature_type_name, "USHORT")) {
           *p_c_type_name = "unsigned short";
-        else if (strstr(knownLastArgFuncs[i].signature_type_name, "SHORT"))
+        } else if (strstr(knownLastArgFuncs[i].signature_type_name, "SHORT")) {
           *p_c_type_name = "short";
-        else if (strstr(knownLastArgFuncs[i].signature_type_name, "UCHAR"))
+        } else if (strstr(knownLastArgFuncs[i].signature_type_name, "UCHAR")) {
           *p_c_type_name = "unsigned char";
-        else if (strstr(knownLastArgFuncs[i].signature_type_name, "CHAR"))
+        } else if (strstr(knownLastArgFuncs[i].signature_type_name, "CHAR")) {
           *p_c_type_name = "char";
-        else
+        } else {
           assert(0);
+        }
       }
       return 1;
     }
   }
-  
-  for(i=0;i<N_ELEMENTS(my_tab);i++)
-  {
-    for(j=1;j<=N_FIELDS_IN_ARG_VECTOR;j++)
-    {
-      if (strstr(desc->name, "glIndex") && strstr(desc->name, "v"))
+
+  for (i = 0; i < N_ELEMENTS(my_tab); i++) {
+    for (j = 1; j <= N_FIELDS_IN_ARG_VECTOR; j++) {
+      if (strstr(desc->name, "glIndex") && strstr(desc->name, "v")) {
         sprintf(signature, "%sv", my_tab[i].letter);
-      else
+      } else {
         sprintf(signature, "%d%sv", j, my_tab[i].letter);
+      }
       if (strstr(desc->name, signature) &&
           strstr(desc->args[desc->nargs - 1], my_tab[i].gl_c_type_name) &&
-          strstr(desc->args[desc->nargs - 1], "*"))
-      {
-        if (p_signature_type_name)
-        {
-          if (signatures[i][j-1][0] == 0)
-            sprintf(signatures[i][j-1], "TYPE_%d%s", j, my_tab[i].signature_type_name);
+          strstr(desc->args[desc->nargs - 1], "*")) {
+        if (p_signature_type_name) {
+          if (signatures[i][j-1][0] == 0) {
+            sprintf(signatures[i][j-1], "TYPE_%d%s",
+                    j, my_tab[i].signature_type_name);
+          }
           *p_signature_type_name = signatures[i][j-1];
         }
-        if (p_c_type_name) *p_c_type_name = my_tab[i].c_type_name;
+        if (p_c_type_name) {
+          *p_c_type_name = my_tab[i].c_type_name;
+        }
         return 1;
       }
     }
@@ -420,86 +416,83 @@ int is_known_arg_vector(FuncDesc* desc, char** p_signature_type_name, char** p_c
   return 0;
 }
 
-static void print_server_side_argument(FILE* server_stub, int j, char* glType)
+static void print_server_side_argument(FILE *server_stub, int j, char *glType)
 {
-  const char* symbolic_type = get_type_string(glType);
-  if (strcmp(symbolic_type, "TYPE_CHAR") == 0)
+  const char *symbolic_type = get_type_string(glType);
+  if (strcmp(symbolic_type, "TYPE_CHAR") == 0) {
     fprintf(server_stub, "ARG_TO_CHAR(args[%d])", j);
-  else if (strcmp(symbolic_type, "TYPE_UNSIGNED_CHAR") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_UNSIGNED_CHAR") == 0) {
     fprintf(server_stub, "ARG_TO_UNSIGNED_CHAR(args[%d])", j);
-  else if (strcmp(symbolic_type, "TYPE_SHORT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_SHORT") == 0) {
     fprintf(server_stub, "ARG_TO_SHORT(args[%d])", j);
-  else if (strcmp(symbolic_type, "TYPE_UNSIGNED_SHORT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_UNSIGNED_SHORT") == 0) {
     fprintf(server_stub, "ARG_TO_UNSIGNED_SHORT(args[%d])", j);
-  else if (strcmp(symbolic_type, "TYPE_INT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_INT") == 0) {
     fprintf(server_stub, "ARG_TO_INT(args[%d])", j);
-  else if (strcmp(symbolic_type, "TYPE_UNSIGNED_INT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_UNSIGNED_INT") == 0) {
     fprintf(server_stub, "ARG_TO_UNSIGNED_INT(args[%d])", j);
-  else if (strcmp(symbolic_type, "TYPE_FLOAT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_FLOAT") == 0) {
     fprintf(server_stub, "ARG_TO_FLOAT(args[%d])", j);
-  else if (strcmp(symbolic_type, "TYPE_16FLOAT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_16FLOAT") == 0) {
     fprintf(server_stub, "(const float*)(args[%d])", j);
-  else if (strcmp(symbolic_type, "TYPE_DOUBLE") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_DOUBLE") == 0) {
     fprintf(server_stub, "ARG_TO_DOUBLE(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_16DOUBLE") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_16DOUBLE") == 0) {
     fprintf(server_stub, "(const double*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_128UCHAR") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_128UCHAR") == 0) {
     fprintf(server_stub, "(unsigned char*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_128UCHAR") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_128UCHAR") == 0) {
     fprintf(server_stub, "(const unsigned char*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_NULL_TERMINATED_STRING") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_NULL_TERMINATED_STRING") == 0) {
     fprintf(server_stub, "(const char*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_SHORT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_SHORT") == 0) {
     fprintf(server_stub, "(const short*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_UNSIGNED_SHORT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_UNSIGNED_SHORT") == 0) {
     fprintf(server_stub, "(const unsigned short*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_INT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_INT") == 0) {
     fprintf(server_stub, "(const int*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_UNSIGNED_INT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_UNSIGNED_INT") == 0) {
     fprintf(server_stub, "(const unsigned int*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_FLOAT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_FLOAT") == 0) {
     fprintf(server_stub, "(const float*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_DOUBLE") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_DOUBLE") == 0) {
     fprintf(server_stub, "(const double*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_CHAR") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_CHAR") == 0) {
     fprintf(server_stub, "(const char*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_SIGNED_CHAR") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_SIGNED_CHAR") == 0) {
     fprintf(server_stub, "(const signed char*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_VOID") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_VOID") == 0) {
     fprintf(server_stub, "(const void*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_ARRAY_UNSIGNED_CHAR") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_ARRAY_UNSIGNED_CHAR") == 0) {
     fprintf(server_stub, "(const unsigned char*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_SHORT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_SHORT") == 0) {
     fprintf(server_stub, "(short*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_UNSIGNED_SHORT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_UNSIGNED_SHORT") == 0) {
     fprintf(server_stub, "(unsigned short*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_INT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_INT") == 0) {
     fprintf(server_stub, "(int*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_UNSIGNED_INT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_UNSIGNED_INT") == 0) {
     fprintf(server_stub, "(unsigned int*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_FLOAT") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_FLOAT") == 0) {
     fprintf(server_stub, "(float*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_DOUBLE") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_DOUBLE") == 0) {
     fprintf(server_stub, "(double*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_VOID") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_VOID") == 0) {
     fprintf(server_stub, "(void*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_CHAR") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_CHAR") == 0) {
     fprintf(server_stub, "(char*)(args[%d])", j);
-  else if ( strcmp(symbolic_type, "TYPE_OUT_ARRAY_UNSIGNED_CHAR") == 0)
+  } else if (strcmp(symbolic_type, "TYPE_OUT_ARRAY_UNSIGNED_CHAR") == 0) {
     fprintf(server_stub, "(unsigned char*)(args[%d])", j);
-
-  else
-  {
+  } else {
     fprintf(stderr, "Unknown : %s\n", symbolic_type);
     assert(0);
   }
 }
 
-static const char* func_dealt_by_hand[500] = { NULL };
+static const char *func_dealt_by_hand[500] = { NULL };
 
 
-static const char* ignore_func[] =
-{
+static const char *ignore_func[] = {
   "glGetPointerv",
   "glRectdv",
   "glRectfv",
@@ -519,13 +512,13 @@ static const char* ignore_func[] =
   "glLoadTransposeMatrixdARB",
   "glMultTransposeMatrixfARB",
   "glMultTransposeMatrixdARB",
-  
+
   "glPixelDataRangeNV",
   "glFlushPixelDataRangeNV",
   "glVertexArrayRangeNV",
   "glFlushVertexArrayRangeNV",
   "glVertexWeightfEXT",
-  
+
   "glGetBufferPointerv",
   "glGetBufferPointervARB",
   "glGetVertexAttribPointerv",
@@ -538,34 +531,33 @@ static const char* ignore_func[] =
 
 void get_func_dealt_by_hand()
 {
-  FILE* f = fopen(GL_INCLUDE_PATH"gl_func_perso.h", "r");
+  FILE *f = fopen(GL_INCLUDE_PATH"gl_func_perso.h", "r");
   char buffer[256];
   int i = 0;
-  char* c;
-  while(fgets(buffer, 256, f))
-  {
-    if (strstr(buffer, "MAGIC_MACRO("))
-    {
-      func_dealt_by_hand[i] = strdup(strstr(buffer, "MAGIC_MACRO(") + strlen("MAGIC_MACRO("));
-      * strstr(func_dealt_by_hand[i], ")") = 0;
+  char *c;
+  while (fgets(buffer, 256, f)) {
+    if (strstr(buffer, "MAGIC_MACRO(")) {
+      func_dealt_by_hand[i] = strdup(strstr(buffer, "MAGIC_MACRO(") +
+                              strlen("MAGIC_MACRO("));
+      *strstr(func_dealt_by_hand[i], ")") = 0;
       c = strstr(func_dealt_by_hand[i], "_");
-      if (c && c != func_dealt_by_hand[i]) *c = 0;
-      i ++;
+      if (c && c != func_dealt_by_hand[i]) {
+        *c = 0;
+      }
+      i++;
     }
   }
   fclose(f);
-  
+
   int j = 0;
-  while(ignore_func[j])
-  {
+  while (ignore_func[j]) {
     func_dealt_by_hand[i] = ignore_func[j];
     i++;
     j++;
   }
 }
 
-static const char* just_for_server_side_list[] =
-{
+static const char *just_for_server_side_list[] = {
   "glEnableClientState",
   "glDisableClientState",
   "glPushClientAttrib",
@@ -590,7 +582,7 @@ static const char* just_for_server_side_list[] =
   "glFogi",
   "glClipPlane",
   "glGetClipPlane",
-  
+
 /* begin of openquartz optimization */
 #if 1
   "glMatrixMode",
@@ -611,13 +603,13 @@ static const char* just_for_server_side_list[] =
   "glTranslatef",
 #endif
 /* end of openquartz optimization */
-  
+
   "glGetError",
   "glActiveTextureARB",
-  
+
   "glViewport",
   "glScissor",
-  
+
   "glBindBufferARB",
   "glDeleteBuffersARB",
   "glGenBuffersARB",
@@ -632,7 +624,7 @@ static const char* just_for_server_side_list[] =
   "glBufferSubData",
   "glGetBufferSubData",
   "glGetBufferParameteriv",
-  
+
   "glPushAttrib",
   "glPopAttrib",
   "glEnable",
@@ -648,19 +640,19 @@ static const char* just_for_server_side_list[] =
   "glDrawPixels",
   "glSelectBuffer",
   "glFeedbackBuffer",
-  
+
   "glTexImage1D",
   "glTexImage2D",
   "glTexImage3D",
   "glTexSubImage1D",
   "glTexSubImage2D",
   "glTexSubImage3D",
-  
+
   "glTexImage3DEXT",
   "glTexSubImage1DEXT",
   "glTexSubImage2DEXT",
   "glTexSubImage3DEXT",
-  
+
   "glGetCompressedTexImage",
   "glCompressedTexImage1D",
   "glCompressedTexImage2D",
@@ -668,7 +660,7 @@ static const char* just_for_server_side_list[] =
   "glCompressedTexSubImage1D",
   "glCompressedTexSubImage2D",
   "glCompressedTexSubImage3D",
-  
+
   "glGetCompressedTexImageARB",
   "glCompressedTexImage1DARB",
   "glCompressedTexImage2DARB",
@@ -676,12 +668,12 @@ static const char* just_for_server_side_list[] =
   "glCompressedTexSubImage1DARB",
   "glCompressedTexSubImage2DARB",
   "glCompressedTexSubImage3DARB",
-  
+
   "glCallLists",
   "glNewList",
   "glDeleteLists",
   "glGenLists",
-  
+
   "glGenTextures",
   "glDeleteTextures",
   "glDeleteTexturesEXT",
@@ -696,7 +688,7 @@ static const char* just_for_server_side_list[] =
   "glGetIntegerv",
   "glGetFloatv",
   "glGetDoublev",
-  
+
   "glGetPixelMapfv",
   "glGetPixelMapuiv",
   "glGetPixelMapusv",
@@ -728,10 +720,10 @@ static const char* just_for_server_side_list[] =
   "glGetActiveAttrib",
   "glGetAttribLocationARB",
   "glGetAttribLocation",
-  
+
   "glNewObjectBufferATI",
   "glUpdateObjectBufferATI",
-  
+
   "glSetLocalConstantEXT",
   "glSetInvariantEXT",
   "glVariantbvEXT",
@@ -751,11 +743,11 @@ static const char* just_for_server_side_list[] =
   "glGetLocalConstantBooleanvEXT",
   "glGetLocalConstantIntegervEXT",
   "glGetLocalConstantFloatvEXT",
-  
+
   "glMatrixIndexubvARB",
   "glMatrixIndexusvARB",
   "glMatrixIndexuivARB",
- 
+
   "glColorTable",
   "glColorSubTable",
   "glGetColorTable",
@@ -776,168 +768,155 @@ static const char* just_for_server_side_list[] =
   "glGetSeparableFilterEXT",
   "glGetHistogramEXT",
   "glGetMinmaxEXT",
-  
+
   "glGetTexParameterfv",
-  
+
   "glGetVertexAttribivARB",
   "glGetVertexAttribfvARB",
   "glGetVertexAttribdvARB",
   "glGetVertexAttribiv",
   "glGetVertexAttribfv",
   "glGetVertexAttribdv",
-  
+
   "glGetDetailTexFuncSGIS",
   "glGetSharpenTexFuncSGIS",
-  
+
   "fake_gluBuild2DMipmaps",
-  
+
   "glRenderMode",
-  
+
   "glEnableVariantClientStateEXT",
   "glDisableVariantClientStateEXT",
-  
+
   "glGetActiveVaryingNV",
-  
+
   NULL,
 };
 
-static int just_for_server_side_func(char* funcname)
+static int just_for_server_side_func(char *funcname)
 {
   int i;
-  for(i=0;just_for_server_side_list[i];i++)
-  {
-    if (strcmp(just_for_server_side_list[i], funcname) == 0)
+  for (i = 0; just_for_server_side_list[i]; i++) {
+    if (strcmp(just_for_server_side_list[i], funcname) == 0) {
       return 1;
+    }
   }
   return 0;
 }
 
-int parse(FILE* f, FuncDesc* funcDesc, int funcDescCount, int ignoreEXT)
+int parse(FILE *f, FuncDesc *funcDesc, int funcDescCount, int ignoreEXT)
 {
   char buffer[256];
-  while(fgets(buffer, 256, f))
-  {
+  while (fgets(buffer, 256, f)) {
 
-    if (strncmp(buffer, "GLAPI", 5) == 0 && strstr(buffer, "APIENTRY") && strstr(buffer, "("))
-    {
+    if (strncmp(buffer, "GLAPI", 5) == 0 &&
+        strstr(buffer, "APIENTRY") &&
+        strstr(buffer, "(")) {
       int i = 0;
       int skip = 0;
-      if (func_dealt_by_hand[0] == 0)
-      {
+      if (func_dealt_by_hand[0] == 0) {
         get_func_dealt_by_hand();
       }
-      while (func_dealt_by_hand[i])
-      {
-        if (strstr(buffer, func_dealt_by_hand[i]))
-        {
+      while (func_dealt_by_hand[i]) {
+        if (strstr(buffer, func_dealt_by_hand[i])) {
           skip = 1;
           break;
         }
         i++;
       }
-      if (skip)
+      if (skip) {
         continue;
-      
-      char** args = malloc(15 * sizeof(char*));
+      }
+
+      char **args = malloc(15 * sizeof(char *));
       int narg = 0;
-      char* type = buffer + 6;
-      char* n = strstr(type, "GLAPIENTRY") ? strstr(type, "GLAPIENTRY") : strstr(type, "APIENTRY");
+      char *type = buffer + 6;
+      char *n = strstr(type, "GLAPIENTRY") ?
+                strstr(type, "GLAPIENTRY") : strstr(type, "APIENTRY");
       int skip_length = strstr(type, "GLAPIENTRY") ? 11 : 9;
       n[-1] = 0;
       type = strdup(type);
       n += skip_length;
-      char* fonc = n;
+      char *fonc = n;
       n = strstr(n, "(");
-      if (n[-1] == ' ') n[-1] = 0;
+      if (n[-1] == ' ') {
+        n[-1] = 0;
+      }
       n[0] = 0;
       fonc = strdup(fonc);
-      /*if (strstr(fonc, "glLockArraysEXT") || strstr(fonc, "glUnlockArraysEXT"))
-      {
-      }
-      else*/
-      
-      
-      if (ignoreEXT == 1 && isExtByName(fonc))
-      {
+      /*if (strstr(fonc, "glLockArraysEXT") ||
+            strstr(fonc, "glUnlockArraysEXT")) {
+      } else*/
+
+      if (ignoreEXT == 1 && isExtByName(fonc)) {
         free(type);
         free(fonc);
         continue;
       }
       n++;
-      while(1)
-      {
-        char* virg = strstr(n, ",");
-        if (virg)
-        {
+      while (1) {
+        char *virg = strstr(n, ",");
+        if (virg) {
           args[narg] = n;
           virg[0] = 0;
           args[narg] = get_arg_type(args[narg]);
           narg++;
           n = virg+1;
-        }
-        else
+        } else {
           break;
+        }
       }
-      while (strstr(n, ")") == 0)
-      {
+      while (strstr(n, ")") == 0) {
         fgets(buffer, 256, f);
         n = buffer;
-        while(1)
-        {
-          char* virg = strstr(n, ",");
-          if (virg)
-          {
+        while (1) {
+          char *virg = strstr(n, ",");
+          if (virg) {
             args[narg] = n;
             virg[0] = 0;
             args[narg] = get_arg_type(args[narg]);
             narg++;
             n = virg+1;
-          }
-          else
+          } else {
             break;
+          }
         }
       }
-      char* par = strstr(n, ")");
+      char *par = strstr(n, ")");
       args[narg] = n;
       par[0] = 0;
       args[narg] = get_arg_type(args[narg]);
       narg++;
-      
-      
+
+
       /*printf("%s %s (", type, fonc);
-      for(i=0;i<narg;i++)
-      {
+      for (i = 0; i < narg; i++) {
       printf("%s,", args[i]);
     }
       printf(")\n");*/
-      
-      for(i=0;i<funcDescCount;i++)
-      {
-        if (strcmp(funcDesc[i].name, fonc) == 0)
-        {
-          if (ignoreEXT == 0)
+
+      for (i = 0; i < funcDescCount; i++) {
+        if (strcmp(funcDesc[i].name, fonc) == 0) {
+          if (ignoreEXT == 0) {
             funcDesc[i].isExt = 1;
+          }
           break;
         }
       }
-      if (i == funcDescCount)
-      {
+      if (i == funcDescCount) {
         funcDesc[funcDescCount].type = type;
         funcDesc[funcDescCount].name = fonc;
         funcDesc[funcDescCount].nargs = narg;
         funcDesc[funcDescCount].args = args;
         funcDesc[funcDescCount].isExt = ignoreEXT == 0;
         funcDescCount++;
-      }
-      else
-      {
+      } else {
         free(fonc);
         free(args);
         free(type);
       }
       /*
-      for(i=0;i<narg;i++)
-      {
+      for (i = 0; i < narg; i++) {
       free(args[i]);
     }
       free(fonc);
@@ -947,14 +926,12 @@ int parse(FILE* f, FuncDesc* funcDesc, int funcDescCount, int ignoreEXT)
   return funcDescCount;
 }
 
-typedef struct
-{
-  char* str;
+typedef struct {
+  char *str;
   int i;
 } StringIntStruct;
 
-StringIntStruct argDependingOnPreviousArgTab[] =
-{
+StringIntStruct argDependingOnPreviousArgTab[] = {
   { "glLoadProgramNV", 3},
   { "ProgramNamedParameter", 2},
   { "glDeleteBuffers", 1},
@@ -1000,20 +977,20 @@ StringIntStruct argDependingOnPreviousArgTab[] =
   { "glPrioritizeTextures", 1} ,
   { "glPrioritizeTextures", 2} ,
   { "glProgramStringARB", 3} ,
-  
+
   { "glVertexAttribs", 2},
-  
+
   { "glUniformMatrix", 3 },
-  
+
   { "glGetVertexAttribfv", 2},
   { "glGetVertexAttribiv", 2},
   { "glGetVertexAttribdv", 2},
   { "glGetVertexAttribIivEXT", 2},
   { "glGetVertexAttribIuivEXT", 2},
-  
+
   { "glPointParameterfv", 1},
   { "glPointParameteriv", 1},
-  
+
   { "glWeightbvARB", 1},
   { "glWeightsvARB", 1},
   { "glWeightivARB", 1},
@@ -1033,7 +1010,7 @@ StringIntStruct argDependingOnPreviousArgTab[] =
   { "glGetTexGendv", 2},
   { "glGetTexGenfv", 2},
   { "glGetTexGeniv", 2},
-  
+
   { "glLightfv", 2},
   { "glLightiv", 2},
   { "glGetLightfv", 2},
@@ -1042,13 +1019,13 @@ StringIntStruct argDependingOnPreviousArgTab[] =
   { "glFragmentLightivSGIX", 2},
   { "glGetFragmentLightfvSGIX", 2},
   { "glGetFragmentLightivSGIX", 2},
-  
-  
+
+
   { "glLightModelfv", 1},
   { "glLightModeliv", 1},
   { "glFragmentLightModelfvSGIX", 1},
   { "glFragmentLightModelivSGIX", 1},
-  
+
   { "glMaterialfv", 2},
   { "glMaterialiv", 2},
   { "glGetMaterialfv", 2},
@@ -1065,7 +1042,7 @@ StringIntStruct argDependingOnPreviousArgTab[] =
   { "glTexParameteriv", 2},
   { "glGetTexParameterfv", 2},
   { "glGetTexParameteriv", 2},
-  
+
   { "glTexParameterIivEXT", 2},
   { "glTexParameterIuivEXT", 2},
   { "glGetTexParameterIivEXT", 2},
@@ -1074,92 +1051,95 @@ StringIntStruct argDependingOnPreviousArgTab[] =
   { "glPixelMapfv", 2},
   { "glPixelMapuiv", 2},
   { "glPixelMapusv", 2},
-  
+
   { "glDetailTexFuncSGIS", 2 },
   { "glSharpenTexFuncSGIS", 2 },
-  
+
   { "glSpriteParameterfvSGIX", 1 },
   { "glSpriteParameterivSGIX", 1 },
-  
+
   { "ConvolutionParameter", 2},
-  
+
   { "glProgramBufferParametersfvNV", 4},
   { "glProgramBufferParametersIivNV", 4},
   { "glProgramBufferParametersIuivNV", 4},
-  
+
   { "glTransformFeedbackAttribsNV", 1},
   { "glTransformFeedbackVaryingsNV", 2},
 };
 
-int is_arg_of_length_depending_on_previous_args(FuncDesc* funcDesc, int j)
+int is_arg_of_length_depending_on_previous_args(FuncDesc *funcDesc, int j)
 {
   int i;
-  if (strstr(funcDesc->args[j], "*") == NULL)
+  if (strstr(funcDesc->args[j], "*") == NULL) {
     return 0;
-  for(i=0;i< N_ELEMENTS(argDependingOnPreviousArgTab); i++)
-  {
-    if (strstr(funcDesc->name, argDependingOnPreviousArgTab[i].str) && j == argDependingOnPreviousArgTab[i].i)
+  }
+  for (i = 0; i < N_ELEMENTS(argDependingOnPreviousArgTab); i++) {
+    if (strstr(funcDesc->name, argDependingOnPreviousArgTab[i].str) &&
+        j == argDependingOnPreviousArgTab[i].i) {
       return 1;
+    }
   }
   return 0;
 }
 
-static void fprintf_prototype_args(FILE* f, FuncDesc* funcDesc)
+static void fprintf_prototype_args(FILE *f, FuncDesc *funcDesc)
 {
   int j;
-  for(j=0;j<funcDesc->nargs;j++)
-  {
-    if (j != 0) fprintf(f,", ");
-    if (strstr(funcDesc->args[j], "[16]"))
-    {
-      if (strstr(funcDesc->args[j], "float"))
-      {
+  for (j = 0; j < funcDesc->nargs; j++) {
+    if (j != 0) {
+      fprintf(f, ", ");
+    }
+    if (strstr(funcDesc->args[j], "[16]")) {
+      if (strstr(funcDesc->args[j], "float")) {
         fprintf(f, "const GLfloat arg_%d[16]", j);
-      }
-      else if (strstr(funcDesc->args[j], "double"))
-      {
+      } else if (strstr(funcDesc->args[j], "double")) {
         fprintf(f, "const GLdouble arg_%d[16]", j);
-      }
-      else
-      {
+      } else {
         exit(-1);
       }
-    }
-    else if (strstr(funcDesc->args[j], "[128]") && strstr(funcDesc->args[j], "GLubyte"))
-      fprintf(f, (strstr(funcDesc->args[j], "const")) ? "const GLubyte* arg_%d" : "GLubyte* arg_%d", j);
-    else
+    } else if (strstr(funcDesc->args[j], "[128]") &&
+               strstr(funcDesc->args[j], "GLubyte")) {
+      fprintf(f, (strstr(funcDesc->args[j], "const")) ?
+              "const GLubyte* arg_%d" : "GLubyte* arg_%d", j);
+    } else {
       fprintf(f, "%s arg_%d", funcDesc->args[j], j);
+    }
   }
-  if (j == 0)
-      fprintf(f, "void");
+  if (j == 0) {
+    fprintf(f, "void");
+  }
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
   FuncDesc funcDesc[3000];
   int funcDescCount = 0;
-  FILE* f;
+  FILE *f;
 
-	printf("***** path : %s\n", GL_INCLUDE_PATH"mesa_gl.h");
+  printf("***** path : %s\n", GL_INCLUDE_PATH"mesa_gl.h");
   f = fopen(GL_INCLUDE_PATH"mesa_gl.h", "r");
   assert(f);
-  /*if (!f)
-    f = fopen("/usr/include/GL/gl.h", "r");*/
+  /*if (!f) {
+    f = fopen("/usr/include/GL/gl.h", "r");
+  }*/
   funcDescCount = parse(f, funcDesc, 0, 1);
   fclose(f);
-  
+
   f = fopen(GL_INCLUDE_PATH"mesa_glext.h", "r");
   assert(f);
-  /*if (!f)
-    f = fopen("/usr/include/GL/glext.h", "r");*/
+  /*if (!f) {
+    f = fopen("/usr/include/GL/glext.h", "r");
+  }*/
   funcDescCount = parse(f, funcDesc, funcDescCount, 0);
   fclose(f);
 
-  FILE* header = fopen("gl_func.h", "w");
-  FILE* client_stub = fopen("client_stub.c", "w");
-  FILE* server_stub = fopen("server_stub.c", "w");
+  FILE *header = fopen("gl_func.h", "w");
+  FILE *client_stub = fopen("client_stub.c", "w");
+  FILE *server_stub = fopen("server_stub.c", "w");
 
-  fprintf(header, "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
+  fprintf(header,
+        "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
   fprintf(header, "union gl_ret_type {\n"
     "const char *s;\n"
     "int i;\n"
@@ -1171,213 +1151,201 @@ int main(int argc, char* argv[])
   fprintf(header, "enum {\n"
                   "#include \"gl_func_perso.h\"\n");
 
-  fprintf(client_stub, "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
+  fprintf(client_stub,
+        "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
 
-  fprintf(server_stub, "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
+  fprintf(server_stub,
+        "/* This is a generated file by parse_gl_h.c - DO NOT EDIT ! */\n\n");
 
   int i;
-  for(i=0;i<funcDescCount;i++)
-  {
+  for (i = 0; i < funcDescCount; i++) {
     funcDesc[i].ok = 0;
-    char* name = funcDesc[i].name;
-    char* type = funcDesc[i].type;
+    char *name = funcDesc[i].name;
+    char *type = funcDesc[i].type;
     if ((strcmp(type, "void") == 0 || strcmp(type, "GLboolean") == 0 ||
          strcmp(type, "GLuint") == 0 || strcmp(type, "GLint") == 0 ||
          strcmp(type, "GLenum") == 0) || strcmp(type, "GLhandleARB") == 0 ||
-         strcmp(type, "GLhalf") == 0 || strcmp(type, "GLhalfNV") == 0)
-    {
+         strcmp(type, "GLhalf") == 0 || strcmp(type, "GLhalfNV") == 0) {
       int pointer_of_unknown_size = 0;
       int j;
-      
-      if (funcDesc[i].nargs == 1 && strcmp(funcDesc[i].args[0], "void") == 0)
-      {
+
+      if (funcDesc[i].nargs == 1 && strcmp(funcDesc[i].args[0], "void") == 0) {
         funcDesc[i].nargs = 0;
       }
-      for(j=0;j<funcDesc[i].nargs-1;j++)
-      {
-        if (!is_arg_of_length_depending_on_previous_args(&funcDesc[i], j) &&
+      for (j = 0; j < funcDesc[i].nargs-1; j++) {
+        if (!is_arg_of_length_depending_on_previous_args(
+                                               &funcDesc[i], j) &&
             strstr(funcDesc[i].args[j], "const GLchar") == NULL &&
-            strstr(funcDesc[i].args[j], "[16]") == NULL)
-        {
+            strstr(funcDesc[i].args[j], "[16]") == NULL) {
           pointer_of_unknown_size |= strstr(funcDesc[i].args[j], "*") != NULL;
           pointer_of_unknown_size |= strstr(funcDesc[i].args[j], "[") != NULL;
         }
       }
 
-      if (pointer_of_unknown_size == 0)
-      {
-        char* signature_type_name;
-        if (is_known_arg_vector(&funcDesc[i], &signature_type_name, NULL))
-        {
-          if (strstr(signature_type_name, "TYPE_OUT"))
+      if (pointer_of_unknown_size == 0) {
+        char *signature_type_name;
+        if (is_known_arg_vector(&funcDesc[i], &signature_type_name, NULL)) {
+          if (strstr(signature_type_name, "TYPE_OUT")) {
             funcDesc[i].has_out_parameters = 1;
-        }
-        else
-        {
-          if (funcDesc[i].nargs-1 >= 0)
-          {
+          }
+        } else {
+          if (funcDesc[i].nargs-1 >= 0) {
             j = funcDesc[i].nargs-1;
             if (!is_arg_of_length_depending_on_previous_args(&funcDesc[i], j) &&
                 strstr(funcDesc[i].args[j], "const GLchar") == NULL &&
-                strstr(funcDesc[i].args[j], "[16]") == NULL)
-            {
-              pointer_of_unknown_size |= strstr(funcDesc[i].args[j], "*") != NULL;
-              pointer_of_unknown_size |= strstr(funcDesc[i].args[j], "[") != NULL;
+                strstr(funcDesc[i].args[j], "[16]") == NULL) {
+              pointer_of_unknown_size |=
+                            strstr(funcDesc[i].args[j], "*") != NULL;
+              pointer_of_unknown_size |=
+                            strstr(funcDesc[i].args[j], "[") != NULL;
             }
           }
         }
       }
-      if (pointer_of_unknown_size && funcDesc[i].nargs == 1)
-      {
-        if (strstr(funcDesc[i].name, "Matrixf") || strstr(funcDesc[i].name, "Matrixd"))
-        {
+      if (pointer_of_unknown_size && funcDesc[i].nargs == 1) {
+        if (strstr(funcDesc[i].name, "Matrixf") ||
+            strstr(funcDesc[i].name, "Matrixd")) {
           free(funcDesc[i].args[0]);
-          if (strstr(funcDesc[i].name, "Matrixf"))
+          if (strstr(funcDesc[i].name, "Matrixf")) {
             funcDesc[i].args[0] = strdup("GLfloat m[16]");
-          else
+          } else {
             funcDesc[i].args[0] = strdup("GLdouble m[16]");
+          }
           pointer_of_unknown_size = 0;
-        }
-        else if (strcmp(funcDesc[i].name, "glPolygonStipple") == 0)
-        {
+        } else if (strcmp(funcDesc[i].name, "glPolygonStipple") == 0) {
           free(funcDesc[i].args[0]);
           funcDesc[i].args[0] = strdup("const GLubyte mask[128]");
           pointer_of_unknown_size = 0;
-        }
-        else if (strcmp(funcDesc[i].name, "glGetPolygonStipple") == 0)
-        {
+        } else if (strcmp(funcDesc[i].name, "glGetPolygonStipple") == 0) {
           free(funcDesc[i].args[0]);
           funcDesc[i].args[0] = strdup("GLubyte mask[128]");
           funcDesc[i].has_out_parameters = 1;
           pointer_of_unknown_size = 0;
         }
       }
-      if (just_for_server_side_func(name) || pointer_of_unknown_size == 0)
-      {
+      if (just_for_server_side_func(name) || pointer_of_unknown_size == 0) {
         fprintf(header, "  %s_func,\n", funcDesc[i].name);
         funcDesc[i].ok = 1;
-        if (just_for_server_side_func(name))
+        if (just_for_server_side_func(name)) {
           funcDesc[i].just_for_server_side = 1;
-        for(j=0;j<funcDesc[i].nargs;j++)
-        {
-          if (strstr(get_type_string(funcDesc[i].args[j]), "OUT"))
-            funcDesc[i].has_out_parameters = 1;
         }
-      }
-      else
-      {
-        fprintf(stderr, "not handled either manually or automatically : %s\n", funcDesc[i].name);
+        for (j = 0; j < funcDesc[i].nargs; j++) {
+          if (strstr(get_type_string(funcDesc[i].args[j]), "OUT")) {
+            funcDesc[i].has_out_parameters = 1;
+          }
+        }
+      } else {
+        fprintf(stderr, "not handled either manually or automatically : %s\n",
+                funcDesc[i].name);
       }
     }
   }
-  
+
   fprintf(header, "  GL_N_CALLS\n};\n");
 
 
-  fprintf(server_stub, "static void execute_func(int func_number, void **args, union gl_ret_type *pret)\n");
+  fprintf(server_stub, "static void execute_func(int func_number, void **args,"
+          " union gl_ret_type *pret)\n");
   fprintf(server_stub, "{\n");
   fprintf(server_stub, "  switch(func_number)\n");
   fprintf(server_stub, "  {\n");
-  
-  
-  for(i=0;i<funcDescCount;i++)
-  {
-    if (funcDesc[i].ok)
-    {
+
+
+  for (i = 0; i < funcDescCount; i++) {
+    if (funcDesc[i].ok) {
       fprintf(header, "static const int %s_signature[] = { %s, %d, ",
               funcDesc[i].name,
               get_type_string(funcDesc[i].type),
               funcDesc[i].has_out_parameters);
       fprintf(header, "%d", funcDesc[i].nargs);
       int j;
-      char* signature_type_name;
-      int n_args_to_check = is_known_arg_vector(&funcDesc[i], &signature_type_name, NULL) ? funcDesc[i].nargs - 1 : funcDesc[i].nargs;
-      
-      for(j=0;j<n_args_to_check;j++)
-      {
-        if (is_arg_of_length_depending_on_previous_args(&funcDesc[i], j))
-        {
-          fprintf(header, ", %s_OF_LENGTH_DEPENDING_ON_PREVIOUS_ARGS", get_type_string(funcDesc[i].args[j]));
-        }
-        else
+      char *signature_type_name;
+      int n_args_to_check =
+            is_known_arg_vector(&funcDesc[i], &signature_type_name, NULL) ?
+                                funcDesc[i].nargs - 1 : funcDesc[i].nargs;
+
+      for (j = 0; j < n_args_to_check; j++) {
+        if (is_arg_of_length_depending_on_previous_args(&funcDesc[i], j)) {
+          fprintf(header, ", %s_OF_LENGTH_DEPENDING_ON_PREVIOUS_ARGS",
+                  get_type_string(funcDesc[i].args[j]));
+        } else {
           fprintf(header, ", %s", get_type_string(funcDesc[i].args[j]));
+        }
       }
-      
-      if (is_known_arg_vector(&funcDesc[i], &signature_type_name, NULL))
-      {
+
+      if (is_known_arg_vector(&funcDesc[i], &signature_type_name, NULL)) {
         fprintf(header, ", %s", signature_type_name);
       }
       fprintf(header, "};\n");
-      
-      
-      if (funcDesc[i].just_for_server_side == 0)
-      {
-        if (isExt(&funcDesc[i]))
-          fprintf(client_stub, "GLAPI %s APIENTRY EXT_FUNC(%s) (", funcDesc[i].type, funcDesc[i].name);
-        else
-          fprintf(client_stub, "GLAPI %s APIENTRY %s(", funcDesc[i].type, funcDesc[i].name);
+
+
+      if (funcDesc[i].just_for_server_side == 0) {
+        if (isExt(&funcDesc[i])) {
+          fprintf(client_stub, "GLAPI %s APIENTRY EXT_FUNC(%s) (",
+                  funcDesc[i].type, funcDesc[i].name);
+        } else {
+          fprintf(client_stub, "GLAPI %s APIENTRY %s(",
+                  funcDesc[i].type, funcDesc[i].name);
+        }
         fprintf_prototype_args(client_stub, &funcDesc[i]);
         fprintf(client_stub, ")\n");
         fprintf(client_stub, "{\n");
-        if (strcmp(funcDesc[i].type, "void") != 0)
-        {
+        if (strcmp(funcDesc[i].type, "void") != 0) {
           fprintf(client_stub, "  %s ret;\n", funcDesc[i].type);
-          if (isExt(&funcDesc[i]))
-            fprintf(client_stub, "  CHECK_PROC_WITH_RET(%s);\n", funcDesc[i].name);
-        }
-        else
-        {
-          if (isExt(&funcDesc[i]))
+          if (isExt(&funcDesc[i])) {
+            fprintf(client_stub, "  CHECK_PROC_WITH_RET(%s);\n",
+            funcDesc[i].name);
+          }
+        } else {
+          if (isExt(&funcDesc[i])) {
             fprintf(client_stub, "  CHECK_PROC(%s);\n", funcDesc[i].name);
+          }
         }
-        
+
         /*
         fprintf(client_stub, "  do_opengl_call(%s_func, %s",
-                funcDesc[i].name, (strcmp(funcDesc[i].type, "void") == 0) ? "NULL" : "&ret");
-        for(j=0;j<funcDesc[i].nargs;j++)
-        {
+                funcDesc[i].name,
+                (strcmp(funcDesc[i].type, "void") == 0) ? "NULL" : "&ret");
+        for (j = 0; j < funcDesc[i].nargs; j++) {
           fprintf(client_stub, ", arg_%d", j);
         }
         fprintf(client_stub, ");\n");
         */
-        
-        if (funcDesc[i].nargs)
-        {
+
+        if (funcDesc[i].nargs) {
           fprintf(client_stub, "  long args[] = { ");
-          for(j=0;j<funcDesc[i].nargs;j++)
-          {
-            if (j > 0) fprintf(client_stub, ", ");
-            if (strstr(funcDesc[i].args[j], "*"))
-            {
-              fprintf(client_stub, "POINTER_TO_ARG(arg_%d)", j);
+          for (j = 0; j < funcDesc[i].nargs; j++) {
+            if (j > 0) {
+              fprintf(client_stub, ", ");
             }
-            else
-            {
-              const char* symbolic_type = get_type_string(funcDesc[i].args[j]);
-              if (strcmp(symbolic_type, "TYPE_CHAR") == 0)
+            if (strstr(funcDesc[i].args[j], "*")) {
+              fprintf(client_stub, "POINTER_TO_ARG(arg_%d)", j);
+            } else {
+              const char *symbolic_type = get_type_string(funcDesc[i].args[j]);
+              if (strcmp(symbolic_type, "TYPE_CHAR") == 0) {
                 fprintf(client_stub, "CHAR_TO_ARG");
-              else if (strcmp(symbolic_type, "TYPE_UNSIGNED_CHAR") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_UNSIGNED_CHAR") == 0) {
                 fprintf(client_stub, "UNSIGNED_CHAR_TO_ARG");
-              else if (strcmp(symbolic_type, "TYPE_SHORT") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_SHORT") == 0) {
                 fprintf(client_stub, "SHORT_TO_ARG");
-              else if (strcmp(symbolic_type, "TYPE_UNSIGNED_SHORT") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_UNSIGNED_SHORT") == 0) {
                 fprintf(client_stub, "UNSIGNED_SHORT_TO_ARG");
-              else if (strcmp(symbolic_type, "TYPE_INT") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_INT") == 0) {
                 fprintf(client_stub, "INT_TO_ARG");
-              else if (strcmp(symbolic_type, "TYPE_UNSIGNED_INT") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_UNSIGNED_INT") == 0) {
                 fprintf(client_stub, "UNSIGNED_INT_TO_ARG");
-              else if (strcmp(symbolic_type, "TYPE_FLOAT") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_FLOAT") == 0) {
                 fprintf(client_stub, "FLOAT_TO_ARG");
-              else if (strcmp(symbolic_type, "TYPE_16FLOAT") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_16FLOAT") == 0) {
                 fprintf(client_stub, "POINTER_TO_ARG");
-              else if (strcmp(symbolic_type, "TYPE_DOUBLE") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_DOUBLE") == 0) {
                 fprintf(client_stub, "DOUBLE_TO_ARG");
-              else if ( strcmp(symbolic_type, "TYPE_16DOUBLE") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_16DOUBLE") == 0) {
                 fprintf(client_stub, "POINTER_TO_ARG");
-              else if ( strcmp(symbolic_type, "TYPE_128UCHAR") == 0 || strcmp(symbolic_type, "TYPE_OUT_128UCHAR") == 0)
+              } else if (strcmp(symbolic_type, "TYPE_128UCHAR") == 0 ||
+                        strcmp(symbolic_type, "TYPE_OUT_128UCHAR") == 0) {
                 fprintf(client_stub, "POINTER_TO_ARG");
-              else
-              {
+              } else {
                 fprintf(stderr, "Unknown : %s\n", symbolic_type);
                 assert(0);
               }
@@ -1386,86 +1354,89 @@ int main(int argc, char* argv[])
           }
           fprintf(client_stub, "};\n");
         }
-        
+
         fprintf(client_stub, "  do_opengl_call(%s_func, %s, %s, NULL);\n",
-                funcDesc[i].name, (strcmp(funcDesc[i].type, "void") == 0) ? "NULL" : "&ret",
+                funcDesc[i].name,
+                (strcmp(funcDesc[i].type, "void") == 0) ? "NULL" : "&ret",
                 (funcDesc[i].nargs) ? "args" : "NULL");
-        
-        if (strcmp(funcDesc[i].type, "void") != 0)
-        {
+
+        if (strcmp(funcDesc[i].type, "void") != 0) {
           fprintf(client_stub, "  return ret;\n");
         }
         fprintf(client_stub, "}\n\n");
       }
-      
+
       fprintf(server_stub, "    case %s_func:\n", funcDesc[i].name);
       fprintf(server_stub, "    {\n");
-      
-      if (isExt(&funcDesc[i]))
-      {
-        fprintf(server_stub, "      GET_EXT_PTR(%s, %s, (", funcDesc[i].type, funcDesc[i].name);
+
+      if (isExt(&funcDesc[i])) {
+        fprintf(server_stub, "      GET_EXT_PTR(%s, %s, (",
+                funcDesc[i].type, funcDesc[i].name);
         fprintf_prototype_args(server_stub, &funcDesc[i]);
         fprintf(server_stub, "));\n");
       }
-      
+
       fprintf(server_stub, "      ");
-      
-      if (strcmp(funcDesc[i].type, "void") == 0)
+
+      if (strcmp(funcDesc[i].type, "void") == 0) {
         ;
-      else if (strcmp(get_type_string(funcDesc[i].type), "TYPE_INT") == 0 ||
-               strcmp(get_type_string(funcDesc[i].type), "TYPE_UNSIGNED_INT") == 0)
+      } else if (strcmp(get_type_string(funcDesc[i].type), "TYPE_INT") == 0 ||
+               strcmp(get_type_string(funcDesc[i].type),
+                                                  "TYPE_UNSIGNED_INT") == 0) {
         fprintf(server_stub, "pret->i = ");
-      else if (strcmp(get_type_string(funcDesc[i].type), "TYPE_CHAR") == 0 ||
-               strcmp(get_type_string(funcDesc[i].type), "TYPE_UNSIGNED_CHAR") == 0)
+      } else if (strcmp(get_type_string(funcDesc[i].type), "TYPE_CHAR") == 0 ||
+               strcmp(get_type_string(funcDesc[i].type),
+                                                  "TYPE_UNSIGNED_CHAR") == 0) {
         fprintf(server_stub, "pret->c = ");
-      else
-      {
-        fprintf(stderr, "unknown ret type = %s\n", get_type_string(funcDesc[i].type));
+      } else {
+        fprintf(stderr, "unknown ret type = %s\n",
+                get_type_string(funcDesc[i].type));
         exit(-1);
       }
-      /*if (strstr(funcDesc[i].name, "EXT"))
-      {
-        char* dup = strdup(funcDesc[i].name);
+      /* if (strstr(funcDesc[i].name, "EXT")) {
+        char *dup = strdup(funcDesc[i].name);
         *strstr(dup, "EXT") = 0;
         fprintf(server_stub, "%s(", dup);
         free(dup);
-      }
-      else*/
-      { 
-        if (isExt(&funcDesc[i]))
-          fprintf(server_stub, "ptr_func_%s(", funcDesc[i].name);
-        else
-          fprintf(server_stub, "%s(", funcDesc[i].name);
-      }
-      char* c_type_name;
-      if (is_known_arg_vector(&funcDesc[i], NULL, &c_type_name))
+      } else */
       {
-        for(j=0;j<funcDesc[i].nargs - 1;j++)
-        {
-          if (j != 0) fprintf(server_stub,", ");
+        if (isExt(&funcDesc[i])) {
+          fprintf(server_stub, "ptr_func_%s(", funcDesc[i].name);
+        } else {
+          fprintf(server_stub, "%s(", funcDesc[i].name);
+        }
+      }
+      char *c_type_name;
+      if (is_known_arg_vector(&funcDesc[i], NULL, &c_type_name)) {
+        for (j = 0; j < funcDesc[i].nargs - 1; j++) {
+          if (j != 0) {
+            fprintf(server_stub, ", ");
+          }
           print_server_side_argument(server_stub, j, funcDesc[i].args[j]);
         }
-        if (j != 0) fprintf(server_stub,", ");
-        if (strstr(funcDesc[i].args[funcDesc[i].nargs - 1], "const"))
+        if (j != 0) {
+          fprintf(server_stub, ", ");
+        }
+        if (strstr(funcDesc[i].args[funcDesc[i].nargs - 1], "const")) {
           fprintf(server_stub, "(const %s*)args[%d]", c_type_name, j);
-        else
+        } else {
           fprintf(server_stub, "(%s*)args[%d]", c_type_name, j);
-      }
-      else
-      {
-        for(j=0;j<funcDesc[i].nargs;j++)
-        {
-          if (j != 0) fprintf(server_stub,", ");
+        }
+      } else {
+        for (j = 0; j < funcDesc[i].nargs; j++) {
+          if (j != 0) {
+            fprintf(server_stub, ", ");
+          }
           print_server_side_argument(server_stub, j, funcDesc[i].args[j]);
         }
       }
       fprintf(server_stub, ");\n");
-      
+
       fprintf(server_stub, "      break;\n");
       fprintf(server_stub, "    }\n");
     }
   }
-  
+
   fprintf(server_stub, "    default:\n");
   fprintf(server_stub, "      DEBUGF(\"unknown=%%d\", func_number);\n");
   fprintf(server_stub, "      break;\n");
@@ -1477,10 +1448,8 @@ int main(int argc, char* argv[])
   fprintf(header, "static const int* tab_opengl_calls[GL_N_CALLS] =\n");
   fprintf(header, "{\n");
   fprintf(header, "#include \"gl_func_perso.h\"\n");
-  for(i=0;i<funcDescCount;i++)
-  {
-    if (funcDesc[i].ok)
-    {
+  for (i = 0; i < funcDescCount; i++) {
+    if (funcDesc[i].ok) {
       fprintf(header, "  %s_signature,\n", funcDesc[i].name);
     }
   }
@@ -1491,15 +1460,13 @@ int main(int argc, char* argv[])
   fprintf(header, "static const char* tab_opengl_calls_name[GL_N_CALLS] =\n");
   fprintf(header, "{\n");
   fprintf(header, "#include \"gl_func_perso.h\"\n");
-  for(i=0;i<funcDescCount;i++)
-  {
-    if (funcDesc[i].ok)
-    {
+  for (i = 0; i < funcDescCount; i++) {
+    if (funcDesc[i].ok) {
       fprintf(header, "  \"%s\",\n", funcDesc[i].name);
     }
   }
   fprintf(header, "};\n\n");
-  
+
   fclose(header);
   fclose(server_stub);
   fclose(client_stub);
