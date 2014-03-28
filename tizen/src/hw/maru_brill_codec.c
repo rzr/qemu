@@ -1156,9 +1156,13 @@ static bool codec_init(MaruBrillCodecState *s, int ctx_id, void *data_buf)
             ret = avcodec_open2(avctx, codec, NULL);
             INFO("avcodec_open success! ret %d ctx_id %d\n", ret, ctx_id);
 
-            tempbuf_size =
-                (sizeof(avctx->sample_fmt) + sizeof(avctx->frame_size)
-                + sizeof(int) + sizeof(avctx->extradata_size) + avctx->extradata_size);
+            TRACE("channels %d sample_rate %d sample_fmt %d ch_layout %lld\n",
+                avctx->channels, avctx->sample_rate,
+                avctx->sample_fmt, avctx->channel_layout);
+
+            tempbuf_size = (sizeof(avctx->sample_fmt) + sizeof(avctx->frame_size)
+                           + sizeof(avctx->extradata_size) + avctx->extradata_size)
+                           + sizeof(int);
 
             s->context[ctx_id].opened_context = true;
             s->context[ctx_id].parser_ctx =
@@ -1168,9 +1172,6 @@ static bool codec_init(MaruBrillCodecState *s, int ctx_id, void *data_buf)
             ret = -1;
         }
     }
-
-    TRACE("codec_init. channels %d sample_rate %d sample_fmt %d ch_layout %lld\n",
-        avctx->channels, avctx->sample_rate, avctx->sample_fmt, avctx->channel_layout);
 
     tempbuf_size += sizeof(ret);
 
@@ -1472,37 +1473,32 @@ static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     avctx = s->context[ctx_id].avctx;
     samples = s->context[ctx_id].frame;
     if (!avctx) {
-        ERR("[%s] %d of AVCodecContext is NULL!\n", __func__, ctx_id);
+        ERR("decode_audio. %d of AVCodecContext is NULL\n", ctx_id);
     } else if (!avctx->codec) {
-        ERR("%d of AVCodec is NULL.\n", ctx_id);
+        ERR("decode_audio. %d of AVCodec is NULL\n", ctx_id);
+    } else if (!samples) {
+        ERR("decode_audio. %d of AVFrame is NULL\n", ctx_id);
     } else {
-        if (!samples) {
-            if (!(samples = avcodec_alloc_frame())) {
-                ERR("failed to allocate decoded audio samples.\n");
-                len = -1;
-            }
-        } else {
-            avcodec_get_frame_defaults(samples);
+        avcodec_get_frame_defaults(samples);
 
-            len = avcodec_decode_audio4(avctx, samples, &got_frame, &avpkt);
+        len = avcodec_decode_audio4(avctx, samples, &got_frame, &avpkt);
+        TRACE("decode_audio. len %d, channel_layout %lld, frame_size %d\n",
+            len, avctx->channel_layout, got_frame);
+        if (got_frame) {
+            if (av_sample_fmt_is_planar(avctx->sample_fmt)) {
+                out_sample_fmt = avctx->sample_fmt - 5;
 
-            TRACE("decode_audio. len %d, channel_layout %lld, frame_size %d\n",
-                len, avctx->channel_layout, got_frame);
-            if (got_frame) {
-                if (av_sample_fmt_is_planar(avctx->sample_fmt)) {
-                    out_sample_fmt = avctx->sample_fmt - 5;
-
-                    outbuf = resample_audio (avctx, samples, &buffer_size);
-                } else {
-                    // not planar format
-                }
+                outbuf = resample_audio (avctx, samples, &buffer_size);
+            } else {
+                // TODO: not planar format
             }
         }
     }
 
     tempbuf_size = (sizeof(len) + sizeof(got_frame));
     if (len < 0) {
-        ERR("failed to decode audio. ctx_id: %d len: %d got_frame: %d\n", ctx_id, len, got_frame);
+        ERR("failed to decode audio. ctx_id: %d len: %d got_frame: %d\n",
+            ctx_id, len, got_frame);
         got_frame = 0;
     } else {
         tempbuf_size += (sizeof(out_sample_fmt) + sizeof(avctx->sample_rate)
@@ -1578,6 +1574,10 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
         // return false;
     }
 
+    av_init_packet(&avpkt);
+    avpkt.data = NULL;
+    avpkt.size = 0;
+
     avctx = s->context[ctx_id].avctx;
     pict = s->context[ctx_id].frame;
     if (!avctx || !pict) {
@@ -1610,7 +1610,6 @@ static bool codec_encode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
 
             outbuf = g_malloc0(outbuf_size);
 
-            av_init_packet(&avpkt);
             avpkt.data = outbuf;
             avpkt.size = outbuf_size;
 
@@ -1703,6 +1702,10 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
         // return false;
     }
 
+    av_init_packet(&avpkt);
+    avpkt.data = NULL;
+    avpkt.size = 0;
+
     avctx = s->context[ctx_id].avctx;
     if (!avctx) {
         ERR("[%s] %d of Context is NULL!\n", __func__, ctx_id);
@@ -1710,9 +1713,8 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
         ERR("%d of AVCodec is NULL.\n", ctx_id);
     } else {
         outbuf = g_malloc0(max_size + FF_MIN_BUFFER_SIZE);
-//        outbuf = g_malloc0(max_size);
+        // outbuf = g_malloc0(max_size);
 
-        av_init_packet(&avpkt);
         avpkt.data = outbuf;
         avpkt.size = max_size;
 
