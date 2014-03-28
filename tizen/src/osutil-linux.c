@@ -1,7 +1,7 @@
 /*
  * Emulator
  *
- * Copyright (C) 2012, 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2012 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
@@ -280,30 +280,31 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     char buf[MAXLEN];
 
     output = popen(gproxycmds[GNOME_PROXY_AUTOCONFIG_URL][gproxytool], "r");
-    if(fscanf(output, "%s", buf) > 0) {
+    if (fscanf(output, "%s", buf) > 0) {
         process_string(buf);
         INFO("pac address: %s\n", buf);
         download_url(buf);
     }
+
     pclose(output);
     fp_pacfile = fopen(pac_tempfile, "r");
-    if(fp_pacfile != NULL) {
-        while(fgets(line, MAXLEN, fp_pacfile) != NULL) {
-            if( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
+    if (fp_pacfile != NULL) {
+        while (fgets(line, MAXLEN, fp_pacfile) != NULL) {
+            if ((strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
                 INFO("line found %s", line);
                 sscanf(line, "%*[^\"]\"%s %s", type, proxy);
             }
         }
 
-        if(g_str_has_prefix(type, DIRECT)) {
+        if (g_str_has_prefix(type, DIRECT)) {
             INFO("auto proxy is set to direct mode\n");
             fclose(fp_pacfile);
-        }
-        else if(g_str_has_prefix(type, PROXY)) {
+        } else if (g_str_has_prefix(type, PROXY)) {
             INFO("auto proxy is set to proxy mode\n");
             INFO("type: %s, proxy: %s\n", type, proxy);
+
             p = strtok(proxy, "\";");
-            if(p != NULL) {
+            if (p != NULL) {
                 INFO("auto proxy to set: %s\n",p);
                 strcpy(http_proxy, p);
                 strcpy(https_proxy, p);
@@ -311,19 +312,19 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
                 strcpy(socks_proxy, p);
             }
             fclose(fp_pacfile);
-        }
-        else
-        {
+        } else {
             ERR("pac file is not wrong! It could be the wrong pac address or pac file format\n");
             fclose(fp_pacfile);
         }
-    }
-    else {
+    } else {
         ERR("fail to get pacfile fp\n");
-    return -1;
+        return -1;
     }
 
-    remove(pac_tempfile);
+    if (remove(pac_tempfile) < 0) {
+        WARN("fail to remove the temporary pacfile\n");
+    }
+
     return 0;
 }
 
