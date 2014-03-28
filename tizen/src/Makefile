@@ -98,7 +98,6 @@ install: all
 
 # resources and jar for skin
 	cp -pP skin/client/emulator-skin.jar $(EMUL_DIR)/bin
-	cp -pP skin/client/lib/swt.jar $(EMUL_DIR)/bin
 	cp -pPR skin/client/skins $(EMUL_DIR)
 ifndef CONFIG_USE_SHM
 	cp -pP skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images
@@ -157,10 +156,6 @@ ifdef CONFIG_DARWIN
 		install_name_tool -change /opt/local/lib/libncurses.5.dylib @loader_path/libncurses.5.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libpixman-1.0.dylib @loader_path/libpixman-1.0.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change .//lib/libavformat-emul.54.dylib @loader_path/libavformat-emul.54.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change .//lib/libavcodec-emul.54.dylib @loader_path/libavcodec-emul.54.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change .//lib/libavresample-emul.1.dylib @loader_path/libavresample-emul.1.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change .//lib/libavutil-emul.52.dylib @loader_path/libavutil-emul.52.dylib $(EMUL_DIR)/bin/emulator-x86 ;\
 		;; \
 	arm-softmmu) \
 		;; \
@@ -265,10 +260,6 @@ ifdef CONFIG_DARWIN
 		install_name_tool -change /opt/local/lib/libncurses.5.dylib @loader_path/libncurses.5.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libcurl.4.dylib @loader_path/libcurl.4.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		install_name_tool -change /opt/local/lib/libpixman-1.0.dylib @loader_path/libpixman-1.0.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change .//lib/libavformat-emul.54.dylib @loader_path/libavformat-emul.54.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change .//lib/libavcodec-emul.54.dylib @loader_path/libavcodec-emul.54.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change .//lib/libavresample-emul.1.dylib @loader_path/libavresample-emul.1.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
-		install_name_tool -change .//lib/libavutil-emul.52.dylib @loader_path/libavutil-emul.52.dylib $(DIBS_X86_DIR)/bin/emulator-x86 ;\
 		;; \
 	arm-softmmu) \
 		;; \
