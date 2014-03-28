@@ -166,6 +166,11 @@ char *maru_convert_path(char *msg, const char *path)
     total_len += (path_len + msg_len);
 
     err_msg = g_malloc0(total_len * sizeof(char));
+    if (!err_msg) {
+        fprintf(stderr, "failed to allocate a buffer for an error massage\n");
+        g_free(current_path);
+        return NULL;
+    }
 
     if (msg) {
         snprintf(err_msg, msg_len, "%s", msg);
@@ -188,9 +193,7 @@ char *maru_convert_path(char *msg, const char *path)
         if (!dos_err_msg) {
             fprintf(stderr,
                 "failed to duplicate an error message from %p\n", err_msg);
-            if (current_path) {
-                g_free(current_path);
-            }
+            g_free(current_path);
             g_free(err_msg);
             return NULL;
         }
@@ -204,9 +207,7 @@ char *maru_convert_path(char *msg, const char *path)
         g_free(dos_err_msg);
     }
 #endif
-    if (current_path) {
-        g_free(current_path);
-    }
+    g_free(current_path);
 
     return err_msg;
 }
