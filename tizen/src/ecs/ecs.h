@@ -72,7 +72,6 @@
 #define COMMAND_TYPE_TETHERING  "tethering"
 
 #define MSG_TYPE_SENSOR         "sensor"
-#define MSG_TYPE_SENSOR_LEN     10
 #define MSG_TYPE_NFC            "nfc"
 #define MSG_TYPE_SIMUL_NFC      "simul_nfc"
 

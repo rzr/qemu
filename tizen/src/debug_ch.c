@@ -313,6 +313,10 @@ static void debug_init(void)
         if(fseek(fp, 0, SEEK_SET) != 0) {
             fclose(fp);
             fprintf(stderr, "failed to fseek()\n");
+
+            if (tmp != NULL)
+                free(tmp);
+
             return;
         }
         const char* str = fgets(tmp, 1024, fp);
@@ -480,6 +484,7 @@ int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
         fprintf(stderr, "Can't open logfile: %s\n", log_path);
         /* commented out for prevent shutdown when log directory is removed on runtime. */
         //exit(1);
+        return -1;
     }
 
     ret_write = qemu_write_full(fd, buf_msg, ret);

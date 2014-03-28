@@ -175,11 +175,6 @@ static void virtio_nfc_send(VirtIODevice *vdev, VirtQueue *vq)
 
         INFO("<< virtqueue pop. index: %d, out_num : %d, in_num : %d\n", index,  elem.out_num, elem.in_num);
 
-        if (index == 0) {
-            INFO("<< virtqueue break\n");
-            break;
-        }
-
         INFO("<< iov_len = %d\n", elem.out_sg[0].iov_len);
 
         memset(&_msg, 0x00, sizeof(_msg));

@@ -265,7 +265,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
                 goto injector_send;
             }
             LOG("status : %s", data);
-            send_status_injector_ntf(MSG_TYPE_SENSOR, MSG_TYPE_SENSOR_LEN, action, data);
+            send_status_injector_ntf(MSG_TYPE_SENSOR, 6, action, data);
             ret = true;
             goto injector_req_success;
         } else {
@@ -472,20 +472,31 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         } else {
             if (data != NULL) {
                 set_injector_data(data);
+            } else {
+                LOG("sensor set data is null");
             }
         }
         msgproc_device_ans(ccli, cmd, true);
     } else if (!strncmp(cmd, "Network", 7)) {
-        LOG(">>> Network msg: '%s'", data);
-        if(net_slirp_redir(data) < 0) {
-            LOG( "redirect [%s] fail \n", data);
+        if (data != NULL) {
+            LOG(">>> Network msg: '%s'", data);
+            if(net_slirp_redir(data) < 0) {
+                LOG( "redirect [%s] fail", data);
+            } else {
+                LOG("redirect [%s] success", data);
+            }
         } else {
-            LOG("redirect [%s] success\n", data);
+            LOG("Network redirection data is null.");
         }
     } else if (!strncmp(cmd, "HKeyboard", 8)) {
         if (group == MSG_GROUP_STATUS) {
             send_host_keyboard_ntf(mloop_evcmd_get_hostkbd_status());
         } else {
+            if (data == NULL) {
+                LOG("HKeyboard data is NULL");
+                return false;
+            }
+
             if (!strncmp(data, "1", 1)) {
                 is_on = 1;
             }
@@ -501,6 +512,11 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 #else
         // TODO:
 #endif
+
+        if (data == NULL) {
+            LOG("gesture data is NULL");
+            return false;
+        }
 
         LOG("%s\n", data);
 
@@ -560,13 +576,9 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
         print_binary(data, datalen);
     }
 
-    if (data != NULL) {
-        send_to_nfc(ccli->client_id, ccli->client_type, data, msg->data.len);
-        g_free(data);
-        return true;
-    } else {
-        return false;
-    }
+    send_to_nfc(ccli->client_id, ccli->client_type, data, msg->data.len);
+    g_free(data);
+    return true;
 }
 
 bool ntf_to_injector(const char* data, const int len) {

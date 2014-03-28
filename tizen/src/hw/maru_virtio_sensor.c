@@ -110,7 +110,7 @@ static void send_sensor_to_ecs(const char* data, enum sensor_types type)
     length = (unsigned short) buf_len;
     action = get_action(type);
 
-    memcpy(ecs_message, MESSAGE_TYPE_SENSOR, 10);
+    memcpy(ecs_message, MESSAGE_TYPE_SENSOR, 6);
     memcpy(ecs_message + 10, &length, sizeof(unsigned short));
     memcpy(ecs_message + 12, &group, sizeof(unsigned char));
     memcpy(ecs_message + 13, &action, sizeof(unsigned char));
