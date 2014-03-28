@@ -522,10 +522,11 @@ static DriveInfo *blockdev_init(QDict *bs_opts,
     if (ret < 0) {
 #ifdef CONFIG_MARU
         const char _msg[] = "Failed to load disk file from the following path. Check if the file is corrupted or missing.\n\n";
-	    char* err_msg = NULL;
+        char* err_msg = NULL;
+
         err_msg = maru_convert_path((char*)_msg, file);
-        start_simple_client(err_msg);
         if (err_msg) {
+            start_simple_client(err_msg);
             g_free(err_msg);
         }
 #endif
