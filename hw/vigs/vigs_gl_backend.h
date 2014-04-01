@@ -92,6 +92,7 @@ struct vigs_gl_backend
     void (GLAPIENTRY *GetIntegerv)(GLenum pname, GLint *params);
     const GLubyte *(GLAPIENTRY *GetString)(GLenum name);
     void (GLAPIENTRY *DrawArrays)(GLenum mode, GLint first, GLsizei count);
+    void (GLAPIENTRY *BlendFunc)(GLenum sfactor, GLenum dfactor);
     void (GLAPIENTRY *GenBuffers)(GLsizei n, GLuint *buffers);
     void (GLAPIENTRY *DeleteBuffers)(GLsizei n, const GLuint *buffers);
     void (GLAPIENTRY *BindBuffer)(GLenum target, GLuint buffer);

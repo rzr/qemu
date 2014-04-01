@@ -292,6 +292,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(GetIntegerv, glGetIntegerv);
     VIGS_GL_GET_PROC(GetString, glGetString);
     VIGS_GL_GET_PROC(DrawArrays, glDrawArrays);
+    VIGS_GL_GET_PROC(BlendFunc, glBlendFunc);
     VIGS_GL_GET_PROC(GenBuffers, glGenBuffers);
     VIGS_GL_GET_PROC(DeleteBuffers, glDeleteBuffers);
     VIGS_GL_GET_PROC(BindBuffer, glBindBuffer);
