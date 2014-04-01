@@ -1,3 +1,6 @@
+* 1.7.30
+- added enable-libav option to configure
+== Kitae Kim <kt920.kim@samsung.com> 2014-04-01
 * 1.7.29
 - added device ans message
 == Jinhyung Choi <jinhyung2.choi@samsung.com> 2014-03-27
