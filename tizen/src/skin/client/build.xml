@@ -18,7 +18,9 @@
 	<property name="swt.file" value="swt.jar" />
 
 	<path id="classpath">
-		<fileset dir="lib" includes="${swt.file}" />
+		<pathelement location="${env.TIZEN_SDK_DEV_PATH}/distrib/lib/${swt.file}" />
+		<pathelement location="lib/${swt.file}" />
+		<pathelement location="build/" />
 	</path>
 
 	<target name="clean">
@@ -81,7 +83,8 @@
 
 	<target name="create-native-linux" if="isLinux" unless="isMac">
 		<echo message="create native shared library on linux..." />
-		<javah classpath="build;lib/swt.jar" destdir="native_src">
+		<javah destdir="native_src">
+			<classpath refid="classpath" />
 			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
@@ -106,7 +109,8 @@
 
 	<target name="create-native-mac" if="isMac">
 		<echo message="create native shared library on mac..." />
-		<javah classpath="build;lib/swt.jar" destdir="native_src">
+		<javah destdir="native_src">
+			<classpath refid="classpath" />
 			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">

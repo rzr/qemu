@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if [ -z "$TIZEN_SDK_DEV_PATH" ] ; then
+	TIZEN_SDK_DEV_PATH=${HOME}/tizen-sdk-dev
+fi
+
 CONFIGURE_APPEND=""
 EMUL_TARGET_LIST=""
 VIRTIOGL_EN=""
@@ -209,19 +213,22 @@ else
   CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-vigs"
 fi
 
+# append common flags
+CONFIGURE_APPEND="--enable-maru --enable-libav $CONFIGURE_APPEND"
+
+export PKG_CONFIG_PATH=${TIZEN_SDK_DEV_PATH}/distrib/lib/pkgconfig:${PKG_CONFIG_PATH}
+
 case $targetos in
 Linux*)
 cd ..
 echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
-export PKG_CONFIG_PATH=${HOME}/tizen-sdk-dev/distrib/lib/pkgconfig:${PKG_CONFIG_PATH}
 exec ./configure \
  --enable-werror \
  --audio-drv-list=alsa \
- --enable-maru \
  --disable-vnc \
- --disable-pie $1 \
+ --disable-pie \
  --enable-virtfs \
  --disable-xen \
  $CONFIGURE_APPEND \
@@ -239,8 +246,7 @@ exec ./configure \
  --cc=gcc \
  --audio-drv-list=winwave \
  --enable-hax \
- --enable-maru \
- --disable-vnc $1 \
+ --disable-vnc \
  $CONFIGURE_APPEND \
 ;;
 Darwin*)
@@ -251,13 +257,11 @@ echo "##### QEMU configure append:" $CONFIGURE_APPEND
 ./configure \
  --extra-cflags=-mmacosx-version-min=10.4 \
  --audio-drv-list=coreaudio \
- --enable-maru \
  --enable-shm \
  --enable-hax \
  --disable-vnc \
  --disable-cocoa \
- --enable-gl \
- --disable-sdl $1 \
+ --disable-sdl \
  $CONFIGURE_APPEND \
 ;;
 esac

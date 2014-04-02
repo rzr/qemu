@@ -3,6 +3,10 @@ DIBS_X86_DIR=../x86
 DIBS_ARM_DIR=../arm
 DIBS_COMMON_DIR=../common
 
+ifndef TIZEN_SDK_DEV_PATH
+TIZEN_SDK_DEV_PATH=${HOME}/tizen-sdk-dev
+endif
+
 ifneq ($(wildcard ../../config-host.mak),)
 include ../../config-host.mak
 else
@@ -48,7 +52,7 @@ ifdef CONFIG_DARWIN
 endif
 
 skin_client:
-	ant -buildfile skin/client/build.xml make-jar
+	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -buildfile skin/client/build.xml make-jar
 
 build_info:
 	@echo "Generate a build information file"
