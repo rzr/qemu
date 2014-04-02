@@ -37,7 +37,11 @@ prepare()
 	PATH=$PATH:$PURIFIED_ROOTDIR/bin:$PURIFIED_ROOTDIR/apache-ant_1.9.2/bin:$PURIFIED_ROOTDIR/SDL_1.2.15/bin:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/bin:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/bin:$PURIFIED_ROOTDIR/pixman_0.30.0/bin
 	export PATH
 
-	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$ROOTDIR/libav/lib/pkgconfig:$ROOTDIR/SDL_1.2.15/lib/pkgconfig:$ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$ROOTDIR/pixman_0.30.0/lib/pkgconfig
+	if [ -z ${PKG_CONFIG_PATH} ] ; then       # avoid pkg-config bug on Window
+		export PKG_CONFIG_PATH=$ROOTDIR/libav/lib/pkgconfig:$ROOTDIR/SDL_1.2.15/lib/pkgconfig:$ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$ROOTDIR/pixman_0.30.0/lib/pkgconfig
+	else
+		export PKG_CONFIG_PATH=$ROOTDIR/libav/lib/pkgconfig:$ROOTDIR/SDL_1.2.15/lib/pkgconfig:$ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$ROOTDIR/pixman_0.30.0/lib/pkgconfig:${PKG_CONFIG_PATH}
+	fi
 
 	BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/SDL_1.2.15/include/SDL "
 	BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/gtk-bundle_2.24.10/include "

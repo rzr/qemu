@@ -143,6 +143,8 @@ set_target() {
 targetos=`uname -s`
 echo "##### checking for os... targetos $targetos"
 
+echo "##### TIZEN_SDK_DEV_PATH: ${TIZEN_SDK_DEV_PATH}"
+
 echo "$*"
 
 while [ "$#" -gt "0" ]
@@ -216,7 +218,11 @@ fi
 # append common flags
 CONFIGURE_APPEND="--enable-maru --enable-libav $CONFIGURE_APPEND"
 
+if [ -z ${PKG_CONFIG_PATH} ] ; then	# avoid pkg-config bug on Windows
+export PKG_CONFIG_PATH=${TIZEN_SDK_DEV_PATH}/distrib/lib/pkgconfig
+else
 export PKG_CONFIG_PATH=${TIZEN_SDK_DEV_PATH}/distrib/lib/pkgconfig:${PKG_CONFIG_PATH}
+fi
 
 case $targetos in
 Linux*)
