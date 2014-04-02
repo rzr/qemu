@@ -244,10 +244,7 @@ cd ..
 echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
-# We add CFLAGS '-fno-omit-frame-pointer'.
-# A GCC might have a bug related with omitting frame pointer. It generates weird instructions.
 exec ./configure \
- --extra-cflags=-fno-omit-frame-pointer \
  --extra-ldflags=-Wl,--large-address-aware \
  --cc=gcc \
  --audio-drv-list=winwave \
