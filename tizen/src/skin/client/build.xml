@@ -86,6 +86,7 @@
 			<classpath refid="classpath" />
 			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
+		<echo message="build libshared.so" />
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
 			<arg line="-c" />
 			<arg line="-fPIC" />
@@ -102,15 +103,17 @@
 			<arg line="libshared.so" />
 		</exec>
 
+		<!--
 		<exec dir="native_src" executable="./check-gtk.sh" outputproperty="gtkabi" failifexecutionfails="false" />
 		<echo message="gtkversion : ${gtkabi}" />
 
 		<javah classpath="build;lib/swt.jar" destdir="native_src">
 			<class name="org.tizen.emulator.skin.screenshot.ScreenShotDialog" />
 		</javah>
+		<echo message="build libclipboard.so" />
 		<exec executable="pkg-config" outputproperty="gtk" failifexecutionfails="false">
-			<arg line="--cflags" />
-			<arg line="--libs" />
+			<arg line="- -cflags" />
+			<arg line="- -libs" />
 			<arg line="${gtkabi}" />
 		</exec>
 		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
@@ -129,6 +132,7 @@
 			<arg line="-o" />
 			<arg line="libclipboard.so" />
 		</exec>
+		-->
 
 		<delete>
 			<fileset dir="native_src" includes="**/*.h" />

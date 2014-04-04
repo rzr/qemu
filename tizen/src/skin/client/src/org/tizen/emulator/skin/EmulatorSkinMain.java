@@ -138,6 +138,8 @@ public class EmulatorSkinMain {
 			logger.info("swt platform : " + SWT.getPlatform());
 			logger.info("swt version : " + SWT.getVersion());
 
+			logger.info("working directory" + System.getProperty("user.dir"));
+
 			/* startup arguments parsing */
 			Map<String, String> argsMap = parseArgs(args);
 			EmulatorConfig.validateArgs(argsMap);

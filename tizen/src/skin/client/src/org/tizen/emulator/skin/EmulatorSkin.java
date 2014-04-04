@@ -142,7 +142,7 @@ public class EmulatorSkin {
 	private static Logger logger =
 			SkinLogger.getSkinLogger(EmulatorSkin.class).getLogger();
 
-	protected EmulatorConfig config;
+	public EmulatorConfig config;
 	protected Shell shell;
 	protected ImageRegistry imageRegistry;
 	protected Canvas lcdCanvas;
