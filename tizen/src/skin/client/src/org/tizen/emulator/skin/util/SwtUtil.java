@@ -51,4 +51,17 @@ public class SwtUtil {
 	public static boolean isMacPlatform() {
 		return "cocoa".equalsIgnoreCase(SWT.getPlatform());
 	}
+
+	public static boolean is64bitPlatform() {
+		/* internal/Library.java::arch() */
+		String osArch = System.getProperty("os.arch"); /* $NON-NLS-1$ */
+
+		if (osArch.equals("amd64") || osArch.equals("x86_64") ||
+				osArch.equals("IA64W") || osArch.equals("ia64")) {
+			/* $NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$ */
+			return true;
+		}
+
+		return false;
+	}
 }

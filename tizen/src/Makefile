@@ -127,7 +127,7 @@ ifdef CONFIG_DARWIN
 	cp -pP sdbscript $(EMUL_DIR)/bin
 endif
 
-# use shared memory to display LCD
+# use shared memory for display framebuffer
 ifdef CONFIG_USE_SHM
 ifdef CONFIG_LINUX
 	cp -pP skin/client/native_src/libshared.so $(EMUL_DIR)/bin
@@ -135,6 +135,11 @@ endif
 ifdef CONFIG_DARWIN
 	cp -pP skin/client/native_src/libshared.dylib $(EMUL_DIR)/bin
 endif
+endif
+
+# use GTK for CopyToClipboard on Ubuntu 12.04 64bit
+ifdef CONFIG_LINUX
+	cp -pP skin/client/native_src/libclipboard.so $(EMUL_DIR)/bin
 endif
 
 # change loading path of dynamic shared libraries on MAC OS X
@@ -231,7 +236,7 @@ ifdef CONFIG_DARWIN
 	cp -pP sdbscript $(DIBS_COMMON_DIR)/bin
 endif
 
-# use shared memory to display LCD
+# use shared memory for display framebuffer
 ifdef CONFIG_USE_SHM
 ifdef CONFIG_LINUX
 	cp -pP skin/client/native_src/libshared.so $(DIBS_COMMON_DIR)/bin
@@ -239,6 +244,11 @@ endif
 ifdef CONFIG_DARWIN
 	cp -pP skin/client/native_src/libshared.dylib $(DIBS_COMMON_DIR)/bin
 endif
+endif
+
+# use GTK for CopyToClipboard on Ubuntu 12.04 64bit
+ifdef CONFIG_LINUX
+	cp -pP skin/client/native_src/libclipboard.so $(EMUL_DIR)/bin
 endif
 
 # change loading path of dynamic shared libraries on MAC OS X

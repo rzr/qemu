@@ -43,6 +43,7 @@ import java.util.logging.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.ImageTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.MouseEvent;
@@ -68,6 +69,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
@@ -84,6 +86,7 @@ import org.tizen.emulator.skin.util.StringUtil;
 import org.tizen.emulator.skin.util.SwtUtil;
 
 public class ScreenShotDialog {
+	public static final String JNI_LIBRARY_FILE = "clipboard";
 	private final static String DETAIL_SCREENSHOT_WINDOW_TITLE = "Screen Shot";
 
 	private final static String DEFAULT_FILE_EXTENSION = "png";
@@ -94,6 +97,30 @@ public class ScreenShotDialog {
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(ScreenShotDialog.class).getLogger();
+
+	static {
+		/* load JNI library file */
+		try {
+			if (SwtUtil.isLinuxPlatform() == true &&
+					SwtUtil.is64bitPlatform() == true) {
+				System.loadLibrary(JNI_LIBRARY_FILE);
+			}
+		} catch (UnsatisfiedLinkError e) {
+			logger.severe("Failed to load a " + JNI_LIBRARY_FILE + " file.\n" + e);
+
+			Shell temp = new Shell(Display.getDefault());
+			MessageBox messageBox = new MessageBox(temp, SWT.ICON_ERROR);
+			messageBox.setText("Emulator");
+			messageBox.setMessage(
+					"Failed to load a JNI library file from "
+					+ System.getProperty("java.library.path") + ".\n\n" + e);
+			messageBox.open();
+			temp.dispose();
+		}
+	}
+
+	/* define JNI function */
+	public native int copyToClipboard(int width, int height, byte buf[]);
 
 	protected EmulatorSkin skin;
 	protected EmulatorConfig config;
@@ -429,6 +456,8 @@ public class ScreenShotDialog {
 		saveItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				logger.info("Save menu is selected");
+
 				FileDialog fileDialog = new FileDialog(parent, SWT.SAVE);
 				fileDialog.setText("Save Image");
 
@@ -466,6 +495,8 @@ public class ScreenShotDialog {
 		copyItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				logger.info("CopyToClipboard menu is selected");
+
 				if (null == imageShot || imageShot.isDisposed()) {
 					SkinUtil.openMessage(parent, null,
 							"Fail to copy to clipboard.", SWT.ICON_ERROR, config);
@@ -501,11 +532,24 @@ public class ScreenShotDialog {
 
 				ImageData pngData = new ImageData(
 						new ByteArrayInputStream(bao.toByteArray()));
-				Object[] imageObject = new Object[] { pngData };
 
-				Transfer[] transfer = new Transfer[] { ImageTransfer.getInstance() };
-				Clipboard clipboard = new Clipboard(parent.getDisplay());
-				clipboard.setContents(imageObject, transfer);
+				if (SwtUtil.isLinuxPlatform() == true &&
+						SwtUtil.is64bitPlatform() == true) {
+					/* use JNI for Ubuntu 12.04 64bit */
+					int result = copyToClipboard(
+							pngData.width, pngData.height, pngData.data);
+					if (result < 0) {
+						DND.error(DND.ERROR_CANNOT_SET_CLIPBOARD);
+					}
+				} else {
+					Object[] imageObject = new Object[] { pngData };
+
+					Transfer[] transfer = new Transfer[] { ImageTransfer.getInstance() };
+					Clipboard clipboard = new Clipboard(parent.getDisplay());
+					clipboard.setContents(imageObject, transfer);
+
+					clipboard.dispose();
+				}
 			}
 		});
 
@@ -519,6 +563,8 @@ public class ScreenShotDialog {
 		refreshItem.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				logger.info("Refresh menu is selected");
+
 				refreshItem.setEnabled(false);
 
 				parent.getDisplay().asyncExec(new Runnable() {

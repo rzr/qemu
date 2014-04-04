@@ -1,6 +1,5 @@
 <?xml version="1.0" standalone="yes"?>
 <project name="emulator-skin" basedir="." default="make-jar">
-
 	<condition property="isWindows">
 		<os family="windows" />
 	</condition>
@@ -102,6 +101,35 @@
 			<arg line="-o" />
 			<arg line="libshared.so" />
 		</exec>
+
+		<exec dir="native_src" executable="./check-gtk.sh" outputproperty="gtkabi" failifexecutionfails="false" />
+		<echo message="gtkversion : ${gtkabi}" />
+
+		<javah classpath="build;lib/swt.jar" destdir="native_src">
+			<class name="org.tizen.emulator.skin.screenshot.ScreenShotDialog" />
+		</javah>
+		<exec executable="pkg-config" outputproperty="gtk" failifexecutionfails="false">
+			<arg line="--cflags" />
+			<arg line="--libs" />
+			<arg line="${gtkabi}" />
+		</exec>
+		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+			<arg line="-c" />
+			<arg line="-fPIC" />
+			<arg line="clipboard.c" />
+			<arg line="-o" />
+			<arg line="clipboard.o" />
+			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
+			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}/linux" />
+			<arg line="${gtk}" />
+		</exec>
+		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+			<arg line="clipboard.o" />
+			<arg line="-shared" />
+			<arg line="-o" />
+			<arg line="libclipboard.so" />
+		</exec>
+
 		<delete>
 			<fileset dir="native_src" includes="**/*.h" />
 		</delete>
