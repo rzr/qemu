@@ -7,7 +7,7 @@ clean()
 	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
-		./emulator_configure.sh x86 -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
+		./emulator_configure.sh x86
 		make distclean
 	fi
 	rm -rf $SRCDIR/*.zip
@@ -37,21 +37,15 @@ prepare()
 	PATH=$PATH:$PURIFIED_ROOTDIR/bin:$PURIFIED_ROOTDIR/apache-ant_1.9.2/bin:$PURIFIED_ROOTDIR/SDL_1.2.15/bin:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/bin:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/bin:$PURIFIED_ROOTDIR/pixman_0.30.0/bin
 	export PATH
 
-	if [ -z ${PKG_CONFIG_PATH} ] ; then       # avoid pkg-config bug on Window
-		export PKG_CONFIG_PATH=$ROOTDIR/libav/lib/pkgconfig:$ROOTDIR/SDL_1.2.15/lib/pkgconfig:$ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$ROOTDIR/pixman_0.30.0/lib/pkgconfig
+	if [ -z ${PKG_CONFIG_PATH} ]
+	then
+		PKG_CONFIG_PATH=$PURIFIED_ROOTDIR/libav/lib/pkgconfig:$PURIFIED_ROOTDIR/SDL_1.2.15/lib/pkgconfig:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$ROOTDIR/pixman_0.30.0/lib/pkgconfig
 	else
-		export PKG_CONFIG_PATH=$ROOTDIR/libav/lib/pkgconfig:$ROOTDIR/SDL_1.2.15/lib/pkgconfig:$ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$ROOTDIR/pixman_0.30.0/lib/pkgconfig:${PKG_CONFIG_PATH}
+		PKG_CONFIG_PATH=$PURIFIED_ROOTDIR/libav/lib/pkgconfig:$PURIFIED_ROOTDIR/SDL_1.2.15/lib/pkgconfig:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$PURIFIED_ROOTDIR/pixman_0.30.0/lib/pkgconfig:${PKG_CONFIG_PATH}
 	fi
+	export PKG_CONFIG_PATH
 
-	#BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/SDL_1.2.15/include/SDL "
-	#BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/gtk-bundle_2.24.10/include "
-	#BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/libcurl-4_1.0.1/include "
-	#BUILD_CFLAGS+=--extra-cflags="-I$ROOTDIR/pixman_0.30.0/include/pixman-1"
-	#BUILD_LDFLAGS+=--extra-ldflags="-L$ROOTDIR/apache-ant_1.9.2/lib "
-	#BUILD_LDFLAGS+=--extra-ldflags="-L$ROOTDIR/SDL_1.2.15/lib "
-	#BUILD_LDFLAGS+=--extra-ldflags="-L$ROOTDIR/gtk-bundle_2.24.10/lib "
-	#BUILD_LDFLAGS+=--extra-ldflags="-L$ROOTDIR/libcurl-4_1.0.1/lib "
-	#BUILD_LDFLAGS+=--extra-ldflags="-L$ROOTDIR/pixman_0.30.0/lib"
+	echo $PKG_CONFIG_PATH
 }
 
 # build
@@ -60,7 +54,7 @@ build()
 	prepare
 
 	cd $SRCDIR/tizen
-	./emulator_configure.sh x86 -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
+	./emulator_configure.sh x86
 	make all_dibs
 	if [ $? -eq 0 ]
 	then
@@ -69,20 +63,6 @@ build()
 		echo "x86 build failure"
 		exit 1
 	fi
-
-#    make install_dibs		
-#    make clean		
-# 	
-#    ./emulator_configure.sh arm -e "$BUILD_CFLAGS $BUILD_LDFLAGS"		
-#    make all_dibs		
-#    if [ $? -eq 0 ]		
-#    then		
-#		echo "arm build success"		
-#    else		
-#        echo "arm build failure"		
-#        exit 1		
-#    fi		
-#    make install_dibs
 }
 
 # install
@@ -91,11 +71,9 @@ install()
 	prepare
 
 	X86_BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
-#	ARM_BIN_DIR=$SRCDIR/package/emulator-qemu-arm.package.${TARGET_OS}/data/tools
 	COMMON_BIN_DIR=$SRCDIR/package/emulator-qemu-common.package.${TARGET_OS}/data/tools
 	MOBILE_3_0_SKIN_RESOURCE_DIR=$SRCDIR/package/mobile-3.0-emulator-qemu-skins.package.${TARGET_OS}/data/platforms/mobile-3.0/emulator-resources/skins/
 	mkdir -p $X86_BIN_DIR
-#	mkdir -p $ARM_BIN_DIR
 	mkdir -p $COMMON_BIN_DIR
 	mkdir -p $MOBILE_3_0_SKIN_RESOURCE_DIR
 
@@ -103,7 +81,6 @@ install()
 	make install_dibs
 
 	mv x86 $X86_BIN_DIR/emulator
-#	mv x86 $ARM_BIN_DIR/emulator
 	mv common $COMMON_BIN_DIR/emulator
 
 	#profile skins
