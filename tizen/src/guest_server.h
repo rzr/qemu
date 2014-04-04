@@ -37,9 +37,6 @@
 pthread_t start_guest_server( int server_port );
 void shutdown_guest_server( void );
 
-gchar *get_tizen_sdk_data_path(void);
-
-
 #define STATE_RUNNING 0
 #define STATE_SUSPEND 1
 void notify_all_sdb_clients(int state);

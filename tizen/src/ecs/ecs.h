@@ -74,6 +74,7 @@
 #define MSG_TYPE_SENSOR         "sensor"
 #define MSG_TYPE_NFC            "nfc"
 #define MSG_TYPE_SIMUL_NFC      "simul_nfc"
+#define MSG_TYPE_SDCARD         "sdcard"
 
 #define MSG_GROUP_STATUS        15
 
@@ -211,6 +212,8 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg);
 void msgproc_checkversion_req(ECS_Client* ccli, ECS__CheckVersionReq* msg);
 void msgproc_keepalive_ans(ECS_Client* ccli, ECS__KeepAliveAns* msg);
 bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg);
+
+char *get_tizen_sdk_data_path(void);
 
 /* version check  */
 //void send_ecs_version_check(ECS_Client* ccli);
