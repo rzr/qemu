@@ -25,29 +25,10 @@ prepare()
         exit 1
     fi
 
-    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$ROOTDIR/glib2/lib/pkgconfig:$ROOTDIR/curl/lib/pkgconfig:$ROOTDIR/libffi/lib/pkgconfig:$ROOTDIR/libiconv/lib/pkgconfig:$ROOTDIR/libidn/lib/pkgconfig:$ROOTDIR/libxml2/lib/pkgconfig:$ROOTDIR/ncurses/lib/pkgconfig:$ROOTDIR/openssl/lib/pkgconfig:$ROOTDIR/pixman/lib/pkgconfig:$ROOTDIR/zlib/lib/pkgconfig:$ROOTDIR/libav/lib/pkgconfig
+    export PKG_CONFIG_PATH=$ROOTDIR/glib2/lib/pkgconfig:$ROOTDIR/curl/lib/pkgconfig:$ROOTDIR/libffi/lib/pkgconfig:$ROOTDIR/libidn/lib/pkgconfig:$ROOTDIR/libxml2/lib/pkgconfig:$ROOTDIR/ncurses/lib/pkgconfig:$ROOTDIR/openssl/lib/pkgconfig:$ROOTDIR/pixman/lib/pkgconfig:$ROOTDIR/zlib/lib/pkgconfig:$ROOTDIR/libav/lib/pkgconfig:$PKG_CONFIG_PATH
 
-    BUILD_CFLAGS="--extra-cflags=-I$ROOTDIR/curl/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/libffi/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/glib2/include/glib-2.0 "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/libiconv/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/libidn/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/libxml2/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/ncurses/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/openssl/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/pixman/include "
-    BUILD_CFLAGS+="--extra-cflags=-I$ROOTDIR/zlib/include "
-
-    BUILD_LDFLAGS="--extra-ldflags=-L$ROOTDIR/curl/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/libffi/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/glib2/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/libiconv/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/libidn/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/libxml2/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/ncurses/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/openssl/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/pixman/lib "
-    BUILD_LDFLAGS+="--extra-ldflags=-L$ROOTDIR/zlib/lib "
+    BUILD_CFLAGS="--extra-cflags=-I$ROOTDIR/libiconv/include "
+    BUILD_LDFLAGS="--extra-ldflags=-L$ROOTDIR/libiconv/lib "
 }
 
 modify_files(){
@@ -87,14 +68,13 @@ modify_files(){
 #    sed 's/export PKG_CONFIG_PATH/ export PKG_CONFIG_PATH/g' $SRCDIR/Makefile.target > tmp
 #    cp -f tmp $SRCDIR/Makefile.target
 #    rm -f tmp
-
 }
 # build
 build()
 {
     prepare
 
-    modify_files
+    #modify_files
 
     cd $SRCDIR/tizen/
 
