@@ -265,6 +265,7 @@ gl="yes"
 maru="no"
 shm="no"
 libav="no"
+png="no"
 #
 glusterfs=""
 glusterfs_discard="no"
@@ -1017,6 +1018,8 @@ for opt do
   ;;
   --enable-libav) libav="yes"
   ;;
+  --enable-png) png="yes"
+  ;;
 #
   --disable-glusterfs) glusterfs="no"
   ;;
@@ -1302,6 +1305,7 @@ echo "TIZEN-maru options:"
 echo "  --enable-maru            enable maru board"
 echo "  --enable-shm             enable shared memory for framebuffer"
 echo "  --enable-libav           enable libav library"
+echo "  --enable-png             enable png library"
 
 echo "NOTE: The object files are built at the place where configure is launched"
 exit 1
@@ -3623,65 +3627,79 @@ fi
 if test "$libav" != "no"; then
     libavcodec_package="libavcodec"
     libavcodec_version="54.35.0"
-	libavutil_package="libavutil"
-	libavutil_version="52.3.0"
-	libavformat_package="libavformat"
-	libavformat_version="54.20.3"
-	libavresample_package="libavresample"
-	libavresample_version="1.0.1"
+    libavutil_package="libavutil"
+    libavutil_version="52.3.0"
+    libavformat_package="libavformat"
+    libavformat_version="54.20.3"
+    libavresample_package="libavresample"
+    libavresample_version="1.0.1"
 
     if $pkg_config --exists "$libavcodec_package >= $libavcodec_version" ; then
-		libav_cflags=`$pkg_config --cflags $libavcodec_package`
-		libav_libs=`$pkg_config --libs $libavcodec_package`
-		libs_softmmu="$libav_libs $libs_softmmu"
-	    QEMU_CFLAGS="$QEMU_CFLAGS $libav_cflags"
-		libav="yes"
+        libav_cflags=`$pkg_config --cflags $libavcodec_package`
+        libav_libs=`$pkg_config --libs $libavcodec_package`
+        libs_softmmu="$libav_libs $libs_softmmu"
+        QEMU_CFLAGS="$QEMU_CFLAGS $libav_cflags"
+        libav="yes"
     else
-		if test "$libav" = "yes" ; then
-			feature_not_found "libav"
-		fi
-		libav="no"
+        if test "$libav" = "yes" ; then
+            feature_not_found "libav"
+        fi
+        libav="no"
     fi
 
     if $pkg_config --exists "$libavutil_package >= $libavutil_version" ; then
-		libav_cflags=`$pkg_config --cflags $libavutil_package`
-		libav_libs=`$pkg_config --libs $libavutil_package`
-		libs_softmmu="$libav_libs $libs_softmmu"
-	    QEMU_CFLAGS="$QEMU_CFLAGS $libav_cflags"
-		libav="yes"
+        libav_libs=`$pkg_config --libs-only-l $libavutil_package`
+        libs_softmmu="$libav_libs $libs_softmmu"
+        libav="yes"
     else
-		if test "$libav" = "yes" ; then
-			feature_not_found "libav"
-		fi
-		libav="no"
+        if test "$libav" = "yes" ; then
+            feature_not_found "libav"
+        fi
+        libav="no"
     fi
 
     if $pkg_config --exists "$libavformat_package >= $libavformat_version" ; then
-		libav_cflags=`$pkg_config --cflags $libavformat_package`
-		libav_libs=`$pkg_config --libs $libavformat_package`
-		libs_softmmu="$libav_libs $libs_softmmu"
-	    qemu_cflags="$qemu_cflags $libav_cflags"
-		libav="yes"
+        libav_libs=`$pkg_config --libs-only-l $libavformat_package`
+        libs_softmmu="$libav_libs $libs_softmmu"
+        libav="yes"
     else
-		if test "$libav" = "yes" ; then
-			feature_not_found "libav"
-		fi
-		libav="no"
+        if test "$libav" = "yes" ; then
+            feature_not_found "libav"
+        fi
+        libav="no"
     fi
 
-	if $pkg_config --exists "$libavresample_package >= $libavresample_version" ; then
-		libav_cflags=`$pkg_config --cflags $libavresample_package`
-		libav_libs=`$pkg_config --libs $libavresample_package`
-		libs_softmmu="$libav_libs $libs_softmmu"
-	    qemu_cflags="$qemu_cflags $libav_cflags"
-		libav="yes"
+    if $pkg_config --exists "$libavresample_package >= $libavresample_version" ; then
+        libav_libs=`$pkg_config --libs-only-l $libavresample_package`
+        libs_softmmu="$libav_libs $libs_softmmu"
+        libav="yes"
     else
-		if test "$libav" = "yes" ; then
-			feature_not_found "libav"
-		fi
-		libav="no"
+        if test "$libav" = "yes" ; then
+            feature_not_found "libav"
+        fi
+        libav="no"
     fi
 
+fi
+
+##########################################
+# png probe
+
+if test "$png" != "no"; then
+    png_package="libpng"
+
+    if $pkg_config --exists "$png_package" ; then
+        png_cflags=`$pkg_config --cflags $png_package`
+        png_libs=`$pkg_config --libs $png_package`
+        libs_softmmu="$png_libs $libs_softmmu"
+        QEMU_CFLAGS="$QEMU_CFLAGS $png_cflags"
+        png="yes"
+    else
+        if test "$png" = "yes" ; then
+            feature_not_found "png"
+        fi
+        png="no"
+    fi
 fi
 
 ##########################################
@@ -3945,6 +3963,7 @@ echo "vhdx              $vhdx"
 echo "TIZEN-maru support $maru"
 echo "TIZEN-maru shared framebuffer support $shm"
 echo "TIZEN-maru libav support $libav"
+echo "TIZEN-maru png support $png"
 #
 
 if test "$sdl_too_old" = "yes"; then
@@ -4390,6 +4409,9 @@ if test "$gl" = "yes" ; then
 fi
 if test "$libav" = "yes" ; then
   echo "CONFIG_LIBAV=y" >> $config_host_mak
+fi
+if test "$png" = "yes" ; then
+  echo "CONFIG_PNG=y" >> $config_host_mak
 fi
 
 # TPM passthrough support?

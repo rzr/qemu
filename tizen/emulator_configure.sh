@@ -237,6 +237,7 @@ exec ./configure \
  --disable-pie \
  --enable-virtfs \
  --disable-xen \
+ --enable-png \
  $CONFIGURE_APPEND \
 ;;
 MINGW*)
@@ -250,6 +251,7 @@ exec ./configure \
  --audio-drv-list=winwave \
  --enable-hax \
  --disable-vnc \
+ --enable-png \
  $CONFIGURE_APPEND \
 ;;
 Darwin*)

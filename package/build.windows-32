@@ -7,7 +7,7 @@ clean()
 	cd $SRCDIR/tizen
 	if test -e "Makefile"
 	then
-		./emulator_configure.sh x86
+		./emulator_configure.sh x86 -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
 		make distclean
 	fi
 	rm -rf $SRCDIR/*.zip
@@ -34,18 +34,20 @@ prepare()
 	fi
 	
 	PURIFIED_ROOTDIR=`TEMP=\`echo "${ROOTDIR}" | cut -c-2 | sed "s/[:/]//g" | awk {'print tolower ($_)'}\`; echo \`echo "${ROOTDIR}" | sed "s/^../\/${TEMP}/"\``
-	PATH=$PATH:$PURIFIED_ROOTDIR/bin:$PURIFIED_ROOTDIR/apache-ant_1.9.2/bin:$PURIFIED_ROOTDIR/SDL_1.2.15/bin:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/bin:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/bin:$PURIFIED_ROOTDIR/pixman_0.30.0/bin
+	PATH=$PATH:$PURIFIED_ROOTDIR/bin:$PURIFIED_ROOTDIR/apache-ant_1.9.2/bin:$PURIFIED_ROOTDIR/SDL_1.2.15/bin:$PURIFIED_ROOTDIR/pixman_0.30.0/bin:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/bin:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/bin
 	export PATH
 
 	if [ -z ${PKG_CONFIG_PATH} ]
 	then
-		PKG_CONFIG_PATH=$PURIFIED_ROOTDIR/libav/lib/pkgconfig:$PURIFIED_ROOTDIR/SDL_1.2.15/lib/pkgconfig:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$ROOTDIR/pixman_0.30.0/lib/pkgconfig
+		PKG_CONFIG_PATH=$PURIFIED_ROOTDIR/libav/lib/pkgconfig:$PURIFIED_ROOTDIR/SDL_1.2.15/lib/pkgconfig:$PURIFIED_ROOTDIR/pixman_0.30.0/lib/pkgconfig:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig
 	else
-		PKG_CONFIG_PATH=$PURIFIED_ROOTDIR/libav/lib/pkgconfig:$PURIFIED_ROOTDIR/SDL_1.2.15/lib/pkgconfig:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:$PURIFIED_ROOTDIR/pixman_0.30.0/lib/pkgconfig:${PKG_CONFIG_PATH}
+		PKG_CONFIG_PATH=$PURIFIED_ROOTDIR/libav/lib/pkgconfig:$PURIFIED_ROOTDIR/SDL_1.2.15/lib/pkgconfig:$PURIFIED_ROOTDIR/pixman_0.30.0/lib/pkgconfig:$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/lib/pkgconfig:$PURIFIED_ROOTDIR/libcurl-4_1.0.1/lib/pkgconfig:${PKG_CONFIG_PATH}
 	fi
 	export PKG_CONFIG_PATH
 
 	echo $PKG_CONFIG_PATH
+	BUILD_CFLAGS+=--extra-cflags="-I$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/include "
+	BUILD_LDFLAGS+=--extra-ldflags="-L$PURIFIED_ROOTDIR/gtk-bundle_2.24.10/lib "
 }
 
 # build
@@ -54,7 +56,7 @@ build()
 	prepare
 
 	cd $SRCDIR/tizen
-	./emulator_configure.sh x86
+	./emulator_configure.sh x86 -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
 	make all_dibs
 	if [ $? -eq 0 ]
 	then

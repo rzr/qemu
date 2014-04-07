@@ -17,14 +17,11 @@ else
 CFLAGS += -g -O0
 endif
 
-# codec
-#LIBS+= -lavformat-emul -lavcodec-emul -lavresample-emul -lavutil-emul
-
 ifdef CONFIG_WIN32
-LIBS += -lcurl -lopengl32 -lglu32 -lgdi32 -lpng14
+LIBS += -lopengl32 -lglu32 -lgdi32 -lpng14
 endif
 ifdef CONFIG_LINUX
-LIBS += -lcurl -lGL -lXcomposite -lXext -lpng
+LIBS += -lGL -lXcomposite -lXext -lpng
 endif
 
 ifdef CONFIG_DEBUG_EXEC
@@ -70,6 +67,8 @@ obj-y += emulator.o emul_state.o maru_err_table.o
 
 # osutil
 obj-y += osutil.o
+QEMU_CFLAGS += $(CURL_CFLAGS)
+
 ifdef CONFIG_LINUX
 obj-y += osutil-linux.o
 endif
