@@ -215,7 +215,7 @@ static int parse_val(char* buff, unsigned char data, char* parsbuf)
 
     return 0;
 }
-
+#if 0
 /*
  *  In case that SDK does not refer to sdk.info to get tizen-sdk-data path.
  *  When SDK is not installed by the latest SDK installer,
@@ -275,6 +275,8 @@ static gchar *get_old_tizen_sdk_data_path(void)
     INFO("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
     return tizen_sdk_data_path;
 }
+
+
 
 /*
  *  get tizen-sdk-data path from sdk.info.
@@ -425,6 +427,7 @@ static void handle_sdcard(char* readbuf)
         INFO("!!! unknown command : %s\n", ret);
     }
 }
+#endif
 
 #define SDB_SERVER_PORT 26097
 static void register_sdb_server(char* readbuf, struct sockaddr_in* client_addr)
@@ -481,9 +484,13 @@ static void command_handler(char* readbuf, struct sockaddr_in* client_addr)
     } else if (strcmp(command, "3\n" ) == 0) {
         notify_sensor_daemon_start();
         notify_ecs_server_start();
-    } else if (strcmp(command, "4\n") == 0) {
+    }
+#if 0
+    else if (strcmp(command, "4\n") == 0) {
         handle_sdcard(readbuf);
-    } else if (strcmp(command, "5\n") == 0) {
+    }
+#endif
+    else if (strcmp(command, "5\n") == 0) {
         register_sdb_server(readbuf, client_addr);
     } else if (strcmp(command, "6\n") == 0) {
         wakeup_guest();

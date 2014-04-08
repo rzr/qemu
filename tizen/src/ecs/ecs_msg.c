@@ -29,6 +29,7 @@
 
 #include <stdbool.h>
 #include <pthread.h>
+#include <glib.h>
 
 #include "hw/qdev.h"
 #include "net/net.h"
@@ -67,9 +68,15 @@
 #include "hw/maru_virtio_nfc.h"
 #include "skin/maruskin_operation.h"
 #include "skin/maruskin_server.h"
+#include "emulator.h"
 
 #define MAX_BUF_SIZE  255
 // utility functions
+
+/*static function define*/
+static void handle_sdcard(char* dataBuf, size_t dataLen);
+static char* get_emulator_sdcard_path(void);
+static char *get_old_tizen_sdk_data_path(void);
 
 static void* build_master(ECS__Master* master, int* payloadsize)
 {
@@ -238,7 +245,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     int sndlen = 0;
     char* sndbuf;
     memset(cmd, 0, 10);
-    strcpy(cmd, msg->category);
+    strncpy(cmd, msg->category, sizeof(cmd) -1);
     type_length length = (type_length) msg->length;
     type_group group = (type_group) (msg->group & 0xff);
     type_action action = (type_action) (msg->action & 0xff);
@@ -254,12 +261,22 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
             action, group);
 
-    if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
+    /*SD CARD msg process*/
+    if (!strncmp(cmd, MSG_TYPE_SDCARD, strlen(MSG_TYPE_SDCARD))) {
+        if (msg->has_data) {
+            LOG("msg(%ld) : %s", msg->data.len, msg->data.data);
+            handle_sdcard((char*) msg->data.data, msg->data.len);
+
+        } else {
+            LOG("has no msg");
+        }
+
+    } else if (!strncmp(cmd, MSG_TYPE_SENSOR, sizeof(MSG_TYPE_SENSOR))) {
         if (group == MSG_GROUP_STATUS) {
             memset(data, 0, 10);
             if (action == MSG_ACT_BATTERY_LEVEL) {
                 sprintf(data, "%d", get_power_capacity());
-            } else if (action == MSG_ACT_BATTERY_CHARGER){
+            } else if (action == MSG_ACT_BATTERY_CHARGER) {
                 sprintf(data, "%d", get_jack_charger());
             } else {
                 goto injector_send;
@@ -269,8 +286,8 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
             ret = true;
             goto injector_req_success;
         } else {
-            if (msg->data.data && datalen > 0){
-                set_injector_data((char*)msg->data.data);
+            if (msg->data.data && datalen > 0) {
+                set_injector_data((char*) msg->data.data);
             }
         }
     }
@@ -646,6 +663,11 @@ bool ntf_to_injector(const char* data, const int len) {
 
 static bool injector_req_handle(const char* cat)
 {
+    /*SD CARD msg process*/
+    if (!strncmp(cat, MSG_TYPE_SDCARD, strlen(MSG_TYPE_SDCARD))) {
+       return false;
+
+    }else
     if (!strncmp(cat, "suspend", 7)) {
         ecs_suspend_lock_state(ecs_get_suspend_state());
         return true;
@@ -821,4 +843,229 @@ bool send_nfc_ntf(struct nfc_msg_info* msg)
     return true;
 }
 
+static void handle_sdcard(char* dataBuf, size_t dataLen)
+{
+
+    char ret = 0;
+
+    if (dataBuf != NULL){
+        ret = dataBuf[0];
+
+        if (ret == '0' ) {
+            /* umount sdcard */
+            //mloop_evcmd_usbdisk(NULL);
+            mloop_evcmd_sdcard(NULL);
+        } else if (ret == '1') {
+            /* mount sdcard */
+            char sdcard_img_path[256];
+            char* sdcard_path = NULL;
+
+            sdcard_path = get_emulator_sdcard_path();
+            if (sdcard_path) {
+                g_strlcpy(sdcard_img_path, sdcard_path,
+                        sizeof(sdcard_img_path));
+
+                /* emulator_sdcard_img_path + sdcard img name */
+                char* sdcard_img_name = dataBuf+2;
+                if(dataLen > 3 && sdcard_img_name != NULL){
+                    char* pLinechange = strchr(sdcard_img_name, '\n');
+                    if(pLinechange != NULL){
+                        sdcard_img_name = strndup(sdcard_img_name, pLinechange - sdcard_img_name);
+                    }
+
+                    g_strlcat(sdcard_img_path, sdcard_img_name, sizeof(sdcard_img_path));
+                    LOG("sdcard path: [%s]\n", sdcard_img_path);
+
+                    //mloop_evcmd_usbdisk(sdcard_img_path);
+                    mloop_evcmd_sdcard(sdcard_img_path);
+
+                    /*if using strndup than free string*/
+                    if(pLinechange != NULL && sdcard_img_name!= NULL){
+                        free(sdcard_img_name);
+                    }
+
+                }
+
+                g_free(sdcard_path);
+            } else {
+                LOG("failed to get sdcard path!!\n");
+            }
+        } else if(ret == '2'){
+            LOG("sdcard status 2 bypass" );
+        }else {
+            LOG("!!! unknown command : %c\n", ret);
+        }
+
+    }else{
+        LOG("!!! unknown data : %c\n", ret);
+    }
+}
+
+static char* get_emulator_sdcard_path(void)
+{
+    char *emulator_sdcard_path = NULL;
+    char *tizen_sdk_data = NULL;
+
+#ifndef CONFIG_WIN32
+    char emulator_sdcard[] = "/emulator/sdcard/";
+#else
+    char emulator_sdcard[] = "\\emulator\\sdcard\\";
+#endif
+
+    LOG("emulator_sdcard: %s, %lu\n", emulator_sdcard, sizeof(emulator_sdcard));
+
+    tizen_sdk_data = get_tizen_sdk_data_path();
+    if (!tizen_sdk_data) {
+        LOG("failed to get tizen-sdk-data path.\n");
+        return NULL;
+    }
+
+    emulator_sdcard_path =
+        g_malloc(strlen(tizen_sdk_data) + sizeof(emulator_sdcard) + 1);
+    if (!emulator_sdcard_path) {
+        LOG("failed to allocate memory.\n");
+        return NULL;
+    }
+
+    g_snprintf(emulator_sdcard_path, strlen(tizen_sdk_data) + sizeof(emulator_sdcard),
+             "%s%s", tizen_sdk_data, emulator_sdcard);
+
+    g_free(tizen_sdk_data);
+
+    LOG("sdcard path: %s\n", emulator_sdcard_path);
+    return emulator_sdcard_path;
+}
+
+/*
+ *  get tizen-sdk-data path from sdk.info.
+ */
+char *get_tizen_sdk_data_path(void)
+{
+    char *emul_bin_path = NULL;
+    char *sdk_info_file_path = NULL;
+    char *tizen_sdk_data_path = NULL;
+#ifndef CONFIG_WIN32
+    const char *sdk_info = "../../../sdk.info";
+#else
+    const char *sdk_info = "..\\..\\..\\sdk.info";
+#endif
+    const char sdk_data_var[] = "TIZEN_SDK_DATA_PATH";
+
+    FILE *sdk_info_fp = NULL;
+    int sdk_info_path_len = 0;
+
+    LOG("%s\n", __func__);
+
+    emul_bin_path = get_bin_path();
+    if (!emul_bin_path) {
+        LOG("failed to get emulator path.\n");
+        return NULL;
+    }
+
+    sdk_info_path_len = strlen(emul_bin_path) + strlen(sdk_info) + 1;
+    sdk_info_file_path = g_malloc(sdk_info_path_len);
+    if (!sdk_info_file_path) {
+        LOG("failed to allocate sdk-data buffer.\n");
+        return NULL;
+    }
+
+    g_snprintf(sdk_info_file_path, sdk_info_path_len, "%s%s",
+                emul_bin_path, sdk_info);
+    LOG("sdk.info path: %s\n", sdk_info_file_path);
+
+    sdk_info_fp = fopen(sdk_info_file_path, "r");
+    g_free(sdk_info_file_path);
+
+    if (sdk_info_fp) {
+        LOG("Succeeded to open [sdk.info].\n");
+
+        char tmp[256] = { '\0', };
+        char *tmpline = NULL;
+        while (fgets(tmp, sizeof(tmp), sdk_info_fp) != NULL) {
+            if ((tmpline = g_strstr_len(tmp, sizeof(tmp), sdk_data_var))) {
+                tmpline += strlen(sdk_data_var) + 1; // 1 for '='
+                break;
+            }
+        }
+
+        if (tmpline) {
+            if (tmpline[strlen(tmpline) - 1] == '\n') {
+                tmpline[strlen(tmpline) - 1] = '\0';
+            }
+            if (tmpline[strlen(tmpline) - 1] == '\r') {
+                tmpline[strlen(tmpline) - 1] = '\0';
+            }
+
+            tizen_sdk_data_path = g_malloc(strlen(tmpline) + 1);
+            g_strlcpy(tizen_sdk_data_path, tmpline, strlen(tmpline) + 1);
+
+            LOG("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
+
+            fclose(sdk_info_fp);
+            return tizen_sdk_data_path;
+        }
+
+        fclose(sdk_info_fp);
+    }
+
+    // legacy mode
+    LOG("Failed to open [sdk.info].\n");
+
+    return get_old_tizen_sdk_data_path();
+}
+
+static char *get_old_tizen_sdk_data_path(void)
+{
+    char *tizen_sdk_data_path = NULL;
+
+    LOG("try to search tizen-sdk-data path in another way.\n");
+
+#ifndef CONFIG_WIN32
+    char tizen_sdk_data[] = "/tizen-sdk-data";
+    int tizen_sdk_data_len = 0;
+    char *home_dir;
+
+    home_dir = (char *)g_getenv("HOME");
+    if (!home_dir) {
+        home_dir = (char *)g_get_home_dir();
+    }
+
+    tizen_sdk_data_len = strlen(home_dir) + sizeof(tizen_sdk_data) + 1;
+    tizen_sdk_data_path = g_malloc(tizen_sdk_data_len);
+    if (!tizen_sdk_data_path) {
+        LOG("failed to allocate memory.\n");
+        return NULL;
+    }
+    g_strlcpy(tizen_sdk_data_path, home_dir, tizen_sdk_data_len);
+    g_strlcat(tizen_sdk_data_path, tizen_sdk_data, tizen_sdk_data_len);
+
+#else
+    char tizen_sdk_data[] = "\\tizen-sdk-data\\";
+    gint tizen_sdk_data_len = 0;
+    HKEY hKey;
+    char strLocalAppDataPath[1024] = { 0 };
+    DWORD dwBufLen = 1024;
+
+    RegOpenKeyEx(HKEY_CURRENT_USER,
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+        0, KEY_QUERY_VALUE, &hKey);
+
+    RegQueryValueEx(hKey, "Local AppData", NULL,
+                    NULL, (LPBYTE)strLocalAppDataPath, &dwBufLen);
+    RegCloseKey(hKey);
+
+    tizen_sdk_data_len = strlen(strLocalAppDataPath) + sizeof(tizen_sdk_data) + 1;
+    tizen_sdk_data_path = g_malloc(tizen_sdk_data_len);
+    if (!tizen_sdk_data_path) {
+        LOG("failed to allocate memory.\n");
+        return NULL;
+    }
+
+    g_strlcpy(tizen_sdk_data_path, strLocalAppDataPath, tizen_sdk_data_len);
+    g_strlcat(tizen_sdk_data_path, tizen_sdk_data, tizen_sdk_data_len);
+#endif
+
+    LOG("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
+    return tizen_sdk_data_path;
+}
 
