@@ -264,7 +264,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     /*SD CARD msg process*/
     if (!strncmp(cmd, MSG_TYPE_SDCARD, strlen(MSG_TYPE_SDCARD))) {
         if (msg->has_data) {
-            LOG("msg(%ld) : %s", msg->data.len, msg->data.data);
+            LOG("msg(%zu) : %s", msg->data.len, msg->data.data);
             handle_sdcard((char*) msg->data.data, msg->data.len);
 
         } else {
@@ -912,7 +912,7 @@ static char* get_emulator_sdcard_path(void)
     char emulator_sdcard[] = "\\emulator\\sdcard\\";
 #endif
 
-    LOG("emulator_sdcard: %s, %lu\n", emulator_sdcard, sizeof(emulator_sdcard));
+    LOG("emulator_sdcard: %s, %zu\n", emulator_sdcard, sizeof(emulator_sdcard));
 
     tizen_sdk_data = get_tizen_sdk_data_path();
     if (!tizen_sdk_data) {
