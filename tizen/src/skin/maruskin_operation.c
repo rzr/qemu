@@ -323,7 +323,7 @@ void do_rotation_event(int rotation_type)
 {
     INFO("do_rotation_event rotation_type : %d\n", rotation_type);
 
-#if 0
+#if 1
     int x = 0, y = 0, z = 0;
 
     switch (rotation_type) {
