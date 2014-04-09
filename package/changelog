@@ -1,3 +1,6 @@
+* 1.7.32
+- ecs : sdcard attach/detach support
+== hakhyun Kim <haken.kim@samsung.com> 2014-04-09
 * 1.7.31
 - modify build script on windows and mac.
 == Kitae Kim <kt920.kim@samsung.com> 2014-04-04
