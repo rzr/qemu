@@ -706,7 +706,13 @@ static void* run_skin_server(void* args)
             break;
         }
 
+        if (client_sock != 0) {
+            SOCKET_CLOSE(client_sock);
+        }
+
         ready_server = 1;
+
+        INFO("start accepting socket...\n");
 
         if (!is_started_heartbeat) {
             if (!start_heart_beat()) {
@@ -716,12 +722,6 @@ static void* run_skin_server(void* args)
                 break;
             }
         }
-
-        if (client_sock != 0) {
-            SOCKET_CLOSE(client_sock);
-        }
-
-        INFO("start accepting socket...\n");
 
         if (0 > (client_sock = accept(
             server_sock, (struct sockaddr *) &client_addr, &client_len)))
@@ -1352,7 +1352,7 @@ static void* do_heart_beat(void* args)
     int shutdown = 0;
 
     unsigned int booting_handicap_cnt = 0;
-    unsigned int hb_interval = HEART_BEAT_INTERVAL * 1000;
+    const unsigned int hb_interval = HEART_BEAT_INTERVAL * 1000;
 
     while (1) {
         if (booting_handicap_cnt < 5) {
@@ -1379,7 +1379,9 @@ static void* do_heart_beat(void* args)
         } else {
             /* fail to get socket in accepting or client is not yet accepted */
             send_fail_count++;
-            TRACE("[HB] client socket is NULL yet.\n");
+            INFO("[HB] client socket is not ready yet.\n");
+
+            SLEEP(hb_interval); /* 1sec */
         }
 
         if ((HEART_BEAT_FAIL_COUNT + 1) < send_fail_count) {
