@@ -383,8 +383,9 @@ static void prepare_basic_features(void)
 
     gchar * const tmp_str = g_strdup_printf(" sdb_port=%d,"
         " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
-        " dns1=%s", get_emul_vm_base_port(),
-        http_proxy, https_proxy, ftp_proxy, socks_proxy, dns);
+        " dns1=%s vm_resolution=%dx%d", get_emul_vm_base_port(),
+        http_proxy, https_proxy, ftp_proxy, socks_proxy, dns,
+        get_emul_resolution_width(), get_emul_resolution_height());
 
     g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
 
@@ -459,7 +460,7 @@ static void prepare_host_webcam(void)
     g_free(tmp_str);
 }
 
-const gchar * prepare_maru_devices(const gchar *kernel_cmdline)
+const gchar *prepare_maru_devices(const gchar *kernel_cmdline)
 {
     INFO("Prepare maru specified kernel command line\n");
 
