@@ -1,3 +1,6 @@
+* 1.7.33
+- add kernel parameter
+== GiWoong Kim <giwoong.kim@samsung.com> 2014-04-10
 * 1.7.32
 - ecs : sdcard attach/detach support
 == hakhyun Kim <haken.kim@samsung.com> 2014-04-09
