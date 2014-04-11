@@ -315,6 +315,97 @@ int qemu_poll_ns(GPollFD *fds, guint nfds, int64_t timeout)
         ts.tv_nsec = timeout % 1000000000LL;
         return ppoll((struct pollfd *)fds, nfds, &ts, NULL);
     }
+#elif defined(_WIN32)
+    guint i;
+    HANDLE handles[MAXIMUM_WAIT_OBJECTS];
+    gint nhandles = 0;
+    int num_completed = 0;
+    gint timeout_ms = qemu_timeout_ns_to_ms(timeout);
+
+    for (i = 0; i < nfds; i++) {
+        gint j;
+
+        if (fds[i].fd <= 0) {
+            continue;
+        }
+
+        /* don't add same handle several times
+         */
+        for (j = 0; j < nhandles; j++) {
+            if (handles[j] == (HANDLE)fds[i].fd) {
+                break;
+            }
+        }
+
+        if (j == nhandles) {
+            if (nhandles == MAXIMUM_WAIT_OBJECTS) {
+                fprintf(stderr, "Too many handles to wait for!\n");
+                break;
+            } else {
+                handles[nhandles++] = (HANDLE)fds[i].fd;
+            }
+        }
+    }
+
+    for (i = 0; i < nfds; ++i) {
+        fds[i].revents = 0;
+    }
+
+    if (timeout_ms == -1) {
+        timeout_ms = INFINITE;
+    }
+
+    if (nhandles == 0) {
+        if (timeout_ms == INFINITE) {
+            return -1;
+        } else {
+            SleepEx(timeout_ms, TRUE);
+            return 0;
+        }
+    }
+
+    while (1) {
+        DWORD res;
+        gint j;
+
+        res = WaitForMultipleObjectsEx(nhandles, handles, FALSE,
+            timeout_ms, TRUE);
+
+        if (res == WAIT_FAILED) {
+            for (i = 0; i < nfds; ++i) {
+                fds[i].revents = 0;
+            }
+
+            return -1;
+        } else if ((res == WAIT_TIMEOUT) || (res == WAIT_IO_COMPLETION) ||
+                   ((int)res < WAIT_OBJECT_0) ||
+                   (res >= (WAIT_OBJECT_0 + nhandles))) {
+            break;
+        }
+
+        for (i = 0; i < nfds; ++i) {
+            if (handles[res - WAIT_OBJECT_0] == (HANDLE)fds[i].fd) {
+                fds[i].revents = fds[i].events;
+            }
+        }
+
+        ++num_completed;
+
+        if (nhandles <= 1) {
+            break;
+        }
+
+        /* poll the rest of the handles
+         */
+        for (j = res - WAIT_OBJECT_0 + 1; j < nhandles; j++) {
+            handles[j - 1] = handles[j];
+        }
+        --nhandles;
+
+        timeout_ms = 0;
+    }
+
+    return num_completed;
 #else
     return g_poll(fds, nfds, qemu_timeout_ns_to_ms(timeout));
 #endif
