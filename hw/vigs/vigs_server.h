@@ -109,6 +109,7 @@ struct vigs_server
         uint32_t height;
         uint32_t stride;
         vigsp_surface_format format;
+        bool dirty;
     } captured;
 
     /*
@@ -130,6 +131,6 @@ void vigs_server_reset(struct vigs_server *server);
 void vigs_server_dispatch(struct vigs_server *server,
                           uint32_t ram_offset);
 
-void vigs_server_update_display(struct vigs_server *server);
+bool vigs_server_update_display(struct vigs_server *server, int invalidate_cnt);
 
 #endif

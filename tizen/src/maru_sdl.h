@@ -43,6 +43,8 @@ void maruskin_sdl_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide);
 void maruskin_sdl_resize(void);
+void maruskin_sdl_update(void);
+void maruskin_sdl_invalidate(bool on);
 void maruskin_sdl_interpolation(bool on);
 void maruskin_sdl_quit(void);
 

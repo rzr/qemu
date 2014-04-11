@@ -168,6 +168,7 @@ public interface ICommunicator extends Runnable {
 		/* This values must match the QEMU definitions */
 
 		SEND_SKIN_OPENED((short) 1),
+		SEND_SKIN_GRABBED((short) 2),
 
 		SEND_MOUSE_EVENT((short) 10),
 		SEND_KEYBOARD_KEY_EVENT((short) 11),

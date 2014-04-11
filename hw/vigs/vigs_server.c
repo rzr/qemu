@@ -455,13 +455,18 @@ static uint8_t *vigs_server_update_display_start_cb(void *user_data,
 }
 
 static void vigs_server_update_display_end_cb(void *user_data,
-                                              bool was_started)
+                                              bool was_started,
+                                              bool dirty)
 {
     struct vigs_server *server = user_data;
     uint32_t capture_fence_seq;
 
     if (!was_started) {
         qemu_mutex_lock(&server->capture_mutex);
+    }
+
+    if (dirty) {
+        server->captured.dirty = true;
     }
 
     server->is_capturing = false;
@@ -490,7 +495,7 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
          * If no root surface then this is a no-op.
          * TODO: Can planes be enabled without a root surface ?
          */
-        vigs_server_update_display_end_cb(server, false);
+        vigs_server_update_display_end_cb(server, false, false);
         goto out;
     }
 
@@ -530,7 +535,7 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
                root_sfc->ptr,
                root_sfc->stride * root_sfc->ws_sfc->height);
 
-        vigs_server_update_display_end_cb(server, true);
+        vigs_server_update_display_end_cb(server, true, true);
     } else if (root_sfc->ptr || root_sfc->is_dirty || planes_dirty) {
         /*
          * Composite root surface and planes.
@@ -559,7 +564,7 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
         /*
          * No changes, no-op.
          */
-        vigs_server_update_display_end_cb(server, false);
+        vigs_server_update_display_end_cb(server, false, false);
     }
 
 out:
@@ -768,17 +773,22 @@ void vigs_server_dispatch(struct vigs_server *server,
                        server);
 }
 
-void vigs_server_update_display(struct vigs_server *server)
+bool vigs_server_update_display(struct vigs_server *server, int invalidate_cnt)
 {
+    bool updated = false;
     uint32_t sfc_bpp;
     uint32_t display_stride, display_bpp;
     uint8_t *display_data;
 
     qemu_mutex_lock(&server->capture_mutex);
 
-    if (!server->captured.data) {
+    if (!server->captured.data ||
+        (!server->captured.dirty && invalidate_cnt <= 0)) {
         goto out;
     }
+
+    server->captured.dirty = false;
+    updated = true;
 
     sfc_bpp = vigs_format_bpp(server->captured.format);
 
@@ -846,4 +856,6 @@ out:
 
         work_queue_add_item(server->render_queue, &item->base);
     }
+
+    return updated;
 }

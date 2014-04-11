@@ -43,7 +43,8 @@ typedef uint8_t *(*vigs_composite_start_cb)(void */*user_data*/,
                                             vigsp_surface_format /*format*/);
 
 typedef void (*vigs_composite_end_cb)(void */*user_data*/,
-                                      bool /*was_started*/);
+                                      bool /*was_started*/,
+                                      bool /*dirty*/);
 
 struct vigs_backend
 {

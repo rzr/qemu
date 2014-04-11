@@ -32,9 +32,7 @@
 
 
 #include "hw/i386/pc.h"
-#ifdef TARGET_ARM
 #include "ui/console.h"
-#endif
 #include "hw/pci/pci.h"
 #include "maru_device_ids.h"
 #include "maru_brightness.h"
@@ -104,6 +102,8 @@ static void maru_pixman_image_set_alpha(uint8_t value)
     }
     level_color.alpha = value << 8;
     brightness_image = pixman_image_create_solid_fill(&level_color);
+
+    graphic_hw_invalidate(NULL);
 }
 
 static void brightness_reg_write(void *opaque,
@@ -126,9 +126,6 @@ static void brightness_reg_write(void *opaque,
         } else {
             brightness_level = val;
             maru_pixman_image_set_alpha(brightness_tbl[brightness_level]);
-#ifdef TARGET_ARM
-            graphic_hw_invalidate(NULL);
-#endif
         }
         return;
     case BRIGHTNESS_OFF:
@@ -142,10 +139,6 @@ static void brightness_reg_write(void *opaque,
         } else {
             maru_pixman_image_set_alpha(brightness_tbl[brightness_level]);
         }
-
-#ifdef TARGET_ARM
-        graphic_hw_invalidate(NULL);
-#endif
 
         /* notify to skin process */
         qemu_bh_schedule(bh);

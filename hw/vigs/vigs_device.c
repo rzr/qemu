@@ -42,6 +42,12 @@
 
 #define VIGS_IO_SIZE 0x1000
 
+#ifndef CONFIG_USE_SHM
+#define VIGS_EXTRA_INVALIDATION (9)
+#else
+#define VIGS_EXTRA_INVALIDATION (0)
+#endif
+
 struct work_queue;
 
 typedef struct VIGSState
@@ -70,6 +76,7 @@ typedef struct VIGSState
      * Our console.
      */
     QemuConsole *con;
+    int invalidate_cnt;
 
     uint32_t reg_con;
     uint32_t reg_int;
@@ -119,15 +126,19 @@ static void vigs_hw_update(void *opaque)
         return;
     }
 
-    vigs_server_update_display(s->server);
+    if (vigs_server_update_display(s->server, s->invalidate_cnt)) {
+        /*
+         * 'vigs_server_update_display' could have updated the surface,
+         * so fetch it again.
+         */
+        ds = qemu_console_surface(s->con);
 
-    /*
-     * 'vigs_server_update_display' could have updated the surface,
-     * so fetch it again.
-     */
-    ds = qemu_console_surface(s->con);
+        dpy_gfx_update(s->con, 0, 0, surface_width(ds), surface_height(ds));
+    }
 
-    dpy_gfx_update(s->con, 0, 0, surface_width(ds), surface_height(ds));
+    if (s->invalidate_cnt > 0) {
+        s->invalidate_cnt--;
+    }
 
     if (s->reg_con & VIGS_REG_CON_VBLANK_ENABLE) {
         s->reg_int |= VIGS_REG_INT_VBLANK_PENDING;
@@ -137,6 +148,9 @@ static void vigs_hw_update(void *opaque)
 
 static void vigs_hw_invalidate(void *opaque)
 {
+    VIGSState *s = opaque;
+
+    s->invalidate_cnt = 1 + VIGS_EXTRA_INVALIDATION;
 }
 
 static void vigs_dpy_resize(void *user_data,
