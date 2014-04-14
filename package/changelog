@@ -1,3 +1,6 @@
+* 1.7.34
+- fix a booting problem on Mac OS X. 
+== Kitae Kim <kt920.kim@samsung.com> 2014-04-11
 * 1.7.33
 - add kernel parameter
 == GiWoong Kim <giwoong.kim@samsung.com> 2014-04-10
