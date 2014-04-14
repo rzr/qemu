@@ -34,7 +34,7 @@
 MULTI_DEBUG_CHANNEL(qemu, brillcodec);
 
 // device
-#define CODEC_DEVICE_NAME   "brillcodec"
+#define CODEC_DEVICE_NAME   "codec-pci"
 #define CODEC_DEVICE_THREAD "codec-workthread"
 #define CODEC_VERSION       2
 
@@ -2016,10 +2016,3 @@ static void codec_register_types(void)
 }
 
 type_init(codec_register_types)
-
-int maru_brill_codec_pci_device_init(PCIBus *bus)
-{
-    INFO("device create.\n");
-    pci_create_simple(bus, -1, CODEC_DEVICE_NAME);
-    return 0;
-}
