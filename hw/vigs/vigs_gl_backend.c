@@ -1132,7 +1132,7 @@ static void vigs_gl_backend_read_pixels_work(struct work_queue_item *wq_item)
         backend->read_pixels_make_current(backend, false);
     }
 
-    item->end_cb(item->user_data, (dst != NULL));
+    item->end_cb(item->user_data, (dst != NULL), true);
 
     g_free(item);
 }

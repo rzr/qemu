@@ -74,6 +74,24 @@ void maru_display_fini(void)
 #endif
 }
 
+void maru_display_update(void)
+{
+#ifndef CONFIG_USE_SHM
+    maruskin_sdl_update();
+#else
+    /* do nothing */
+#endif
+}
+
+void maru_display_invalidate(bool on)
+{
+#ifndef CONFIG_USE_SHM
+    maruskin_sdl_invalidate(on);
+#else
+    /* do nothing */
+#endif
+}
+
 void maru_display_interpolation(bool on)
 {
 #ifndef CONFIG_USE_SHM

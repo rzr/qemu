@@ -100,6 +100,7 @@ enum {
     in Skin process */
 
     RECV_SKIN_OPENED = 1,
+    RECV_SKIN_GRABBED = 2,
 
     RECV_MOUSE_EVENT = 10,
     RECV_KEYBOARD_KEY_EVENT = 11,
@@ -867,6 +868,27 @@ static void* run_skin_server(void* args)
                     start_display(handle_id,
                         display_width, display_height, scale_ratio, rotation,
                         (blank_guide == 1) ? true : false);
+
+                    break;
+                }
+                case RECV_SKIN_GRABBED: {
+                    char on = 0;
+
+                    log_cnt += sprintf(log_buf + log_cnt, "RECV_SKIN_GRABBED ==\n");
+                    TRACE(log_buf);
+
+                    if (length <= 0) {
+                        INFO("there is no data looking at 0 length.\n");
+                        continue;
+                    }
+
+                    memcpy(&on, recvbuf, sizeof(on));
+
+                    if (on == 0) {
+                        do_grabbing_enable(false);
+                    } else {
+                        do_grabbing_enable(true);
+                    }
 
                     break;
                 }

@@ -48,6 +48,7 @@ MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
 static QEMUBH *sdl_init_bh;
 static QEMUBH *sdl_resize_bh;
+static QEMUBH *sdl_update_bh;
 static DisplaySurface *dpy_surface;
 
 static SDL_Surface *surface_screen;
@@ -60,6 +61,7 @@ static double current_scale_factor = 1.0;
 static double current_screen_degree;
 static pixman_filter_t sdl_pixman_filter;
 
+static bool sdl_invalidate;
 static int sdl_alteration;
 
 static unsigned int sdl_skip_update;
@@ -546,6 +548,9 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
         }
     }
 
+    if (sdl_invalidate) {
+        graphic_hw_invalidate(NULL);
+    }
     graphic_hw_update(NULL);
 
     /* Usually, continuously updated.
@@ -684,6 +689,11 @@ static void *run_qemu_update(void *arg)
 }
 #endif
 
+static void maru_sdl_update_bh(void *opaque)
+{
+    qemu_ds_sdl_update(NULL, 0, 0, 0, 0);
+}
+
 static void maru_sdl_resize_bh(void *opaque)
 {
     int surface_width = 0, surface_height = 0;
@@ -743,6 +753,8 @@ static void maru_sdl_resize_bh(void *opaque)
         return;
     }
 
+    SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+
     /* create buffer for image processing */
     SDL_FreeSurface(scaled_screen);
     scaled_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
@@ -772,6 +784,8 @@ static void maru_sdl_resize_bh(void *opaque)
 #ifdef SDL_THREAD
     pthread_mutex_unlock(&sdl_mutex);
 #endif
+
+    graphic_hw_invalidate(NULL);
 }
 
 static void maru_sdl_init_bh(void *opaque)
@@ -820,6 +834,7 @@ void maruskin_sdl_init(uint64 swt_handle,
 
     sdl_init_bh = qemu_bh_new(maru_sdl_init_bh, NULL);
     sdl_resize_bh = qemu_bh_new(maru_sdl_resize_bh, NULL);
+    sdl_update_bh = qemu_bh_new(maru_sdl_update_bh, NULL);
 
     sprintf(SDL_windowhack, "%ld", window_id);
     g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
@@ -879,4 +894,14 @@ void maruskin_sdl_resize(void)
     INFO("maru sdl resize\n");
 
     qemu_bh_schedule(sdl_resize_bh);
+}
+
+void maruskin_sdl_update(void)
+{
+    qemu_bh_schedule(sdl_update_bh);
+}
+
+void maruskin_sdl_invalidate(bool on)
+{
+    sdl_invalidate = on;
 }

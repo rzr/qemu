@@ -93,6 +93,13 @@ void start_display(uint64 handle_id,
         display_width, display_height, blank_guide);
 }
 
+void do_grabbing_enable(bool on)
+{
+    INFO("skin grabbing enable : %d\n", on);
+
+    maru_display_invalidate(on);
+}
+
 void do_mouse_event(int button_type, int event_type,
     int origin_x, int origin_y, int x, int y, int z)
 {
@@ -118,9 +125,13 @@ void do_mouse_event(int button_type, int event_type,
     /* multi-touch */
     if (get_emul_multi_touch_state()->multitouch_enable == 1) {
         maru_finger_processing_1(event_type, origin_x, origin_y, x, y);
+
+        maru_display_update();
         return;
     } else if (get_emul_multi_touch_state()->multitouch_enable == 2) {
         maru_finger_processing_2(event_type, origin_x, origin_y, x, y);
+
+        maru_display_update();
         return;
     }
 #endif
@@ -172,14 +183,6 @@ void do_mouse_event(int button_type, int event_type,
             ERR("undefined mouse event type passed : %d\n", event_type);
             break;
     }
-
-#if 0
-#ifdef CONFIG_WIN32
-    Sleep(1);
-#else
-    usleep(1000);
-#endif
-#endif
 }
 
 void do_keyboard_key_event(int event_type,
@@ -244,6 +247,8 @@ void do_keyboard_key_event(int event_type,
                     clear_finger_slot(false);
                     INFO("disable multi-touch\n");
                 }
+
+                maru_display_update();
             }
         }
 
@@ -310,13 +315,6 @@ void do_scale_event(double scale_factor)
     INFO("do_scale_event scale_factor : %lf\n", scale_factor);
 
     set_emul_win_scale(scale_factor);
-
-#if 0
-    //TODO: thread safe
-    //qemu refresh
-    vga_hw_invalidate();
-    vga_hw_update();
-#endif
 }
 
 void do_rotation_event(int rotation_type)

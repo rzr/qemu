@@ -370,11 +370,23 @@ public class EmulatorSkin {
 	public void grabShell(int x, int y) {
 		shellGrabPosition.x = x;
 		shellGrabPosition.y = y;
+
+		if (SwtUtil.isWindowsPlatform() == true) {
+			final BooleanData dataGrabbing = new BooleanData(
+					true, SendCommand.SEND_SKIN_GRABBED.toString());
+			communicator.sendToQEMU(SendCommand.SEND_SKIN_GRABBED, dataGrabbing, false);
+		}
 	}
 
 	public void ungrabShell() {
 		shellGrabPosition.x = -1;
 		shellGrabPosition.y = -1;
+
+		if (SwtUtil.isWindowsPlatform() == true) {
+			final BooleanData dataGrabbing = new BooleanData(
+					false, SendCommand.SEND_SKIN_GRABBED.toString());
+			communicator.sendToQEMU(SendCommand.SEND_SKIN_GRABBED, dataGrabbing, false);
+		}
 	}
 
 	public boolean isShellGrabbing() {
@@ -1513,6 +1525,8 @@ public class EmulatorSkin {
 						currentState.getCurrentScale(), rotationId);
 				communicator.sendToQEMU(SendCommand.SEND_DISPLAY_STATE,
 						stateData, false);
+
+				updateDisplay();
 			}
 		};
 
@@ -1558,6 +1572,7 @@ public class EmulatorSkin {
 				communicator.sendToQEMU(SendCommand.SEND_DISPLAY_STATE,
 						stateData, false);
 
+				updateDisplay();
 			}
 		};
 

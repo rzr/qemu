@@ -51,6 +51,7 @@ void start_display(uint64 handle_id,
     unsigned int display_width, unsigned int display_height,
     double scale_factor, short rotation_type, bool blank_guide);
 
+void do_grabbing_enable(bool on);
 void do_mouse_event(int button_type, int event_type,
     int origin_x, int origin_y, int x, int y, int z);
 void do_keyboard_key_event(int event_type,

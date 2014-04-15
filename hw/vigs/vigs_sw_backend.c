@@ -390,7 +390,7 @@ static void vigs_sw_backend_composite(struct vigs_surface *surface,
                surface->stride * surface->ws_sfc->height);
     }
 
-    end_cb(user_data, true);
+    end_cb(user_data, true, true);
 }
 
 static void vigs_sw_backend_batch_end(struct vigs_backend *backend)

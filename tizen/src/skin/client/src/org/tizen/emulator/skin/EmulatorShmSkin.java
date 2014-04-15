@@ -473,10 +473,14 @@ public class EmulatorShmSkin extends EmulatorSkin {
 		if (finger.getMultiTouchEnable() == 1) {
 			finger.maruFingerProcessing1(eventType,
 					e.x, e.y, geometry[0], geometry[1]);
+
+			lcdCanvas.redraw();
 			return;
 		} else if (finger.getMultiTouchEnable() == 2) {
 			finger.maruFingerProcessing2(eventType,
 					e.x, e.y, geometry[0], geometry[1]);
+
+			lcdCanvas.redraw();
 			return;
 		}
 
@@ -505,11 +509,15 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			logger.info("maruFingerProcessing 1");
 			finger.maruFingerProcessing1(MouseEventType.RELEASE.value(),
 					e.x, e.y, geometry[0], geometry[1]);
+
+			lcdCanvas.redraw();
 			return;
 		} else if (finger.getMultiTouchEnable() == 2) {
 			logger.info("maruFingerProcessing 2");
 			finger.maruFingerProcessing2(MouseEventType.RELEASE.value(),
 					e.x, e.y, geometry[0], geometry[1]);
+
+			lcdCanvas.redraw();
 			return;
 		}
 
@@ -540,11 +548,15 @@ public class EmulatorShmSkin extends EmulatorSkin {
 			logger.info("maruFingerProcessing 1");
 			finger.maruFingerProcessing1(MouseEventType.PRESS.value(),
 					e.x, e.y, geometry[0], geometry[1]);
+
+			lcdCanvas.redraw();
 			return;
 		} else if (finger.getMultiTouchEnable() == 2) {
 			logger.info("maruFingerProcessing 2");
 			finger.maruFingerProcessing2(MouseEventType.PRESS.value(),
 					e.x, e.y, geometry[0], geometry[1]);
+
+			lcdCanvas.redraw();
 			return;
 		}
 
@@ -570,6 +582,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 				logger.info("enable multi-touch = mode 1");
 			} else {
 				finger.clearFingerSlot(false);
+				updateDisplay();
 
 				logger.info("disable multi-touch");
 			}
