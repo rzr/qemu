@@ -38,6 +38,7 @@
 #include "winsys_gl.h"
 
 struct work_queue;
+struct vigs_gl_pool;
 
 struct vigs_gl_backend
 {
@@ -141,6 +142,9 @@ struct vigs_gl_backend
     /*
      * @}
      */
+
+    struct vigs_gl_pool *tex_pool;
+    struct vigs_gl_pool *fb_pool;
 
     /*
      * General purpose vectors.

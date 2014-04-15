@@ -28,6 +28,7 @@
  */
 
 #include "vigs_gl_backend.h"
+#include "vigs_gl_pool.h"
 #include "vigs_surface.h"
 #include "vigs_plane.h"
 #include "vigs_log.h"
@@ -97,10 +98,6 @@ struct vigs_gl_surface
      * into front buffer.
      *
      * Allocated on first access.
-     *
-     * TODO: Make a global framebuffer pool and use framebuffers from
-     * it. Framebuffer pool must contain one framebuffer per distinct
-     * surface format.
      */
     GLuint fb;
 
@@ -205,6 +202,82 @@ static const char *g_fs_color_source_gl3 =
     "{\n"
     "    FragColor = color;\n"
     "}\n";
+
+static GLuint vigs_gl_backend_alloc_tmp_texture(void *user_data,
+                                                uint32_t width,
+                                                uint32_t height,
+                                                vigsp_surface_format format)
+{
+    struct vigs_gl_backend *backend = (struct vigs_gl_backend*)user_data;
+    GLint tex_internalformat;
+    GLenum tex_format;
+    GLenum tex_type;
+    GLuint tex = 0, cur_tex = 0;
+
+    backend->GenTextures(1, &tex);
+
+    if (!tex) {
+        return 0;
+    }
+
+    switch (format) {
+    case vigsp_surface_bgrx8888:
+    case vigsp_surface_bgra8888:
+        tex_internalformat = GL_RGBA8;
+        tex_format = GL_BGRA;
+        tex_type = GL_UNSIGNED_INT_8_8_8_8_REV;
+        break;
+    default:
+        assert(false);
+        return 0;
+    }
+
+    backend->GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&cur_tex);
+    backend->BindTexture(GL_TEXTURE_2D, tex);
+
+    /*
+     * Workaround for problem in "Mesa DRI Intel(R) Ivybridge Desktop x86/MMX/SSE2, version 9.0.3":
+     * These lines used to be in 'vigs_gl_backend_init', but it turned out that they must
+     * be called after 'glBindTexture'.
+     */
+    backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    backend->TexImage2D(GL_TEXTURE_2D, 0, tex_internalformat,
+                        width, height, 0,
+                        tex_format, tex_type,
+                        NULL);
+    backend->BindTexture(GL_TEXTURE_2D, cur_tex);
+
+    return tex;
+}
+
+static void vigs_gl_backend_release_tmp_texture(void *user_data, GLuint id)
+{
+    struct vigs_gl_backend *backend = (struct vigs_gl_backend*)user_data;
+
+    backend->DeleteTextures(1, &id);
+}
+
+static GLuint vigs_gl_backend_alloc_framebuffer(void *user_data,
+                                                uint32_t width,
+                                                uint32_t height,
+                                                vigsp_surface_format format)
+{
+    struct vigs_gl_backend *backend = (struct vigs_gl_backend*)user_data;
+    GLuint fb = 0;
+
+    backend->GenFramebuffers(1, &fb);
+
+    return fb;
+}
+
+static void vigs_gl_backend_release_framebuffer(void *user_data, GLuint id)
+{
+    struct vigs_gl_backend *backend = (struct vigs_gl_backend*)user_data;
+
+    backend->DeleteFramebuffers(1, &id);
+}
 
 static GLuint vigs_gl_create_shader(struct vigs_gl_backend *backend,
                                     const char *source,
@@ -414,23 +487,22 @@ static void vigs_gl_translate_color(vigsp_color color,
     }
 }
 
-static bool vigs_winsys_gl_surface_create_texture(struct vigs_winsys_gl_surface *ws_sfc,
-                                                  GLuint *tex)
+static bool vigs_winsys_gl_surface_create_texture(struct vigs_winsys_gl_surface *ws_sfc)
 {
     GLuint cur_tex = 0;
 
-    if (*tex) {
+    if (ws_sfc->tex) {
         return true;
     }
 
-    ws_sfc->backend->GenTextures(1, tex);
+    ws_sfc->backend->GenTextures(1, &ws_sfc->tex);
 
-    if (!*tex) {
-        goto fail;
+    if (!ws_sfc->tex) {
+        return false;
     }
 
     ws_sfc->backend->GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&cur_tex);
-    ws_sfc->backend->BindTexture(GL_TEXTURE_2D, *tex);
+    ws_sfc->backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
 
     /*
      * Workaround for problem in "Mesa DRI Intel(R) Ivybridge Desktop x86/MMX/SSE2, version 9.0.3":
@@ -447,9 +519,22 @@ static bool vigs_winsys_gl_surface_create_texture(struct vigs_winsys_gl_surface 
     ws_sfc->backend->BindTexture(GL_TEXTURE_2D, cur_tex);
 
     return true;
+}
 
-fail:
-    return false;
+static bool vigs_gl_surface_create_tmp_texture(struct vigs_gl_surface *gl_sfc)
+{
+    struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
+
+    if (gl_sfc->tmp_tex) {
+        return true;
+    }
+
+    gl_sfc->tmp_tex = vigs_gl_pool_alloc(gl_backend->tex_pool,
+                                         gl_sfc->base.ws_sfc->width,
+                                         gl_sfc->base.ws_sfc->height,
+                                         gl_sfc->base.format);
+
+    return gl_sfc->tmp_tex != 0;
 }
 
 static bool vigs_gl_surface_setup_framebuffer(struct vigs_gl_surface *gl_sfc,
@@ -459,7 +544,10 @@ static bool vigs_gl_surface_setup_framebuffer(struct vigs_gl_surface *gl_sfc,
     struct vigs_gl_backend *gl_backend = (struct vigs_gl_backend*)gl_sfc->base.backend;
 
     if (!gl_sfc->fb) {
-        gl_backend->GenFramebuffers(1, &gl_sfc->fb);
+        gl_sfc->fb = vigs_gl_pool_alloc(gl_backend->fb_pool,
+                                        gl_sfc->base.ws_sfc->width,
+                                        gl_sfc->base.ws_sfc->height,
+                                        gl_sfc->base.format);
 
         if (!gl_sfc->fb) {
             return false;
@@ -555,8 +643,7 @@ static GLuint vigs_winsys_gl_surface_get_texture(struct winsys_gl_surface *sfc)
         (has_current ||
         vigs_sfc->backend->make_current(vigs_sfc->backend, true))) {
 
-        vigs_winsys_gl_surface_create_texture(vigs_sfc,
-                                              &vigs_sfc->tex);
+        vigs_winsys_gl_surface_create_texture(vigs_sfc);
 
         if (!has_current) {
             vigs_sfc->backend->make_current(vigs_sfc->backend, false);
@@ -657,11 +744,11 @@ static void vigs_gl_surface_read_pixels(struct vigs_surface *sfc,
         goto out;
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc)) {
         goto out;
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &gl_sfc->tmp_tex)) {
+    if (!vigs_gl_surface_create_tmp_texture(gl_sfc)) {
         goto out;
     }
 
@@ -729,11 +816,11 @@ static void vigs_gl_surface_draw_pixels(struct vigs_surface *sfc,
     GLfloat *tex_coords;
     uint32_t i;
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc)) {
         goto out;
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &gl_sfc->tmp_tex)) {
+    if (!vigs_gl_surface_create_tmp_texture(gl_sfc)) {
         goto out;
     }
 
@@ -821,7 +908,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
     GLfloat *vert_coords;
     GLfloat *tex_coords;
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_dst, &ws_dst->tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_dst)) {
         goto out;
     }
 
@@ -829,7 +916,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
         VIGS_LOG_WARN("copying garbage ???");
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_src, &ws_src->tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_src)) {
         goto out;
     }
 
@@ -851,7 +938,7 @@ static void vigs_gl_surface_copy(struct vigs_surface *dst,
          * Feedback loop is possible, use 'tmp_tex' instead.
          */
 
-        if (!vigs_winsys_gl_surface_create_texture(ws_dst, &gl_dst->tmp_tex)) {
+        if (!vigs_gl_surface_create_tmp_texture(gl_dst)) {
             goto out;
         }
 
@@ -971,7 +1058,7 @@ static void vigs_gl_surface_solid_fill(struct vigs_surface *sfc,
     GLfloat colorf[4];
     GLfloat sfc_h;
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
+    if (!vigs_winsys_gl_surface_create_texture(ws_sfc)) {
         goto out;
     }
 
@@ -1019,10 +1106,16 @@ static void vigs_gl_surface_destroy(struct vigs_surface *sfc)
     vigs_winsys_gl_surface_orphan(ws_sfc);
 
     if (gl_sfc->fb) {
-        gl_backend->DeleteFramebuffers(1, &gl_sfc->fb);
+        vigs_gl_pool_release(gl_backend->fb_pool,
+                             sfc->ws_sfc->width,
+                             sfc->ws_sfc->height,
+                             sfc->format);
     }
     if (gl_sfc->tmp_tex) {
-        gl_backend->DeleteTextures(1, &gl_sfc->tmp_tex);
+        vigs_gl_pool_release(gl_backend->tex_pool,
+                             sfc->ws_sfc->width,
+                             sfc->ws_sfc->height,
+                             sfc->format);
     }
 
     vigs_surface_cleanup(&gl_sfc->base);
@@ -1160,12 +1253,12 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
             VIGS_LOG_WARN("compositing garbage (root surface) ???");
         }
 
-        if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc, &ws_root_sfc->tex)) {
+        if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc)) {
             goto out;
         }
     }
 
-    if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc, &gl_root_sfc->tmp_tex)) {
+    if (!vigs_gl_surface_create_tmp_texture(gl_root_sfc)) {
         goto out;
     }
 
@@ -1184,7 +1277,7 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
             VIGS_LOG_WARN("compositing garbage (plane %u) ???", i);
         }
 
-        if (!vigs_winsys_gl_surface_create_texture(ws_sfc, &ws_sfc->tex)) {
+        if (!vigs_winsys_gl_surface_create_texture(ws_sfc)) {
             goto out;
         }
     }
@@ -1378,6 +1471,15 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
         return false;
     }
 
+    gl_backend->tex_pool = vigs_gl_pool_create("tmp_tex",
+                                               &vigs_gl_backend_alloc_tmp_texture,
+                                               &vigs_gl_backend_release_tmp_texture,
+                                               gl_backend);
+    gl_backend->fb_pool = vigs_gl_pool_create("fb",
+                                              &vigs_gl_backend_alloc_framebuffer,
+                                              &vigs_gl_backend_release_framebuffer,
+                                              gl_backend);
+
     if (gl_backend->is_gl_2) {
         const char *tmp = (const char*)gl_backend->GetString(GL_EXTENSIONS);
 
@@ -1520,6 +1622,9 @@ void vigs_gl_backend_cleanup(struct vigs_gl_backend *gl_backend)
         if (!gl_backend->is_gl_2) {
             gl_backend->DeleteVertexArrays(1, &gl_backend->vao);
         }
+
+        vigs_gl_pool_destroy(gl_backend->fb_pool);
+        vigs_gl_pool_destroy(gl_backend->tex_pool);
 
         gl_backend->make_current(gl_backend, false);
     }
