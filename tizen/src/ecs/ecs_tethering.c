@@ -63,7 +63,7 @@ static int tethering_port = 0;
 
 void send_tethering_sensor_status_ecp(void)
 {
-    LOG(">> send tethering_event_status to ecp");
+    INFO(">> send tethering_event_status to ecp");
     send_tethering_status_ntf(ECS_TETHERING_MSG_GROUP_ECP,
             ECS_TETHERING_MSG_ACTION_SENSOR_STATUS);
 }
@@ -76,7 +76,7 @@ void send_tethering_touch_status_ecp(void)
 
 void send_tethering_connection_status_ecp(void)
 {
-    LOG(">> send tethering_connection_status to ecp");
+    INFO(">> send tethering_connection_status to ecp");
     send_tethering_status_ntf(ECS_TETHERING_MSG_GROUP_ECP,
             ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS);
 }
@@ -94,7 +94,7 @@ static void send_tethering_port_ecp(void)
         return;
     }
 
-    LOG(">> send port_num: %d", tethering_port);
+    TRACE(">> send port_num: %d", tethering_port);
 
     g_snprintf(data, sizeof(data) - 1, "%d", tethering_port);
     length = strlen(data);
@@ -105,7 +105,7 @@ static void send_tethering_port_ecp(void)
     memcpy(msg + 13, &action, sizeof(unsigned char));
     memcpy(msg + 14, data, length);
 
-    LOG(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s",
+    TRACE(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s",
         action, group, data);
 
 //    send_tethering_ntf((const char *)msg, MSG_BUF_SIZE);
@@ -153,7 +153,7 @@ static void send_tethering_status_ntf(type_group group, type_action action)
     memcpy(msg + 13, &action, sizeof(unsigned char));
     memcpy(msg + 14, data, 1);
 
-    LOG(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s",
+    TRACE(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s",
         action, group, data);
 
 //    send_tethering_ntf((const char *)msg, MSG_BUF_SIZE);
@@ -182,7 +182,7 @@ static bool send_tethering_ntf(const char *data)
 
     const char* ijdata = (data + catsize + 2 + 1 + 1);
 
-    LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,action, group);
+    TRACE("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,action, group);
 
     ECS__Master master = ECS__MASTER__INIT;
     ECS__TetheringNtf ntf = ECS__TETHERING_NTF__INIT;
@@ -201,7 +201,7 @@ static bool send_tethering_ntf(const char *data)
         ntf.data.len = length;
         memcpy(ntf.data.data, ijdata, length);
 
-        LOG("data = %s, length = %hu", ijdata, length);
+        TRACE("data = %s, length = %hu", ijdata, length);
     }
 
     master.type = ECS__MASTER__TYPE__TETHERING_NTF;
@@ -240,7 +240,7 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
     type_group group = (type_group) (msg->group & 0xff);
     type_action action = (type_action) (msg->action & 0xff);
 
-    LOG(">> header = cmd = %s, length = %d, action=%d, group=%d",
+    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d",
             cmd, length, action, group);
 
     if (group == ECS_TETHERING_MSG_GROUP_ECP) {
@@ -253,25 +253,25 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
 
                 port = g_ascii_strtoull(data, NULL, 10);
 
-                LOG(">> MSG_ACTION_CONNECT");
-                LOG(">> len = %zd, data\" %s\"", strlen(data), data);
+                TRACE(">> MSG_ACTION_CONNECT");
+                TRACE(">> len = %zd, data\" %s\"", strlen(data), data);
 
                 connect_tethering_app(port);
                 tethering_port = port;
 
-                LOG(">> port_num: %d, %d", port, tethering_port);
+                TRACE(">> port_num: %d, %d", port, tethering_port);
             }
         }
             break;
         case ECS_TETHERING_MSG_ACTION_DISCONNECT:
-            LOG(">> MSG_ACTION_DISCONNECT");
+            INFO(">> MSG_ACTION_DISCONNECT");
             disconnect_tethering_app();
             tethering_port = 0;
             break;
         case ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS:
         case ECS_TETHERING_MSG_ACTION_SENSOR_STATUS:
         case ECS_TETHERING_MSG_ACTION_TOUCH_STATUS:
-            LOG(">> get_status_action");
+            TRACE(">> get_status_action");
             send_tethering_status_ntf(group, action);
             break;
         default:

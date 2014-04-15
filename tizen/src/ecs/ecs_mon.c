@@ -43,6 +43,9 @@
 #include "hw/maru_virtio_sensor.h"
 #include "hw/maru_virtio_nfc.h"
 
+#include "debug_ch.h"
+MULTI_DEBUG_CHANNEL(qemu, ecs);
+
 typedef struct mon_fd_t mon_fd_t;
 struct mon_fd_t {
     char *name;
@@ -77,7 +80,7 @@ void send_to_client(int fd, const char* data, const int len)
     for (;;) {
         c = *data++;
         if (outbuf_index >= OUT_BUF_SIZE - 1) {
-            LOG("string is too long: overflow buffer.");
+            INFO("string is too long: overflow buffer.");
             return;
         }
 #ifndef _WIN32
@@ -101,7 +104,7 @@ bool send_monitor_ntf(const char* data, int size)
     ECS__Master master = ECS__MASTER__INIT;
     ECS__MonitorNtf ntf = ECS__MONITOR_NTF__INIT;
 
-    LOG("data size : %d, data : %s", size, data);
+    TRACE("data size : %d, data : %s", size, data);
 
     ntf.command = (char*) g_malloc(size + 1);
     memcpy(ntf.command, data, size);
@@ -181,7 +184,7 @@ static void ecs_protocol_emitter(ECS_Client *clii, const char* type,
     QDict *qmp;
     QObject *obj;
 
-    LOG("ecs_protocol_emitter called.");
+    TRACE("ecs_protocol_emitter called.");
     //trace_monitor_protocol_emitter(clii->cs->mon);
 
     if (!monitor_has_error(clii->cs->mon)) {
@@ -569,216 +572,10 @@ out:
     QDECREF(input);
     QDECREF(args);
 }
-#if 0
-static int check_key(QObject *input_obj, const char *key) {
-    const QDictEntry *ent;
-    QDict *input_dict;
 
-    if (qobject_type(input_obj) != QTYPE_QDICT) {
-        qerror_report(QERR_QMP_BAD_INPUT_OBJECT, "object");
-        return -1;
-    }
-
-    input_dict = qobject_to_qdict(input_obj);
-
-    for (ent = qdict_first(input_dict); ent;
-            ent = qdict_next(input_dict, ent)) {
-        const char *arg_name = qdict_entry_key(ent);
-        if (!strcmp(arg_name, key)) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-static QObject* get_data_object(QObject *input_obj) {
-    const QDictEntry *ent;
-    QDict *input_dict;
-
-    if (qobject_type(input_obj) != QTYPE_QDICT) {
-        qerror_report(QERR_QMP_BAD_INPUT_OBJECT, "object");
-        return NULL;
-    }
-
-    input_dict = qobject_to_qdict(input_obj);
-
-    for (ent = qdict_first(input_dict); ent;
-            ent = qdict_next(input_dict, ent)) {
-        const char *arg_name = qdict_entry_key(ent);
-        QObject *arg_obj = qdict_entry_value(ent);
-        if (!strcmp(arg_name, COMMANDS_DATA)) {
-            return arg_obj;
-        }
-    }
-
-    return NULL;
-}
-
-static int ijcount = 0;
-
-static bool injector_command_proc(ECS_Client *clii, QObject *obj) {
-    QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
-
-    char cmd[10];
-    memset(cmd, 0, 10);
-    strcpy(cmd, qdict_get_str(header, "cat"));
-    type_length length = (type_length) qdict_get_int(header, "length");
-    type_group group = (type_action) (qdict_get_int(header, "group") & 0xff);
-    type_action action = (type_group) (qdict_get_int(header, "action") & 0xff);
-
-    // get data
-    const char* data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
-    LOG(">> count= %d", ++ijcount);
-    LOG(">> print len = %zu, data\" %s\"", strlen(data), data);
-    LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
-            action, group);
-
-    int datalen = strlen(data);
-    int sndlen = datalen + 14;
-    char* sndbuf = (char*) malloc(sndlen + 1);
-    if (!sndbuf) {
-        return false;
-    }
-
-    memset(sndbuf, 0, sndlen + 1);
-
-    // set data
-    memcpy(sndbuf, cmd, 10);
-    memcpy(sndbuf + 10, &length, 2);
-    memcpy(sndbuf + 12, &group, 1);
-    memcpy(sndbuf + 13, &action, 1);
-    memcpy(sndbuf + 14, data, datalen);
-
-    send_to_evdi(route_ij, sndbuf, sndlen);
-
-    free(sndbuf);
-
-    return true;
-}
-
-static bool device_command_proc(ECS_Client *clii, QObject *obj) {
-    QDict* header = qdict_get_qdict(qobject_to_qdict(obj), "header");
-
-    char cmd[10];
-    memset(cmd, 0, 10);
-    strcpy(cmd, qdict_get_str(header, "cat"));
-    type_length length = (type_length) qdict_get_int(header, "length");
-    type_group group = (type_action) (qdict_get_int(header, "group") & 0xff);
-    type_action action = (type_group) (qdict_get_int(header, "action") & 0xff);
-
-    // get data
-    const char* data = qdict_get_str(qobject_to_qdict(obj), COMMANDS_DATA);
-    LOG(">> count= %d", ++ijcount);
-    LOG(">> print len = %zu, data\" %s\"", strlen(data), data);
-    LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
-            action, group);
-
-    if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
-        if (group == MSG_GROUP_STATUS) {
-            if (action ==MSG_ACTION_ACCEL) {
-                get_sensor_accel();
-            } else if (action == MSG_ACTION_GYRO) {
-                get_sensor_gyro();
-            } else if (action == MSG_ACTION_MAG) {
-                get_sensor_mag();
-            } else if (action == MSG_ACTION_LIGHT) {
-                get_sensor_light();
-            } else if (action == MSG_ACTION_PROXI) {
-                get_sensor_proxi();
-            }
-        } else {
-            set_sensor_data(length, data);
-        }
-    }
-    /*
-       else if (!strncmp(cmd, MSG_TYPE_NFC, 3)) {
-       if (group == MSG_GROUP_STATUS) {
-       send_to_nfc(request_nfc_get, data, length);
-       }
-       else
-       {
-       send_to_nfc(request_nfc_set, data, length);
-       }
-       }
-     */
-
-    return true;
-}
-void handle_ecs_command(JSONMessageParser *parser, QList *tokens,
-        void *opaque) {
-    const char *type_name;
-    int def_target = 0;
-//  int def_data = 0;
-    QObject *obj;
-    ECS_Client *clii = opaque;
-
-    if (NULL == clii) {
-        LOG("ClientInfo is null.");
-        return;
-    }
-
-#ifdef DEBUG
-    LOG("Handle ecs command.");
-#endif
-
-    obj = json_parser_parse(tokens, NULL);
-    if (!obj) {
-        qerror_report(QERR_JSON_PARSING);
-        ecs_protocol_emitter(clii, NULL, NULL);
-        return;
-    }
-
-    def_target = check_key(obj, COMMANDS_TYPE);
-#ifdef DEBUG
-    LOG("check_key(COMMAND_TYPE): %d", def_target);
-#endif
-    if (0 > def_target) {
-        LOG("def_target failed.");
-        return;
-    } else if (0 == def_target) {
-#ifdef DEBUG
-        LOG("call handle_qmp_command");
-#endif
-        //handle_qmp_command(clii, NULL, obj);
-        return;
-    }
-
-    type_name = qdict_get_str(qobject_to_qdict(obj), COMMANDS_TYPE);
-
-    /*
-     def_data = check_key(obj, COMMANDS_DATA);
-     if (0 > def_data) {
-     LOG("json format error: data.");
-     return;
-     } else if (0 == def_data) {
-     LOG("data key is not found.");
-     return;
-     }
-     */
-
-    if (!strcmp(type_name, TYPE_DATA_SELF)) {
-        LOG("set client fd %d keep alive 0", clii->client_fd);
-        clii->keep_alive = 0;
-        return;
-    } else if (!strcmp(type_name, COMMAND_TYPE_INJECTOR)) {
-        injector_command_proc(clii, obj);
-    } else if (!strcmp(type_name, COMMAND_TYPE_CONTROL)) {
-        //control_command_proc(clii, obj);
-    } else if (!strcmp(type_name, COMMAND_TYPE_MONITOR)) {
-     //   handle_qmp_command(clii, type_name, get_data_object(obj));
-    } else if (!strcmp(type_name, COMMAND_TYPE_DEVICE)) {
-        device_command_proc(clii, obj);
-    } else if (!strcmp(type_name, ECS_MSG_STARTINFO_REQ)) {
-        //ecs_startinfo_req(clii);
-    } else {
-        LOG("handler not found");
-    }
-}
-#endif
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
 {
-    LOG(">> monitor req: data = %s", msg->command);
+    TRACE(">> monitor req: data = %s", msg->command);
     ecs_json_message_parser_feed(&(ccli->parser), (const char *) msg->command, strlen(msg->command));
     return true;
 }

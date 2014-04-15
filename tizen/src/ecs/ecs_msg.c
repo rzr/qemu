@@ -70,6 +70,10 @@
 #include "skin/maruskin_server.h"
 #include "emulator.h"
 
+#include "debug_ch.h"
+MULTI_DEBUG_CHANNEL(qemu, ecs);
+
+
 #define MAX_BUF_SIZE  255
 // utility functions
 
@@ -82,7 +86,7 @@ static void* build_master(ECS__Master* master, int* payloadsize)
 {
     int len_pack = ecs__master__get_packed_size(master);
     *payloadsize = len_pack + 4;
-    LOG("pack size=%d", len_pack);
+    TRACE("pack size=%d", len_pack);
     void* buf = g_malloc(len_pack + 4);
     if (!buf)
         return NULL;
@@ -101,7 +105,7 @@ static bool send_single_msg(ECS__Master* master, ECS_Client *clii)
     void* buf = build_master(master, &payloadsize);
     if (!buf)
     {
-        LOG("invalid buf");
+        ERR("invalid buf");
         return false;
     }
 
@@ -120,7 +124,7 @@ bool send_to_ecp(ECS__Master* master)
     void* buf = build_master(master, &payloadsize);
     if (!buf)
     {
-        LOG("invalid buf");
+        ERR("invalid buf");
         return false;
     }
 
@@ -140,7 +144,7 @@ static bool send_to_single_client(ECS__Master* master, ECS_Client *ccli)
     void* buf = build_master(master, &payloadsize);
     if (!buf)
     {
-        LOG("invalid buf");
+        ERR("invalid buf");
         return false;
     }
 
@@ -196,7 +200,7 @@ static void msgproc_injector_ans(ECS_Client* ccli, const char* category, bool su
     ECS__Master master = ECS__MASTER__INIT;
     ECS__InjectorAns ans = ECS__INJECTOR_ANS__INIT;
 
-    LOG("injector ans - category : %s, succed : %d", category, succeed);
+    TRACE("injector ans - category : %s, succed : %d", category, succeed);
 
     catlen = strlen(category);
     ans.category = (char*) g_malloc0(catlen + 1);
@@ -221,7 +225,7 @@ static void msgproc_device_ans(ECS_Client* ccli, const char* category, bool succ
     ECS__Master master = ECS__MASTER__INIT;
     ECS__DeviceAns ans = ECS__DEVICE_ANS__INIT;
 
-    LOG("device ans - category : %s, succed : %d", category, succeed);
+    TRACE("device ans - category : %s, succed : %d", category, succeed);
 
     catlen = strlen(category);
     ans.category = (char*) g_malloc0(catlen + 1);
@@ -258,17 +262,17 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     }
     //LOG(">> count= %d", ++ijcount);
 
-    LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
+    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
             action, group);
 
     /*SD CARD msg process*/
     if (!strncmp(cmd, MSG_TYPE_SDCARD, strlen(MSG_TYPE_SDCARD))) {
         if (msg->has_data) {
-            LOG("msg(%zu) : %s", msg->data.len, msg->data.data);
+            TRACE("msg(%zu) : %s", msg->data.len, msg->data.data);
             handle_sdcard((char*) msg->data.data, msg->data.len);
 
         } else {
-            LOG("has no msg");
+            ERR("has no msg");
         }
 
     } else if (!strncmp(cmd, MSG_TYPE_SENSOR, sizeof(MSG_TYPE_SENSOR))) {
@@ -281,7 +285,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
             } else {
                 goto injector_send;
             }
-            LOG("status : %s", data);
+            TRACE("status : %s", data);
             send_status_injector_ntf(MSG_TYPE_SENSOR, 6, action, data);
             ret = true;
             goto injector_req_success;
@@ -314,7 +318,7 @@ injector_send:
         {
             const char* data = (const char*)msg->data.data;
             memcpy(sndbuf + 14, data, datalen);
-            LOG(">> print len = %zd, data\" %s\"", strlen(data), data);
+            TRACE(">> print len = %zd, data\" %s\"", strlen(data), data);
         }
     }
 
@@ -351,42 +355,7 @@ void ecs_suspend_lock_state(int state)
     msgproc_injector_req(NULL, &msg);
 }
 
-#if 0
-void msgproc_checkversion_req(ECS_Client* ccli, ECS__CheckVersionReq* msg)
-{
-    int datalen = 0;
-    if (msg->has_data)
-    {
-        datalen = msg->data.len;
-        if (msg->data.data && msg->data.len > 0)
-        {
-            const char* data = (const char*)msg->data.data;
-            memcpy(sndbuf + 14, data, datalen);
-            LOG(">> print len = %zd, data\" %s\"", strlen(data), data);
-        }
-    }
-}
 
-void send_ecs_version_check(ECS_Client *ccli)
-{
-    int len_pack = 0;
-    int payloadsize = 0;
-    const char* ecs_version = ECS_VERSION;
-
-    ECS__Master master = ECS__MASTER__INIT;
-    ECS__CheckVersionReq req = ECS__CHECK_VERSION_REQ__INIT;
-
-    req.version_str = (char*) g_malloc(10);
-
-    strncpy(req.version_str, ecs_version, strlen(ecs_version));
-    LOG("ecs version: %s", req.version_str);
-
-    master.type = ECS__MASTER__TYPE__CHECKVERSION_REQ;
-    master.checkversion_req = &req;
-
-    send_to_single_client(master, ccli);
-}
-#endif
 void msgproc_keepalive_ans (ECS_Client* ccli, ECS__KeepAliveAns* msg)
 {
     ccli->keep_alive = 0;
@@ -436,7 +405,7 @@ void send_target_image_information(ECS_Client* ccli) {
         ans.data.len = length;
         memcpy(ans.data.data, tizen_target_img_path, length);
 
-        LOG("data = %s, length = %hu", tizen_target_img_path, length);
+        TRACE("data = %s, length = %hu", tizen_target_img_path, length);
     }
 
     master.type = ECS__MASTER__TYPE__DEVICE_ANS;
@@ -470,7 +439,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         memcpy(data, msg->data.data, msg->data.len);
     }
 
-    LOG(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
+    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
             action, group);
 
     if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
@@ -490,27 +459,27 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             if (data != NULL) {
                 set_injector_data(data);
             } else {
-                LOG("sensor set data is null");
+                ERR("sensor set data is null");
             }
         }
         msgproc_device_ans(ccli, cmd, true);
     } else if (!strncmp(cmd, "Network", 7)) {
         if (data != NULL) {
-            LOG(">>> Network msg: '%s'", data);
+            TRACE(">>> Network msg: '%s'", data);
             if(net_slirp_redir(data) < 0) {
-                LOG( "redirect [%s] fail", data);
+                ERR( "redirect [%s] fail", data);
             } else {
-                LOG("redirect [%s] success", data);
+                TRACE("redirect [%s] success", data);
             }
         } else {
-            LOG("Network redirection data is null.");
+            ERR("Network redirection data is null.");
         }
     } else if (!strncmp(cmd, "HKeyboard", 8)) {
         if (group == MSG_GROUP_STATUS) {
             send_host_keyboard_ntf(mloop_evcmd_get_hostkbd_status());
         } else {
             if (data == NULL) {
-                LOG("HKeyboard data is NULL");
+                ERR("HKeyboard data is NULL");
                 return false;
             }
 
@@ -531,11 +500,11 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 #endif
 
         if (data == NULL) {
-            LOG("gesture data is NULL");
+            ERR("gesture data is NULL");
             return false;
         }
 
-        LOG("%s\n", data);
+        TRACE("%s\n", data);
 
         char token[] = "#";
 
@@ -564,7 +533,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         }
     } else if (!strncmp(cmd, "info", 4)) {
         // check to emulator target image path
-        LOG("receive info message %s", tizen_target_img_path);
+        TRACE("receive info message %s", tizen_target_img_path);
         send_target_image_information(ccli);
     }
 
@@ -580,7 +549,7 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
     int datalen = msg->data.len;
     void* data = (void*)g_malloc(datalen);
     if(!data) {
-        LOG("g_malloc failed!");
+        ERR("g_malloc failed!");
         return false;
     }
 
@@ -589,7 +558,7 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
 
     if (msg->has_data && msg->data.len > 0)
     {
-        LOG("recv from nfc injector: ");
+        TRACE("recv from nfc injector: %s, %z", msg->has_data, msg->data.len);
         print_binary(data, datalen);
     }
 
@@ -616,7 +585,7 @@ bool ntf_to_injector(const char* data, const int len) {
     const char* ijdata = (data + catsize + 2 + 1 + 1);
 
     const char *encoded_ijdata = "";
-     LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
+    TRACE("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,
             action, group);
 
     QDict* obj_header = qdict_new();
@@ -648,7 +617,7 @@ bool ntf_to_injector(const char* data, const int len) {
     qstring_append_chr(json, '\n');
     const char* snddata = qstring_get_str(json);
 
-    LOG("<< json str = %s", snddata);
+    TRACE("<< json str = %s", snddata);
 
     send_to_all_client(snddata, strlen(snddata));
 
@@ -697,7 +666,7 @@ bool send_injector_ntf(const char* data, const int len)
 
     const char* ijdata = (data + catsize + 2 + 1 + 1);
 
-    LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,action, group);
+    TRACE("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,action, group);
 
     ECS__Master master = ECS__MASTER__INIT;
     ECS__InjectorNtf ntf = ECS__INJECTOR_NTF__INIT;
@@ -750,7 +719,7 @@ bool send_device_ntf(const char* data, const int len)
 
     const char* ijdata = (data + catsize + 2 + 1 + 1);
 
-    LOG("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,action, group);
+    TRACE("<< header cat = %s, length = %d, action=%d, group=%d", cat, length,action, group);
 
     ECS__Master master = ECS__MASTER__INIT;
     ECS__DeviceNtf ntf = ECS__DEVICE_NTF__INIT;
@@ -771,7 +740,7 @@ bool send_device_ntf(const char* data, const int len)
         ntf.data.len = length;
         memcpy(ntf.data.data, ijdata, length);
 
-        LOG("data = %s, length = %hu", ijdata, length);
+        TRACE("data = %s, length = %hu", ijdata, length);
     }
 
     master.type = ECS__MASTER__TYPE__DEVICE_NTF;
@@ -798,7 +767,7 @@ bool send_nfc_ntf(struct nfc_msg_info* msg)
     memset(cat, 0, catsize + 1);
 
     print_binary((char*)msg->buf, msg->use);
-    LOG("id: %02x, type: %02x, use: %d", msg->client_id, msg->client_type, msg->use);
+    TRACE("id: %02x, type: %02x, use: %d", msg->client_id, msg->client_type, msg->use);
     clii =  find_client(msg->client_id, msg->client_type);
     if (clii) {
         if(clii->client_type == TYPE_SIMUL_NFC) {
@@ -806,12 +775,12 @@ bool send_nfc_ntf(struct nfc_msg_info* msg)
         } else if (clii->client_type == TYPE_ECP) {
             strncpy(cat, MSG_TYPE_SIMUL_NFC, 9);
         }else {
-            LOG("cannot find type!");
+            ERR("cannot find type! : %d", clii->client_type);
         }
-        LOG("header category = %s", cat);
+        TRACE("header category = %s", cat);
     }
     else {
-        LOG("cannot find client!");
+        ERR("cannot find client!");
     }
 
     ECS__Master master = ECS__MASTER__INIT;
@@ -874,7 +843,7 @@ static void handle_sdcard(char* dataBuf, size_t dataLen)
                     }
 
                     g_strlcat(sdcard_img_path, sdcard_img_name, sizeof(sdcard_img_path));
-                    LOG("sdcard path: [%s]\n", sdcard_img_path);
+                    TRACE("sdcard path: [%s]\n", sdcard_img_path);
 
                     //mloop_evcmd_usbdisk(sdcard_img_path);
                     mloop_evcmd_sdcard(sdcard_img_path);
@@ -888,16 +857,16 @@ static void handle_sdcard(char* dataBuf, size_t dataLen)
 
                 g_free(sdcard_path);
             } else {
-                LOG("failed to get sdcard path!!\n");
+                ERR("failed to get sdcard path!!\n");
             }
         } else if(ret == '2'){
-            LOG("sdcard status 2 bypass" );
+            TRACE("sdcard status 2 bypass" );
         }else {
-            LOG("!!! unknown command : %c\n", ret);
+            ERR("!!! unknown command : %c\n", ret);
         }
 
     }else{
-        LOG("!!! unknown data : %c\n", ret);
+        ERR("!!! unknown data : %c\n", ret);
     }
 }
 
@@ -912,18 +881,18 @@ static char* get_emulator_sdcard_path(void)
     char emulator_sdcard[] = "\\emulator\\sdcard\\";
 #endif
 
-    LOG("emulator_sdcard: %s, %zu\n", emulator_sdcard, sizeof(emulator_sdcard));
+    TRACE("emulator_sdcard: %s, %zu\n", emulator_sdcard, sizeof(emulator_sdcard));
 
     tizen_sdk_data = get_tizen_sdk_data_path();
     if (!tizen_sdk_data) {
-        LOG("failed to get tizen-sdk-data path.\n");
+        ERR("failed to get tizen-sdk-data path.\n");
         return NULL;
     }
 
     emulator_sdcard_path =
         g_malloc(strlen(tizen_sdk_data) + sizeof(emulator_sdcard) + 1);
     if (!emulator_sdcard_path) {
-        LOG("failed to allocate memory.\n");
+        ERR("failed to allocate memory.\n");
         return NULL;
     }
 
@@ -932,7 +901,7 @@ static char* get_emulator_sdcard_path(void)
 
     g_free(tizen_sdk_data);
 
-    LOG("sdcard path: %s\n", emulator_sdcard_path);
+    TRACE("sdcard path: %s\n", emulator_sdcard_path);
     return emulator_sdcard_path;
 }
 
@@ -954,30 +923,30 @@ char *get_tizen_sdk_data_path(void)
     FILE *sdk_info_fp = NULL;
     int sdk_info_path_len = 0;
 
-    LOG("%s\n", __func__);
+    TRACE("%s\n", __func__);
 
     emul_bin_path = get_bin_path();
     if (!emul_bin_path) {
-        LOG("failed to get emulator path.\n");
+        ERR("failed to get emulator path.\n");
         return NULL;
     }
 
     sdk_info_path_len = strlen(emul_bin_path) + strlen(sdk_info) + 1;
     sdk_info_file_path = g_malloc(sdk_info_path_len);
     if (!sdk_info_file_path) {
-        LOG("failed to allocate sdk-data buffer.\n");
+        ERR("failed to allocate sdk-data buffer.\n");
         return NULL;
     }
 
     g_snprintf(sdk_info_file_path, sdk_info_path_len, "%s%s",
                 emul_bin_path, sdk_info);
-    LOG("sdk.info path: %s\n", sdk_info_file_path);
+    INFO("sdk.info path: %s\n", sdk_info_file_path);
 
     sdk_info_fp = fopen(sdk_info_file_path, "r");
     g_free(sdk_info_file_path);
 
     if (sdk_info_fp) {
-        LOG("Succeeded to open [sdk.info].\n");
+        TRACE("Succeeded to open [sdk.info].\n");
 
         char tmp[256] = { '\0', };
         char *tmpline = NULL;
@@ -999,7 +968,7 @@ char *get_tizen_sdk_data_path(void)
             tizen_sdk_data_path = g_malloc(strlen(tmpline) + 1);
             g_strlcpy(tizen_sdk_data_path, tmpline, strlen(tmpline) + 1);
 
-            LOG("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
+            INFO("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
 
             fclose(sdk_info_fp);
             return tizen_sdk_data_path;
@@ -1009,7 +978,7 @@ char *get_tizen_sdk_data_path(void)
     }
 
     // legacy mode
-    LOG("Failed to open [sdk.info].\n");
+    ERR("Failed to open [sdk.info].\n");
 
     return get_old_tizen_sdk_data_path();
 }
@@ -1018,7 +987,7 @@ static char *get_old_tizen_sdk_data_path(void)
 {
     char *tizen_sdk_data_path = NULL;
 
-    LOG("try to search tizen-sdk-data path in another way.\n");
+    INFO("try to search tizen-sdk-data path in another way.\n");
 
 #ifndef CONFIG_WIN32
     char tizen_sdk_data[] = "/tizen-sdk-data";
@@ -1033,7 +1002,7 @@ static char *get_old_tizen_sdk_data_path(void)
     tizen_sdk_data_len = strlen(home_dir) + sizeof(tizen_sdk_data) + 1;
     tizen_sdk_data_path = g_malloc(tizen_sdk_data_len);
     if (!tizen_sdk_data_path) {
-        LOG("failed to allocate memory.\n");
+        ERR("failed to allocate memory.\n");
         return NULL;
     }
     g_strlcpy(tizen_sdk_data_path, home_dir, tizen_sdk_data_len);
@@ -1057,7 +1026,7 @@ static char *get_old_tizen_sdk_data_path(void)
     tizen_sdk_data_len = strlen(strLocalAppDataPath) + sizeof(tizen_sdk_data) + 1;
     tizen_sdk_data_path = g_malloc(tizen_sdk_data_len);
     if (!tizen_sdk_data_path) {
-        LOG("failed to allocate memory.\n");
+        ERR("failed to allocate memory.\n");
         return NULL;
     }
 
@@ -1065,7 +1034,7 @@ static char *get_old_tizen_sdk_data_path(void)
     g_strlcat(tizen_sdk_data_path, tizen_sdk_data, tizen_sdk_data_len);
 #endif
 
-    LOG("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
+    INFO("tizen-sdk-data path: %s\n", tizen_sdk_data_path);
     return tizen_sdk_data_path;
 }
 
