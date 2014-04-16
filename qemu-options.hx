@@ -3110,16 +3110,6 @@ the @var{simple} tracing backend.
 @end table
 ETEXI
 
-DEF("max-touch-point", HAS_ARG, QEMU_OPTION_max_touch_point, \
-    "-max-touch-point [count]\n"
-    "                define maximum number of touch point\n",
-    QEMU_ARCH_ALL)
-STEXI
-@item -max-touch-point @var{max_count}
-@findex -max-touch-point
-Use @var{max_count} as Integer
-ETEXI
-
 DEF("disable-skin", 0, QEMU_OPTION_disable_skin, \
     "-disable-skin\n"
     "                do not start with java skin process\n",

@@ -3905,17 +3905,6 @@ int main(int argc, char **argv, char **envp)
                         "HAX support is disabled, ignoring -enable-hax\n");
 #endif
                 break;
-#ifdef CONFIG_MARU
-            case QEMU_OPTION_max_touch_point:
-                {
-                    int cnt = atoi(optarg);
-                    set_emul_max_touch_point(cnt);
-                    break;
-                }
-            case QEMU_OPTION_disable_skin:
-                skin_disabled = 1;
-                break;
-#endif
             case QEMU_OPTION_add_fd:
 #ifndef _WIN32
                 opts = qemu_opts_parse(qemu_find_opts("add-fd"), optarg, 0);
@@ -3929,6 +3918,9 @@ int main(int argc, char **argv, char **envp)
 #endif
                 break;
 #ifdef CONFIG_MARU
+            case QEMU_OPTION_disable_skin:
+                skin_disabled = 1;
+                break;
             case QEMU_OPTION_enable_suspend:
                 ecs_set_suspend_state(SUSPEND_UNLOCK);
                 break;

@@ -33,9 +33,12 @@
 #include "ui/console.h"
 #include "hw/virtio/virtio.h"
 
-#define TYPE_VIRTIO_TOUCHSCREEN "virtio-touschreen-device"
+#define TYPE_VIRTIO_TOUCHSCREEN "virtio-touchscreen-device"
 #define VIRTIO_TOUCHSCREEN(obj) \
         OBJECT_CHECK(VirtIOTouchscreen, (obj), TYPE_VIRTIO_TOUCHSCREEN)
+
+#define TOUCHSCREEN_OPTION_NAME "max_point"
+#define DEFAULT_MAX_FINGER (1)
 
 typedef struct VirtIOTouchscreen {
     VirtIODevice vdev;
@@ -47,6 +50,8 @@ typedef struct VirtIOTouchscreen {
     QEMUBH *bh;
     DeviceState *qdev;
     QEMUPutMouseEntry *eh_entry;
+
+    unsigned int max_finger;
 } VirtIOTouchscreen;
 
 /* This structure must match the kernel definitions */
@@ -57,7 +62,6 @@ typedef struct EmulTouchEvent {
 
 VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev);
 void maru_virtio_touchscreen_exit(VirtIODevice *vdev);
-
 
 void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state);
 void maru_virtio_touchscreen_notify(void);

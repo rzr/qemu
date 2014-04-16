@@ -42,6 +42,7 @@
 #include "guest_debug.h"
 #include "guest_server.h"
 #include "hw/maru_camera_common.h"
+#include "hw/maru_virtio_touchscreen.h"
 #include "hw/gloffscreen_test.h"
 #include "maru_common.h"
 #include "maru_err_table.h"
@@ -135,6 +136,9 @@ static void construct_main_window(int skin_argc, char *skin_argv[],
 
     start_skin_server(skin_argc, skin_argv, qemu_argc, qemu_argv);
 
+    set_emul_caps_lock_state(0);
+    set_emul_num_lock_state(0);
+
     /* the next line checks for debugging and etc.. */
     if (get_emul_skin_enable() == 1) {
         if (0 > start_skin_client(skin_argc, skin_argv)) {
@@ -142,9 +146,6 @@ static void construct_main_window(int skin_argc, char *skin_argv[],
             exit(-1);
         }
     }
-
-    set_emul_caps_lock_state(0);
-    set_emul_num_lock_state(0);
 }
 
 static void parse_options(int argc, char *argv[], int *skin_argc,
@@ -271,11 +272,21 @@ static void extract_qemu_info(int qemu_argc, char **qemu_argv)
         if (strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
             set_image_and_log_path(qemu_argv[i]);
         } else if (strstr(qemu_argv[i], INPUT_TOUCH_PARAMETER) != NULL) {
+            /* touchscreen */
             set_emul_input_touch_enable(true);
+
+            char *option = strstr(qemu_argv[i] + strlen(INPUT_TOUCH_PARAMETER), TOUCHSCREEN_OPTION_NAME);
+            if (option != NULL) {
+                option += strlen(TOUCHSCREEN_OPTION_NAME) + 1;
+
+                set_emul_max_touch_point(atoi(option));
+            }
         }
     }
-    if (is_emul_input_touch_enable() != true)
+
+    if (is_emul_input_touch_enable() != true) {
         set_emul_input_mouse_enable(true);
+    }
 }
 
 static void extract_skin_info(int skin_argc, char **skin_argv)

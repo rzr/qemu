@@ -1547,6 +1547,12 @@ static TypeInfo virtio_gl_pci_info = {
 
 /* virtio-touchscreen-pci */
 
+static Property virtio_touchscreen_pci_properties[] = {
+    DEFINE_PROP_UINT32(TOUCHSCREEN_OPTION_NAME,
+        VirtIOTouchscreenPCI,vdev.max_finger, DEFAULT_MAX_FINGER),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static int virtio_touchscreen_pci_init(VirtIOPCIProxy *vpci_dev)
 {
     VirtIOTouchscreenPCI *dev = VIRTIO_TOUCHSCREEN_PCI(vpci_dev);
@@ -1561,10 +1567,11 @@ static int virtio_touchscreen_pci_init(VirtIOPCIProxy *vpci_dev)
 
 static void virtio_touchscreen_pci_class_init(ObjectClass *klass, void *data)
 {
-//    DeviceClass *dc = DEVICE_CLASS(klass);
+    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
     PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
 
+    dc->props = virtio_touchscreen_pci_properties;
     k->init = virtio_touchscreen_pci_init;
     pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
     pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_TOUCHSCREEN;
@@ -1577,13 +1584,15 @@ static void virtio_touchscreen_pci_instance_init(Object *obj)
     VirtIOTouchscreenPCI *dev = VIRTIO_TOUCHSCREEN_PCI(obj);
     object_initialize(&dev->vdev, sizeof(dev->vdev), TYPE_VIRTIO_TOUCHSCREEN);
     object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+
+    dev->vdev.max_finger = DEFAULT_MAX_FINGER;
 }
 
 static TypeInfo virtio_touchscreen_pci_info = {
     .name          = TYPE_VIRTIO_TOUCHSCREEN_PCI,
     .parent        = TYPE_VIRTIO_PCI,
     .instance_size = sizeof(VirtIOTouchscreenPCI),
-	.instance_init = virtio_touchscreen_pci_instance_init,
+    .instance_init = virtio_touchscreen_pci_instance_init,
     .class_init    = virtio_touchscreen_pci_class_init,
 };
 
