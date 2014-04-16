@@ -572,19 +572,21 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	@Override
 	protected void keyReleasedDelivery(int keyCode,
 			int stateMask, int keyLocation, boolean remove) {
-		/* check multi-touch */
-		if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
-			int tempStateMask = stateMask & ~SWT.BUTTON1;
+		if (finger.getMaxTouchPoint() > 1) {
+			/* check multi-touch */
+			if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
+				int tempStateMask = stateMask & ~SWT.BUTTON1;
 
-			if (tempStateMask == (multiTouchKeySub | multiTouchKey)) {
-				finger.setMultiTouchEnable(1);
+				if (tempStateMask == (multiTouchKeySub | multiTouchKey)) {
+					finger.setMultiTouchEnable(1);
 
-				logger.info("enable multi-touch = mode 1");
-			} else {
-				finger.clearFingerSlot(false);
-				updateDisplay();
+					logger.info("enable multi-touch = mode 1");
+				} else {
+					finger.clearFingerSlot(false);
+					updateDisplay();
 
-				logger.info("disable multi-touch");
+					logger.info("disable multi-touch");
+				}
 			}
 		}
 
@@ -601,42 +603,43 @@ public class EmulatorShmSkin extends EmulatorSkin {
 	@Override
 	protected void keyPressedDelivery(int keyCode,
 			int stateMask, int keyLocation, boolean add) {
-		/* TODO: (finger.getMaxTouchPoint() > 1) */
+		if (finger.getMaxTouchPoint() > 1) {
+		    /* multi-touch checking */
+			int tempStateMask = stateMask & ~SWT.BUTTON1;
 
-		int tempStateMask = stateMask & ~SWT.BUTTON1;
+			if ((keyCode == multiTouchKeySub && (tempStateMask & multiTouchKey) != 0) ||
+					(keyCode == multiTouchKey && (tempStateMask & multiTouchKeySub) != 0))
+			{
+				finger.setMultiTouchEnable(2);
 
-		if ((keyCode == multiTouchKeySub && (tempStateMask & multiTouchKey) != 0) ||
-				(keyCode == multiTouchKey && (tempStateMask & multiTouchKeySub) != 0))
-		{
-			finger.setMultiTouchEnable(2);
+				/* add a finger before start the multi-touch processing
+				if already exist the pressed touch in display */
+				if (pressingX != -1 && pressingY != -1 &&
+						pressingOriginX != -1 && pressingOriginY != -1) {
+					finger.addFingerPoint(
+							pressingOriginX, pressingOriginY,
+							pressingX, pressingY);
+					pressingX = pressingY = -1;
+					pressingOriginX = pressingOriginY = -1;
+				}
 
-			/* add a finger before start the multi-touch processing
-			if already exist the pressed touch in display */
-			if (pressingX != -1 && pressingY != -1 &&
-					pressingOriginX != -1 && pressingOriginY != -1) {
-				finger.addFingerPoint(
-						pressingOriginX, pressingOriginY,
-						pressingX, pressingY);
-				pressingX = pressingY = -1;
-				pressingOriginX = pressingOriginY = -1;
+				logger.info("enable multi-touch = mode 2");
+			} else if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
+				finger.setMultiTouchEnable(1);
+
+				/* add a finger before start the multi-touch processing
+				if already exist the pressed touch in display */
+				if (pressingX != -1 && pressingY != -1 &&
+						pressingOriginX != -1 && pressingOriginY != -1) {
+					finger.addFingerPoint(
+							pressingOriginX, pressingOriginY,
+							pressingX, pressingY);
+					pressingX = pressingY = -1;
+					pressingOriginX = pressingOriginY = -1;
+				}
+
+				logger.info("enable multi-touch = mode 1");
 			}
-
-			logger.info("enable multi-touch = mode 2");
-		} else if (keyCode == multiTouchKeySub || keyCode == multiTouchKey) {
-			finger.setMultiTouchEnable(1);
-
-			/* add a finger before start the multi-touch processing
-			if already exist the pressed touch in display */
-			if (pressingX != -1 && pressingY != -1 &&
-					pressingOriginX != -1 && pressingOriginY != -1) {
-				finger.addFingerPoint(
-						pressingOriginX, pressingOriginY,
-						pressingX, pressingY);
-				pressingX = pressingY = -1;
-				pressingOriginX = pressingOriginY = -1;
-			}
-
-			logger.info("enable multi-touch = mode 1");
 		}
 
 		KeyEventData keyEventData = new KeyEventData(

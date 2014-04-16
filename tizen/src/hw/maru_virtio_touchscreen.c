@@ -310,7 +310,7 @@ static void virtio_touchscreen_device_realize(DeviceState *dev, Error **errp)
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     ts = VIRTIO_TOUCHSCREEN(dev);
 
-    INFO("initialize the touchscreen device\n");
+    INFO("initialize touchscreen device : %d\n", ts->max_finger);
 
     virtio_init(vdev, DEVICE_NAME, VIRTIO_ID_TOUCHSCREEN, 4);
     /*if (ts == NULL) {
