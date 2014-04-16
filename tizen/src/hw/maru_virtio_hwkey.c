@@ -37,8 +37,7 @@ MULTI_DEBUG_CHANNEL(qemu, hwkey);
 
 #define DEVICE_NAME "virtio-hwkey"
 #define MAX_BUF_COUNT 64
-static int vqidx = 0;
-
+static int vqidx;
 /*
  * HW key event queue
  */
@@ -86,6 +85,11 @@ void maru_hwkey_event(int event_type, int keycode)
 {
     HwKeyEventEntry *entry = NULL;
 
+    if (!vhk) {
+        INFO("Hwkey device can not be used.\n");
+        return;
+    }
+
     if (unlikely(event_queue_cnt >= MAX_HWKEY_EVENT_CNT)) {
         INFO("full hwkey event queue, lose event\n", event_queue_cnt);
 
@@ -103,7 +107,8 @@ void maru_hwkey_event(int event_type, int keycode)
 
     event_ringbuf_cnt++;
 
-    entry->index = ++event_queue_cnt; // 1 ~
+    /* 1 ~ */
+    entry->index = ++event_queue_cnt;
 
     QTAILQ_INSERT_TAIL(&events_queue, entry, node);
 
@@ -158,7 +163,8 @@ void maru_virtio_hwkey_notify(void)
               event_queue_cnt, vqidx);
 
         /* copy event into virtio buffer */
-        memcpy(elem_vhk.in_sg[vqidx++].iov_base, &(event_entry->hwkey), sizeof(EmulHWKeyEvent));
+        memcpy(elem_vhk.in_sg[vqidx++].iov_base, &(event_entry->hwkey),
+                sizeof(EmulHWKeyEvent));
         if (vqidx == MAX_BUF_COUNT) {
             vqidx = 0;
         }
@@ -179,7 +185,6 @@ void maru_virtio_hwkey_notify(void)
 static uint32_t virtio_hwkey_get_features(
     VirtIODevice *vdev, uint32_t request_features)
 {
-    // TODO:
     return request_features;
 }
 
