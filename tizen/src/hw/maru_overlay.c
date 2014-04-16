@@ -38,7 +38,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, maru_overlay);
 
-#define QEMU_DEV_NAME       "MARU_OVERLAY"
+#define QEMU_DEV_NAME       "maru_overlay"
 
 #define OVERLAY_MEM_SIZE    (8192 * 1024)   /* 4MB(overlay0) + 4MB(overlay1) */
 #define OVERLAY_REG_SIZE    256
@@ -251,12 +251,6 @@ static void overlay_exitfn(PCIDevice *dev)
     memory_region_destroy(&s->mem_addr);
     memory_region_destroy(&s->mmio_addr);
     INFO("<%s>\n", __func__);
-}
-
-DeviceState *pci_maru_overlay_init(PCIBus *bus)
-{
-    INFO("Maru overlay was initailized!\n");
-    return &pci_create_simple(bus, -1, QEMU_DEV_NAME)->qdev;
 }
 
 static void overlay_classinit(ObjectClass *klass, void *data)

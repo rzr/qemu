@@ -77,6 +77,7 @@ struct MaruCamState {
     QemuCond            thread_cond;
     QEMUBH              *tx_bh;
 
+    bool                initialized;
     bool                destroying;
     void                *vaddr;     /* vram ptr */
     uint32_t            isr;

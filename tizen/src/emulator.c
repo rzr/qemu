@@ -97,7 +97,6 @@ char tizen_target_img_path[PATH_MAX];
 int enable_gl = 0;
 int enable_yagl = 0;
 int enable_spice = 0;
-int is_webcam_enabled;
 
 static int _skin_argc;
 static char **_skin_argv;
@@ -351,25 +350,6 @@ static void print_system_info(void)
     print_system_info_os();
 }
 
-typedef struct {
-    const char *device_name;
-    int found;
-} device_opt_finding_t;
-
-static int find_device_opt (QemuOpts *opts, void *opaque)
-{
-    device_opt_finding_t *devp = (device_opt_finding_t *) opaque;
-    if (devp->found == 1) {
-        return 0;
-    }
-
-    const char *str = qemu_opt_get (opts, "driver");
-    if (strcmp (str, devp->device_name) == 0) {
-        devp->found = 1;
-    }
-    return 0;
-}
-
 #define DEFAULT_QEMU_DNS_IP "10.0.2.3"
 static void prepare_basic_features(void)
 {
@@ -420,16 +400,13 @@ static void prepare_opengl_acceleration(void)
 
         if (capability_check_gl != 0) {
             enable_gl = enable_yagl = 0;
-            WARN("Warn: GL acceleration was disabled due to the fail of GL check!\n");
+            INFO("<WARNING> GL acceleration was disabled due to the fail of GL check!\n");
         }
     }
     if (enable_gl) {
-        device_opt_finding_t devp = {VIRTIOGL_DEV_NAME, 0};
-        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
-        if (devp.found == 0) {
-            if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, 1)) {
-                exit(1);
-            }
+        if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, 1)) {
+            ERR("Failed to initialize the virtio-gl device.\n");
+            exit(1);
         }
     }
 
@@ -440,36 +417,6 @@ static void prepare_opengl_acceleration(void)
     g_free(tmp_str);
 }
 #endif
-
-#define MARUCAM_DEV_NAME "maru_camera_pci"
-#define WEBCAM_INFO_IGNORE 0x00
-#define WEBCAM_INFO_WRITE 0x04
-static void prepare_host_webcam(void)
-{
-    is_webcam_enabled = marucam_device_check(WEBCAM_INFO_WRITE);
-
-    if (!is_webcam_enabled) {
-        INFO("[Webcam] <WARNING> Webcam support was disabled "
-                         "due to the fail of webcam capability check!\n");
-    }
-    else {
-        device_opt_finding_t devp = {MARUCAM_DEV_NAME, 0};
-        qemu_opts_foreach(qemu_find_opts("device"), find_device_opt, &devp, 0);
-        if (devp.found == 0) {
-            if (!qemu_opts_parse(qemu_find_opts("device"), MARUCAM_DEV_NAME, 1)) {
-                INFO("Failed to initialize the marucam device.\n");
-                exit(1);
-            }
-        }
-        INFO("[Webcam] Webcam support was enabled.\n");
-    }
-
-    gchar * const tmp_str = g_strdup_printf(" enable_cam=%d", is_webcam_enabled);
-
-    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
-
-    g_free(tmp_str);
-}
 
 const gchar *prepare_maru_devices(const gchar *kernel_cmdline)
 {
@@ -485,34 +432,9 @@ const gchar *prepare_maru_devices(const gchar *kernel_cmdline)
     // Prepare basic features
     prepare_basic_features();
 
-    // Prepare host webcam
-    prepare_host_webcam();
-
     INFO("kernel command : %s\n", maru_kernel_cmdline);
 
     return maru_kernel_cmdline;
-}
-
-int maru_device_check(QemuOpts *opts)
-{
-#if defined(CONFIG_GL_BACKEND)
-    // virtio-gl pci device
-    if (!enable_gl) {
-        // ignore virtio-gl-pci device, even if users set it in option.
-        const char *driver = qemu_opt_get(opts, "driver");
-        if (driver && (strcmp (driver, VIRTIOGL_DEV_NAME) == 0)) {
-            return -1;
-        }
-    }
-#endif
-    if (!is_webcam_enabled) {
-        const char *driver = qemu_opt_get(opts, "driver");
-        if (driver && (strcmp (driver, MARUCAM_DEV_NAME) == 0)) {
-            return -1;
-        }
-    }
-
-    return 0;
 }
 
 void prepare_maru(void)

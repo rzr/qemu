@@ -69,8 +69,6 @@
 #include "maru_common.h"
 #include "guest_debug.h"
 #include "maru_pm.h"
-#include "maru_brightness.h"
-#include "maru_overlay.h"
 #if defined(__linux__)
 #include <X11/Xlib.h>
 #endif
@@ -114,9 +112,6 @@ static void maru_device_init(void)
 #endif
     struct work_queue *render_queue = NULL;
     struct winsys_interface *vigs_wsi = NULL;
-
-    pci_maru_overlay_init(pci_bus);
-    pci_maru_brightness_init(pci_bus);
 
     if (enable_vigs || enable_yagl) {
         render_queue = work_queue_create("render_queue");

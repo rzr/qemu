@@ -41,7 +41,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, maru_brightness);
 
-#define QEMU_DEV_NAME           "MARU_BRIGHTNESS"
+#define QEMU_DEV_NAME           "maru_brightness"
 
 #define BRIGHTNESS_MEM_SIZE    (4 * 1024)    /* 4KB */
 #define BRIGHTNESS_REG_SIZE    256
@@ -56,7 +56,7 @@ enum {
     BRIGHTNESS_OFF = 0x04,
 };
 
-uint32_t brightness_level;
+uint32_t brightness_level = BRIGHTNESS_MAX;
 uint32_t brightness_off;
 pixman_color_t level_color;
 pixman_image_t *brightness_image;
@@ -204,12 +204,6 @@ static int brightness_initfn(PCIDevice *dev)
     INFO("Init complete: Maru brightness\n");
 
     return 0;
-}
-
-/* external interface */
-DeviceState *pci_maru_brightness_init(PCIBus *bus)
-{
-    return &pci_create_simple(bus, -1, QEMU_DEV_NAME)->qdev;
 }
 
 static void brightness_classinit(ObjectClass *klass, void *data)
