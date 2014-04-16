@@ -123,7 +123,7 @@ void req_sensor_data(enum sensor_types type, enum request_cmd req, char* data, i
     req_sensor_data(sensor_type_proxi, request_set, data, len);
 
 #define set_sensor_light(data, len) \
-    req_sensor_data(sensor_type_light, request_set, data, len);
+    req_sensor_data(sensor_type_light_adc, request_set, data, len);
 
 #define set_sensor_gyro(data, len)  \
     req_sensor_data(sensor_type_gyro, request_set, data, len);

@@ -149,6 +149,9 @@ static void __set_sensor_data (enum sensor_types type, char* data, int len)
         case sensor_type_gyro_z:
             sscanf(data, "%d", &gyro_z_raw);
             break;
+        case sensor_type_gyro:
+            sscanf(data, "%d %d %d", &gyro_x_raw, &gyro_y_raw, &gyro_z_raw);
+            break;
         case sensor_type_light_adc:
             sscanf(data, "%d", &light_adc);
             light_level = (light_adc / 6554) % 10 + 1;
