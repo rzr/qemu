@@ -236,7 +236,7 @@ bool yagl_transport_begin_call(struct yagl_transport *t,
                                yagl_api_id *api_id,
                                yagl_func_id *func_id)
 {
-    if (t->ptr >= (t->batch_data + t->batch_size)) {
+    if (t->ptr >= (t->batch_data + YAGL_TRANSPORT_BATCH_HEADER_SIZE + t->batch_size)) {
         return false;
     }
 
