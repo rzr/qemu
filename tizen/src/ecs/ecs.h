@@ -44,17 +44,6 @@
 
 #define ECS_VERSION   "1.0"
 
-#define ECS_DEBUG   1
-
-#ifdef ECS_DEBUG
-#define LOG(fmt, arg...)    \
-    do {    \
-        fprintf(stdout,"[%s-%s:%d] "fmt"\n", get_timeofday(), __FUNCTION__, __LINE__, ##arg);  \
-    } while (0)
-#else
-#define LOG(fmt, arg...)
-#endif
-
 #define ECS_OPTS_NAME           "ecs"
 #define HOST_LISTEN_ADDR        "127.0.0.1"
 #define HOST_LISTEN_PORT        0
