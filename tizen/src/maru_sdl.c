@@ -691,7 +691,7 @@ static void *run_qemu_update(void *arg)
 
 static void maru_sdl_update_bh(void *opaque)
 {
-    qemu_ds_sdl_update(NULL, 0, 0, 0, 0);
+    graphic_hw_invalidate(NULL);
 }
 
 static void maru_sdl_resize_bh(void *opaque)
