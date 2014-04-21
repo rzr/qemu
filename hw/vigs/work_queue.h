@@ -33,7 +33,7 @@ struct work_queue
 void work_queue_item_init(struct work_queue_item *wq_item,
                           work_queue_func func);
 
-struct work_queue *work_queue_create(void);
+struct work_queue *work_queue_create(const char *name);
 
 void work_queue_add_item(struct work_queue *wq,
                          struct work_queue_item *wq_item);

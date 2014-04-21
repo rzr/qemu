@@ -75,7 +75,7 @@
 #include <X11/Xlib.h>
 #endif
 #include "vigs/vigs_device.h"
-#include "work_queue.h"
+#include "vigs/work_queue.h"
 extern int enable_yagl;
 extern const char *yagl_backend;
 extern int enable_vigs;

@@ -44,7 +44,7 @@ void work_queue_item_init(struct work_queue_item *wq_item,
     wq_item->func = func;
 }
 
-struct work_queue *work_queue_create(void)
+struct work_queue *work_queue_create(const char *name)
 {
     struct work_queue *wq;
 
@@ -56,7 +56,7 @@ struct work_queue *work_queue_create(void)
 
     QTAILQ_INIT(&wq->items);
 
-    qemu_thread_create(&wq->thread,
+    qemu_thread_create(&wq->thread, name,
                        work_queue_run,
                        wq,
                        QEMU_THREAD_JOINABLE);

@@ -1587,7 +1587,7 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     vigs_vector_init(&gl_backend->v1, 0);
     vigs_vector_init(&gl_backend->v2, 0);
 
-    gl_backend->read_pixels_queue = work_queue_create();
+    gl_backend->read_pixels_queue = work_queue_create("vigs_work_queue");
 
     return true;
 
