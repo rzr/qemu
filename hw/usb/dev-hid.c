@@ -206,7 +206,7 @@ static const USBDescDevice desc_device_mouse = {
             .bNumInterfaces        = 1,
             .bConfigurationValue   = 1,
             .iConfiguration        = STR_CONFIG_MOUSE,
-            .bmAttributes          = 0xa0,
+            .bmAttributes          = USB_CFG_ATT_ONE | USB_CFG_ATT_WAKEUP,
             .bMaxPower             = 50,
             .nif = 1,
             .ifs = &desc_iface_mouse,
@@ -223,7 +223,7 @@ static const USBDescDevice desc_device_tablet = {
             .bNumInterfaces        = 1,
             .bConfigurationValue   = 1,
             .iConfiguration        = STR_CONFIG_TABLET,
-            .bmAttributes          = 0xa0,
+            .bmAttributes          = USB_CFG_ATT_ONE | USB_CFG_ATT_WAKEUP,
             .bMaxPower             = 50,
             .nif = 1,
             .ifs = &desc_iface_tablet,
@@ -240,7 +240,7 @@ static const USBDescDevice desc_device_tablet2 = {
             .bNumInterfaces        = 1,
             .bConfigurationValue   = 1,
             .iConfiguration        = STR_CONFIG_TABLET,
-            .bmAttributes          = 0x80,
+            .bmAttributes          = USB_CFG_ATT_ONE | USB_CFG_ATT_WAKEUP,
             .bMaxPower             = 50,
             .nif = 1,
             .ifs = &desc_iface_tablet2,
@@ -257,12 +257,16 @@ static const USBDescDevice desc_device_keyboard = {
             .bNumInterfaces        = 1,
             .bConfigurationValue   = 1,
             .iConfiguration        = STR_CONFIG_KEYBOARD,
-            .bmAttributes          = 0xa0,
+            .bmAttributes          = USB_CFG_ATT_ONE | USB_CFG_ATT_WAKEUP,
             .bMaxPower             = 50,
             .nif = 1,
             .ifs = &desc_iface_keyboard,
         },
     },
+};
+
+static const USBDescMSOS desc_msos_suspend = {
+    .SelectiveSuspendEnabled = true,
 };
 
 static const USBDesc desc_mouse = {
@@ -276,6 +280,7 @@ static const USBDesc desc_mouse = {
     },
     .full = &desc_device_mouse,
     .str  = desc_strings,
+    .msos = &desc_msos_suspend,
 };
 
 static const USBDesc desc_tablet = {
@@ -289,6 +294,7 @@ static const USBDesc desc_tablet = {
     },
     .full = &desc_device_tablet,
     .str  = desc_strings,
+    .msos = &desc_msos_suspend,
 };
 
 static const USBDesc desc_tablet2 = {
@@ -303,6 +309,7 @@ static const USBDesc desc_tablet2 = {
     .full = &desc_device_tablet,
     .high = &desc_device_tablet2,
     .str  = desc_strings,
+    .msos = &desc_msos_suspend,
 };
 
 static const USBDesc desc_keyboard = {
@@ -316,6 +323,7 @@ static const USBDesc desc_keyboard = {
     },
     .full = &desc_device_keyboard,
     .str  = desc_strings,
+    .msos = &desc_msos_suspend,
 };
 
 static const uint8_t qemu_mouse_hid_report_descriptor[] = {
