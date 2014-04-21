@@ -156,12 +156,6 @@ obj-y-save := $(obj-y)
 block-obj-y :=
 common-obj-y :=
 
-# Makefile for TIZEN-maru
-ifdef CONFIG_MARU
-include $(SRC_PATH)/tizen/src/Makefile.tizen
-endif
-##
-
 include $(SRC_PATH)/Makefile.objs
 dummy := $(call unnest-vars,.., \
                block-obj-y \
@@ -171,6 +165,12 @@ dummy := $(call unnest-vars,.., \
 
 # Now restore obj-y
 obj-y := $(obj-y-save)
+
+# Makefile for TIZEN-maru
+ifdef CONFIG_MARU
+include $(SRC_PATH)/tizen/src/Makefile.tizen
+endif
+##
 
 all-obj-y = $(obj-y) $(common-obj-y)
 all-obj-$(CONFIG_SOFTMMU) += $(block-obj-y)
