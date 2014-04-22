@@ -29,7 +29,6 @@
 
 #include "maruskin_keymap.h"
 #include "emul_state.h"
-#include "ui/console.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, skin_keymap);
@@ -85,15 +84,15 @@ int javakeycode_to_scancode(
         num_lock = get_host_lock_key_state(HOST_NUMLOCK_KEY);
 
         if (caps_lock != -1 && get_emul_caps_lock_state() != caps_lock) {
-            kbd_put_keycode(58);
-            kbd_put_keycode(58 | 0x80);
+            virtio_keyboard_event(58);
+            virtio_keyboard_event(58 | 0x80);
             set_emul_caps_lock_state(get_emul_caps_lock_state() ^ 1);
             INFO("qemu CapsLock state was synchronized with host key value (%d)\n",
                 get_emul_caps_lock_state());
         }
         if (num_lock != -1 && get_emul_num_lock_state() != num_lock) {
-            kbd_put_keycode(69);
-            kbd_put_keycode(69 | 0x80);
+            virtio_keyboard_event(69);
+            virtio_keyboard_event(69 | 0x80);
             set_emul_num_lock_state(get_emul_num_lock_state() ^ 1);
             INFO("qemu NumLock state was synchronized with host key value (%d)\n",
                 get_emul_num_lock_state());
@@ -111,7 +110,7 @@ int javakeycode_to_scancode(
 
         if (java_keycode == JAVA_KEYCODE_BIT_CTRL) { /* ctrl key */
             if (key_location == JAVA_KEYLOCATION_RIGHT) {
-                kbd_put_keycode(224); //0xE0
+                virtio_keyboard_event(224); //0xE0
             }
             return 29;
         } else if (java_keycode == JAVA_KEYCODE_BIT_SHIFT) { /* shift key */
@@ -124,7 +123,7 @@ int javakeycode_to_scancode(
             return 42;
         } else if (java_keycode == JAVA_KEYCODE_BIT_ALT) { /* alt key */
             if (key_location == JAVA_KEYLOCATION_RIGHT) {
-                kbd_put_keycode(224);
+                virtio_keyboard_event(224);
             }
             return 56;
         } else {
@@ -144,52 +143,52 @@ int javakeycode_to_scancode(
             switch(vk) {
                 case JAVA_KEY_ARROW_UP :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     vk = KEY_UP;
                     break;
                 case JAVA_KEY_ARROW_DOWN :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     vk = KEY_DOWN;
                     break;
                 case JAVA_KEY_ARROW_LEFT :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     vk = KEY_LEFT;
                     break;
                 case JAVA_KEY_ARROW_RIGHT :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     vk = KEY_RIGHT;
                     break;
 
                 case JAVA_KEY_PAGE_UP :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     return 73;
                 case JAVA_KEY_PAGE_DOWN :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     return 81;
                 case JAVA_KEY_HOME :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     return 71;
                 case JAVA_KEY_END :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     return 79;
                 case JAVA_KEY_INSERT :
                     if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                        kbd_put_keycode(224);
+                        virtio_keyboard_event(224);
                     }
                     return 82;
 
@@ -224,7 +223,7 @@ int javakeycode_to_scancode(
                 case JAVA_KEY_KEYPAD_9 :
                     return 73;
                 case JAVA_KEY_KEYPAD_CR : /* KP_ENTER */
-                    kbd_put_keycode(224);
+                    virtio_keyboard_event(224);
                     return 28;
                 case JAVA_KEY_SCROLL_LOCK :
                     return 70;
@@ -246,7 +245,7 @@ int javakeycode_to_scancode(
         switch(vk) {
             case JAVA_KEY_DELETE :
                 if (key_location != JAVA_KEYLOCATION_KEYPAD) {
-                    kbd_put_keycode(224);
+                    virtio_keyboard_event(224);
                 }
                 break;
             default :

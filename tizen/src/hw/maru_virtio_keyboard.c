@@ -35,6 +35,7 @@
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-kbd);
 
+VirtIOKeyboard *vkbd;
 VirtQueueElement elem;
 
 static void virtio_keyboard_handle(VirtIODevice *vdev, VirtQueue *vq)
@@ -82,9 +83,9 @@ void virtio_keyboard_notify(void *opaque)
     while ((written_cnt--)) {
         kbdevt = &vkbd->kbdqueue.kbdevent[vkbd->kbdqueue.rptr];
 
-	if (((EmulKbdEvent*)(elem.in_sg[vkbd->kbdqueue.rptr].iov_base))->code != 0) {
-	    TRACE("FIXME: virtio queue is full.\n");
-	}
+        if (((EmulKbdEvent*)(elem.in_sg[vkbd->kbdqueue.rptr].iov_base))->code != 0) {
+            TRACE("FIXME: virtio queue is full.\n");
+        }
 
         /* Copy keyboard data into guest side. */
         TRACE("copy: keycode %d, type %d, elem_index %d\n",
@@ -94,7 +95,8 @@ void virtio_keyboard_notify(void *opaque)
 
         if (vkbd->kbdqueue.wptr > 0) {
             vkbd->kbdqueue.wptr--;
-            TRACE("written_cnt: %d, wptr: %d, qemu_index: %d\n", written_cnt, vkbd->kbdqueue.wptr, vkbd->kbdqueue.rptr);
+            TRACE("written_cnt: %d, wptr: %d, qemu_index: %d\n",
+                written_cnt, vkbd->kbdqueue.wptr, vkbd->kbdqueue.rptr);
         }
 
         vkbd->kbdqueue.rptr++;
@@ -110,11 +112,10 @@ void virtio_keyboard_notify(void *opaque)
     TRACE("[Leave] virtqueue notifier.\n");
 }
 
-static void virtio_keyboard_event(void *opaque, int keycode)
+void virtio_keyboard_event(int keycode)
 {
     EmulKbdEvent kbdevt = {0};
     int *index = NULL;
-    VirtIOKeyboard *vkbd = (VirtIOKeyboard *)opaque;
 
     if (!vkbd) {
         ERR("VirtIOKeyboard is NULL.\n");
@@ -226,7 +227,6 @@ static void virtio_keyboard_bh(void *opaque)
 
 static int virtio_keyboard_device_init(VirtIODevice *vdev)
 {
-    VirtIOKeyboard *vkbd;
     DeviceState *qdev = DEVICE(vdev);
     vkbd = VIRTIO_KEYBOARD(vdev);
 
@@ -249,9 +249,6 @@ static int virtio_keyboard_device_init(VirtIODevice *vdev)
     /* bottom half */
     vkbd->bh = qemu_bh_new(virtio_keyboard_bh, vkbd);
 
-    /* register keyboard handler */
-    vkbd->eh_entry = qemu_add_kbd_event_handler(virtio_keyboard_event, vkbd);
- 
     return 0;
 }
 
@@ -261,8 +258,6 @@ static int virtio_keyboard_device_exit(DeviceState *qdev)
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)vdev;
 
     INFO("destroy device\n");
-
-    qemu_remove_kbd_event_handler(vkbd->eh_entry);
 
     if (vkbd->bh) {
         qemu_bh_delete(vkbd->bh);
@@ -277,7 +272,6 @@ static int virtio_keyboard_device_exit(DeviceState *qdev)
 
 static void virtio_keyboard_device_reset(VirtIODevice *vdev)
 {
-    VirtIOKeyboard *vkbd;
     vkbd = VIRTIO_KEYBOARD(vdev);
 
     INFO("reset keyboard device\n");

@@ -278,10 +278,10 @@ void do_keyboard_key_event(int event_type,
 
     if (KEY_PRESSED == event_type) {
         TRACE("key pressed: %d\n", scancode);
-        kbd_put_keycode(scancode);
+        virtio_keyboard_event(scancode);
     } else if (KEY_RELEASED == event_type) {
         TRACE("key released: %d\n", scancode);
-        kbd_put_keycode(scancode | 0x80);
+        virtio_keyboard_event(scancode | 0x80);
     }
 }
 
