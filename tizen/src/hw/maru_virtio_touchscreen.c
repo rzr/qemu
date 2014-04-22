@@ -85,7 +85,7 @@ static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t elem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
-void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state)
+void virtio_touchscreen_event(int x, int y, int z, int buttons_state)
 {
     TouchEventEntry *entry = NULL;
 
@@ -326,14 +326,6 @@ static int virtio_touchscreen_device_init(VirtIODevice *vdev)
     /* bottom halves */
     ts->bh = qemu_bh_new(maru_touchscreen_bh, ts);
 
-#if 1
-    /* register a event handler */
-    ts->eh_entry = qemu_add_mouse_event_handler(
-        virtio_touchscreen_event, ts, 1, "QEMU Virtio Touchscreen");
-    qemu_activate_mouse_event_handler(ts->eh_entry);
-    INFO("virtio touchscreen is added to qemu mouse event handler\n");
-#endif
-
     return 0;
 }
 
@@ -342,10 +334,6 @@ static int virtio_touchscreen_device_exit(DeviceState *qdev)
     VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
 
     INFO("exit the touchscreen device\n");
-
-    if (ts->eh_entry) {
-        qemu_remove_mouse_event_handler(ts->eh_entry);
-    }
 
     if (ts->bh) {
         qemu_bh_delete(ts->bh);

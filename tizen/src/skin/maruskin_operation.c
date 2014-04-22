@@ -106,7 +106,7 @@ void do_mouse_event(int button_type, int event_type,
     if (brightness_off) {
         if (button_type == 0) {
             INFO("auto mouse release\n");
-            kbd_mouse_event(0, 0, 0, 0);
+            virtio_touchscreen_event(0, 0, 0, 0);
 
             return;
         } else {
@@ -145,7 +145,7 @@ void do_mouse_event(int button_type, int event_type,
             pressing_origin_x = origin_x;
             pressing_origin_y = origin_y;
 
-            kbd_mouse_event(x, y, z, 1);
+            virtio_touchscreen_event(x, y, z, 1);
 
             break;
         case MOUSE_UP:
@@ -154,7 +154,7 @@ void do_mouse_event(int button_type, int event_type,
             pressing_x = pressing_y = -1;
             pressing_origin_x = pressing_origin_y = -1;
 
-            kbd_mouse_event(x, y, z, 0);
+            virtio_touchscreen_event(x, y, z, 0);
 
             break;
         case MOUSE_WHEELUP:
@@ -169,14 +169,14 @@ void do_mouse_event(int button_type, int event_type,
                 guest_y = y;
             }
 
-            kbd_mouse_event(x, y, -z, event_type);
+            virtio_touchscreen_event(x, y, -z, event_type);
 
             break;
         case MOUSE_MOVE:
             guest_x = x;
             guest_y = y;
 
-            kbd_mouse_event(x, y, z, event_type);
+            virtio_touchscreen_event(x, y, z, event_type);
 
             break;
         default:
@@ -287,22 +287,21 @@ void do_keyboard_key_event(int event_type,
 
 void do_hw_key_event(int event_type, int keycode)
 {
-    INFO("HW Key : event_type=%d, keycode=%d\n",
-        event_type, keycode);
+    INFO("HW Key : event_type=%d, keycode=%d\n", event_type, keycode);
 
-    if ( runstate_check(RUN_STATE_SUSPENDED) ) {
-        if ( KEY_PRESSED == event_type ) {
-            if ( kbd_mouse_is_absolute() ) {
-                // home key or power key is used for resume.
-                if ( ( HARD_KEY_HOME == keycode ) || ( HARD_KEY_POWER == keycode ) ) {
-                    INFO( "user requests system resume.\n" );
-                    resume();
+    // TODO: remove workaround
+    if (runstate_check(RUN_STATE_SUSPENDED)) {
+        if (KEY_PRESSED == event_type) {
+            /* home key or power key is used for resume */
+            if ((HARD_KEY_HOME == keycode) || (HARD_KEY_POWER == keycode)) {
+                INFO("user requests system resume\n");
+                resume();
+
 #ifdef CONFIG_WIN32
-                    Sleep( RESUME_KEY_SEND_INTERVAL );
+                Sleep(RESUME_KEY_SEND_INTERVAL);
 #else
-                    usleep( RESUME_KEY_SEND_INTERVAL * 1000 );
+                usleep(RESUME_KEY_SEND_INTERVAL * 1000);
 #endif
-                }
             }
         }
     }
@@ -589,7 +588,7 @@ void request_close(void)
 {
     INFO("request_close\n");
 
-    /* FIXME: convert to device emulatoion */
+    // TODO: convert to device emulation
     do_hw_key_event(KEY_PRESSED, HARD_KEY_POWER);
 
 #ifdef CONFIG_WIN32

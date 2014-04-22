@@ -267,27 +267,6 @@ int qemu_input_scale_axis(int value, int size_in, int size_out)
     if (size_in < 2) {
         return size_out / 2;
     }
-#if 0 //defined (CONFIG_MARU)
-    QTAILQ_FOREACH(entry, &mouse_handlers, node) {
-        /* if mouse event is wheelup ,wheeldown or move
-              then go to ps2 mouse event(index == 0) */
-        if (buttons_state > 3  && entry->index == 0) {
-            //INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
-            buttons_state = 0;
-            mouse_event = entry->qemu_put_mouse_event;
-            mouse_event_opaque = entry->qemu_put_mouse_event_opaque;
-            break;
-        }
-    }
-    /* other events(mouse up, down and drag), go to touch screen */
-    if (!entry) {
-        entry = QTAILQ_FIRST(&mouse_handlers);
-        mouse_event = entry->qemu_put_mouse_event;
-        mouse_event_opaque = entry->qemu_put_mouse_event_opaque;
-        //INFO("input device: %s, event: %d\n", entry->qemu_put_mouse_event_name, buttons_state);
-    }
-#endif
-
     return (int64_t)value * (size_out - 1) / (size_in - 1);
 }
 

@@ -32,7 +32,7 @@
 #include "ecs.h"
 #include "ecs_tethering.h"
 #include "../tethering/app_tethering.h"
-
+#include "../hw/maru_virtio_touchscreen.h"
 #include "../debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
@@ -227,7 +227,7 @@ void send_tethering_sensor_data(const char *data, int len)
 
 void send_tethering_touch_data(int x, int y, int index, int status)
 {
-    kbd_mouse_event(x, y, index, status);
+    virtio_touchscreen_event(x, y, index, status);
 }
 
 // handle tethering_req message
