@@ -146,38 +146,6 @@ static void construct_main_window(int skin_argc, char *skin_argv[],
     }
 }
 
-static void parse_options(int argc, char *argv[], int *skin_argc,
-                        char ***skin_argv, int *qemu_argc, char ***qemu_argv)
-{
-    int i = 0;
-    int skin_args_index = 0;
-
-    if (argc <= 1) {
-        fprintf(stderr, "Arguments are not enough to launch Emulator. "
-                "Please try to use Emulator Manager.\n");
-        exit(1);
-    }
-
-    /* classification */
-    for (i = 1; i < argc; ++i) {
-        if (strstr(argv[i], SKIN_ARGS_PREFIX)) {
-            *skin_argv = &(argv[i + 1]);
-            break;
-        }
-    }
-
-    for (skin_args_index = i; skin_args_index < argc; ++skin_args_index) {
-        if (strstr(argv[skin_args_index], QEMU_ARGS_PREFIX)) {
-            *skin_argc = skin_args_index - i - 1;
-
-            *qemu_argc = argc - skin_args_index - i + 1;
-            *qemu_argv = &(argv[skin_args_index]);
-
-            argv[skin_args_index] = argv[0];
-        }
-    }
-}
-
 static void get_host_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
     get_host_proxy_os(http_proxy, https_proxy, ftp_proxy, socks_proxy);
@@ -261,57 +229,6 @@ static void redir_output(void)
     setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
     setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 }
-
-static void extract_qemu_info(int qemu_argc, char **qemu_argv)
-{
-    int i = 0;
-
-    for (i = 0; i < qemu_argc; ++i) {
-        if (strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
-            set_image_and_log_path(qemu_argv[i]);
-        } else if (strstr(qemu_argv[i], INPUT_TOUCH_PARAMETER) != NULL) {
-            /* touchscreen */
-            set_emul_input_touch_enable(true);
-
-            char *option = strstr(qemu_argv[i] + strlen(INPUT_TOUCH_PARAMETER), TOUCHSCREEN_OPTION_NAME);
-            if (option != NULL) {
-                option += strlen(TOUCHSCREEN_OPTION_NAME) + 1;
-
-                set_emul_max_touch_point(atoi(option));
-            }
-        }
-    }
-
-    if (is_emul_input_touch_enable() != true) {
-        set_emul_input_mouse_enable(true);
-    }
-}
-
-static void extract_skin_info(int skin_argc, char **skin_argv)
-{
-    int i = 0;
-    int w = 0, h = 0;
-
-    for (i = 0; i < skin_argc; ++i) {
-        if (strstr(skin_argv[i], DISPLAY_WIDTH_PREFIX) != NULL) {
-            char *width_arg = skin_argv[i] + strlen(DISPLAY_WIDTH_PREFIX);
-            w = atoi(width_arg);
-
-            INFO("display width option : %d\n", w);
-        } else if (strstr(skin_argv[i], DISPLAY_HEIGHT_PREFIX) != NULL) {
-            char *height_arg = skin_argv[i] + strlen(DISPLAY_HEIGHT_PREFIX);
-            h = atoi(height_arg);
-
-            INFO("display height option : %d\n", h);
-        }
-
-        if (w != 0 && h != 0) {
-            set_emul_resolution(w, h);
-            break;
-        }
-    }
-}
-
 
 static void print_system_info(void)
 {
@@ -439,9 +356,95 @@ void prepare_maru(void)
 
 int qemu_main(int argc, char **argv, char **envp);
 
-static int emulator_main(int argc, char *argv[], char **envp)
+/* deprecated */
+static void extract_qemu_info(int qemu_argc, char **qemu_argv)
 {
-    parse_options(argc, argv, &_skin_argc,
+    int i = 0;
+
+    for (i = 0; i < qemu_argc; ++i) {
+        if (strstr(qemu_argv[i], IMAGE_PATH_PREFIX) != NULL) {
+            set_image_and_log_path(qemu_argv[i]);
+        } else if (strstr(qemu_argv[i], INPUT_TOUCH_PARAMETER) != NULL) {
+            /* touchscreen */
+            set_emul_input_touch_enable(true);
+
+            char *option = strstr(qemu_argv[i] + strlen(INPUT_TOUCH_PARAMETER), TOUCHSCREEN_OPTION_NAME);
+            if (option != NULL) {
+                option += strlen(TOUCHSCREEN_OPTION_NAME) + 1;
+
+                set_emul_max_touch_point(atoi(option));
+            }
+        }
+    }
+
+    if (is_emul_input_touch_enable() != true) {
+        set_emul_input_mouse_enable(true);
+    }
+}
+
+/* deprecated */
+static void extract_skin_info(int skin_argc, char **skin_argv)
+{
+    int i = 0;
+    int w = 0, h = 0;
+
+    for (i = 0; i < skin_argc; ++i) {
+        if (strstr(skin_argv[i], DISPLAY_WIDTH_PREFIX) != NULL) {
+            char *width_arg = skin_argv[i] + strlen(DISPLAY_WIDTH_PREFIX);
+            w = atoi(width_arg);
+
+            INFO("display width option : %d\n", w);
+        } else if (strstr(skin_argv[i], DISPLAY_HEIGHT_PREFIX) != NULL) {
+            char *height_arg = skin_argv[i] + strlen(DISPLAY_HEIGHT_PREFIX);
+            h = atoi(height_arg);
+
+            INFO("display height option : %d\n", h);
+        }
+
+        if (w != 0 && h != 0) {
+            set_emul_resolution(w, h);
+            break;
+        }
+    }
+}
+
+/* deprecated */
+static void legacy_parse_options(int argc, char *argv[], int *skin_argc,
+                        char ***skin_argv, int *qemu_argc, char ***qemu_argv)
+{
+    int i = 0;
+    int skin_args_index = 0;
+
+    if (argc <= 1) {
+        fprintf(stderr, "Arguments are not enough to launch Emulator. "
+                "Please try to use Emulator Manager.\n");
+        exit(1);
+    }
+
+    /* classification */
+    for (i = 1; i < argc; ++i) {
+        if (strstr(argv[i], SKIN_ARGS_PREFIX)) {
+            *skin_argv = &(argv[i + 1]);
+            break;
+        }
+    }
+
+    for (skin_args_index = i; skin_args_index < argc; ++skin_args_index) {
+        if (strstr(argv[skin_args_index], QEMU_ARGS_PREFIX)) {
+            *skin_argc = skin_args_index - i - 1;
+
+            *qemu_argc = argc - skin_args_index - i + 1;
+            *qemu_argv = &(argv[skin_args_index]);
+
+            argv[skin_args_index] = argv[0];
+        }
+    }
+}
+
+/* deprecated */
+static int legacy_emulator_main(int argc, char * argv[], char **envp)
+{
+    legacy_parse_options(argc, argv, &_skin_argc,
                 &_skin_argv, &_qemu_argc, &_qemu_argv);
     set_bin_path(_qemu_argv[0]);
     extract_qemu_info(_qemu_argc, _qemu_argv);
@@ -480,6 +483,11 @@ static int emulator_main(int argc, char *argv[], char **envp)
     exit_emulator();
 
     return 0;
+}
+
+static int emulator_main(int argc, char *argv[], char **envp)
+{
+    return legacy_emulator_main(argc, argv, envp);
 }
 
 #ifdef CONFIG_DARWIN
