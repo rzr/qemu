@@ -225,16 +225,16 @@ static void virtio_keyboard_bh(void *opaque)
     virtio_keyboard_notify(opaque);
 }
 
-static int virtio_keyboard_device_init(VirtIODevice *vdev)
+static void virtio_keyboard_device_realize(DeviceState *dev, Error **errp)
 {
-    DeviceState *qdev = DEVICE(vdev);
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     vkbd = VIRTIO_KEYBOARD(vdev);
 
     INFO("initialize virtio-keyboard device\n");
 
     if (vdev == NULL) {
         ERR("failed to initialize virtio-keyboard device\n");
-        return -1;
+        return;
     }
 
     virtio_init(vdev, TYPE_VIRTIO_KEYBOARD, VIRTIO_ID_KEYBOARD, 0);
@@ -244,17 +244,15 @@ static int virtio_keyboard_device_init(VirtIODevice *vdev)
     qemu_mutex_init(&vkbd->event_mutex);
 
     vkbd->vq = virtio_add_queue(vdev, 128, virtio_keyboard_handle);
-    vkbd->qdev = qdev;
+    vkbd->qdev = dev;
 
     /* bottom half */
     vkbd->bh = qemu_bh_new(virtio_keyboard_bh, vkbd);
-
-    return 0;
 }
 
-static int virtio_keyboard_device_exit(DeviceState *qdev)
+static void virtio_keyboard_device_unrealize(DeviceState *dev, Error **errp)
 {
-    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     VirtIOKeyboard *vkbd = (VirtIOKeyboard *)vdev;
 
     INFO("destroy device\n");
@@ -266,8 +264,6 @@ static int virtio_keyboard_device_exit(DeviceState *qdev)
     qemu_mutex_destroy(&vkbd->event_mutex);
 
     virtio_cleanup(vdev);
-
-    return 0;
 }
 
 static void virtio_keyboard_device_reset(VirtIODevice *vdev)
@@ -281,10 +277,9 @@ static void virtio_keyboard_device_reset(VirtIODevice *vdev)
 
 static void virtio_keyboard_class_init(ObjectClass *klass, void *data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_keyboard_device_exit;
-    vdc->init = virtio_keyboard_device_init;
+    vdc->unrealize = virtio_keyboard_device_unrealize;
+    vdc->realize = virtio_keyboard_device_realize;
     vdc->reset = virtio_keyboard_device_reset;
     vdc->get_features = virtio_keyboard_get_features;
 }
