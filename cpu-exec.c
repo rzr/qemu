@@ -334,7 +334,7 @@ int cpu_exec(CPUArchState *env)
 
 #ifdef CONFIG_HAX
             if (hax_enabled() && !hax_vcpu_exec(env))
-                longjmp(env->jmp_env, 1);
+                longjmp(cpu->jmp_env, 1);
 #endif
 
             next_tb = 0; /* force lookup of first TB */
