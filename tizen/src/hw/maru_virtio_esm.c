@@ -121,9 +121,10 @@ static void virtio_esm_reset(VirtIODevice* vdev)
 }
 
 
-static int virtio_esm_device_init(VirtIODevice *vdev)
+static void virtio_esm_device_realize(DeviceState *dev, Error **errp)
 {
-    VirtIOESM *vesm = VIRTIO_ESM(vdev);
+    VirtIODevice *dev = VIRTIO_DEVICE(dev);
+    VirtIOESM *vesm = VIRTIO_ESM(dev);
 
     INFO("initialize virtio-esm device\n");
     virtio_init(vdev, "virtio-esm", VIRTIO_ID_ESM, 0);
@@ -131,26 +132,22 @@ static int virtio_esm_device_init(VirtIODevice *vdev)
     vesm->vq = virtio_add_queue(vdev, 1, virtio_esm_handle);
 
     virtio_esm_reset(vdev);
-
-    return 0;
 }
 
-static int virtio_esm_device_exit(DeviceState *dev)
+static void virtio_esm_device_unrealize(DeviceState *dev, Error **errp)
 {
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
 
     INFO("destroy device\n");
     virtio_cleanup(vdev);
-
-    return 0;
 }
 
 static void virtio_esm_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_esm_device_exit;
-    vdc->init = virtio_esm_device_init;
+    vdc->realize = virtio_esm_device_realize;
+    vdc->unrealize = virtio_esm_device_unrealize;
     vdc->get_features = virtio_esm_get_features;
     // This device is no need to reset.
     //vdc->reset = virtio_esm_reset;
