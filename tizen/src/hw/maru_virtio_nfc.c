@@ -201,7 +201,7 @@ static void maru_nfc_bh(void *opaque)
     flush_nfc_recv_queue();
 }
 
-static void virtio_nfc_realize(VirtIODevice* dev, Error **errp)
+static void virtio_nfc_realize(DeviceState* dev, Error **errp)
 {
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     vio_nfc = VIRTIO_NFC(vdev);
