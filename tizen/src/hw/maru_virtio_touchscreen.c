@@ -28,7 +28,6 @@
 
 
 #include <pthread.h>
-#include "ui/console.h"
 #include "maru_virtio_touchscreen.h"
 #include "maru_device_ids.h"
 #include "emul_state.h"
@@ -306,10 +305,10 @@ static void maru_touchscreen_bh(void *opaque)
     maru_virtio_touchscreen_notify();
 }
 
-static int virtio_touchscreen_device_init(VirtIODevice *vdev)
+static void virtio_touchscreen_device_realize(DeviceState *dev, Error **errp)
 {
-    DeviceState *qdev = DEVICE(vdev);
-    ts = VIRTIO_TOUCHSCREEN(vdev);
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
+    ts = VIRTIO_TOUCHSCREEN(dev);
 
     INFO("initialize the touchscreen device\n");
 
@@ -321,17 +320,15 @@ static int virtio_touchscreen_device_init(VirtIODevice *vdev)
 
     // TODO: reduce size
     ts->vq = virtio_add_queue(&ts->vdev, 64, maru_virtio_touchscreen_handle);
-    ts->qdev = qdev;
+    ts->qdev = dev;
 
     /* bottom halves */
     ts->bh = qemu_bh_new(maru_touchscreen_bh, ts);
-
-    return 0;
 }
 
-static int virtio_touchscreen_device_exit(DeviceState *qdev)
+static void virtio_touchscreen_device_unrealize(DeviceState *dev, Error **errp)
 {
-    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
 
     INFO("exit the touchscreen device\n");
 
@@ -343,8 +340,6 @@ static int virtio_touchscreen_device_exit(DeviceState *qdev)
 
     pthread_mutex_destroy(&event_mutex);
     pthread_mutex_destroy(&elem_mutex);
-
-    return 0;
 }
 
 static Property virtio_touchscreen_properties[] = {
@@ -388,9 +383,10 @@ static void virtio_touchscreen_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_touchscreen_device_exit;
+
     dc->props = virtio_touchscreen_properties;
-    vdc->init = virtio_touchscreen_device_init;
+    vdc->realize = virtio_touchscreen_device_realize;
+    vdc->unrealize = virtio_touchscreen_device_unrealize;
     vdc->reset = virtio_touchscreen_device_reset;
     vdc->get_config = virtio_touchscreen_get_config;
     vdc->set_config = virtio_touchscreen_set_config;

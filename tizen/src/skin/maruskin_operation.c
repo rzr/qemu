@@ -39,6 +39,7 @@
 #include "maruskin_operation.h"
 #include "hw/maru_brightness.h"
 #include "hw/maru_virtio_hwkey.h"
+#include "hw/maru_virtio_touchscreen.h"
 #include "maru_display.h"
 #include "emulator.h"
 #include "debug_ch.h"
