@@ -123,7 +123,7 @@ static void virtio_esm_reset(VirtIODevice* vdev)
 
 static void virtio_esm_device_realize(DeviceState *dev, Error **errp)
 {
-    VirtIODevice *dev = VIRTIO_DEVICE(dev);
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     VirtIOESM *vesm = VIRTIO_ESM(dev);
 
     INFO("initialize virtio-esm device\n");
@@ -144,7 +144,6 @@ static void virtio_esm_device_unrealize(DeviceState *dev, Error **errp)
 
 static void virtio_esm_class_init(ObjectClass *klass, void *data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
     vdc->realize = virtio_esm_device_realize;
     vdc->unrealize = virtio_esm_device_unrealize;
