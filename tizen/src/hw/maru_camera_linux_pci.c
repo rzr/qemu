@@ -43,6 +43,8 @@
 
 MULTI_DEBUG_CHANNEL(tizen, camera_linux);
 
+#define MARUCAM_THREAD_NAME    "marucam_worker_thread"
+
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
 #define MARUCAM_DEFAULT_BUFFER_COUNT    4
@@ -815,8 +817,11 @@ int marucam_device_check(int log_flag)
 void marucam_device_init(MaruCamState *state)
 {
     state->destroying = false;
-    qemu_thread_create(&state->thread_id, marucam_worker_thread, (void *)state,
-            QEMU_THREAD_JOINABLE);
+    qemu_thread_create(&state->thread_id,
+                       MARUCAM_THREAD_NAME,
+                       marucam_worker_thread,
+                       (void *)state,
+                       QEMU_THREAD_JOINABLE);
 }
 
 void marucam_device_exit(MaruCamState *state)

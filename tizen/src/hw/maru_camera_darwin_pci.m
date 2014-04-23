@@ -40,6 +40,8 @@
 
 MULTI_DEBUG_CHANNEL(tizen, camera_darwin);
 
+#define MARUCAM_THREAD_NAME    "marucam_worker_thread"
+
 /* V4L2 defines copy from videodev2.h */
 #define V4L2_CTRL_FLAG_SLIDER       0x0020
 
@@ -526,13 +528,15 @@ int marucam_device_check(int log_flag)
 /**********************************************
  * MARU camera routines
  **********************************************/
-
 void marucam_device_init(MaruCamState *state)
 {
     g_state = state;
     g_state->destroying = false;
-    qemu_thread_create(&state->thread_id, marucam_worker_thread,
-                       NULL, QEMU_THREAD_JOINABLE);
+    qemu_thread_create(&state->thread_id,
+                       MARUCAM_THREAD_NAME,
+                       marucam_worker_thread,
+                       NULL,
+                       QEMU_THREAD_JOINABLE);
 }
 
 void marucam_device_exit(MaruCamState *state)
