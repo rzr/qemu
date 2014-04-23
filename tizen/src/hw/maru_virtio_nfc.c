@@ -67,6 +67,11 @@ static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const uint32_t len)
 {
+    if(vio_nfc == NULL) {
+        ERR("NFC is not initialized\n");
+        return false;
+    }
+
     if (unlikely(!virtio_queue_ready(vio_nfc->rvq))) {
         ERR("virtio queue is not ready\n");
         return false;

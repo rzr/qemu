@@ -50,7 +50,6 @@ enum {
 
 VirtIOEVDI* vio_evdi;
 
-
 //
 
 typedef struct MsgInfo
@@ -82,6 +81,11 @@ bool send_to_evdi(const uint32_t route, char* data, const uint32_t len)
     int left = len;
     int count = 0;
     char* readptr = data;
+
+    if(vio_evdi == NULL) {
+        ERR("EVDI is not initialized\n");
+        return false;
+    }
 
     if (unlikely(!virtio_queue_ready(vio_evdi->rvq))) {
         ERR("virtio queue is not ready\n");
