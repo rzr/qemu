@@ -218,28 +218,27 @@ static void maru_evdi_bh(void *opaque)
     flush_evdi_recv_queue();
 }
 
-static int virtio_evdi_init(VirtIODevice *vdev)
+static void virtio_evdi_realize(DeviceState *dev, Error **errp)
 {
-    INFO("initialize evdi device\n");
-
-    vio_evdi = VIRTIO_EVDI(vdev);
-
-    virtio_init(vdev, TYPE_VIRTIO_EVDI, VIRTIO_ID_EVDI, 0); //EVDI_DEVICE_NAME
-
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
+    vio_evdi = VIRTIO_EVDI(dev);
     if (vio_evdi == NULL) {
         ERR("failed to initialize evdi device\n");
-        return -1; //need any guide for return value
+        return; //need any guide for return value
     }
+
+    INFO("initialize evdi device\n");
+
+    virtio_init(vdev, TYPE_VIRTIO_EVDI, VIRTIO_ID_EVDI, 0); //EVDI_DEVICE_NAME
 
     vio_evdi->rvq = virtio_add_queue(&vio_evdi->vdev, 256, virtio_evdi_recv);
     vio_evdi->svq = virtio_add_queue(&vio_evdi->vdev, 256, virtio_evdi_send);
 
     vio_evdi->bh = qemu_bh_new(maru_evdi_bh, vio_evdi);
 
-    return 0;
 }
 
-static int virtio_evdi_exit(DeviceState *dev)
+static void virtio_evdi_unrealize(DeviceState *dev, Error **errp)
 {
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
 
@@ -250,8 +249,6 @@ static int virtio_evdi_exit(DeviceState *dev)
         }
 
     virtio_cleanup(vdev);
-
-    return 0;
 }
 
 static void virtio_evdi_reset(VirtIODevice *vdev)
@@ -262,10 +259,9 @@ static void virtio_evdi_reset(VirtIODevice *vdev)
 
 static void virtio_evdi_class_init(ObjectClass *klass, void *data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_evdi_exit;
-    vdc->init = virtio_evdi_init;
+    vdc->realize = virtio_evdi_realize;
+    vdc->unrealize = virtio_evdi_unrealize;
     vdc->get_features = virtio_evdi_get_features;
     vdc->reset = virtio_evdi_reset;
 }
