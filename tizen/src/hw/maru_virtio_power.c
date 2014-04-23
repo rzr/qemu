@@ -206,32 +206,29 @@ static void virtio_power_vq(VirtIODevice *vdev, VirtQueue *vq)
     }
 }
 
-static int virtio_power_init(VirtIODevice *vdev)
+static void virtio_power_realize(DeviceState *dev, Error **errp)
 {
     INFO("initialize virtio-power device\n");
 
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     vpower = VIRTIO_POWER(vdev);
 
     virtio_init(vdev, POWER_DEVICE_NAME, VIRTIO_ID_POWER, 0);
 
     if (vpower == NULL) {
         ERR("failed to initialize power device\n");
-        return -1;
+        return;
     }
 
     vpower->vq = virtio_add_queue(&vpower->vdev, 64, virtio_power_vq);
-
-    return 0;
 }
 
-static int virtio_power_exit(DeviceState *dev)
+static void virtio_power_unrealize(DeviceState *dev, Error **errp)
 {
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     INFO("destroy power device\n");
 
     virtio_cleanup(vdev);
-
-    return 0;
 }
 
 
@@ -249,10 +246,9 @@ static uint32_t virtio_power_get_features(VirtIODevice *vdev,
 
 static void virtio_power_class_init(ObjectClass *klass, void *data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_power_exit;
-    vdc->init = virtio_power_init;
+    vdc->realize = virtio_power_realize;
+    vdc->unrealize = virtio_power_unrealize;
     vdc->get_features = virtio_power_get_features;
     vdc->reset = virtio_power_reset;
 }

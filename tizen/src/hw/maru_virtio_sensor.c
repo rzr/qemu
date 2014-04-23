@@ -346,17 +346,19 @@ static void parse_sensor_capability(char* lists)
     INFO("sensor device capabilty enabled with %02x\n", sensor_capability);
 }
 
-static int virtio_sensor_init(VirtIODevice *vdev)
+static void virtio_sensor_realize(DeviceState *dev, Error **errp)
 {
     INFO("initialize virtio-sensor device\n");
 
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     vsensor = VIRTIO_SENSOR(vdev);
 
     virtio_init(vdev, SENSOR_DEVICE_NAME, VIRTIO_ID_SENSOR, 0);
 
     if (vsensor == NULL) {
         ERR("failed to initialize sensor device\n");
-        return -1;
+        error_set(errp, QERR_DEVICE_INIT_FAILED, SENSOR_DEVICE_NAME);
+        return;
     }
 
     vsensor->vq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_vq);
@@ -366,18 +368,14 @@ static int virtio_sensor_init(VirtIODevice *vdev)
     if (vsensor->sensors) {
         parse_sensor_capability(vsensor->sensors);
     }
-
-    return 0;
 }
 
-static int virtio_sensor_exit(DeviceState *dev)
+static void virtio_sensor_unrealize(DeviceState *dev, Error **errp)
 {
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     INFO("destroy sensor device\n");
 
     virtio_cleanup(vdev);
-
-    return 0;
 }
 
 
@@ -401,10 +399,10 @@ static Property virtio_sensor_properties[] = {
 static void virtio_sensor_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
-    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_sensor_exit;
     dc->props = virtio_sensor_properties;
-    vdc->init = virtio_sensor_init;
+    VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
+    vdc->unrealize= virtio_sensor_unrealize;
+    vdc->realize = virtio_sensor_realize;
     vdc->get_features = virtio_sensor_get_features;
     vdc->reset = virtio_sensor_reset;
 }

@@ -252,17 +252,18 @@ static void parse_jack_capability(char* lists)
     INFO("jack device capabilty enabled with %02x\n", jack_capability);
 }
 
-static int virtio_jack_init(VirtIODevice *vdev)
+static void virtio_jack_realize(DeviceState *dev, Error **errp)
 {
     INFO("initialize virtio-jack device\n");
 
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     vjack = VIRTIO_JACK(vdev);
 
     virtio_init(vdev, JACK_DEVICE_NAME, VIRTIO_ID_JACK, 0);
 
     if (vjack == NULL) {
         ERR("failed to initialize jack device\n");
-        return -1;
+        return;
     }
 
     vjack->vq = virtio_add_queue(&vjack->vdev, 64, virtio_jack_vq);
@@ -272,18 +273,14 @@ static int virtio_jack_init(VirtIODevice *vdev)
     if (vjack->jacks) {
         parse_jack_capability(vjack->jacks);
     }
-
-    return 0;
 }
 
-static int virtio_jack_exit(DeviceState *dev)
+static void virtio_jack_unrealize(DeviceState *dev, Error **errp)
 {
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     INFO("destroy jack device\n");
 
     virtio_cleanup(vdev);
-
-    return 0;
 }
 
 
@@ -308,9 +305,9 @@ static void virtio_jack_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_jack_exit;
     dc->props = virtio_jack_properties;
-    vdc->init = virtio_jack_init;
+    vdc->realize = virtio_jack_realize;
+    vdc->unrealize = virtio_jack_unrealize;
     vdc->get_features = virtio_jack_get_features;
     vdc->reset = virtio_jack_reset;
 }
