@@ -87,7 +87,7 @@ int ecs_get_suspend_state(void)
 }
 
 int ecs_write(int fd, const uint8_t *buf, int len) {
-    TRACE("write buflen : %d, buf : %s", len, (char*)buf);
+    TRACE("write buflen : %d, buf : %s\n", len, (char*)buf);
     if (fd < 0) {
         return -1;
     }
@@ -102,7 +102,7 @@ void ecs_client_close(ECS_Client* clii) {
     pthread_mutex_lock(&mutex_clilist);
 
     if (clii->client_fd > 0) {
-        INFO("ecs client closed with fd: %d", clii->client_fd);
+        INFO("ecs client closed with fd: %d\n", clii->client_fd);
         closesocket(clii->client_fd);
 #ifndef CONFIG_LINUX
         FD_CLR(clii->client_fd, &clii->cs->reads);
@@ -119,7 +119,7 @@ void ecs_client_close(ECS_Client* clii) {
 }
 
 bool send_to_all_client(const char* data, const int len) {
-    TRACE("data len: %d, data: %s", len, data);
+    TRACE("data len: %d, data: %s\n", len, data);
     pthread_mutex_lock(&mutex_clilist);
 
     ECS_Client *clii;
@@ -189,7 +189,7 @@ static Monitor *monitor_create(void) {
 
     mon = g_malloc0(sizeof(*mon));
     if (NULL == mon) {
-        ERR("monitor allocation failed.");
+        ERR("monitor allocation failed.\n");
         return NULL;
     }
 
@@ -198,13 +198,13 @@ static Monitor *monitor_create(void) {
 
 static void ecs_close(ECS_State *cs) {
     ECS_Client *clii;
-    INFO("### Good bye! ECS ###");
+    INFO("### Good bye! ECS ###\n");
 
     if (cs == NULL)
         return;
 
     if (0 <= cs->listen_fd) {
-        INFO("close listen_fd: %d", cs->listen_fd);
+        INFO("close listen_fd: %d\n", cs->listen_fd);
         closesocket(cs->listen_fd);
         cs->listen_fd = -1;
     }
@@ -279,27 +279,27 @@ static void ecs_read(ECS_Client *cli) {
 
     if (cli == NULL)
     {
-        ERR("client is null.");
+        ERR("client is null.\n");
         return;
     }
 #ifndef __WIN32
     if (ioctl(cli->client_fd, FIONREAD, &to_read_bytes) < 0)
     {
-        ERR("ioctl failed");
+        ERR("ioctl failed\n");
         return;
     }
 #else
     unsigned long to_read_bytes_long = 0;
     if (ioctlsocket(cli->client_fd, FIONREAD, &to_read_bytes_long) < 0)
     {
-        ERR("ioctl failed");
+        ERR("ioctl failed\n");
          return;
     }
     to_read_bytes = (int)to_read_bytes_long;
 #endif
 
     if (to_read_bytes == 0) {
-        ERR("ioctl FIONREAD: 0\n");
+        TRACE("ioctl FIONREAD: 0\n");
         goto fail;
     }
 
@@ -307,7 +307,7 @@ static void ecs_read(ECS_Client *cli) {
     {
         if (to_read_bytes < 4)
         {
-            //LOG("insufficient data size to read");
+            //LOG("insufficient data size to read\n");
             return;
         }
 
@@ -316,7 +316,7 @@ static void ecs_read(ECS_Client *cli) {
 
         if (read < 4)
         {
-            ERR("insufficient header size");
+            ERR("insufficient header size\n");
             goto fail;
         }
 
@@ -363,7 +363,7 @@ static void epoll_cli_add(ECS_State *cs, int fd) {
     events.data.fd = fd;
 
     if (epoll_ctl(cs->epoll_fd, EPOLL_CTL_ADD, fd, &events) < 0) {
-        ERR("Epoll control fails.in epoll_cli_add.");
+        ERR("Epoll control fails.in epoll_cli_add.\n");
     }
 }
 #endif
@@ -397,7 +397,7 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 
     ECS_Client *clii = g_malloc0(sizeof(ECS_Client));
     if (NULL == clii) {
-        ERR("ECS_Client allocation failed.");
+        ERR("ECS_Client allocation failed.\n");
         return -1;
     }
 
@@ -421,7 +421,7 @@ static int ecs_add_client(ECS_State *cs, int fd) {
 
     QTAILQ_INSERT_TAIL(&clients, clii, next);
 
-    INFO("Add an ecs client. fd: %d", fd);
+    TRACE("Add an ecs client. fd: %d\n", fd);
 
     pthread_mutex_unlock(&mutex_clilist);
 
@@ -458,7 +458,7 @@ static void ecs_accept(ECS_State *cs) {
         }
     }
     if (0 > ecs_add_client(cs, fd)) {
-        ERR("failed to add client.");
+        ERR("failed to add client.\n");
     }
 }
 
@@ -504,7 +504,7 @@ static void make_keep_alive_msg(void) {
 
     keepalive_buf = g_malloc(len_pack + 4);
     if (!keepalive_buf) {
-        ERR("keep alive message creation is failed.");
+        ERR("keep alive message creation is failed.\n");
         return;
     }
 
@@ -525,17 +525,17 @@ static void alive_checker(void *opaque) {
     QTAILQ_FOREACH(clii, &clients, next)
     {
         if (1 == clii->keep_alive) {
-            INFO("get client fd %d - keep alive fail", clii->client_fd);
+            INFO("get client fd %d - keep alive fail\n", clii->client_fd);
             ecs_client_close(clii);
             continue;
         }
-        TRACE("set client fd %d - keep alive 1", clii->client_fd);
+        TRACE("set client fd %d - keep alive 1\n", clii->client_fd);
         clii->keep_alive = 1;
         send_keep_alive_msg(clii);
     }
 
     if (current_ecs == NULL) {
-        ERR("alive checking is failed because current ecs is null.");
+        ERR("alive checking is failed because current ecs is null.\n");
         return;
     }
 
@@ -555,7 +555,7 @@ static int socket_initialize(ECS_State *cs, QemuOpts *opts) {
         return -1;
     }
 
-    INFO("Listen fd is %d", fd);
+    INFO("Listen fd is %d\n", fd);
 
     qemu_set_nonblock(fd);
 
@@ -615,7 +615,7 @@ static int ecs_loop(ECS_State *cs)
     timeout.tv_usec = 0;
 
     if (select(0, &temps, 0, 0, &timeout) < 0) {
-        ERR("select error.");
+        ERR("select error.\n");
         return -1;
     }
 
@@ -647,7 +647,7 @@ static int ecs_loop(ECS_State *cs)
     timeout.tv_usec = 0;
 
     if ((res = select(MAX_FD_NUM + 1, &temps, NULL, NULL, &timeout)) < 0) {
-        ERR("select failed..");
+        ERR("select failed..\n");
         return -1;
     }
 
@@ -676,7 +676,7 @@ static void* ecs_initialize(void* args) {
     char host_port[16];
     int port = 0;
 
-    INFO("ecs starts initializing.");
+    INFO("ecs starts initializing.\n");
 
     opts = qemu_opts_create(qemu_find_opts(ECS_OPTS_NAME), ECS_OPTS_NAME, 1, &local_err);
     if (error_is_set(&local_err)) {
@@ -689,24 +689,24 @@ static void* ecs_initialize(void* args) {
 
     cs = g_malloc0(sizeof(ECS_State));
     if (NULL == cs) {
-        ERR("ECS_State allocation failed.");
+        ERR("ECS_State allocation failed.\n");
         return NULL;
     }
     port = get_emul_ecs_port();
-    INFO("ecs port: %d", port);
+    INFO("ecs port: %d\n", port);
     sprintf(host_port, "%d", port);
 
     qemu_opt_set(opts, "port", host_port);
     ret = socket_initialize(cs, opts);
     if (ret < 0) {
-        ERR("Socket initialization is failed.");
+        ERR("Socket initialization is failed.\n");
         ecs_close(cs);
         return NULL;
     }
 
     mon = monitor_create();
     if (NULL == mon) {
-        ERR("monitor initialization failed.");
+        ERR("monitor initialization failed.\n");
         ecs_close(cs);
         return NULL;
     }
@@ -715,7 +715,7 @@ static void* ecs_initialize(void* args) {
     current_ecs = cs;
     cs->ecs_running = 1;
 
-    TRACE("ecs_loop entered.");
+    TRACE("ecs_loop entered.\n");
     while (cs->ecs_running) {
         ret = ecs_loop(cs);
         if (0 > ret) {
@@ -723,13 +723,13 @@ static void* ecs_initialize(void* args) {
             break;
         }
     }
-    TRACE("ecs_loop exited.");
+    TRACE("ecs_loop exited.\n");
 
     return NULL;
 }
 
 int stop_ecs(void) {
-    INFO("ecs is closing.");
+    INFO("ecs is closing.\n");
     if (NULL != current_ecs) {
         current_ecs->ecs_running = 0;
         ecs_close(current_ecs);
@@ -744,7 +744,7 @@ int start_ecs(void) {
     pthread_t thread_id;
 
     if (0 != pthread_create(&thread_id, NULL, ecs_initialize, NULL)) {
-        ERR("pthread creation failed.");
+        ERR("pthread creation failed.\n");
         return -1;
     }
     return 0;
@@ -806,7 +806,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
                 QTAILQ_INSERT_TAIL(&clients, cli, next);
             }
             else {
-                ERR("unsupported category is found: %s", msg->category);
+                ERR("unsupported category is found: %s\n", msg->category);
                 pthread_mutex_unlock(&mutex_clilist);
                 goto fail;
             }
@@ -842,7 +842,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
     ecs__master__free_unpacked(master, NULL);
     return true;
 fail:
-    ERR("invalid message type : %d", master->type);
+    ERR("invalid message type : %d\n", master->type);
     ecs__master__free_unpacked(master, NULL);
     return false;
 } 

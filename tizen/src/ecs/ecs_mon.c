@@ -104,7 +104,7 @@ bool send_monitor_ntf(const char* data, int size)
     ECS__Master master = ECS__MASTER__INIT;
     ECS__MonitorNtf ntf = ECS__MONITOR_NTF__INIT;
 
-    TRACE("data size : %d, data : %s", size, data);
+    TRACE("data size : %d, data : %s\n", size, data);
 
     ntf.command = (char*) g_malloc(size + 1);
     memcpy(ntf.command, data, size);
@@ -184,7 +184,7 @@ static void ecs_protocol_emitter(ECS_Client *clii, const char* type,
     QDict *qmp;
     QObject *obj;
 
-    TRACE("ecs_protocol_emitter called.");
+    TRACE("ecs_protocol_emitter called.\n");
     //trace_monitor_protocol_emitter(clii->cs->mon);
 
     if (!monitor_has_error(clii->cs->mon)) {
@@ -575,7 +575,7 @@ out:
 
 bool msgproc_monitor_req(ECS_Client *ccli, ECS__MonitorReq* msg)
 {
-    TRACE(">> monitor req: data = %s", msg->command);
+    TRACE(">> monitor req: data = %s\n", msg->command);
     ecs_json_message_parser_feed(&(ccli->parser), (const char *) msg->command, strlen(msg->command));
     return true;
 }

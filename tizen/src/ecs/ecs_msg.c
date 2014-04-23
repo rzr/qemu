@@ -69,10 +69,10 @@
 #include "skin/maruskin_operation.h"
 #include "skin/maruskin_server.h"
 #include "emulator.h"
+#include "emul_state.h"
 
 #include "debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, ecs);
-
 
 #define MAX_BUF_SIZE  255
 // utility functions
@@ -86,7 +86,7 @@ static void* build_master(ECS__Master* master, int* payloadsize)
 {
     int len_pack = ecs__master__get_packed_size(master);
     *payloadsize = len_pack + 4;
-    TRACE("pack size=%d", len_pack);
+    TRACE("pack size=%d\n", len_pack);
     void* buf = g_malloc(len_pack + 4);
     if (!buf)
         return NULL;
@@ -105,7 +105,7 @@ static bool send_single_msg(ECS__Master* master, ECS_Client *clii)
     void* buf = build_master(master, &payloadsize);
     if (!buf)
     {
-        ERR("invalid buf");
+        ERR("invalid buf\n");
         return false;
     }
 
@@ -124,7 +124,7 @@ bool send_to_ecp(ECS__Master* master)
     void* buf = build_master(master, &payloadsize);
     if (!buf)
     {
-        ERR("invalid buf");
+        ERR("invalid buf\n");
         return false;
     }
 
@@ -144,7 +144,7 @@ static bool send_to_single_client(ECS__Master* master, ECS_Client *ccli)
     void* buf = build_master(master, &payloadsize);
     if (!buf)
     {
-        ERR("invalid buf");
+        ERR("invalid buf\n");
         return false;
     }
 
@@ -200,7 +200,7 @@ static void msgproc_injector_ans(ECS_Client* ccli, const char* category, bool su
     ECS__Master master = ECS__MASTER__INIT;
     ECS__InjectorAns ans = ECS__INJECTOR_ANS__INIT;
 
-    TRACE("injector ans - category : %s, succed : %d", category, succeed);
+    TRACE("injector ans - category : %s, succed : %d\n", category, succeed);
 
     catlen = strlen(category);
     ans.category = (char*) g_malloc0(catlen + 1);
@@ -216,7 +216,7 @@ static void msgproc_injector_ans(ECS_Client* ccli, const char* category, bool su
         g_free(ans.category);
 }
 
-static void msgproc_device_ans(ECS_Client* ccli, const char* category, bool succeed)
+static void msgproc_device_ans(ECS_Client* ccli, const char* category, bool succeed, char* data)
 {
     if (ccli == NULL) {
         return;
@@ -225,13 +225,26 @@ static void msgproc_device_ans(ECS_Client* ccli, const char* category, bool succ
     ECS__Master master = ECS__MASTER__INIT;
     ECS__DeviceAns ans = ECS__DEVICE_ANS__INIT;
 
-    TRACE("device ans - category : %s, succed : %d", category, succeed);
+    TRACE("device ans - category : %s, succed : %d\n", category, succeed);
 
     catlen = strlen(category);
     ans.category = (char*) g_malloc0(catlen + 1);
     memcpy(ans.category, category, catlen);
 
     ans.errcode = !succeed;
+
+    if (data != NULL) {
+        ans.length = strlen(data);
+
+        if (ans.length > 0) {
+            ans.has_data = 1;
+            ans.data.data = g_malloc(ans.length);
+            ans.data.len = ans.length;
+            memcpy(ans.data.data, data, ans.length);
+            TRACE("data = %s, length = %hu\n", data, ans.length);
+        }
+    }
+
     master.type = ECS__MASTER__TYPE__DEVICE_ANS;
     master.device_ans = &ans;
 
@@ -260,19 +273,19 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     {
         datalen = msg->data.len;
     }
-    //LOG(">> count= %d", ++ijcount);
+    //TRACE(">> count= %d", ++ijcount);
 
-    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
+    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d\n", cmd, length,
             action, group);
 
     /*SD CARD msg process*/
     if (!strncmp(cmd, MSG_TYPE_SDCARD, strlen(MSG_TYPE_SDCARD))) {
         if (msg->has_data) {
-            TRACE("msg(%zu) : %s", msg->data.len, msg->data.data);
+            TRACE("msg(%zu) : %s\n", msg->data.len, msg->data.data);
             handle_sdcard((char*) msg->data.data, msg->data.len);
 
         } else {
-            ERR("has no msg");
+            ERR("has no msg\n");
         }
 
     } else if (!strncmp(cmd, MSG_TYPE_SENSOR, sizeof(MSG_TYPE_SENSOR))) {
@@ -318,7 +331,7 @@ injector_send:
         {
             const char* data = (const char*)msg->data.data;
             memcpy(sndbuf + 14, data, datalen);
-            TRACE(">> print len = %zd, data\" %s\"", strlen(data), data);
+            TRACE(">> print len = %zd, data\" %s\"\n", strlen(data), data);
         }
     }
 
@@ -405,7 +418,7 @@ void send_target_image_information(ECS_Client* ccli) {
         ans.data.len = length;
         memcpy(ans.data.data, tizen_target_img_path, length);
 
-        TRACE("data = %s, length = %hu", tizen_target_img_path, length);
+        TRACE("data = %s, length = %hu\n", tizen_target_img_path, length);
     }
 
     master.type = ECS__MASTER__TYPE__DEVICE_ANS;
@@ -439,7 +452,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         memcpy(data, msg->data.data, msg->data.len);
     }
 
-    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d", cmd, length,
+    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d\n", cmd, length,
             action, group);
 
     if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
@@ -459,27 +472,27 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             if (data != NULL) {
                 set_injector_data(data);
             } else {
-                ERR("sensor set data is null");
+                ERR("sensor set data is null\n");
             }
         }
-        msgproc_device_ans(ccli, cmd, true);
+        msgproc_device_ans(ccli, cmd, true, NULL);
     } else if (!strncmp(cmd, "Network", 7)) {
         if (data != NULL) {
-            TRACE(">>> Network msg: '%s'", data);
+            TRACE(">>> Network msg: '%s'\n", data);
             if(net_slirp_redir(data) < 0) {
-                ERR( "redirect [%s] fail", data);
+                ERR( "redirect [%s] fail\n", data);
             } else {
-                TRACE("redirect [%s] success", data);
+                TRACE("redirect [%s] success\n", data);
             }
         } else {
-            ERR("Network redirection data is null.");
+            ERR("Network redirection data is null.\n");
         }
     } else if (!strncmp(cmd, "HKeyboard", 8)) {
         if (group == MSG_GROUP_STATUS) {
             send_host_keyboard_ntf(mloop_evcmd_get_hostkbd_status());
         } else {
             if (data == NULL) {
-                ERR("HKeyboard data is NULL");
+                ERR("HKeyboard data is NULL\n");
                 return false;
             }
 
@@ -500,7 +513,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 #endif
 
         if (data == NULL) {
-            ERR("gesture data is NULL");
+            ERR("gesture data is NULL\n");
             return false;
         }
 
@@ -533,8 +546,44 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         }
     } else if (!strncmp(cmd, "info", 4)) {
         // check to emulator target image path
-        TRACE("receive info message %s", tizen_target_img_path);
+        TRACE("receive info message %s\n", tizen_target_img_path);
         send_target_image_information(ccli);
+
+    } else if (!strncmp(cmd, "input", strlen("input"))) {
+        // cli input
+        TRACE("receive input message [%s]\n", data);
+
+        if (group == 0) {
+
+            TRACE("input keycode data : [%s]\n", data);
+
+            char token[] = " ";
+            char *section = strtok(data, token);
+            int keycode = atoi(section);
+            if (action == 1) {
+                //action 1 press
+                do_hw_key_event(KEY_PRESSED, keycode);
+
+            } else if (action == 2) {
+                //action 2 released
+                do_hw_key_event(KEY_RELEASED, keycode);
+
+            } else {
+                ERR("unknown action : [%d]\n", (int)action);
+            }
+        } else if (group == 1) {
+            //spec out
+            TRACE("input category's group 1 is spec out\n");
+        } else {
+            ERR("unknown group [%d]\n", (int)group);
+        }
+        msgproc_device_ans(ccli, cmd, true, NULL);
+
+    } else if (!strncmp(cmd, "vmname", strlen("vmname"))) {
+        char* vmname = get_emul_vm_name();
+        msgproc_device_ans(ccli, cmd, true, vmname);
+    } else{
+        ERR("unknown cmd [%s]\n", cmd);
     }
 
     if (data) {
@@ -549,7 +598,7 @@ bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg)
     int datalen = msg->data.len;
     void* data = (void*)g_malloc(datalen);
     if(!data) {
-        ERR("g_malloc failed!");
+        ERR("g_malloc failed!\n");
         return false;
     }
 
@@ -780,7 +829,7 @@ bool send_nfc_ntf(struct nfc_msg_info* msg)
         TRACE("header category = %s", cat);
     }
     else {
-        ERR("cannot find client!");
+        ERR("cannot find client!\n");
     }
 
     ECS__Master master = ECS__MASTER__INIT;
