@@ -126,7 +126,7 @@ static void maru_device_init(void)
 #endif
 
     if (enable_vigs || enable_yagl) {
-        render_queue = work_queue_create();
+        render_queue = work_queue_create("render_queue");
     }
 
     if (enable_vigs) {

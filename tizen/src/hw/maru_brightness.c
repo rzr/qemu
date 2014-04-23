@@ -216,7 +216,6 @@ static void brightness_classinit(ObjectClass *klass, void *data)
 {
     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
 
-    k->no_hotplug = 1;
     k->init = brightness_initfn;
     k->exit = brightness_exitfn;
 }
