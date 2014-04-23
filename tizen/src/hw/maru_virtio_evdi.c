@@ -224,7 +224,7 @@ static void virtio_evdi_realize(DeviceState *dev, Error **errp)
     vio_evdi = VIRTIO_EVDI(dev);
     if (vio_evdi == NULL) {
         ERR("failed to initialize evdi device\n");
-        return; //need any guide for return value
+        return;
     }
 
     INFO("initialize evdi device\n");
