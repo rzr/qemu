@@ -1,3 +1,6 @@
+* 1.7.36
+- debug log fix and cli input support
+== hakhyun Kim <haken.kim@samsung.com> 2014-04-22
 * 1.7.35
 - do not call qemu_ds_sdl_update directly
 == GiWoong Kim <giwoong.kim@samsung.com> 2014-04-17
