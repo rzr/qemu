@@ -43,6 +43,4 @@ extern uint32_t brightness_off;
 extern uint8_t brightness_tbl[];
 extern pixman_image_t *brightness_image;
 
-DeviceState *pci_maru_brightness_init(PCIBus *bus);
-
 #endif /* MARU_BRIGHTNESS_H_ */

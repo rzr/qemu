@@ -52,6 +52,4 @@ extern uint16_t overlay1_height;
 extern pixman_image_t *overlay0_image;
 extern pixman_image_t *overlay1_image;
 
-DeviceState *pci_maru_overlay_init(PCIBus *bus);
-
 #endif /* MARU_OVERLAY_H_ */

@@ -2370,12 +2370,6 @@ static int device_init_func(QemuOpts *opts, void *opaque)
 {
     DeviceState *dev;
 
-#ifdef CONFIG_MARU
-    if(maru_device_check(opts) == -1) {
-        return 0;
-    }
-#endif
-	
     dev = qdev_device_add(opts);
     if (!dev)
         return -1;

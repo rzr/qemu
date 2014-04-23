@@ -69,8 +69,6 @@
 #include "maru_common.h"
 #include "guest_debug.h"
 #include "maru_pm.h"
-#include "maru_brightness.h"
-#include "maru_overlay.h"
 #if defined(__linux__)
 #include <X11/Xlib.h>
 #endif
@@ -83,10 +81,6 @@ extern const char *vigs_backend;
 extern int enable_spice;
 
 #define MAX_IDE_BUS 2
-
-#if defined(CONFIG_LIBAV)
-int maru_brill_codec_pci_device_init(PCIBus *bus);
-#endif
 
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
 static const int ide_iobase2[MAX_IDE_BUS] = { 0x3f6, 0x376 };
@@ -118,12 +112,6 @@ static void maru_device_init(void)
 #endif
     struct work_queue *render_queue = NULL;
     struct winsys_interface *vigs_wsi = NULL;
-
-    pci_maru_overlay_init(pci_bus);
-    pci_maru_brightness_init(pci_bus);
-#if defined(CONFIG_LIBAV)
-    maru_brill_codec_pci_device_init(pci_bus);
-#endif
 
     if (enable_vigs || enable_yagl) {
         render_queue = work_queue_create();

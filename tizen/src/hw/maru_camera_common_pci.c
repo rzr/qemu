@@ -200,10 +200,21 @@ static void marucam_tx_bh(void *opaque)
 /*
  *  Initialization function
  */
+
 static int marucam_initfn(PCIDevice *dev)
 {
     MaruCamState *s = DO_UPCAST(MaruCamState, dev, dev);
     uint8_t *pci_conf = s->dev.config;
+
+    /* Check available webcam
+     * If there is not one, we don't init this device
+     */
+    if (!marucam_device_check(1)) {
+        s->initialized = false;
+        ERR("Failed to check the camera device, "
+            "stop the camera initialization. You can *not* use the camera\n");
+        return 1;
+    }
 
     pci_config_set_interrupt_pin(pci_conf, 0x03);
 
@@ -228,6 +239,7 @@ static int marucam_initfn(PCIDevice *dev)
     marucam_device_init(s);
 
     s->tx_bh = qemu_bh_new(marucam_tx_bh, s);
+    s->initialized = true;
     INFO("[%s] camera device was initialized.\n", __func__);
 
     return 0;
@@ -241,14 +253,15 @@ static void marucam_exitfn(PCIDevice *pci_dev)
     MaruCamState *s =
         OBJECT_CHECK(MaruCamState, pci_dev, MARU_PCI_CAMERA_DEVICE_NAME);
 
-    marucam_device_exit(s);
-    g_free(s->param);
-    qemu_cond_destroy(&s->thread_cond);
-    qemu_mutex_destroy(&s->thread_mutex);
+    if (s->initialized) {
+        marucam_device_exit(s);
+        g_free(s->param);
+        qemu_cond_destroy(&s->thread_cond);
+        qemu_mutex_destroy(&s->thread_mutex);
 
-    memory_region_destroy(&s->vram);
-    memory_region_destroy(&s->mmio);
-
+        memory_region_destroy(&s->vram);
+        memory_region_destroy(&s->mmio);
+    }
 
     INFO("[%s] camera device was released.\n", __func__);
 }
