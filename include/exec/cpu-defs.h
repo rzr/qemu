@@ -119,8 +119,8 @@ QEMU_BUILD_BUG_ON(sizeof(CPUTLBEntry) != (1 << CPU_TLB_ENTRY_BITS));
     /* soft mmu support */                                              \
     CPU_COMMON_TLB                                                      \
                                                                         \
-    /* for hax */                                                       \
-    int hax_vcpu_dirty;                                                 \
-    struct hax_vcpu_state *hax_vcpu;                                    \
+    /* for hax */                                                       \ 
+    int hax_vcpu_dirty;                                                 \ 
+    struct hax_vcpu_state *hax_vcpu;                                    \ 
 
 #endif
