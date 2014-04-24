@@ -24,6 +24,7 @@
  * some code from KVM side
  */
 
+#include "strings.h"
 #include "hax-i386.h"
 #include "sysemu/kvm.h"
 
@@ -51,7 +52,7 @@ int hax_enabled(void)
 
 void hax_disable(int disable)
 {
-	hax_disabled = disable;
+    hax_disabled = disable;
 }
 
 /* Currently non-PG modes are emulated by QEMU */
@@ -63,7 +64,7 @@ int hax_vcpu_emulation_mode(CPUArchState *env)
 static int hax_prepare_emulation(CPUArchState *env)
 {
     /* Flush all emulation states */
-    tlb_flush(env, 1);
+    tlb_flush(ENV_GET_CPU(env), 1);
     tb_flush(env);
     /* Sync the vcpu state from hax kernel module */
     hax_vcpu_sync_state(env, 0);
@@ -76,25 +77,26 @@ static int hax_prepare_emulation(CPUArchState *env)
  */
 static int hax_stop_tbloop(CPUArchState *env)
 {
-	switch (env->hax_vcpu->emulation_state)
-	{
-	case HAX_EMULATE_STATE_MMIO:
-		if (env->hax_vcpu->resync) {
-			hax_prepare_emulation(env);	
-			env->hax_vcpu->resync = 0;
-			return 0;
-		}
-		return 1;
-		break;
-	case HAX_EMULATE_STATE_INITIAL:
-        case HAX_EMULATE_STATE_REAL:
-		if (!hax_vcpu_emulation_mode(env))
-			return 1;
-            break;
-        default:
-            dprint("Invalid emulation state in hax_sto_tbloop state %x\n",
-              env->hax_vcpu->emulation_state);
-            break;
+    CPUState *cpu = ENV_GET_CPU(env);
+    switch (cpu->hax_vcpu->emulation_state)
+    {
+    case HAX_EMULATE_STATE_MMIO:
+        if (cpu->hax_vcpu->resync) {
+            hax_prepare_emulation(env);     
+            cpu->hax_vcpu->resync = 0;
+            return 0;
+        }
+        return 1;
+        break;
+    case HAX_EMULATE_STATE_INITIAL:
+    case HAX_EMULATE_STATE_REAL:
+        if (!hax_vcpu_emulation_mode(env))
+            return 1;
+        break;
+    default:
+        dprint("Invalid emulation state in hax_sto_tbloop state %x\n",
+        cpu->hax_vcpu->emulation_state);
+        break;
     }
 
     return 0;
@@ -102,9 +104,10 @@ static int hax_stop_tbloop(CPUArchState *env)
 
 int hax_stop_emulation(CPUArchState *env)
 {
+    CPUState *cpu = ENV_GET_CPU(env);
     if (hax_stop_tbloop(env))
     {
-        env->hax_vcpu->emulation_state =  HAX_EMULATE_STATE_NONE;
+        cpu->hax_vcpu->emulation_state =  HAX_EMULATE_STATE_NONE;
         /*
          * QEMU emulation changes vcpu state,
          * Sync the vcpu state to HAX kernel module
@@ -120,7 +123,7 @@ int hax_stop_translate(CPUArchState *env)
 {
     struct hax_vcpu_state *vstate;
 
-    vstate = env->hax_vcpu;
+    vstate = ENV_GET_CPU(env)->hax_vcpu;
     assert(vstate->emulation_state);
     if (vstate->emulation_state == HAX_EMULATE_STATE_MMIO )
         return 1;
@@ -135,7 +138,7 @@ int valid_hax_tunnel_size(uint16_t size)
 
 hax_fd hax_vcpu_get_fd(CPUArchState *env)
 {
-    struct hax_vcpu_state *vcpu = env->hax_vcpu;
+    struct hax_vcpu_state *vcpu = ENV_GET_CPU(env)->hax_vcpu;
     if (!vcpu)
         return HAX_INVALID_FD;
     return vcpu->fd;
@@ -148,32 +151,32 @@ uint32_t hax_lest_version = 0x1;
 
 static int hax_get_capability(struct hax_state *hax)
 {
-	int ret;
-	struct hax_capabilityinfo capinfo, *cap = &capinfo;
+    int ret;
+    struct hax_capabilityinfo capinfo, *cap = &capinfo;
 
-	ret = hax_capability(hax, cap);
-	if (ret)
-		return ret;
+    ret = hax_capability(hax, cap);
+    if (ret)
+        return ret;
 
-	if ( ((cap->wstatus & HAX_CAP_WORKSTATUS_MASK) ==
-            HAX_CAP_STATUS_NOTWORKING ))
-	{
-		if (cap->winfo & HAX_CAP_FAILREASON_VT)
-			dprint("VTX feature is not enabled. which will cause HAX driver not working.\n");
-		else if (cap->winfo & HAX_CAP_FAILREASON_NX)
-			dprint("NX feature is not enabled, which will cause HAX driver not working.\n");
-		return -ENXIO;
-	}
+    if ( ((cap->wstatus & HAX_CAP_WORKSTATUS_MASK) ==
+        HAX_CAP_STATUS_NOTWORKING ))
+    {
+        if (cap->winfo & HAX_CAP_FAILREASON_VT)
+            dprint("VTX feature is not enabled. which will cause HAX driver not working.\n");
+        else if (cap->winfo & HAX_CAP_FAILREASON_NX)
+            dprint("NX feature is not enabled, which will cause HAX driver not working.\n");
+        return -ENXIO;
+    }
 
-	if (cap->wstatus & HAX_CAP_MEMQUOTA)
-	{
-		if (cap->mem_quota < hax->mem_quota)
-		{
-			dprint("The memory needed by this VM exceeds the driver limit.\n");
-			return -ENOSPC;
-		}
-	}
-	return 0;
+    if (cap->wstatus & HAX_CAP_MEMQUOTA)
+    {
+        if (cap->mem_quota < hax->mem_quota)
+        {
+            dprint("The memory needed by this VM exceeds the driver limit.\n");
+            return -ENOSPC;
+        }
+    }
+    return 0;
 }
 
 static int hax_version_support(struct hax_state *hax)
@@ -256,7 +259,7 @@ error:
 
 int hax_vcpu_destroy(CPUArchState *env)
 {
-    struct hax_vcpu_state *vcpu = env->hax_vcpu;
+    struct hax_vcpu_state *vcpu = ENV_GET_CPU(env)->hax_vcpu;
 
     if (!hax_global.vm)
     {
@@ -289,9 +292,9 @@ int hax_init_vcpu(CPUArchState *env)
         exit(-1);
     }
 
-    env->hax_vcpu = hax_global.vm->vcpus[cpu->cpu_index];
-    env->hax_vcpu->emulation_state = HAX_EMULATE_STATE_INITIAL;
-    env->hax_vcpu_dirty = 1;
+    cpu->hax_vcpu = hax_global.vm->vcpus[cpu->cpu_index];
+    cpu->hax_vcpu->emulation_state = HAX_EMULATE_STATE_INITIAL;
+    cpu->hax_vcpu_dirty = 1;
     qemu_register_reset(hax_reset_vcpu_state, env);
 
     return ret;
@@ -355,13 +358,13 @@ int hax_vm_destroy(struct hax_vm *vm)
 static void
 hax_region_add(MemoryListener *listener, MemoryRegionSection *section)
 {
-	hax_set_phys_mem(section);
+    hax_set_phys_mem(section);
 }
 
 static void
 hax_region_del(MemoryListener *listener, MemoryRegionSection *section)
 {
-	hax_set_phys_mem(section);
+    hax_set_phys_mem(section);
 }
 
 
@@ -371,19 +374,19 @@ static void hax_log_sync(MemoryListener *listener, MemoryRegionSection *section)
     MemoryRegion *mr = section->mr;
     unsigned long c;
     unsigned int len = ((int128_get64(section->size) / TARGET_PAGE_SIZE) + HOST_LONG_BITS - 1) /
-    			HOST_LONG_BITS;
+                        HOST_LONG_BITS;
     unsigned long bitmap[len];
     int i, j;
 
     for (i = 0; i < len; i++) {
-	    bitmap[i] = 1;
-	    c = leul_to_cpu(bitmap[i]);
-	    do {
-	        j = ffsl(c) - 1;
-	        c &= ~(1ul << j);
+        bitmap[i] = 1;
+        c = leul_to_cpu(bitmap[i]);
+        do {
+            j = ffsl(c) - 1;
+            c &= ~(1ul << j);
             memory_region_set_dirty(mr, (i * HOST_LONG_BITS + j) *
-            		TARGET_PAGE_SIZE, TARGET_PAGE_SIZE);
-	    } while (c != 0);
+                TARGET_PAGE_SIZE, TARGET_PAGE_SIZE);
+        } while (c != 0);
     }
 }
 
@@ -414,7 +417,7 @@ static void hax_commit(MemoryListener *listener)
 }
 
 static void hax_region_nop(MemoryListener *listener,
-			MemoryRegionSection *section)
+                        MemoryRegionSection *section)
 {
 }
 
@@ -445,16 +448,17 @@ static void hax_handle_interrupt(CPUArchState *env, int mask)
 
 int hax_pre_init(uint64_t ram_size)
 {
-	struct hax_state *hax = NULL;
+    struct hax_state *hax = NULL;
 
-	dprint("hax_disabled %d\n", hax_disabled);
-	if (hax_disabled)
-		return 0;
-	hax = &hax_global;
-	memset(hax, 0, sizeof(struct hax_state));
-	hax->mem_quota = ram_size;
-	dprint("ram_size %lx\n", ram_size);
-	return 0;
+    dprint("hax_disabled %d\n", hax_disabled);
+    if (hax_disabled)
+        return 0;
+    hax = &hax_global;
+    memset(hax, 0, sizeof(struct hax_state));
+    hax->mem_quota = ram_size;
+    dprint("ram_size %lx\n", ram_size);
+
+    return 0;
 }
 
 static int hax_init(void)
@@ -479,9 +483,9 @@ static int hax_init(void)
 
     if (ret)
     {
-    	if (ret != -ENOSPC)
-	    ret = -EINVAL;
-	goto error;
+        if (ret != -ENOSPC)
+            ret = -EINVAL;
+        goto error;
     }
 
     if (!hax_version_support(hax))
@@ -516,21 +520,21 @@ error:
 
 int hax_accel_init(void)
 {
-	if (hax_disabled) {
-		dprint("HAX is disabled and emulator runs in emulation mode.\n");
-		return 0;
-	}
+    if (hax_disabled) {
+        dprint("HAX is disabled and emulator runs in emulation mode.\n");
+        return 0;
+    }
 
-	ret_hax_init = hax_init();
-	if (ret_hax_init && (ret_hax_init != -ENOSPC)) {
-		dprint("No accelerator found.\n");
-	    return ret_hax_init;
-	} else {
-		dprint("HAX is %s and emulator runs in %s mode.\n",
-		!ret_hax_init ? "working" : "not working",
-		!ret_hax_init ? "fast virt" : "emulation");
-		return 0;
-	}
+    ret_hax_init = hax_init();
+    if (ret_hax_init && (ret_hax_init != -ENOSPC)) {
+        dprint("No accelerator found.\n");
+        return ret_hax_init;
+    } else {
+        dprint("HAX is %s and emulator runs in %s mode.\n",
+        !ret_hax_init ? "working" : "not working",
+        !ret_hax_init ? "fast virt" : "emulation");
+        return 0;
+    }
 }
 
 int hax_handle_io(CPUArchState *env, uint32_t df, uint16_t port, int direction,
@@ -581,9 +585,9 @@ int hax_handle_io(CPUArchState *env, uint32_t df, uint16_t port, int direction,
 
 static int hax_vcpu_interrupt(CPUArchState *env)
 {
-    struct hax_vcpu_state *vcpu = env->hax_vcpu;
-    struct hax_tunnel *ht = vcpu->tunnel;
     CPUState *cpu = ENV_GET_CPU(env);
+    struct hax_vcpu_state *vcpu = cpu->hax_vcpu;
+    struct hax_tunnel *ht = vcpu->tunnel;
 
     /*
      * Try to inject an interrupt if the guest can accept it
@@ -614,7 +618,7 @@ static int hax_vcpu_interrupt(CPUArchState *env)
 
 void hax_raise_event(CPUArchState *env)
 {
-    struct hax_vcpu_state *vcpu = env->hax_vcpu;
+    struct hax_vcpu_state *vcpu = ENV_GET_CPU(env)->hax_vcpu;
 
     if (!vcpu)
         return;
@@ -634,9 +638,9 @@ extern void qemu_system_reset_request(void);
 static int hax_vcpu_hax_exec(CPUArchState *env)
 {
     int ret = 0;
-    struct hax_vcpu_state *vcpu = env->hax_vcpu;
-    struct hax_tunnel *ht = vcpu->tunnel;
     CPUState *cpu = ENV_GET_CPU(env);
+    struct hax_vcpu_state *vcpu = cpu->hax_vcpu;
+    struct hax_tunnel *ht = vcpu->tunnel;
 
     if (hax_vcpu_emulation_mode(env))
     {
@@ -650,17 +654,16 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
     do {
         int hax_ret;
 
-	
         if (cpu->exit_request) {
             ret = HAX_EMUL_EXITLOOP ;
             break;
         }
 
 #if 0
-	if (env->hax_vcpu_dirty) {
-		hax_vcpu_sync_state(env, 1);
-		env->hax_vcpu_dirty = 0;
-	}
+        if (env->hax_vcpu_dirty) {
+                hax_vcpu_sync_state(env, 1);
+                env->hax_vcpu_dirty = 0;
+        }
 #endif
 
         hax_vcpu_interrupt(env);
@@ -695,7 +698,7 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
                 break;
                 /* Guest state changed, currently only for shutdown */
             case HAX_EXIT_STATECHANGE:
-	        dprint("VCPU shutdown request\n");
+                dprint("VCPU shutdown request\n");
                 qemu_system_reset_request();
                 hax_prepare_emulation(env);
                 cpu_dump_state(cpu, stderr, fprintf, 0);
@@ -714,7 +717,7 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
                     /* hlt instruction with interrupt disabled is shutdown */
                     env->eflags |= IF_MASK;
                     cpu->halted = 1;
-                    env->exception_index = EXCP_HLT;
+                    cpu->exception_index = EXCP_HLT;
                     ret = HAX_EMUL_HLT;
                 }
                 break;
@@ -734,37 +737,40 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
 
     if (cpu->exit_request) {
         cpu->exit_request = 0;
-        env->exception_index = EXCP_INTERRUPT;
+        cpu->exception_index = EXCP_INTERRUPT;
     }
     return ret;
 }
 
+#if 0
 static void do_hax_cpu_synchronize_state(void *_env)
 {
-	CPUArchState *env = _env;
-	if (!env->hax_vcpu_dirty) {
-		hax_vcpu_sync_state(env, 0);
-		env->hax_vcpu_dirty = 1;
-	}
+    CPUArchState *env = _env;
+    CPUState *cpu = ENV_GET_CPU(env);
+    if (!cpu->hax_vcpu_dirty) {
+        hax_vcpu_sync_state(env, 0);
+        cpu->hax_vcpu_dirty = 1;
+    }
 }
 
 void hax_cpu_synchronize_state(CPUState *cpu)
 {
-	if (!((CPUArchState *)cpu->env_ptr)->hax_vcpu_dirty) {
-		run_on_cpu(cpu, do_hax_cpu_synchronize_state, cpu);
-	}
+    if (!cpu->hax_vcpu_dirty) {
+        run_on_cpu(cpu, do_hax_cpu_synchronize_state, cpu);
+    }
 }
+#endif
 
 void hax_cpu_synchronize_post_reset(CPUArchState *env)
 {
-	hax_vcpu_sync_state(env, 1);
-	env->hax_vcpu_dirty = 0;
+    hax_vcpu_sync_state(env, 1);
+    ENV_GET_CPU(env)->hax_vcpu_dirty = 0;
 }
 
 void hax_cpu_synchronize_post_init(CPUArchState *env)
 {
-	hax_vcpu_sync_state(env, 1);
-	env->hax_vcpu_dirty = 0;
+    hax_vcpu_sync_state(env, 1);
+    ENV_GET_CPU(env)->hax_vcpu_dirty = 0;
 }
 
 /*
@@ -774,11 +780,12 @@ int hax_vcpu_exec(CPUArchState *env)
 {
     int next = 0, ret = 0;
     struct hax_vcpu_state *vcpu;
+    CPUState *cpu = ENV_GET_CPU(env);
 
-    if (env->hax_vcpu->emulation_state != HAX_EMULATE_STATE_NONE)
+    if (cpu->hax_vcpu->emulation_state != HAX_EMULATE_STATE_NONE)
         return 1;
 
-    vcpu = env->hax_vcpu;
+    vcpu = cpu->hax_vcpu;
     next = hax_vcpu_hax_exec(env);
     switch (next)
     {
@@ -1219,12 +1226,10 @@ void hax_reset_vcpu_state(void *opaque)
     CPUState *cpu;
     for (cpu = first_cpu; cpu != NULL; cpu = CPU_NEXT(cpu))
     {
-        CPUArchState *env = (CPUArchState *) cpu->env_ptr;
         dprint("*********ReSet hax_vcpu->emulation_state \n");
-        env->hax_vcpu->emulation_state  = HAX_EMULATE_STATE_INITIAL;
-        env->hax_vcpu->tunnel->user_event_pending = 0;
-        env->hax_vcpu->tunnel->ready_for_interrupt_injection = 0;
+        cpu->hax_vcpu->emulation_state  = HAX_EMULATE_STATE_INITIAL;
+        cpu->hax_vcpu->tunnel->user_event_pending = 0;
+        cpu->hax_vcpu->tunnel->ready_for_interrupt_injection = 0;
     }
 }
-
 

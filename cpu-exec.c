@@ -334,7 +334,7 @@ int cpu_exec(CPUArchState *env)
 
 #ifdef CONFIG_HAX
             if (hax_enabled() && !hax_vcpu_exec(env))
-                longjmp(env->jmp_env, 1);
+                longjmp(cpu->jmp_env, 1);
 #endif
 
             next_tb = 0; /* force lookup of first TB */
@@ -383,7 +383,7 @@ int cpu_exec(CPUArchState *env)
                             cpu->interrupt_request &= ~CPU_INTERRUPT_SMI;
 #ifdef CONFIG_HAX
                             if (hax_enabled())
-                                env->hax_vcpu->resync = 1;
+                                cpu->hax_vcpu->resync = 1;
 #endif
                             do_smm_enter(x86_cpu);
                             next_tb = 0;
@@ -712,7 +712,7 @@ int cpu_exec(CPUArchState *env)
                 cpu->current_tb = NULL;
 #ifdef CONFIG_HAX
                 if (hax_enabled() && hax_stop_emulation(env))
-                    cpu_loop_exit(env);
+                    cpu_loop_exit(cpu);
 #endif
                 /* reset soft MMU for next block (it can currently
                    only be set by a memory fault) */
