@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * HyunJun Son
