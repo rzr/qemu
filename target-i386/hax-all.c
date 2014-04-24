@@ -714,7 +714,7 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
                     /* hlt instruction with interrupt disabled is shutdown */
                     env->eflags |= IF_MASK;
                     cpu->halted = 1;
-                    cpu->exception_index = EXCP_HLT;
+                    env->exception_index = EXCP_HLT;
                     ret = HAX_EMUL_HLT;
                 }
                 break;
@@ -734,7 +734,7 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
 
     if (cpu->exit_request) {
         cpu->exit_request = 0;
-        cpu->exception_index = EXCP_INTERRUPT;
+        env->exception_index = EXCP_INTERRUPT;
     }
     return ret;
 }
