@@ -216,7 +216,7 @@ else
 fi
 
 # append common flags
-CONFIGURE_APPEND="--enable-maru --enable-libav --enable-curl $CONFIGURE_APPEND"
+CONFIGURE_APPEND="--enable-maru --enable-libav --enable-curl --disable-gtk $CONFIGURE_APPEND"
 
 if [ -z ${PKG_CONFIG_PATH} ] ; then	# avoid pkg-config bug on Windows
 export PKG_CONFIG_PATH=${TIZEN_SDK_DEV_PATH}/distrib/lib/pkgconfig
@@ -246,6 +246,8 @@ echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
 exec ./configure \
+ --extra-cflags=-Werror=implicit-function-declaration \
+ --extra-cflags=-Werror=implicit-int \
  --extra-ldflags=-Wl,--large-address-aware \
  --cc=gcc \
  --audio-drv-list=winwave \
