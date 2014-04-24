@@ -43,6 +43,11 @@
 //#include <malloc.h>
 //#endif
 
+// to use "alloca()" in Windows.
+#ifdef __WIN32
+#include <malloc.h>
+#endif
+
 #ifndef PRINT_UNPACK_ERRORS
 #define PRINT_UNPACK_ERRORS              1
 #endif

@@ -369,6 +369,8 @@ hax_region_del(MemoryListener *listener, MemoryRegionSection *section)
 
 
 /* currently we fake the dirty bitmap sync, always dirty */
+// avoid implicit declaration warning on Windows
+int ffsl(long value);
 static void hax_log_sync(MemoryListener *listener, MemoryRegionSection *section)
 {
     MemoryRegion *mr = section->mr;
