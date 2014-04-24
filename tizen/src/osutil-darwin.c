@@ -108,7 +108,7 @@ void make_vm_lock_os(void)
     }
     g_sprintf(shared_memory, "%s", tizen_target_img_path);
     INFO("shared memory key: %d, value: %s\n", base_port, (char *)shared_memory);
-    
+
     if (shmdt(shared_memory) == -1) {
         ERR("shmdt failed\n");
         perror("osutil-darwin: ");

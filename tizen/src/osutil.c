@@ -1,9 +1,9 @@
-/* 
+/*
  * Emulator
  *
  * Copyright (C) 2012, 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -45,15 +45,15 @@ MULTI_DEBUG_CHANNEL(emulator, osutil);
 
 const char *pac_tempfile = ".autoproxy";
 
-inline size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) 
-{     
+inline size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
     size_t written;
     written = fwrite(ptr, size, nmemb, stream);
     return written;
-}  
+}
 
-inline void download_url(char *url) 
-{     
+inline void download_url(char *url)
+{
     CURL *curl;
     FILE *fp;
     CURLcode res;
@@ -81,7 +81,7 @@ inline void download_url(char *url)
     }
 
     return;
-} 
+}
 
 inline void remove_string(char *src, char *dst, const char *toremove)
 {

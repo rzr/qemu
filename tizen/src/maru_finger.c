@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * HyunJun Son
@@ -56,7 +56,7 @@ static void sdl_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 }
 
 /*
-* This is an implementation of the Midpoint Circle Algorithm 
+* This is an implementation of the Midpoint Circle Algorithm
 * found on Wikipedia at the following link:
 *
 *   http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
