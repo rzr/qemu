@@ -216,7 +216,7 @@ else
 fi
 
 # append common flags
-CONFIGURE_APPEND="--enable-maru --enable-libav --enable-curl $CONFIGURE_APPEND"
+CONFIGURE_APPEND="--enable-maru --enable-libav --enable-curl --disable-gtk $CONFIGURE_APPEND"
 
 if [ -z ${PKG_CONFIG_PATH} ] ; then	# avoid pkg-config bug on Windows
 export PKG_CONFIG_PATH=${TIZEN_SDK_DEV_PATH}/distrib/lib/pkgconfig
