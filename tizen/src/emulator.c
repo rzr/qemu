@@ -520,7 +520,11 @@ void prepare_maru(void)
 
 int qemu_main(int argc, char **argv, char **envp);
 
+#ifdef CONFIG_LINUX
+static int emulator_main(int argc, char *argv[], char **envp)
+#else
 static int emulator_main(int argc, char *argv[])
+#endif
 {
     parse_options(argc, argv, &_skin_argc,
                 &_skin_argv, &_qemu_argc, &_qemu_argv);
@@ -556,20 +560,17 @@ static int emulator_main(int argc, char *argv[])
     socket_init();
 
     INFO("qemu main start!\n");
+#ifdef CONFIG_LINUX
+    qemu_main(_qemu_argc, _qemu_argv, envp);
+#else
     qemu_main(_qemu_argc, _qemu_argv, NULL);
-
+#endif
     exit_emulator();
 
     return 0;
 }
 
-#ifndef CONFIG_DARWIN
-int main(int argc, char *argv[])
-{
-    maru_register_exception_handler();
-    return emulator_main(argc, argv);
-}
-#else
+#ifdef CONFIG_DARWIN
 int g_argc;
 
 static void* main_thread(void* args)
@@ -600,6 +601,18 @@ int main(int argc, char *argv[])
     ns_event_loop(&thread_running);
 
     return 0;
+}
+#elif defined (CONFIG_LINUX)
+int main(int argc, char *argv[], char **envp)
+{
+    maru_register_exception_handler();
+    return emulator_main(argc, argv, envp);
+}
+#else
+int main(int argc, char *argv[])
+{
+    maru_register_exception_handler();
+    return emulator_main(argc, argv);
 }
 #endif
 
