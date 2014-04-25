@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmulatorUI xmlns="http://www.tizen.org/emulator/skin/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dbi_version>2.2</dbi_version>
+    <rotations>
+        <rotation name="Portrait">
+            <display id="0">
+            </display>
+            <keyMapList>
+                <keyMap>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Landscape">
+            <display id="0">
+            </display>
+        </rotation>
+        <rotation name="Reverse Portrait">
+            <display id="0">
+            </display>
+        </rotation>
+        <rotation name="Reverse Landscape">
+            <display id="0">
+            </display>
+        </rotation>
+    </rotations>
+    <hover>
+        <color B="255" G="255" R="255" />
+    </hover>
+    <popupMenu>
+        <topmostItem visible="true" />
+        <rotateItem visible="true" />
+        <scaleItem visible="false" />
+        <keywindowItem visible="true" />
+        <hostKeyboardItem visible="false" />
+        <shellItem visible="true" />
+    </popupMenu>
+    <option>
+        <blankGuide visible="true" />
+    </option>
+</EmulatorUI>
