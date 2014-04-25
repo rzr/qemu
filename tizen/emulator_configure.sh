@@ -246,6 +246,8 @@ echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
 exec ./configure \
+ --extra-cflags=-Werror=implicit-function-declaration \
+ --extra-cflags=-Werror=implicit-int \
  --extra-ldflags=-Wl,--large-address-aware \
  --cc=gcc \
  --audio-drv-list=winwave \
