@@ -2701,15 +2701,6 @@ Enable KVM full virtualization support. This option is only available
 if KVM support is enabled when compiling.
 ETEXI
 
-DEF("enable-gl", 0, QEMU_OPTION_enable_gl, \
-    "-enable-gl     enable OpenGL passthrough support\n", QEMU_ARCH_ALL)
-STEXI
-@item -enable-gl
-@findex -enable-gl
-Enable OpenGL passthrough support. This option requires the support of a
-special libGL installed on the guest OS.
-ETEXI
-
 DEF("enable-yagl", 0, QEMU_OPTION_enable_yagl, \
     "-enable-yagl   enable OpenGLES passthrough support\n", QEMU_ARCH_ALL)
 STEXI

@@ -49,6 +49,8 @@ void check_gl_log(gl_log_level level, const char *format, ...);
 
 int check_gl_init(void);
 
+int check_gl(void);
+
 struct gl_context *check_gl_context_create(struct gl_context *share_ctx,
                                            gl_version version);
 

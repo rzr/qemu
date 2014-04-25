@@ -146,8 +146,6 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef CONFIG_MARU
 int skin_disabled = 0;
-//virtio-gl
-extern int enable_gl;
 extern int enable_yagl;
 extern int enable_spice;
 const char *yagl_backend = NULL;
@@ -3704,13 +3702,6 @@ int main(int argc, char **argv, char **envp)
                 olist = qemu_find_opts("machine");
                 qemu_opts_parse(olist, "accel=kvm", 0);
                 break;
-           case QEMU_OPTION_enable_gl:
-#if defined(CONFIG_MARU) && defined(CONFIG_GL_BACKEND)
-                enable_gl = 1;
-#else
-                fprintf(stderr, "Virtio GL support is disabled, ignoring -enable-gl\n");
-#endif
-                break;
            case QEMU_OPTION_enable_yagl:
 #if defined(CONFIG_YAGL)
                 enable_yagl = 1;
@@ -4104,11 +4095,6 @@ int main(int argc, char **argv, char **envp)
     }
 
 #if defined(CONFIG_MARU)
-    if (enable_gl && enable_yagl) {
-        fprintf (stderr, "Error: only one openGL passthrough device can be used at one time!\n");
-        exit(1);
-    }
-
     if (enable_vigs) {
         if (!vigs_backend) {
             vigs_backend = g_strdup("gl");
