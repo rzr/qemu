@@ -839,7 +839,7 @@ static void handle_sdcard(char* dataBuf, size_t dataLen)
                 if(dataLen > 3 && sdcard_img_name != NULL){
                     char* pLinechange = strchr(sdcard_img_name, '\n');
                     if(pLinechange != NULL){
-                        sdcard_img_name = strndup(sdcard_img_name, pLinechange - sdcard_img_name);
+                        sdcard_img_name = g_strndup(sdcard_img_name, pLinechange - sdcard_img_name);
                     }
 
                     g_strlcat(sdcard_img_path, sdcard_img_name, sizeof(sdcard_img_path));

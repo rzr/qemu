@@ -25,6 +25,8 @@ extern char tizen_target_path[];
 
 #ifdef _WIN32
 
+#include "qemu/main-loop.h"
+
 static void socket_close_handler( void*  _fd )
 {
     int   fd = (int)_fd;
