@@ -466,6 +466,57 @@ static SDL_Surface *get_blank_guide_image(void)
     return surface_guide;
 }
 
+static void draw_image(SDL_Surface *image)
+{
+    if (image == NULL || get_emul_skin_enable() == 0) {
+        return;
+    }
+
+    int dst_x = 0; int dst_y = 0;
+    int dst_w = 0; int dst_h = 0;
+
+    const unsigned int screen_width =
+            get_emul_resolution_width() * current_scale_factor;
+    const unsigned int screen_height =
+            get_emul_resolution_height() * current_scale_factor;
+
+    int margin_w = screen_width - image->w;
+    int margin_h = screen_height - image->h;
+
+    if (margin_w < 0 || margin_h < 0) {
+        /* guide image scaling */
+        int margin = (margin_w < margin_h)? margin_w : margin_h;
+        dst_w = image->w + margin;
+        dst_h = image->h + margin;
+
+        SDL_Surface *scaled_image = SDL_CreateRGBSurface(
+                SDL_SWSURFACE, dst_w, dst_h, get_emul_sdl_bpp(),
+                image->format->Rmask, image->format->Gmask,
+                image->format->Bmask, image->format->Amask);
+
+        scaled_image = maru_do_pixman_scale(
+                image, scaled_image, PIXMAN_FILTER_BEST);
+
+        dst_x = (surface_screen->w - dst_w) / 2;
+        dst_y = (surface_screen->h - dst_h) / 2;
+        SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
+
+        SDL_BlitSurface(scaled_image, NULL, surface_screen, &dst_rect);
+        SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+
+        SDL_FreeSurface(scaled_image);
+    } else {
+        dst_w = image->w;
+        dst_h = image->h;
+        dst_x = (surface_screen->w - dst_w) / 2;
+        dst_y = (surface_screen->h - dst_h) / 2;
+        SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
+
+        SDL_BlitSurface(image, NULL, surface_screen, &dst_rect);
+        SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
+    }
+}
+
 static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
 {
     if (sdl_alteration == 1) {
@@ -474,67 +525,25 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
         sdl_skip_count = 0;
     }
 
-    /* If the display is turned off,
-       the screen does not update until the display is turned on */
+    /* draw cover image */
     if (sdl_skip_update && brightness_off) {
         if (blank_cnt > MAX_BLANK_FRAME_CNT) {
-            /* do nothing */
+#ifdef CONFIG_WIN32
+            if (sdl_invalidate) {
+                draw_image(get_blank_guide_image());
+            }
+#endif
+
             return;
         } else if (blank_cnt == MAX_BLANK_FRAME_CNT) {
             if (blank_guide_enable == true) {
                 INFO("draw a blank guide image\n");
 
-                SDL_Surface *guide = get_blank_guide_image();
-                if (guide != NULL && get_emul_skin_enable() == 1) {
-                    /* draw guide image */
-                    int dst_x = 0; int dst_y = 0;
-                    int dst_w = 0; int dst_h = 0;
-
-                    unsigned int screen_width =
-                        get_emul_resolution_width() * current_scale_factor;
-                    unsigned int screen_height =
-                        get_emul_resolution_height() * current_scale_factor;
-
-                    int margin_w = screen_width - guide->w;
-                    int margin_h = screen_height - guide->h;
-
-                    if (margin_w < 0 || margin_h < 0) {
-                        /* guide image scaling */
-                        int margin = (margin_w < margin_h)? margin_w : margin_h;
-                        dst_w = guide->w + margin;
-                        dst_h = guide->h + margin;
-
-                        SDL_Surface *scaled_guide = SDL_CreateRGBSurface(
-                            SDL_SWSURFACE, dst_w, dst_h, get_emul_sdl_bpp(),
-                            guide->format->Rmask, guide->format->Gmask,
-                            guide->format->Bmask, guide->format->Amask);
-
-                        scaled_guide = maru_do_pixman_scale(
-                            guide, scaled_guide, PIXMAN_FILTER_BEST);
-
-                        dst_x = (surface_screen->w - dst_w) / 2;
-                        dst_y = (surface_screen->h - dst_h) / 2;
-                        SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
-
-                        SDL_BlitSurface(scaled_guide, NULL,
-                            surface_screen, &dst_rect);
-                        SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
-
-                        SDL_FreeSurface(scaled_guide);
-                    } else {
-                        dst_w = guide->w;
-                        dst_h = guide->h;
-                        dst_x = (surface_screen->w - dst_w) / 2;
-                        dst_y = (surface_screen->h - dst_h) / 2;
-                        SDL_Rect dst_rect = { dst_x, dst_y, dst_w, dst_h };
-
-                        SDL_BlitSurface(guide, NULL,
-                            surface_screen, &dst_rect);
-                        SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
-                    }
-                }
+                draw_image(get_blank_guide_image());
             }
         } else if (blank_cnt == 0) {
+            /* If the display is turned off,
+            the screen does not update until the display is turned on */
             INFO("skipping of the display updating is started\n");
         }
 
@@ -548,6 +557,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
         }
     }
 
+    /* draw framebuffer */
     if (sdl_invalidate) {
         graphic_hw_invalidate(NULL);
     }
@@ -790,8 +800,6 @@ static void maru_sdl_resize_bh(void *opaque)
 
 static void maru_sdl_init_bh(void *opaque)
 {
-    SDL_SysWMinfo info;
-
     INFO("SDL_Init\n");
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -799,7 +807,8 @@ static void maru_sdl_init_bh(void *opaque)
         // TODO:
     }
 
-#ifndef _WIN32
+#ifndef CONFIG_WIN32
+    SDL_SysWMinfo info;
     SDL_VERSION(&info.version);
     SDL_GetWMInfo(&info);
 #endif
@@ -813,8 +822,7 @@ static void maru_sdl_init_bh(void *opaque)
         INFO("sdl update thread create\n");
 
         pthread_t thread_id;
-        if (pthread_create(
-            &thread_id, NULL, run_qemu_update, NULL) != 0) {
+        if (pthread_create(&thread_id, NULL, run_qemu_update, NULL) != 0) {
             ERR("pthread_create fail\n");
             return;
         }
