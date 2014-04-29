@@ -1,13 +1,13 @@
 /*
- * SDL_WINDOWID hack
+ * Image Processing
  *
- * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (C) 2011 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact:
  * Jinhyung Jo <jinhyung.jo@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
  * SeokYeon Hwang <syeon.hwang@samsung.com>
- * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
+ * SangHo Park <sangho1206.park@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,22 +29,19 @@
  */
 
 
-#ifndef MARU_SDL_H_
-#define MARU_SDL_H_
+#ifndef MARU_SDL_PROCESSING_H_
+#define MARU_SDL_PROCESSING_H_
 
 #include <SDL.h>
-#include <SDL_syswm.h>
+#include <png.h>
 #include "ui/console.h"
 
-extern DisplayChangeListenerOps maru_dcl_ops;
+void maru_do_pixman_dpy_surface(pixman_image_t *dst);
+SDL_Surface *maru_do_pixman_scale(SDL_Surface *src, SDL_Surface *dst, pixman_filter_t filter);
+SDL_Surface *maru_do_pixman_rotate(SDL_Surface *src, SDL_Surface *dst, int angle);
 
-void maruskin_sdl_init(uint64 swt_handle,
-    unsigned int display_width, unsigned int display_height,
-    bool blank_guide);
-void maruskin_sdl_resize(void);
-void maruskin_sdl_update(void);
-void maruskin_sdl_invalidate(bool on);
-void maruskin_sdl_interpolation(bool on);
-void maruskin_sdl_quit(void);
+png_bytep read_png_file(const char *file_name,
+    unsigned int *width_out, unsigned int *height_out);
+void draw_image(SDL_Surface *screen, SDL_Surface *image);
 
-#endif /* MARU_SDL_H_ */
+#endif /* MARU_SDL_PROCESSING_H_ */
