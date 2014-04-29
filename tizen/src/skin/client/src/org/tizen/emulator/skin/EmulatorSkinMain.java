@@ -122,6 +122,7 @@ public class EmulatorSkinMain {
 						ArgsConstants.VM_PATH + " in arguments is null.");
 			}
 
+			/* initialize logging system */
 			SkinLogger.init(SkinLogLevel.DEBUG, vmPath);
 
 			logger = SkinLogger.getSkinLogger(EmulatorSkinMain.class).getLogger();
@@ -138,7 +139,7 @@ public class EmulatorSkinMain {
 			logger.info("swt platform : " + SWT.getPlatform());
 			logger.info("swt version : " + SWT.getVersion());
 
-			logger.info("working directory" + System.getProperty("user.dir"));
+			logger.info("working directory : " + System.getProperty("user.dir"));
 
 			/* startup arguments parsing */
 			Map<String, String> argsMap = parseArgs(args);

@@ -36,6 +36,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -77,6 +78,24 @@ public class SkinUtil {
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(SkinUtil.class).getLogger();
+
+	private static String binaryPath;
+
+	static {
+		File executable = null;
+		try {
+			executable = new File(SkinUtil.class.getProtectionDomain().getCodeSource()
+					.getLocation().toURI().getPath());
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+
+		if (executable != null) {
+			binaryPath = executable.getParent() + File.separator;
+		} else {
+			binaryPath = "";
+		}
+	}
 
 	private SkinUtil() {
 		/* do nothing */
@@ -151,21 +170,21 @@ public class SkinUtil {
 		String sdbPath = null;
 
 		if (SwtUtil.isWindowsPlatform()) {
-			sdbPath = ".\\..\\..\\ansicon.exe";
+			sdbPath = "..\\..\\ansicon.exe";
 		} else {
-			sdbPath = "./../../sdb";
+			sdbPath = "../../sdb";
 		}
 
-		return sdbPath;
+		return (binaryPath + sdbPath);
 	}
 
 	public static String getEcpPath() {
-		return "emulator-control-panel.jar";
+		return (binaryPath + "emulator-control-panel.jar");
 	}
 
 	public static String getSdkVersionFilePath() {
-		return ".." + File.separator + ".." + File.separator +
-				".." + File.separator + "sdk.version";
+		return (binaryPath + ".." + File.separator + ".." +
+				File.separator + ".." + File.separator + "sdk.version");
 	}
 
 	public static List<KeyMapType> getHWKeyMapList(short rotationId) {
@@ -1044,18 +1063,12 @@ public class SkinUtil {
 
 		logger.info("set Always on Top : " + isOnTop);
 
-		/* internal/Library.java::arch() */
-		String osArch = System.getProperty("os.arch"); /* $NON-NLS-1$ */
-
-		if (osArch.equals("amd64") || osArch.equals("x86_64") ||
-				osArch.equals("IA64W") || osArch.equals("ia64")) {
-			/* $NON-NLS-1$ $NON-NLS-2$ $NON-NLS-3$ */
-			logger.info("64bit architecture : " + osArch);
-
+		if (SwtUtil.is64bitPlatform() == true) {
+			logger.info("64bit architecture : " + System.getProperty("os.arch"));
 			return setTopMost64(shell, isOnTop); /* 64bit */
 		}
 
-		logger.info("32bit architecture : " + osArch);
+		logger.info("32bit architecture : " + System.getProperty("os.arch"));
 		return setTopMost32(shell, isOnTop); /* 32bit */
 	}
 }
