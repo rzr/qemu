@@ -373,9 +373,6 @@ static ECS_Client *ecs_find_client(int fd) {
 
     QTAILQ_FOREACH(clii, &clients, next)
     {
-        if (clii == NULL)
-            continue;
-
         if (clii->client_fd == fd)
             return clii;
     }
