@@ -319,7 +319,6 @@ libnfs=""
 coroutine=""
 coroutine_pool=""
 seccomp=""
-gl="yes"
 
 # for TIZEN-maru 
 maru="no"
@@ -909,10 +908,6 @@ for opt do
   ;;
   --enable-kvm) kvm="yes"
   ;;
-  --disable-gl) gl="no"
-  ;;
-  --enable-gl) gl="yes"
-  ;;
   --disable-hax) hax="no"
   ;;
   --enable-hax) hax="yes"
@@ -1409,8 +1404,6 @@ Advanced options (experts only):
 
   --disable-hax            disable HAX acceleration support
   --enable-hax             enable HAX acceleration support
-  --disable-gl             disable GL acceleration support
-  --enable-gl              enable GL acceleration support
   --enable-yagl            enable YaGL device
   --disable-yagl           disable YaGL device
   --enable-yagl-stats      enable YaGL stats
@@ -4340,7 +4333,6 @@ echo "lzo support       $lzo"
 echo "snappy support    $snappy"
 
 echo "HAX support       $hax"
-echo "GL support        $gl"
 echo "YaGL support      $yagl"
 echo "YaGL stats        $yagl_stats"
 echo "OpenGL support    $opengl"
@@ -4666,11 +4658,12 @@ fi
 if test "$yagl" = "yes" ; then
   echo "CONFIG_YAGL=y" >> $config_host_mak
   if test "$linux" = "yes" ; then
-    echo -n;
+    LIBS="-lGLU -ldl $LIBS"
   elif test "$mingw32" = "yes" ; then
-    echo -n;
+    LIBS="-lopengl32 -lglu32 $LIBS"
   elif test "$darwin" = "yes" ; then
-    echo -n;  else
+    LIBS="-framework OpenGL -framework AGL -framework GLUT $LIBS"
+  else
     echo "ERROR: YaGL is not available on $targetos"
     exit 1
   fi
@@ -4835,9 +4828,6 @@ if test "$maru" = "yes" ; then
 fi
 if test "$shm" = "yes" ; then
   echo "CONFIG_USE_SHM=y" >> $config_host_mak
-fi
-if test "$gl" = "yes" ; then
-  echo "CONFIG_GL_BACKEND=y" >> $config_host_mak
 fi
 if test "$libav" = "yes" ; then
   echo "CONFIG_LIBAV=y" >> $config_host_mak
@@ -5226,23 +5216,6 @@ if test "$hax" = "yes" ; then
   else
     echo "CONFIG_NO_HAX=y" >> $config_target_mak
   fi
-fi
-if test "$gl" = "yes" ; then
-  case "$target_name" in
-  i386|x86_64|arm)
-    echo "CONFIG_GL=y" >> $config_target_mak
-    if test "$mingw32" = "yes" ; then
-      echo "LIBS+=-lopengl32 -lglu32" >> $config_target_mak
-    elif test "$darwin" = "yes" ; then
-      echo "LIBS+=-framework OpenGL -framework AGL " >> $config_target_mak
-    else
-      echo "LIBS+=-lGLU -ldl" >> $config_target_mak
-    fi
-  ;;
-  *)
-    echo "CONFIG_NO_GL=y" >> $config_target_mak
-  ;;
-  esac
 fi
 if test "$target_bigendian" = "yes" ; then
   echo "TARGET_WORDS_BIGENDIAN=y" >> $config_target_mak

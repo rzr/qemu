@@ -190,7 +190,7 @@ $(QEMU_PROG): $(all-obj-y) ../libqemuutil.a ../libqemustub.a
 	$(call LINK,$^)
 endif
 
-CHECK_GL_OBJS = check_gl.o
+CHECK_GL_OBJS = check_gl.o check_gl_core.o
 CHECK_GL_LDFLAGS =
 CHECK_GL_TARGET =
 ifdef CONFIG_LINUX
@@ -215,6 +215,8 @@ check-gl: $(CHECK_GL_OBJS)
 	gcc -o $(CHECK_GL_TARGET) $(CHECK_GL_OBJS) $(CHECK_GL_LDFLAGS)
 check_gl.o: check_gl.c
 	gcc -c ../tizen/src/check_gl.c -I../hw/yagl/yagl_inc
+check_gl_core.o: check_gl_core.c
+	gcc -c ../tizen/src/check_gl_core.c -I../hw/yagl/yagl_inc
 check_gl_glx.o: check_gl_glx.c
 	gcc -c ../tizen/src/check_gl_glx.c -I../hw/yagl/yagl_inc
 check_gl_wgl.o: check_gl_wgl.c

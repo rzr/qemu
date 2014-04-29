@@ -54,7 +54,6 @@
 #define PCI_DEVICE_ID_VIRTIO_ESM         0x1024
 #define PCI_DEVICE_ID_VIRTIO_HWKEY       0x1028
 #define PCI_DEVICE_ID_VIRTIO_EVDI        0x102C
-#define PCI_DEVICE_ID_VIRTIO_GL          0x1030
 #define PCI_DEVICE_ID_VIRTIO_SENSOR      0x1034
 #define PCI_DEVICE_ID_VIRTIO_POWER       0x1035
 #define PCI_DEVICE_ID_VIRTIO_JACK        0x1036
@@ -94,7 +93,6 @@
 #define VIRTIO_ID_ESM           33
 #define VIRTIO_ID_HWKEY         34
 #define VIRTIO_ID_EVDI          35
-#define VIRTIO_ID_GL			36
 #define VIRTIO_ID_SENSOR        37
 #define VIRTIO_ID_NFC           38
 #define VIRTIO_ID_JACK          39

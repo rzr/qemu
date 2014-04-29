@@ -43,7 +43,7 @@
 #include "guest_server.h"
 #include "hw/maru_camera_common.h"
 #include "hw/maru_virtio_touchscreen.h"
-#include "hw/gloffscreen_test.h"
+#include "check_gl.h"
 #include "maru_common.h"
 #include "maru_err_table.h"
 #include "maru_display.h"
@@ -94,7 +94,6 @@ gchar log_path[PATH_MAX] = { 0, };
 char tizen_target_path[PATH_MAX];
 char tizen_target_img_path[PATH_MAX];
 
-int enable_gl = 0;
 int enable_yagl = 0;
 int enable_spice = 0;
 
@@ -383,34 +382,21 @@ static void prepare_basic_features(void)
     g_free(tmp_str);
 }
 
-#define VIRTIOGL_DEV_NAME "virtio-gl-pci"
-#ifdef CONFIG_GL_BACKEND
+#ifdef CONFIG_YAGL
 static void prepare_opengl_acceleration(void)
 {
     int capability_check_gl = 0;
 
-    if (enable_gl && enable_yagl) {
-        ERR("Error: only one openGL passthrough device can be used at one time!\n");
-        exit(1);
-    }
-
-
-    if (enable_gl || enable_yagl) {
-        capability_check_gl = gl_acceleration_capability_check();
+    if (enable_yagl) {
+        capability_check_gl = check_gl();
 
         if (capability_check_gl != 0) {
-            enable_gl = enable_yagl = 0;
+            enable_yagl = 0;
             INFO("<WARNING> GL acceleration was disabled due to the fail of GL check!\n");
         }
     }
-    if (enable_gl) {
-        if (!qemu_opts_parse(qemu_find_opts("device"), VIRTIOGL_DEV_NAME, 1)) {
-            ERR("Failed to initialize the virtio-gl device.\n");
-            exit(1);
-        }
-    }
 
-    gchar * const tmp_str = g_strdup_printf(" gles=%d yagl=%d", (enable_gl || enable_yagl), enable_yagl);
+    gchar * const tmp_str = g_strdup_printf(" yagl=%d", enable_yagl);
 
     g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
 
@@ -424,12 +410,12 @@ const gchar *prepare_maru_devices(const gchar *kernel_cmdline)
 
     g_strlcpy(maru_kernel_cmdline, kernel_cmdline, LEN_MARU_KERNEL_CMDLINE);
 
-    // Prepare GL acceleration
-#ifdef CONFIG_GL_BACKEND
+    /* Prepare GL acceleration */
+#ifdef CONFIG_YAGL
     prepare_opengl_acceleration();
 #endif
 
-    // Prepare basic features
+    /* Prepare basic features */
     prepare_basic_features();
 
     INFO("kernel command : %s\n", maru_kernel_cmdline);

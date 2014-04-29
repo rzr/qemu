@@ -6,7 +6,6 @@ fi
 
 CONFIGURE_APPEND=""
 EMUL_TARGET_LIST=""
-VIRTIOGL_EN=""
 YAGL_EN=""
 YAGL_STATS_EN=""
 VIGS_EN=""
@@ -20,8 +19,6 @@ usage() {
     echo "options:"
     echo "-d, --debug"
     echo "    build debug configuration"
-    echo "-vgl|--virtio-gl"
-    echo "    enable virtio GL support"
     echo "-yagl|--yagl-device"
     echo "    enable YaGL passthrough device"
     echo "-ys|--yagl-stats"
@@ -32,21 +29,6 @@ usage() {
     echo "    extra options for QEMU configure"
     echo "-u|-h|--help|--usage"
     echo "    display this help message and exit"
-}
-
-virtgl_enable() {
-  case "$1" in
-  0|no|disable)
-    VIRTIOGL_EN="no"
-  ;;
-  1|yes|enable)
-    VIRTIOGL_EN="yes"
-  ;;
-  *)
-    usage
-    exit 1
-  ;;
-  esac
 }
 
 yagl_enable() {
@@ -103,9 +85,6 @@ set_target() {
   case "$1" in
   x86|i386|i486|i586|i686)
     EMUL_TARGET_LIST="i386-softmmu"
-    if [ -z "$VIRTIOGL_EN" ] ; then
-      virtgl_enable yes
-    fi
     if [ -z "$YAGL_EN" ] ; then
       yagl_enable yes
     fi
@@ -125,10 +104,7 @@ set_target() {
   all)
 #    EMUL_TARGET_LIST="i386-softmmu,arm-softmmu"
     EMUL_TARGET_LIST="i386-softmmu"
-    if [ -z "$VIRTIOGL_EN" ] ; then
-      virtgl_enable yes
-    fi
-    if [ -z "$YAGL_EN" ] ; then   
+    if [ -z "$YAGL_EN" ] ; then
         yagl_enable yes
     fi
     if [ -z "$VIGS_EN" ] ; then
@@ -160,9 +136,6 @@ do
         shift
         CONFIGURE_APPEND="$CONFIGURE_APPEND $1"
     ;;
-    -vgl|--virtio-gl)
-        virtgl_enable 1
-    ;;
     -yagl|--yagl-device)
         yagl_enable 1
     ;;
@@ -190,12 +163,6 @@ if [ -z "$EMUL_TARGET_LIST" ] ; then
 fi
 
 CONFIGURE_APPEND="--target-list=$EMUL_TARGET_LIST $CONFIGURE_APPEND"
-
-if test "$VIRTIOGL_EN" = "yes" ; then
-  CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-gl"
-else
-  CONFIGURE_APPEND="$CONFIGURE_APPEND --disable-gl"
-fi
 
 if test "$YAGL_EN" = "yes" ; then
   CONFIGURE_APPEND="$CONFIGURE_APPEND --enable-yagl"

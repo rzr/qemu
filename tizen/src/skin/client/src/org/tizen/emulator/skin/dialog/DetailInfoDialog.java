@@ -75,7 +75,6 @@ public class DetailInfoDialog extends SkinDialog {
 	private final static String QEMU_PARAMETER_KVM = "-enable-kvm";
 	private final static String QEMU_PARAMETER_HAX = "-enable-hax";
 	private final static String QEMU_PARAMETER_VIRTFS = "-virtfs";
-	private final static String QEMU_PARAMETER_VIRTGL = "-enable-gl";
 	private final static String QEMU_PARAMETER_YAGL = "-enable-yagl";
 	private final static String QEMU_PARAMETER_RAM = "-m";
 	private final static String QEMU_PARAMETER_DRIVE = "-drive";
@@ -350,8 +349,7 @@ public class DetailInfoDialog extends SkinDialog {
 					{
 						isCpuVirtual = true;
 					}
-					else if (QEMU_PARAMETER_VIRTGL.equals(arg) ||
-							QEMU_PARAMETER_YAGL.equals(arg))
+					else if (QEMU_PARAMETER_YAGL.equals(arg))
 					{
 						isGpuVirtual = true;
 					}
