@@ -30,9 +30,6 @@
 #include "ui/pixel_ops.h"
 #include "qemu/timer.h"
 #include "hw/loader.h"
-#ifdef CONFIG_MARU
-#include "tizen/src/hw/maru_vga_int.h"
-#endif
 
 #define PCI_VGA_IOPORT_OFFSET 0x400
 #define PCI_VGA_IOPORT_SIZE   (0x3e0 - 0x3c0)
@@ -150,11 +147,7 @@ static int pci_std_vga_initfn(PCIDevice *dev)
     VGACommonState *s = &d->vga;
 
     /* vga + console init */
-#ifdef CONFIG_MARU
-    maru_vga_common_init(s, OBJECT(dev));
-#else
     vga_common_init(s, OBJECT(dev));
-#endif
     vga_init(s, OBJECT(dev), pci_address_space(dev), pci_address_space_io(dev),
              true);
 
@@ -198,11 +191,7 @@ static void vga_class_init(ObjectClass *klass, void *data)
     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
 
     k->init = pci_std_vga_initfn;
-#ifdef CONFIG_MARU
-    k->romfile = "vgabios-maruvga.bin";
-#else
     k->romfile = "vgabios-stdvga.bin";
-#endif
     k->vendor_id = PCI_VENDOR_ID_QEMU;
     k->device_id = PCI_DEVICE_ID_QEMU_VGA;
     k->class_id = PCI_CLASS_DISPLAY_VGA;
@@ -213,11 +202,7 @@ static void vga_class_init(ObjectClass *klass, void *data)
 }
 
 static const TypeInfo vga_info = {
-#ifdef CONFIG_MARU
-    .name          = "MARU_VGA",
-#else
     .name          = "VGA",
-#endif
     .parent        = TYPE_PCI_DEVICE,
     .instance_size = sizeof(PCIVGAState),
     .class_init    = vga_class_init,
