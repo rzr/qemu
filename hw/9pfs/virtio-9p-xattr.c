@@ -74,14 +74,22 @@ ssize_t v9fs_list_xattr(FsContext *ctx, const char *path,
     ssize_t xattr_len, parsed_len = 0, attr_len;
 
     /* Get the actual len */
+#ifdef CONFIG_LINUX
     xattr_len = llistxattr(rpath(ctx, path, buffer), value, 0);
+#else
+    xattr_len = listxattr(rpath(ctx, path, buffer), value, 0, XATTR_NOFOLLOW);
+#endif
     if (xattr_len <= 0) {
         return xattr_len;
     }
 
     /* Now fetch the xattr and find the actual size */
     orig_value = g_malloc(xattr_len);
+#ifdef CONFIG_LINUX
     xattr_len = llistxattr(rpath(ctx, path, buffer), orig_value, xattr_len);
+#else
+    xattr_len = listxattr(rpath(ctx, path, buffer), orig_value, xattr_len, XATTR_NOFOLLOW);
+#endif
 
     /* store the orig pointer */
     orig_value_start = orig_value;

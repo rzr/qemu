@@ -21,7 +21,9 @@
 #include <sys/un.h>
 #include "qemu/xattr.h"
 #include <libgen.h>
+#ifdef CONFIG_LINUX
 #include <linux/fs.h>
+#endif
 #ifdef CONFIG_LINUX_MAGIC_H
 #include <linux/magic.h>
 #endif
@@ -41,6 +43,10 @@
 #endif
 
 #define VIRTFS_META_DIR ".virtfs_metadata"
+
+#ifdef CONFIG_DARWIN
+#define AT_REMOVEDIR 0x200
+#endif
 
 static const char *local_mapped_attr_path(FsContext *ctx,
                                           const char *path, char *buffer)
@@ -131,6 +137,7 @@ static int local_lstat(FsContext *fs_ctx, V9fsPath *fs_path, struct stat *stbuf)
         gid_t tmp_gid;
         mode_t tmp_mode;
         dev_t tmp_dev;
+#ifdef CONFIG_LINUX
         if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.uid", &tmp_uid,
                     sizeof(uid_t)) > 0) {
             stbuf->st_uid = tmp_uid;
@@ -147,6 +154,32 @@ static int local_lstat(FsContext *fs_ctx, V9fsPath *fs_path, struct stat *stbuf)
                         sizeof(dev_t)) > 0) {
                 stbuf->st_rdev = tmp_dev;
         }
+#else
+        /*
+         *  extra two parameters on Mac OS X.
+         *  first one is position which specifies an offset within the extended attribute.
+         *  i.e. extended attribute means "user.virtfs.uid". Currently, it is only used with
+         *  resource fork attribute and all other extended attributes, it is reserved and should be zero.
+         *  second one is options which specify option for retrieving extended attributes:
+         *  (XATTR_NOFOLLOW, XATTR_SHOWCOMPRESSION)
+         */
+        if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.uid", &tmp_uid,
+                    sizeof(uid_t), 0, 0) > 0) {
+            stbuf->st_uid = tmp_uid;
+        }
+        if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.gid", &tmp_gid,
+                    sizeof(gid_t), 0, 0) > 0) {
+            stbuf->st_gid = tmp_gid;
+        }
+        if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.mode",
+                    &tmp_mode, sizeof(mode_t), 0, 0) > 0) {
+            stbuf->st_mode = tmp_mode;
+        }
+        if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.rdev", &tmp_dev,
+                        sizeof(dev_t), 0, 0) > 0) {
+            stbuf->st_rdev = tmp_dev;
+        }
+#endif
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         local_mapped_file_attr(fs_ctx, path, stbuf);
     }
@@ -248,6 +281,7 @@ static int local_set_xattr(const char *path, FsCred *credp)
 {
     int err;
 
+#ifdef CONFIG_LINUX
     if (credp->fc_uid != -1) {
         err = setxattr(path, "user.virtfs.uid", &credp->fc_uid, sizeof(uid_t),
                 0);
@@ -276,6 +310,43 @@ static int local_set_xattr(const char *path, FsCred *credp)
             return err;
         }
     }
+#else
+    /*
+     * In case of setxattr on OS X, position parameter has been added.
+     * Its purpose is the same as getxattr. Last parameter options is the same as flags on Linux.
+     * XATTR_NOFOLLOW / XATTR_CREATE / XATTR_REPLACE
+     */
+    if (credp->fc_uid != -1) {
+        err = setxattr(path, "user.virtfs.uid", &credp->fc_uid, sizeof(uid_t),
+                0, 0);
+        if (err) {
+            return err;
+        }
+    }
+    if (credp->fc_gid != -1) {
+        err = setxattr(path, "user.virtfs.gid", &credp->fc_gid, sizeof(gid_t),
+                0, 0);
+        if (err) {
+            return err;
+        }
+    }
+    if (credp->fc_mode != -1) {
+        err = setxattr(path, "user.virtfs.mode", &credp->fc_mode,
+                sizeof(mode_t), 0, 0);
+        if (err) {
+            return err;
+        }
+    }
+    if (credp->fc_rdev != -1) {
+        err = setxattr(path, "user.virtfs.rdev", &credp->fc_rdev,
+                sizeof(dev_t), 0, 0);
+        if (err) {
+            return err;
+        }
+    }
+
+#endif
+
     return 0;
 }
 
@@ -595,6 +666,7 @@ static int local_fstat(FsContext *fs_ctx, int fid_type,
         mode_t tmp_mode;
         dev_t tmp_dev;
 
+#ifdef CONFIG_LINUX
         if (fgetxattr(fd, "user.virtfs.uid",
                       &tmp_uid, sizeof(uid_t)) > 0) {
             stbuf->st_uid = tmp_uid;
@@ -611,6 +683,25 @@ static int local_fstat(FsContext *fs_ctx, int fid_type,
                       &tmp_dev, sizeof(dev_t)) > 0) {
                 stbuf->st_rdev = tmp_dev;
         }
+#else
+        if (fgetxattr(fd, "user.virtfs.uid",
+                      &tmp_uid, sizeof(uid_t), 0, 0) > 0) {
+            stbuf->st_uid = tmp_uid;
+        }
+        if (fgetxattr(fd, "user.virtfs.gid",
+                      &tmp_gid, sizeof(gid_t), 0, 0) > 0) {
+            stbuf->st_gid = tmp_gid;
+        }
+        if (fgetxattr(fd, "user.virtfs.mode",
+                      &tmp_mode, sizeof(mode_t), 0, 0) > 0) {
+            stbuf->st_mode = tmp_mode;
+        }
+        if (fgetxattr(fd, "user.virtfs.rdev",
+                      &tmp_dev, sizeof(dev_t), 0, 0) > 0) {
+                stbuf->st_rdev = tmp_dev;
+        }
+
+#endif
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         errno = EOPNOTSUPP;
         return -1;
@@ -1094,7 +1185,9 @@ static int local_ioc_getversion(FsContext *ctx, V9fsPath *path,
 static int local_init(FsContext *ctx)
 {
     int err = 0;
+#ifdef FS_IOC_GETVERSION
     struct statfs stbuf;
+#endif
 
     if (ctx->export_flags & V9FS_SM_PASSTHROUGH) {
         ctx->xops = passthrough_xattr_ops;

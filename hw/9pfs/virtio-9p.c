@@ -21,6 +21,11 @@
 #include "trace.h"
 #include "migration/migration.h"
 
+#ifdef CONFIG_DARWIN
+#define O_DIRECT 040000 /* Direct disk access */
+#define O_NOATIME 01000000 /* Do not set atime */
+#endif
+
 int open_fd_hw;
 int total_open_fd;
 static int open_fd_rc;
@@ -854,12 +859,21 @@ static void stat_to_v9stat_dotl(V9fsState *s, const struct stat *stbuf,
     v9lstat->st_size = stbuf->st_size;
     v9lstat->st_blksize = stbuf->st_blksize;
     v9lstat->st_blocks = stbuf->st_blocks;
+#ifdef CONFIG_LINUX
     v9lstat->st_atime_sec = stbuf->st_atime;
     v9lstat->st_atime_nsec = stbuf->st_atim.tv_nsec;
     v9lstat->st_mtime_sec = stbuf->st_mtime;
     v9lstat->st_mtime_nsec = stbuf->st_mtim.tv_nsec;
     v9lstat->st_ctime_sec = stbuf->st_ctime;
     v9lstat->st_ctime_nsec = stbuf->st_ctim.tv_nsec;
+#else // darwin
+    v9lstat->st_atime_sec = stbuf->st_atimespec.tv_sec;
+    v9lstat->st_atime_nsec = stbuf->st_atimespec.tv_nsec;
+    v9lstat->st_mtime_sec = stbuf->st_mtimespec.tv_sec;
+    v9lstat->st_mtime_nsec = stbuf->st_mtimespec.tv_nsec;
+    v9lstat->st_ctime_sec = stbuf->st_ctimespec.tv_sec;
+    v9lstat->st_ctime_nsec = stbuf->st_ctimespec.tv_nsec;
+#endif
     /* Currently we only support BASIC fields in stat */
     v9lstat->st_result_mask = P9_STATS_BASIC;
 
@@ -1598,6 +1612,10 @@ static int v9fs_do_readdir_with_stat(V9fsPDU *pdu,
     dent = g_malloc(sizeof(struct dirent));
 
     while (1) {
+#ifndef CONFIG_LINUX
+        uint64_t d_offset = 0;
+        d_offset = v9fs_co_telldir(pdu, fidp);
+#endif
         v9fs_path_init(&path);
         err = v9fs_co_readdir_r(pdu, fidp, dent, &result);
         if (err || !result) {
@@ -1628,7 +1646,11 @@ static int v9fs_do_readdir_with_stat(V9fsPDU *pdu,
         count += len;
         v9fs_stat_free(&v9stat);
         v9fs_path_free(&path);
+#ifdef CONFIG_LINUX
         saved_dir_pos = dent->d_off;
+#else
+        saved_dir_pos = d_offset;
+#endif
     }
 out:
     g_free(dent);
@@ -1784,10 +1806,16 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
     dent = g_malloc(sizeof(struct dirent));
 
     while (1) {
+#ifndef CONFIG_LINUX
+        uint64_t d_offset = 0;
+        d_offset = v9fs_co_telldir(pdu, fidp);
+#endif
+
         err = v9fs_co_readdir_r(pdu, fidp, dent, &result);
         if (err || !result) {
             break;
         }
+
         v9fs_string_init(&name);
         v9fs_string_sprintf(&name, "%s", dent->d_name);
         if ((count + v9fs_readdir_data_size(&name)) > max_count) {
@@ -1809,9 +1837,15 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
         qid.version = 0;
 
         /* 11 = 7 + 4 (7 = start offset, 4 = space for storing count) */
+#ifdef CONFIG_LINUX
         len = pdu_marshal(pdu, 11 + count, "Qqbs",
                           &qid, dent->d_off,
                           dent->d_type, &name);
+#else
+        len = pdu_marshal(pdu, 11 + count, "Qqbs",
+                          &qid, d_offset,
+                          dent->d_type, &name);
+#endif
         if (len < 0) {
             v9fs_co_seekdir(pdu, fidp, saved_dir_pos);
             v9fs_string_free(&name);
@@ -1820,7 +1854,11 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
         }
         count += len;
         v9fs_string_free(&name);
+#ifdef CONFIG_LINUX
         saved_dir_pos = dent->d_off;
+#else
+        saved_dir_pos = d_offset;
+#endif
     }
     g_free(dent);
     if (err < 0) {
@@ -2718,9 +2756,15 @@ static int v9fs_fill_statfs(V9fsState *s, V9fsPDU *pdu, struct statfs *stbuf)
     f_bavail = stbuf->f_bavail/bsize_factor;
     f_files  = stbuf->f_files;
     f_ffree  = stbuf->f_ffree;
+#ifdef CONFIG_LINUX
     fsid_val = (unsigned int) stbuf->f_fsid.__val[0] |
                (unsigned long long)stbuf->f_fsid.__val[1] << 32;
     f_namelen = stbuf->f_namelen;
+#else
+    fsid_val = (unsigned int) stbuf->f_fsid.val[0] |
+               (unsigned long long)stbuf->f_fsid.val[1] << 32;
+    f_namelen = 255;
+#endif
 
     return pdu_marshal(pdu, offset, "ddqqqqqqd",
                        f_type, f_bsize, f_blocks, f_bfree,
