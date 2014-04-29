@@ -270,13 +270,15 @@ static void marucam_resetfn(DeviceState *d)
 {
     MaruCamState *s = (MaruCamState *)d;
 
-    marucam_device_close(s);
-    qemu_mutex_lock(&s->thread_mutex);
-    s->isr = s->streamon = s->req_frame = s->buf_size = 0;
-    qemu_mutex_unlock(&s->thread_mutex);
-    memset(s->vaddr, 0, MARUCAM_MEM_SIZE);
-    memset(s->param, 0x00, sizeof(MaruCamParam));
-    INFO("[%s]\n", __func__);
+    if (s->initialized) {
+        marucam_device_close(s);
+        qemu_mutex_lock(&s->thread_mutex);
+        s->isr = s->streamon = s->req_frame = s->buf_size = 0;
+        qemu_mutex_unlock(&s->thread_mutex);
+        memset(s->vaddr, 0, MARUCAM_MEM_SIZE);
+        memset(s->param, 0x00, sizeof(MaruCamParam));
+        TRACE("[%s] This device has been reset\n", __func__);
+    }
 }
 
 int maru_camera_pci_init(PCIBus *bus)
