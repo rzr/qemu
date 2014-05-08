@@ -117,12 +117,12 @@ static void set_tethering_app_state(bool state);
 static bool get_tethering_app_state(void);
 #endif
 
-static void *build_injector_msg(Injector__InjectorMsg* msg, int *payloadsize)
+static void *build_tethering_msg(Tethering__TetheringMsg* msg, int *payloadsize)
 {
     void *buf = NULL;
     int msg_packed_size = 0;
 
-    msg_packed_size = injector__injector_msg__get_packed_size(msg);
+    msg_packed_size = tethering__tethering_msg__get_packed_size(msg);
     *payloadsize = msg_packed_size + MSG_LEN_SIZE;
 
     buf = g_malloc(*payloadsize);
@@ -131,7 +131,7 @@ static void *build_injector_msg(Injector__InjectorMsg* msg, int *payloadsize)
         return NULL;
     }
 
-    injector__injector_msg__pack(msg, buf + MSG_LEN_SIZE);
+    tethering__tethering_msg__pack(msg, buf + MSG_LEN_SIZE);
 
     msg_packed_size = htonl(msg_packed_size);
     memcpy(buf, &msg_packed_size, MSG_LEN_SIZE);
@@ -139,14 +139,14 @@ static void *build_injector_msg(Injector__InjectorMsg* msg, int *payloadsize)
     return buf;
 }
 
-static bool send_msg_to_controller(Injector__InjectorMsg *msg)
+static bool send_msg_to_controller(Tethering__TetheringMsg *msg)
 {
     void *buf = NULL;
     int payloadsize = 0, err = 0;
     int sockfd = 0;
     bool ret = true;
 
-    buf = build_injector_msg(msg, &payloadsize);
+    buf = build_tethering_msg(msg, &payloadsize);
     if (!buf) {
         return false;
     }
@@ -167,14 +167,14 @@ static bool send_msg_to_controller(Injector__InjectorMsg *msg)
 
 static bool send_handshake_req_msg(void)
 {
-    Injector__InjectorMsg msg = INJECTOR__INJECTOR_MSG__INIT;
-    Injector__HandShakeReq req = INJECTOR__HAND_SHAKE_REQ__INIT;
+    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
+    Tethering__HandShakeReq req = TETHERING__HAND_SHAKE_REQ__INIT;
 
     TRACE("enter: %s\n", __func__);
 
     req.key = TETHERING_MSG_HANDSHAKE_KEY;
 
-    msg.type = INJECTOR__INJECTOR_MSG__TYPE__HANDSHAKE_REQ;
+    msg.type = TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_REQ;
     msg.handshakereq = &req;
 
     TRACE("send handshake_req message\n");
@@ -188,14 +188,14 @@ static bool send_handshake_req_msg(void)
 #if 0
 static bool send_emul_state_msg(void)
 {
-    Injector__InjectorMsg msg = INJECTOR__INJECTOR_MSG__INIT;
-    Injector__EmulatorState emul_state = INJECTOR__EMULATOR_STATE__INIT;
+    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
+    Tethering__EmulatorState emul_state = TETHERING__EMULATOR_STATE__INIT;
 
     TRACE("enter: %s\n", __func__);
 
-    emul_state.state = INJECTOR__CONNECTION_STATE__TERMINATE;
+    emul_state.state = TETHERING__CONNECTION_STATE__TERMINATE;
 
-    msg.type = INJECTOR__INJECTOR_MSG__TYPE__EMUL_STATE;
+    msg.type = TETHERING__TETHERING_MSG__TYPE__EMUL_STATE;
     msg.emulstate = &emul_state;
 
     INFO("send emulator_state message\n");
@@ -207,14 +207,14 @@ static bool send_emul_state_msg(void)
 }
 #endif
 
-static bool build_event_msg(Injector__EventMsg *event)
+static bool build_event_msg(Tethering__EventMsg *event)
 {
     bool ret = false;
-    Injector__InjectorMsg msg = INJECTOR__INJECTOR_MSG__INIT;
+    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
 
     TRACE("enter: %s\n", __func__);
 
-    msg.type = INJECTOR__INJECTOR_MSG__TYPE__EVENT_MSG;
+    msg.type = TETHERING__TETHERING_MSG__TYPE__EVENT_MSG;
     msg.eventmsg = event;
 
     ret = send_msg_to_controller(&msg);
@@ -224,17 +224,17 @@ static bool build_event_msg(Injector__EventMsg *event)
     return ret;
 }
 
-static bool send_event_start_ans_msg(Injector__Result result)
+static bool send_event_start_ans_msg(Tethering__MessageResult result)
 {
     bool ret = false;
-    Injector__EventMsg event = INJECTOR__EVENT_MSG__INIT;
-    Injector__StartAns start_ans = INJECTOR__START_ANS__INIT;
+    Tethering__EventMsg event = TETHERING__EVENT_MSG__INIT;
+    Tethering__StartAns start_ans = TETHERING__START_ANS__INIT;
 
     TRACE("enter: %s\n", __func__);
 
     start_ans.result = result;
 
-    event.type = INJECTOR__EVENT_MSG__TYPE__START_ANS;
+    event.type = TETHERING__EVENT_MSG__TYPE__START_ANS;
     event.startans = &start_ans;
 
     TRACE("send event_start_ans message\n");
@@ -245,19 +245,19 @@ static bool send_event_start_ans_msg(Injector__Result result)
     return ret;
 }
 
-static bool send_set_event_status_msg(Injector__Event event_type,
-                                    Injector__Status status)
+static bool send_set_event_status_msg(Tethering__EventType event_type,
+                                    Tethering__State status)
 {
     bool ret = false;
-    Injector__EventMsg event = INJECTOR__EVENT_MSG__INIT;
-    Injector__SetEventStatus event_status = INJECTOR__SET_EVENT_STATUS__INIT;
+    Tethering__EventMsg event = TETHERING__EVENT_MSG__INIT;
+    Tethering__SetEventStatus event_status = TETHERING__SET_EVENT_STATUS__INIT;
 
     TRACE("enter: %s\n", __func__);
 
-    event_status.event = event_type;
-    event_status.status = status;
+    event_status.type = event_type;
+    event_status.state = status;
 
-    event.type = INJECTOR__EVENT_MSG__TYPE__EVENT_STATUS;
+    event.type = TETHERING__EVENT_MSG__TYPE__EVENT_STATUS;
     event.setstatus = &event_status;
 
     TRACE("send event_set_event_status message\n");
@@ -270,14 +270,14 @@ static bool send_set_event_status_msg(Injector__Event event_type,
 
 
 // create a sensor message.
-static bool build_sensor_msg(Injector__SensorMsg *sensor)
+static bool build_sensor_msg(Tethering__SensorMsg *sensor)
 {
     bool ret = false;
-    Injector__InjectorMsg msg = INJECTOR__INJECTOR_MSG__INIT;
+    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
 
     TRACE("enter: %s\n", __func__);
 
-    msg.type = INJECTOR__INJECTOR_MSG__TYPE__SENSOR_MSG;
+    msg.type = TETHERING__TETHERING_MSG__TYPE__SENSOR_MSG;
     msg.sensormsg = sensor;
 
     ret = send_msg_to_controller(&msg);
@@ -287,17 +287,17 @@ static bool build_sensor_msg(Injector__SensorMsg *sensor)
     return ret;
 }
 
-static bool send_sensor_start_ans_msg(Injector__Result result)
+static bool send_sensor_start_ans_msg(Tethering__MessageResult result)
 {
     bool ret = false;
-    Injector__SensorMsg event = INJECTOR__SENSOR_MSG__INIT;
-    Injector__StartAns start_ans = INJECTOR__START_ANS__INIT;
+    Tethering__SensorMsg event = TETHERING__SENSOR_MSG__INIT;
+    Tethering__StartAns start_ans = TETHERING__START_ANS__INIT;
 
     TRACE("enter: %s\n", __func__);
 
     start_ans.result = result;
 
-    event.type = INJECTOR__SENSOR_MSG__TYPE__START_ANS;
+    event.type = TETHERING__SENSOR_MSG__TYPE__START_ANS;
     event.startans = &start_ans;
 
     TRACE("send sensor_start_ans message\n");
@@ -308,21 +308,21 @@ static bool send_sensor_start_ans_msg(Injector__Result result)
     return ret;
 }
 
-static bool send_set_sensor_status_msg(Injector__SensorType sensor_type,
-                                    Injector__Status status)
+static bool send_set_sensor_status_msg(Tethering__SensorType sensor_type,
+                                    Tethering__State status)
 {
     bool ret = false;
 
-    Injector__SensorMsg sensor = INJECTOR__SENSOR_MSG__INIT;
-    Injector__SetSensorStatus sensor_status =
-                            INJECTOR__SET_SENSOR_STATUS__INIT;
+    Tethering__SensorMsg sensor = TETHERING__SENSOR_MSG__INIT;
+    Tethering__SetSensorStatus sensor_status =
+                            TETHERING__SET_SENSOR_STATUS__INIT;
 
     TRACE("enter: %s\n", __func__);
 
-    sensor_status.sensor = sensor_type;
-    sensor_status.status = status;
+    sensor_status.type = sensor_type;
+    sensor_status.state = status;
 
-    sensor.type = INJECTOR__SENSOR_MSG__TYPE__SENSOR_STATUS;
+    sensor.type = TETHERING__SENSOR_MSG__TYPE__SENSOR_STATUS;
     sensor.setstatus = &sensor_status;
 
     TRACE("send sensor_set_event_status message\n");
@@ -333,7 +333,7 @@ static bool send_set_sensor_status_msg(Injector__SensorType sensor_type,
     return ret;
 }
 
-static void set_sensor_data(Injector__SensorData *data)
+static void set_sensor_data(Tethering__SensorData *data)
 {
     /*
      * data format for sensor device
@@ -343,7 +343,7 @@ static void set_sensor_data(Injector__SensorData *data)
      */
 
     switch(data->sensor) {
-    case INJECTOR__SENSOR_TYPE__ACCEL:
+    case TETHERING__SENSOR_TYPE__ACCEL:
     {
         char tmp[255] = {0};
 
@@ -355,7 +355,7 @@ static void set_sensor_data(Injector__SensorData *data)
             data->x, data->y, data->z);
     }
         break;
-    case INJECTOR__SENSOR_TYPE__MAGNETIC:
+    case TETHERING__SENSOR_TYPE__MAGNETIC:
     {
         char tmp[255] = {0};
 
@@ -367,7 +367,7 @@ static void set_sensor_data(Injector__SensorData *data)
             data->x, data->y, data->z);
     }
         break;
-    case INJECTOR__SENSOR_TYPE__GYROSCOPE:
+    case TETHERING__SENSOR_TYPE__GYROSCOPE:
     {
         char tmp[255] = {0};
 
@@ -379,7 +379,7 @@ static void set_sensor_data(Injector__SensorData *data)
             data->x, data->y, data->z);
     }
         break;
-    case INJECTOR__SENSOR_TYPE__PROXIMITY:
+    case TETHERING__SENSOR_TYPE__PROXIMITY:
     {
         char tmp[255] = {0};
         double x = (double)(atoi(data->x));
@@ -390,7 +390,7 @@ static void set_sensor_data(Injector__SensorData *data)
         TRACE("sensor_proxi x: %.1f, %s\n", x, tmp);
     }
         break;
-    case INJECTOR__SENSOR_TYPE__LIGHT:
+    case TETHERING__SENSOR_TYPE__LIGHT:
     {
         char tmp[255] = {0};
 
@@ -408,14 +408,14 @@ static void set_sensor_data(Injector__SensorData *data)
     // set ecs_sensor
 }
 
-static bool build_mulitouch_msg(Injector__MultiTouchMsg *multitouch)
+static bool build_mulitouch_msg(Tethering__MultiTouchMsg *multitouch)
 {
     bool ret = false;
-    Injector__InjectorMsg msg = INJECTOR__INJECTOR_MSG__INIT;
+    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
 
     TRACE("enter: %s\n", __func__);
 
-    msg.type = INJECTOR__INJECTOR_MSG__TYPE__TOUCH_MSG;
+    msg.type = TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG;
     msg.touchmsg = multitouch;
 
     ret = send_msg_to_controller(&msg);
@@ -425,18 +425,18 @@ static bool build_mulitouch_msg(Injector__MultiTouchMsg *multitouch)
     return ret;
 }
 
-static bool send_mulitouch_start_ans_msg(Injector__Result result)
+static bool send_mulitouch_start_ans_msg(Tethering__MessageResult result)
 {
     bool ret = false;
 
-    Injector__MultiTouchMsg mt = INJECTOR__MULTI_TOUCH_MSG__INIT;
-    Injector__StartAns start_ans = INJECTOR__START_ANS__INIT;
+    Tethering__MultiTouchMsg mt = TETHERING__MULTI_TOUCH_MSG__INIT;
+    Tethering__StartAns start_ans = TETHERING__START_ANS__INIT;
 
     TRACE("enter: %s\n", __func__);
 
     start_ans.result = result;
 
-    mt.type = INJECTOR__MULTI_TOUCH_MSG__TYPE__START_ANS;
+    mt.type = TETHERING__MULTI_TOUCH_MSG__TYPE__START_ANS;
     mt.startans = &start_ans;
 
     ret = build_mulitouch_msg(&mt);
@@ -450,15 +450,15 @@ static bool send_set_multitouch_max_count(void)
 {
     bool ret = false;
 
-    Injector__MultiTouchMsg mt = INJECTOR__MULTI_TOUCH_MSG__INIT;
-    Injector__MultiTouchMaxCount touch_cnt =
-        INJECTOR__MULTI_TOUCH_MAX_COUNT__INIT;
+    Tethering__MultiTouchMsg mt = TETHERING__MULTI_TOUCH_MSG__INIT;
+    Tethering__MultiTouchMaxCount touch_cnt =
+        TETHERING__MULTI_TOUCH_MAX_COUNT__INIT;
 
     TRACE("enter: %s\n", __func__);
 
     touch_cnt.max = get_emul_max_touch_point();
 
-    mt.type = INJECTOR__MULTI_TOUCH_MSG__TYPE__MAX_COUNT;
+    mt.type = TETHERING__MULTI_TOUCH_MSG__TYPE__MAX_COUNT;
     mt.maxcount = &touch_cnt;
 
     INFO("send multi-touch max count: %d\n", touch_cnt.max);
@@ -469,25 +469,25 @@ static bool send_set_multitouch_max_count(void)
     return ret;
 }
 
-static void set_multitouch_data(Injector__MultiTouchData *data)
+static void set_multitouch_data(Tethering__MultiTouchData *data)
 {
     float x = 0.0, y = 0.0;
-    int32_t index = 0, status = 0;
+    int32_t index = 0, state = 0;
 
-    switch(data->status) {
-    case INJECTOR__TOUCH_STATUS__PRESS:
+    switch(data->state) {
+    case TETHERING__TOUCH_STATE__PRESSED:
         TRACE("touch pressed\n");
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
-        status = PRESSED;
+        state = PRESSED;
         break;
-    case INJECTOR__TOUCH_STATUS__RELEASE:
+    case TETHERING__TOUCH_STATE__RELEASED:
         TRACE("touch released\n");
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
-        status = RELEASED;
+        state = RELEASED;
         break;
     default:
         TRACE("invalid multitouch data\n");
@@ -496,22 +496,22 @@ static void set_multitouch_data(Injector__MultiTouchData *data)
 
     INFO("set touch_data. index: %d, x: %d, y: %d\n", index, x, y);
     // set ecs_multitouch
-    send_tethering_touch_data(x, y, index, status);
+    send_tethering_touch_data(x, y, index, state);
 }
 
 static bool send_set_multitouch_resolution(void)
 {
     bool ret = false;
 
-    Injector__MultiTouchMsg mt = INJECTOR__MULTI_TOUCH_MSG__INIT;
-    Injector__Resolution resolution = INJECTOR__RESOLUTION__INIT;
+    Tethering__MultiTouchMsg mt = TETHERING__MULTI_TOUCH_MSG__INIT;
+    Tethering__Resolution resolution = TETHERING__RESOLUTION__INIT;
 
     TRACE("enter: %s\n", __func__);
 
     resolution.width = get_emul_resolution_width();
     resolution.height = get_emul_resolution_height();
 
-    mt.type = INJECTOR__MULTI_TOUCH_MSG__TYPE__RESOLUTION;
+    mt.type = TETHERING__MULTI_TOUCH_MSG__TYPE__RESOLUTION;
     mt.resolution = &resolution;
 
     INFO("send multi-touch resolution: %dx%d\n",
@@ -523,15 +523,15 @@ static bool send_set_multitouch_resolution(void)
     return ret;
 }
 
-static void msgproc_tethering_handshake_ans(Injector__HandShakeAns *msg)
+static void msgproc_tethering_handshake_ans(Tethering__HandShakeAns *msg)
 {
     // FIXME: handle handshake answer
     //  ans = msg->result;
 }
 
-static void msgproc_app_state_msg(Injector__AppState *msg)
+static void msgproc_app_state_msg(Tethering__AppState *msg)
 {
-    if (msg->state == INJECTOR__CONNECTION_STATE__TERMINATE) {
+    if (msg->state == TETHERING__CONNECTION_STATE__TERMINATED) {
         INFO("App is terminated\n");
 
 //      set_tethering_app_state(false);
@@ -545,38 +545,38 @@ static void msgproc_app_state_msg(Injector__AppState *msg)
 }
 
 
-static bool msgproc_tethering_event_msg(Injector__EventMsg *msg)
+static bool msgproc_tethering_event_msg(Tethering__EventMsg *msg)
 {
     bool ret = true;
 
     switch(msg->type) {
-    case INJECTOR__EVENT_MSG__TYPE__START_REQ:
+    case TETHERING__EVENT_MSG__TYPE__START_REQ:
     {
         int touch_status = 0;
 
         TRACE("EVENT_MSG_TYPE_START_REQ\n");
-        send_set_event_status_msg(INJECTOR__EVENT__SENSOR,
-                                INJECTOR__STATUS__ENABLE);
+        send_set_event_status_msg(TETHERING__EVENT_TYPE__SENSOR,
+                                TETHERING__STATE__ENABLED);
 
         // TODO: check sensor device whether it exists or not
         set_tethering_sensor_status(ENABLED);
 
         if (is_emul_input_touch_enable()) {
-            touch_status = INJECTOR__STATUS__ENABLE;
+            touch_status = TETHERING__STATE__ENABLED;
             set_tethering_multitouch_status(ENABLED);
         } else {
-            touch_status = INJECTOR__STATUS__DISABLE;
+            touch_status = TETHERING__STATE__DISABLED;
             set_tethering_multitouch_status(DISABLED);
         }
 
         TRACE("send multi-touch event_status msg: %d\n", touch_status);
-        send_set_event_status_msg(INJECTOR__EVENT__MULTITOUCH, touch_status);
+        send_set_event_status_msg(TETHERING__EVENT_TYPE__TOUCH, touch_status);
 
         TRACE("send event_start_ans msg: %d\n", touch_status);
-        send_event_start_ans_msg(INJECTOR__RESULT__SUCCESS);
+        send_event_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
     }
         break;
-    case INJECTOR__EVENT_MSG__TYPE__TERMINATE:
+    case TETHERING__EVENT_MSG__TYPE__TERMINATE:
         break;
     default:
         TRACE("invalid event_msg type\n");
@@ -587,35 +587,35 @@ static bool msgproc_tethering_event_msg(Injector__EventMsg *msg)
     return ret;
 }
 
-static bool msgproc_tethering_sensor_msg(Injector__SensorMsg *msg)
+static bool msgproc_tethering_sensor_msg(Tethering__SensorMsg *msg)
 {
     bool ret = true;
 
     switch(msg->type) {
-    case INJECTOR__SENSOR_MSG__TYPE__START_REQ:
+    case TETHERING__SENSOR_MSG__TYPE__START_REQ:
         TRACE("SENSOR_MSG_TYPE_START_REQ\n");
 
         // set sensor type.
-        send_set_sensor_status_msg(INJECTOR__SENSOR_TYPE__ACCEL,
-                                INJECTOR__STATUS__ENABLE);
-        send_set_sensor_status_msg(INJECTOR__SENSOR_TYPE__MAGNETIC,
-                                INJECTOR__STATUS__ENABLE);
-        send_set_sensor_status_msg(INJECTOR__SENSOR_TYPE__GYROSCOPE,
-                                INJECTOR__STATUS__ENABLE);
-        send_set_sensor_status_msg(INJECTOR__SENSOR_TYPE__PROXIMITY,
-                                INJECTOR__STATUS__ENABLE);
-        send_set_sensor_status_msg(INJECTOR__SENSOR_TYPE__LIGHT,
-                                INJECTOR__STATUS__ENABLE);
+        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__ACCEL,
+                                TETHERING__STATE__ENABLED);
+        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__MAGNETIC,
+                                TETHERING__STATE__ENABLED);
+        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__GYROSCOPE,
+                                TETHERING__STATE__ENABLED);
+        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__PROXIMITY,
+                                TETHERING__STATE__ENABLED);
+        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__LIGHT,
+                                TETHERING__STATE__ENABLED);
 
         TRACE("SENSOR_MSG_TYPE_START_ANS\n");
-        send_sensor_start_ans_msg(INJECTOR__RESULT__SUCCESS);
+        send_sensor_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
 
         break;
-    case INJECTOR__SENSOR_MSG__TYPE__TERMINATE:
+    case TETHERING__SENSOR_MSG__TYPE__TERMINATE:
         TRACE("SENSOR_MSG_TYPE_TERMINATE\n");
         break;
 
-    case INJECTOR__SENSOR_MSG__TYPE__SENSOR_DATA:
+    case TETHERING__SENSOR_MSG__TYPE__SENSOR_DATA:
         TRACE("SENSOR_MSG_TYPE_SENSOR_DATA\n");
         set_sensor_data(msg->data);
         break;
@@ -628,23 +628,23 @@ static bool msgproc_tethering_sensor_msg(Injector__SensorMsg *msg)
     return ret;
 }
 
-static bool msgproc_tethering_mt_msg(Injector__MultiTouchMsg *msg)
+static bool msgproc_tethering_mt_msg(Tethering__MultiTouchMsg *msg)
 {
     bool ret = true;
 
     switch(msg->type) {
-    case INJECTOR__MULTI_TOUCH_MSG__TYPE__START_REQ:
-        TRACE("MULTITOUCH_MSG_TYPE_START\n");
+    case TETHERING__MULTI_TOUCH_MSG__TYPE__START_REQ:
+        TRACE("TOUCH_MSG_TYPE_START\n");
 
         send_set_multitouch_max_count();
         send_set_multitouch_resolution();
 
-        ret = send_mulitouch_start_ans_msg(INJECTOR__RESULT__SUCCESS);
+        ret = send_mulitouch_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
         break;
-    case INJECTOR__MULTI_TOUCH_MSG__TYPE__TERMINATE:
-        TRACE("MULTITOUCH_MSG_TYPE_TERMINATE\n");
+    case TETHERING__MULTI_TOUCH_MSG__TYPE__TERMINATE:
+        TRACE("TOUCH_MSG_TYPE_TERMINATE\n");
         break;
-    case INJECTOR__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA:
+    case TETHERING__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA:
         set_multitouch_data(msg->touchdata);
         break;
     default:
@@ -656,25 +656,25 @@ static bool msgproc_tethering_mt_msg(Injector__MultiTouchMsg *msg)
     return ret;
 }
 
-static bool handle_injector_msg_from_controller(char *data, int len)
+static bool handle_tethering_msg_from_controller(char *data, int len)
 {
-    Injector__InjectorMsg *injector = NULL;
+    Tethering__TetheringMsg *tethering = NULL;
     bool ret = true;
 
-    injector = injector__injector_msg__unpack(NULL, (size_t)len,
+    tethering = tethering__tethering_msg__unpack(NULL, (size_t)len,
                                             (const uint8_t *)data);
 
-    if (!injector) {
+    if (!tethering) {
         // error message
-        ERR("no injector massage\n");
+        ERR("no tethering massage\n");
         return false;
     }
 
-    switch (injector->type) {
-    case INJECTOR__INJECTOR_MSG__TYPE__HANDSHAKE_ANS:
+    switch (tethering->type) {
+    case TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_ANS:
     {
         // TODO: set the result of handshake_ans to
-        Injector__HandShakeAns *msg = injector->handshakeans;
+        Tethering__HandShakeAns *msg = tethering->handshakeans;
         if (!msg) {
             ret = false;
         } else {
@@ -685,9 +685,9 @@ static bool handle_injector_msg_from_controller(char *data, int len)
         }
     }
         break;
-    case INJECTOR__INJECTOR_MSG__TYPE__APP_STATE:
+    case TETHERING__TETHERING_MSG__TYPE__APP_STATE:
     {
-        Injector__AppState *msg = injector->appstate;
+        Tethering__AppState *msg = tethering->appstate;
 
         INFO("receive app_state msg\n");
         if (!msg) {
@@ -697,9 +697,9 @@ static bool handle_injector_msg_from_controller(char *data, int len)
         }
     }
         break;
-    case INJECTOR__INJECTOR_MSG__TYPE__EVENT_MSG:
+    case TETHERING__TETHERING_MSG__TYPE__EVENT_MSG:
     {
-        Injector__EventMsg *msg = injector->eventmsg;
+        Tethering__EventMsg *msg = tethering->eventmsg;
 
         INFO("receive event_msg\n");
         if (!msg) {
@@ -709,9 +709,9 @@ static bool handle_injector_msg_from_controller(char *data, int len)
         }
     }
         break;
-    case INJECTOR__INJECTOR_MSG__TYPE__SENSOR_MSG:
+    case TETHERING__TETHERING_MSG__TYPE__SENSOR_MSG:
     {
-        Injector__SensorMsg *msg = injector->sensormsg;
+        Tethering__SensorMsg *msg = tethering->sensormsg;
 
         INFO("receive sensor_msg\n");
         if (!msg) {
@@ -721,9 +721,9 @@ static bool handle_injector_msg_from_controller(char *data, int len)
         }
     }
         break;
-    case INJECTOR__INJECTOR_MSG__TYPE__TOUCH_MSG:
+    case TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG:
     {
-        Injector__MultiTouchMsg *msg = injector->touchmsg;
+        Tethering__MultiTouchMsg *msg = tethering->touchmsg;
 
         INFO("receive multitouch_msg\n");
         if (!msg) {
@@ -745,7 +745,7 @@ static bool handle_injector_msg_from_controller(char *data, int len)
     }
 #endif
 
-    injector__injector_msg__free_unpacked(injector, NULL);
+    tethering__tethering_msg__free_unpacked(tethering, NULL);
     return ret;
 }
 
@@ -823,7 +823,7 @@ static void tethering_io_handler(void *opaque)
         snd_buf = g_malloc(recv_buf.stack_size);
         memcpy(snd_buf, recv_buf.data, recv_buf.stack_size);
 
-        handle_injector_msg_from_controller(snd_buf,
+        handle_tethering_msg_from_controller(snd_buf,
                                             recv_buf.stack_size);
         reset_tethering_recv_buf(&recv_buf);
     }

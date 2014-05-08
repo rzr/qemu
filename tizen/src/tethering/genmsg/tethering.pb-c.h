@@ -8,247 +8,247 @@
 PROTOBUF_C_BEGIN_DECLS
 
 
-typedef struct _Injector__HandShakeReq Injector__HandShakeReq;
-typedef struct _Injector__HandShakeAns Injector__HandShakeAns;
-typedef struct _Injector__EmulatorState Injector__EmulatorState;
-typedef struct _Injector__AppState Injector__AppState;
-typedef struct _Injector__StartReq Injector__StartReq;
-typedef struct _Injector__StartAns Injector__StartAns;
-typedef struct _Injector__SetEventStatus Injector__SetEventStatus;
-typedef struct _Injector__EventMsg Injector__EventMsg;
-typedef struct _Injector__EventTerminate Injector__EventTerminate;
-typedef struct _Injector__SetSensorStatus Injector__SetSensorStatus;
-typedef struct _Injector__SensorData Injector__SensorData;
-typedef struct _Injector__SensorMsg Injector__SensorMsg;
-typedef struct _Injector__Resolution Injector__Resolution;
-typedef struct _Injector__MultiTouchMaxCount Injector__MultiTouchMaxCount;
-typedef struct _Injector__MultiTouchData Injector__MultiTouchData;
-typedef struct _Injector__MultiTouchMsg Injector__MultiTouchMsg;
-typedef struct _Injector__InjectorMsg Injector__InjectorMsg;
+typedef struct _Tethering__HandShakeReq Tethering__HandShakeReq;
+typedef struct _Tethering__HandShakeAns Tethering__HandShakeAns;
+typedef struct _Tethering__EmulatorState Tethering__EmulatorState;
+typedef struct _Tethering__AppState Tethering__AppState;
+typedef struct _Tethering__StartReq Tethering__StartReq;
+typedef struct _Tethering__StartAns Tethering__StartAns;
+typedef struct _Tethering__SetEventStatus Tethering__SetEventStatus;
+typedef struct _Tethering__EventMsg Tethering__EventMsg;
+typedef struct _Tethering__EventTerminate Tethering__EventTerminate;
+typedef struct _Tethering__SetSensorStatus Tethering__SetSensorStatus;
+typedef struct _Tethering__SensorData Tethering__SensorData;
+typedef struct _Tethering__SensorMsg Tethering__SensorMsg;
+typedef struct _Tethering__Resolution Tethering__Resolution;
+typedef struct _Tethering__MultiTouchMaxCount Tethering__MultiTouchMaxCount;
+typedef struct _Tethering__MultiTouchData Tethering__MultiTouchData;
+typedef struct _Tethering__MultiTouchMsg Tethering__MultiTouchMsg;
+typedef struct _Tethering__TetheringMsg Tethering__TetheringMsg;
 
 
 /* --- enums --- */
 
-typedef enum _Injector__EventMsg__TYPE {
-  INJECTOR__EVENT_MSG__TYPE__START_REQ = 2,
-  INJECTOR__EVENT_MSG__TYPE__START_ANS = 3,
-  INJECTOR__EVENT_MSG__TYPE__TERMINATE = 4,
-  INJECTOR__EVENT_MSG__TYPE__EVENT_STATUS = 5
-} Injector__EventMsg__TYPE;
-typedef enum _Injector__SensorMsg__Type {
-  INJECTOR__SENSOR_MSG__TYPE__START_REQ = 2,
-  INJECTOR__SENSOR_MSG__TYPE__START_ANS = 3,
-  INJECTOR__SENSOR_MSG__TYPE__TERMINATE = 4,
-  INJECTOR__SENSOR_MSG__TYPE__SENSOR_STATUS = 5,
-  INJECTOR__SENSOR_MSG__TYPE__SENSOR_DATA = 6
-} Injector__SensorMsg__Type;
-typedef enum _Injector__MultiTouchMsg__Type {
-  INJECTOR__MULTI_TOUCH_MSG__TYPE__START_REQ = 2,
-  INJECTOR__MULTI_TOUCH_MSG__TYPE__START_ANS = 3,
-  INJECTOR__MULTI_TOUCH_MSG__TYPE__TERMINATE = 4,
-  INJECTOR__MULTI_TOUCH_MSG__TYPE__MAX_COUNT = 5,
-  INJECTOR__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA = 6,
-  INJECTOR__MULTI_TOUCH_MSG__TYPE__RESOLUTION = 7
-} Injector__MultiTouchMsg__Type;
-typedef enum _Injector__InjectorMsg__Type {
-  INJECTOR__INJECTOR_MSG__TYPE__HANDSHAKE_REQ = 2,
-  INJECTOR__INJECTOR_MSG__TYPE__HANDSHAKE_ANS = 3,
-  INJECTOR__INJECTOR_MSG__TYPE__EMUL_STATE = 4,
-  INJECTOR__INJECTOR_MSG__TYPE__APP_STATE = 5,
-  INJECTOR__INJECTOR_MSG__TYPE__EVENT_MSG = 6,
-  INJECTOR__INJECTOR_MSG__TYPE__SENSOR_MSG = 7,
-  INJECTOR__INJECTOR_MSG__TYPE__TOUCH_MSG = 8
-} Injector__InjectorMsg__Type;
-typedef enum _Injector__Result {
-  INJECTOR__RESULT__SUCCESS = 1,
-  INJECTOR__RESULT__FAILURE = 2,
-  INJECTOR__RESULT__CANCEL = 3
-} Injector__Result;
-typedef enum _Injector__ConnectionState {
-  INJECTOR__CONNECTION_STATE__CONNECT = 1,
-  INJECTOR__CONNECTION_STATE__DISCONNECT = 2,
-  INJECTOR__CONNECTION_STATE__TERMINATE = 3
-} Injector__ConnectionState;
-typedef enum _Injector__Event {
-  INJECTOR__EVENT__SENSOR = 1,
-  INJECTOR__EVENT__MULTITOUCH = 2
-} Injector__Event;
-typedef enum _Injector__Status {
-  INJECTOR__STATUS__ENABLE = 1,
-  INJECTOR__STATUS__DISABLE = 2
-} Injector__Status;
-typedef enum _Injector__SensorType {
-  INJECTOR__SENSOR_TYPE__ACCEL = 1,
-  INJECTOR__SENSOR_TYPE__MAGNETIC = 2,
-  INJECTOR__SENSOR_TYPE__GYROSCOPE = 3,
-  INJECTOR__SENSOR_TYPE__PROXIMITY = 4,
-  INJECTOR__SENSOR_TYPE__LIGHT = 5
-} Injector__SensorType;
-typedef enum _Injector__TouchStatus {
-  INJECTOR__TOUCH_STATUS__PRESS = 1,
-  INJECTOR__TOUCH_STATUS__RELEASE = 2
-} Injector__TouchStatus;
+typedef enum _Tethering__EventMsg__TYPE {
+  TETHERING__EVENT_MSG__TYPE__START_REQ = 2,
+  TETHERING__EVENT_MSG__TYPE__START_ANS = 3,
+  TETHERING__EVENT_MSG__TYPE__TERMINATE = 4,
+  TETHERING__EVENT_MSG__TYPE__EVENT_STATUS = 5
+} Tethering__EventMsg__TYPE;
+typedef enum _Tethering__SensorMsg__Type {
+  TETHERING__SENSOR_MSG__TYPE__START_REQ = 2,
+  TETHERING__SENSOR_MSG__TYPE__START_ANS = 3,
+  TETHERING__SENSOR_MSG__TYPE__TERMINATE = 4,
+  TETHERING__SENSOR_MSG__TYPE__SENSOR_STATUS = 5,
+  TETHERING__SENSOR_MSG__TYPE__SENSOR_DATA = 6
+} Tethering__SensorMsg__Type;
+typedef enum _Tethering__MultiTouchMsg__Type {
+  TETHERING__MULTI_TOUCH_MSG__TYPE__START_REQ = 2,
+  TETHERING__MULTI_TOUCH_MSG__TYPE__START_ANS = 3,
+  TETHERING__MULTI_TOUCH_MSG__TYPE__TERMINATE = 4,
+  TETHERING__MULTI_TOUCH_MSG__TYPE__MAX_COUNT = 5,
+  TETHERING__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA = 6,
+  TETHERING__MULTI_TOUCH_MSG__TYPE__RESOLUTION = 7
+} Tethering__MultiTouchMsg__Type;
+typedef enum _Tethering__TetheringMsg__Type {
+  TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_REQ = 2,
+  TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_ANS = 3,
+  TETHERING__TETHERING_MSG__TYPE__EMUL_STATE = 4,
+  TETHERING__TETHERING_MSG__TYPE__APP_STATE = 5,
+  TETHERING__TETHERING_MSG__TYPE__EVENT_MSG = 6,
+  TETHERING__TETHERING_MSG__TYPE__SENSOR_MSG = 7,
+  TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG = 8
+} Tethering__TetheringMsg__Type;
+typedef enum _Tethering__MessageResult {
+  TETHERING__MESSAGE_RESULT__SUCCESS = 1,
+  TETHERING__MESSAGE_RESULT__FAILURE = 2,
+  TETHERING__MESSAGE_RESULT__CANCEL = 3
+} Tethering__MessageResult;
+typedef enum _Tethering__ConnectionState {
+  TETHERING__CONNECTION_STATE__CONNECTED = 1,
+  TETHERING__CONNECTION_STATE__DISCONNECTED = 2,
+  TETHERING__CONNECTION_STATE__TERMINATED = 3
+} Tethering__ConnectionState;
+typedef enum _Tethering__EventType {
+  TETHERING__EVENT_TYPE__SENSOR = 1,
+  TETHERING__EVENT_TYPE__TOUCH = 2
+} Tethering__EventType;
+typedef enum _Tethering__State {
+  TETHERING__STATE__ENABLED = 1,
+  TETHERING__STATE__DISABLED = 2
+} Tethering__State;
+typedef enum _Tethering__SensorType {
+  TETHERING__SENSOR_TYPE__ACCEL = 1,
+  TETHERING__SENSOR_TYPE__MAGNETIC = 2,
+  TETHERING__SENSOR_TYPE__GYROSCOPE = 3,
+  TETHERING__SENSOR_TYPE__PROXIMITY = 4,
+  TETHERING__SENSOR_TYPE__LIGHT = 5
+} Tethering__SensorType;
+typedef enum _Tethering__TouchState {
+  TETHERING__TOUCH_STATE__PRESSED = 1,
+  TETHERING__TOUCH_STATE__RELEASED = 2
+} Tethering__TouchState;
 
 /* --- messages --- */
 
-struct  _Injector__HandShakeReq
+struct  _Tethering__HandShakeReq
 {
   ProtobufCMessage base;
   int32_t key;
 };
-#define INJECTOR__HAND_SHAKE_REQ__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__hand_shake_req__descriptor) \
+#define TETHERING__HAND_SHAKE_REQ__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__hand_shake_req__descriptor) \
     , 0 }
 
 
-struct  _Injector__HandShakeAns
+struct  _Tethering__HandShakeAns
 {
   ProtobufCMessage base;
-  Injector__Result result;
+  Tethering__MessageResult result;
 };
-#define INJECTOR__HAND_SHAKE_ANS__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__hand_shake_ans__descriptor) \
+#define TETHERING__HAND_SHAKE_ANS__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__hand_shake_ans__descriptor) \
     , 0 }
 
 
-struct  _Injector__EmulatorState
+struct  _Tethering__EmulatorState
 {
   ProtobufCMessage base;
-  Injector__ConnectionState state;
+  Tethering__ConnectionState state;
 };
-#define INJECTOR__EMULATOR_STATE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__emulator_state__descriptor) \
+#define TETHERING__EMULATOR_STATE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__emulator_state__descriptor) \
     , 0 }
 
 
-struct  _Injector__AppState
+struct  _Tethering__AppState
 {
   ProtobufCMessage base;
-  Injector__ConnectionState state;
+  Tethering__ConnectionState state;
 };
-#define INJECTOR__APP_STATE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__app_state__descriptor) \
+#define TETHERING__APP_STATE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__app_state__descriptor) \
     , 0 }
 
 
-struct  _Injector__StartReq
+struct  _Tethering__StartReq
 {
   ProtobufCMessage base;
 };
-#define INJECTOR__START_REQ__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__start_req__descriptor) \
+#define TETHERING__START_REQ__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__start_req__descriptor) \
      }
 
 
-struct  _Injector__StartAns
+struct  _Tethering__StartAns
 {
   ProtobufCMessage base;
-  Injector__Result result;
+  Tethering__MessageResult result;
 };
-#define INJECTOR__START_ANS__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__start_ans__descriptor) \
+#define TETHERING__START_ANS__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__start_ans__descriptor) \
     , 0 }
 
 
-struct  _Injector__SetEventStatus
+struct  _Tethering__SetEventStatus
 {
   ProtobufCMessage base;
-  Injector__Event event;
-  Injector__Status status;
+  Tethering__EventType type;
+  Tethering__State state;
 };
-#define INJECTOR__SET_EVENT_STATUS__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__set_event_status__descriptor) \
+#define TETHERING__SET_EVENT_STATUS__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__set_event_status__descriptor) \
     , 0, 0 }
 
 
-struct  _Injector__EventMsg
+struct  _Tethering__EventMsg
 {
   ProtobufCMessage base;
-  Injector__EventMsg__TYPE type;
-  Injector__StartReq *startreq;
-  Injector__StartAns *startans;
-  Injector__EventTerminate *terminate;
-  Injector__SetEventStatus *setstatus;
+  Tethering__EventMsg__TYPE type;
+  Tethering__StartReq *startreq;
+  Tethering__StartAns *startans;
+  Tethering__EventTerminate *terminate;
+  Tethering__SetEventStatus *setstatus;
 };
-#define INJECTOR__EVENT_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__event_msg__descriptor) \
+#define TETHERING__EVENT_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__event_msg__descriptor) \
     , 0, NULL, NULL, NULL, NULL }
 
 
-struct  _Injector__EventTerminate
+struct  _Tethering__EventTerminate
 {
   ProtobufCMessage base;
 };
-#define INJECTOR__EVENT_TERMINATE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__event_terminate__descriptor) \
+#define TETHERING__EVENT_TERMINATE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__event_terminate__descriptor) \
      }
 
 
-struct  _Injector__SetSensorStatus
+struct  _Tethering__SetSensorStatus
 {
   ProtobufCMessage base;
-  Injector__SensorType sensor;
-  Injector__Status status;
+  Tethering__SensorType type;
+  Tethering__State state;
 };
-#define INJECTOR__SET_SENSOR_STATUS__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__set_sensor_status__descriptor) \
+#define TETHERING__SET_SENSOR_STATUS__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__set_sensor_status__descriptor) \
     , 0, 0 }
 
 
-struct  _Injector__SensorData
+struct  _Tethering__SensorData
 {
   ProtobufCMessage base;
-  Injector__SensorType sensor;
+  Tethering__SensorType sensor;
   char *x;
   char *y;
   char *z;
 };
-extern char injector__sensor_data__x__default_value[];
-extern char injector__sensor_data__y__default_value[];
-extern char injector__sensor_data__z__default_value[];
-#define INJECTOR__SENSOR_DATA__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__sensor_data__descriptor) \
-    , 0, injector__sensor_data__x__default_value, injector__sensor_data__y__default_value, injector__sensor_data__z__default_value }
+extern char tethering__sensor_data__x__default_value[];
+extern char tethering__sensor_data__y__default_value[];
+extern char tethering__sensor_data__z__default_value[];
+#define TETHERING__SENSOR_DATA__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__sensor_data__descriptor) \
+    , 0, tethering__sensor_data__x__default_value, tethering__sensor_data__y__default_value, tethering__sensor_data__z__default_value }
 
 
-struct  _Injector__SensorMsg
+struct  _Tethering__SensorMsg
 {
   ProtobufCMessage base;
-  Injector__SensorMsg__Type type;
-  Injector__StartReq *startreq;
-  Injector__StartAns *startans;
-  Injector__EventTerminate *terminate;
-  Injector__SetSensorStatus *setstatus;
-  Injector__SensorData *data;
+  Tethering__SensorMsg__Type type;
+  Tethering__StartReq *startreq;
+  Tethering__StartAns *startans;
+  Tethering__EventTerminate *terminate;
+  Tethering__SetSensorStatus *setstatus;
+  Tethering__SensorData *data;
 };
-#define INJECTOR__SENSOR_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__sensor_msg__descriptor) \
+#define TETHERING__SENSOR_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__sensor_msg__descriptor) \
     , 0, NULL, NULL, NULL, NULL, NULL }
 
 
-struct  _Injector__Resolution
+struct  _Tethering__Resolution
 {
   ProtobufCMessage base;
   int32_t width;
   int32_t height;
 };
-#define INJECTOR__RESOLUTION__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__resolution__descriptor) \
+#define TETHERING__RESOLUTION__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__resolution__descriptor) \
     , 0, 0 }
 
 
-struct  _Injector__MultiTouchMaxCount
+struct  _Tethering__MultiTouchMaxCount
 {
   ProtobufCMessage base;
   protobuf_c_boolean has_max;
   int32_t max;
 };
-#define INJECTOR__MULTI_TOUCH_MAX_COUNT__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__multi_touch_max_count__descriptor) \
+#define TETHERING__MULTI_TOUCH_MAX_COUNT__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__multi_touch_max_count__descriptor) \
     , 0,10 }
 
 
-struct  _Injector__MultiTouchData
+struct  _Tethering__MultiTouchData
 {
   ProtobufCMessage base;
   protobuf_c_boolean has_index;
@@ -257,422 +257,422 @@ struct  _Injector__MultiTouchData
   float xpoint;
   protobuf_c_boolean has_ypoint;
   float ypoint;
-  protobuf_c_boolean has_status;
-  Injector__TouchStatus status;
+  protobuf_c_boolean has_state;
+  Tethering__TouchState state;
 };
-#define INJECTOR__MULTI_TOUCH_DATA__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__multi_touch_data__descriptor) \
+#define TETHERING__MULTI_TOUCH_DATA__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__multi_touch_data__descriptor) \
     , 0,0, 0,0, 0,0, 0,0 }
 
 
-struct  _Injector__MultiTouchMsg
+struct  _Tethering__MultiTouchMsg
 {
   ProtobufCMessage base;
-  Injector__MultiTouchMsg__Type type;
-  Injector__StartReq *startreq;
-  Injector__StartAns *startans;
-  Injector__EventTerminate *terminate;
-  Injector__MultiTouchMaxCount *maxcount;
-  Injector__MultiTouchData *touchdata;
-  Injector__Resolution *resolution;
+  Tethering__MultiTouchMsg__Type type;
+  Tethering__StartReq *startreq;
+  Tethering__StartAns *startans;
+  Tethering__EventTerminate *terminate;
+  Tethering__MultiTouchMaxCount *maxcount;
+  Tethering__MultiTouchData *touchdata;
+  Tethering__Resolution *resolution;
 };
-#define INJECTOR__MULTI_TOUCH_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__multi_touch_msg__descriptor) \
+#define TETHERING__MULTI_TOUCH_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__multi_touch_msg__descriptor) \
     , 0, NULL, NULL, NULL, NULL, NULL, NULL }
 
 
-struct  _Injector__InjectorMsg
+struct  _Tethering__TetheringMsg
 {
   ProtobufCMessage base;
-  Injector__InjectorMsg__Type type;
-  Injector__HandShakeReq *handshakereq;
-  Injector__HandShakeAns *handshakeans;
-  Injector__EmulatorState *emulstate;
-  Injector__AppState *appstate;
-  Injector__EventMsg *eventmsg;
-  Injector__SensorMsg *sensormsg;
-  Injector__MultiTouchMsg *touchmsg;
+  Tethering__TetheringMsg__Type type;
+  Tethering__HandShakeReq *handshakereq;
+  Tethering__HandShakeAns *handshakeans;
+  Tethering__EmulatorState *emulstate;
+  Tethering__AppState *appstate;
+  Tethering__EventMsg *eventmsg;
+  Tethering__SensorMsg *sensormsg;
+  Tethering__MultiTouchMsg *touchmsg;
 };
-#define INJECTOR__INJECTOR_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&injector__injector_msg__descriptor) \
+#define TETHERING__TETHERING_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__tethering_msg__descriptor) \
     , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 
 
-/* Injector__HandShakeReq methods */
-void   injector__hand_shake_req__init
-                     (Injector__HandShakeReq         *message);
-size_t injector__hand_shake_req__get_packed_size
-                     (const Injector__HandShakeReq   *message);
-size_t injector__hand_shake_req__pack
-                     (const Injector__HandShakeReq   *message,
+/* Tethering__HandShakeReq methods */
+void   tethering__hand_shake_req__init
+                     (Tethering__HandShakeReq         *message);
+size_t tethering__hand_shake_req__get_packed_size
+                     (const Tethering__HandShakeReq   *message);
+size_t tethering__hand_shake_req__pack
+                     (const Tethering__HandShakeReq   *message,
                       uint8_t             *out);
-size_t injector__hand_shake_req__pack_to_buffer
-                     (const Injector__HandShakeReq   *message,
+size_t tethering__hand_shake_req__pack_to_buffer
+                     (const Tethering__HandShakeReq   *message,
                       ProtobufCBuffer     *buffer);
-Injector__HandShakeReq *
-       injector__hand_shake_req__unpack
+Tethering__HandShakeReq *
+       tethering__hand_shake_req__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__hand_shake_req__free_unpacked
-                     (Injector__HandShakeReq *message,
+void   tethering__hand_shake_req__free_unpacked
+                     (Tethering__HandShakeReq *message,
                       ProtobufCAllocator *allocator);
-/* Injector__HandShakeAns methods */
-void   injector__hand_shake_ans__init
-                     (Injector__HandShakeAns         *message);
-size_t injector__hand_shake_ans__get_packed_size
-                     (const Injector__HandShakeAns   *message);
-size_t injector__hand_shake_ans__pack
-                     (const Injector__HandShakeAns   *message,
+/* Tethering__HandShakeAns methods */
+void   tethering__hand_shake_ans__init
+                     (Tethering__HandShakeAns         *message);
+size_t tethering__hand_shake_ans__get_packed_size
+                     (const Tethering__HandShakeAns   *message);
+size_t tethering__hand_shake_ans__pack
+                     (const Tethering__HandShakeAns   *message,
                       uint8_t             *out);
-size_t injector__hand_shake_ans__pack_to_buffer
-                     (const Injector__HandShakeAns   *message,
+size_t tethering__hand_shake_ans__pack_to_buffer
+                     (const Tethering__HandShakeAns   *message,
                       ProtobufCBuffer     *buffer);
-Injector__HandShakeAns *
-       injector__hand_shake_ans__unpack
+Tethering__HandShakeAns *
+       tethering__hand_shake_ans__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__hand_shake_ans__free_unpacked
-                     (Injector__HandShakeAns *message,
+void   tethering__hand_shake_ans__free_unpacked
+                     (Tethering__HandShakeAns *message,
                       ProtobufCAllocator *allocator);
-/* Injector__EmulatorState methods */
-void   injector__emulator_state__init
-                     (Injector__EmulatorState         *message);
-size_t injector__emulator_state__get_packed_size
-                     (const Injector__EmulatorState   *message);
-size_t injector__emulator_state__pack
-                     (const Injector__EmulatorState   *message,
+/* Tethering__EmulatorState methods */
+void   tethering__emulator_state__init
+                     (Tethering__EmulatorState         *message);
+size_t tethering__emulator_state__get_packed_size
+                     (const Tethering__EmulatorState   *message);
+size_t tethering__emulator_state__pack
+                     (const Tethering__EmulatorState   *message,
                       uint8_t             *out);
-size_t injector__emulator_state__pack_to_buffer
-                     (const Injector__EmulatorState   *message,
+size_t tethering__emulator_state__pack_to_buffer
+                     (const Tethering__EmulatorState   *message,
                       ProtobufCBuffer     *buffer);
-Injector__EmulatorState *
-       injector__emulator_state__unpack
+Tethering__EmulatorState *
+       tethering__emulator_state__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__emulator_state__free_unpacked
-                     (Injector__EmulatorState *message,
+void   tethering__emulator_state__free_unpacked
+                     (Tethering__EmulatorState *message,
                       ProtobufCAllocator *allocator);
-/* Injector__AppState methods */
-void   injector__app_state__init
-                     (Injector__AppState         *message);
-size_t injector__app_state__get_packed_size
-                     (const Injector__AppState   *message);
-size_t injector__app_state__pack
-                     (const Injector__AppState   *message,
+/* Tethering__AppState methods */
+void   tethering__app_state__init
+                     (Tethering__AppState         *message);
+size_t tethering__app_state__get_packed_size
+                     (const Tethering__AppState   *message);
+size_t tethering__app_state__pack
+                     (const Tethering__AppState   *message,
                       uint8_t             *out);
-size_t injector__app_state__pack_to_buffer
-                     (const Injector__AppState   *message,
+size_t tethering__app_state__pack_to_buffer
+                     (const Tethering__AppState   *message,
                       ProtobufCBuffer     *buffer);
-Injector__AppState *
-       injector__app_state__unpack
+Tethering__AppState *
+       tethering__app_state__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__app_state__free_unpacked
-                     (Injector__AppState *message,
+void   tethering__app_state__free_unpacked
+                     (Tethering__AppState *message,
                       ProtobufCAllocator *allocator);
-/* Injector__StartReq methods */
-void   injector__start_req__init
-                     (Injector__StartReq         *message);
-size_t injector__start_req__get_packed_size
-                     (const Injector__StartReq   *message);
-size_t injector__start_req__pack
-                     (const Injector__StartReq   *message,
+/* Tethering__StartReq methods */
+void   tethering__start_req__init
+                     (Tethering__StartReq         *message);
+size_t tethering__start_req__get_packed_size
+                     (const Tethering__StartReq   *message);
+size_t tethering__start_req__pack
+                     (const Tethering__StartReq   *message,
                       uint8_t             *out);
-size_t injector__start_req__pack_to_buffer
-                     (const Injector__StartReq   *message,
+size_t tethering__start_req__pack_to_buffer
+                     (const Tethering__StartReq   *message,
                       ProtobufCBuffer     *buffer);
-Injector__StartReq *
-       injector__start_req__unpack
+Tethering__StartReq *
+       tethering__start_req__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__start_req__free_unpacked
-                     (Injector__StartReq *message,
+void   tethering__start_req__free_unpacked
+                     (Tethering__StartReq *message,
                       ProtobufCAllocator *allocator);
-/* Injector__StartAns methods */
-void   injector__start_ans__init
-                     (Injector__StartAns         *message);
-size_t injector__start_ans__get_packed_size
-                     (const Injector__StartAns   *message);
-size_t injector__start_ans__pack
-                     (const Injector__StartAns   *message,
+/* Tethering__StartAns methods */
+void   tethering__start_ans__init
+                     (Tethering__StartAns         *message);
+size_t tethering__start_ans__get_packed_size
+                     (const Tethering__StartAns   *message);
+size_t tethering__start_ans__pack
+                     (const Tethering__StartAns   *message,
                       uint8_t             *out);
-size_t injector__start_ans__pack_to_buffer
-                     (const Injector__StartAns   *message,
+size_t tethering__start_ans__pack_to_buffer
+                     (const Tethering__StartAns   *message,
                       ProtobufCBuffer     *buffer);
-Injector__StartAns *
-       injector__start_ans__unpack
+Tethering__StartAns *
+       tethering__start_ans__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__start_ans__free_unpacked
-                     (Injector__StartAns *message,
+void   tethering__start_ans__free_unpacked
+                     (Tethering__StartAns *message,
                       ProtobufCAllocator *allocator);
-/* Injector__SetEventStatus methods */
-void   injector__set_event_status__init
-                     (Injector__SetEventStatus         *message);
-size_t injector__set_event_status__get_packed_size
-                     (const Injector__SetEventStatus   *message);
-size_t injector__set_event_status__pack
-                     (const Injector__SetEventStatus   *message,
+/* Tethering__SetEventStatus methods */
+void   tethering__set_event_status__init
+                     (Tethering__SetEventStatus         *message);
+size_t tethering__set_event_status__get_packed_size
+                     (const Tethering__SetEventStatus   *message);
+size_t tethering__set_event_status__pack
+                     (const Tethering__SetEventStatus   *message,
                       uint8_t             *out);
-size_t injector__set_event_status__pack_to_buffer
-                     (const Injector__SetEventStatus   *message,
+size_t tethering__set_event_status__pack_to_buffer
+                     (const Tethering__SetEventStatus   *message,
                       ProtobufCBuffer     *buffer);
-Injector__SetEventStatus *
-       injector__set_event_status__unpack
+Tethering__SetEventStatus *
+       tethering__set_event_status__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__set_event_status__free_unpacked
-                     (Injector__SetEventStatus *message,
+void   tethering__set_event_status__free_unpacked
+                     (Tethering__SetEventStatus *message,
                       ProtobufCAllocator *allocator);
-/* Injector__EventMsg methods */
-void   injector__event_msg__init
-                     (Injector__EventMsg         *message);
-size_t injector__event_msg__get_packed_size
-                     (const Injector__EventMsg   *message);
-size_t injector__event_msg__pack
-                     (const Injector__EventMsg   *message,
+/* Tethering__EventMsg methods */
+void   tethering__event_msg__init
+                     (Tethering__EventMsg         *message);
+size_t tethering__event_msg__get_packed_size
+                     (const Tethering__EventMsg   *message);
+size_t tethering__event_msg__pack
+                     (const Tethering__EventMsg   *message,
                       uint8_t             *out);
-size_t injector__event_msg__pack_to_buffer
-                     (const Injector__EventMsg   *message,
+size_t tethering__event_msg__pack_to_buffer
+                     (const Tethering__EventMsg   *message,
                       ProtobufCBuffer     *buffer);
-Injector__EventMsg *
-       injector__event_msg__unpack
+Tethering__EventMsg *
+       tethering__event_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__event_msg__free_unpacked
-                     (Injector__EventMsg *message,
+void   tethering__event_msg__free_unpacked
+                     (Tethering__EventMsg *message,
                       ProtobufCAllocator *allocator);
-/* Injector__EventTerminate methods */
-void   injector__event_terminate__init
-                     (Injector__EventTerminate         *message);
-size_t injector__event_terminate__get_packed_size
-                     (const Injector__EventTerminate   *message);
-size_t injector__event_terminate__pack
-                     (const Injector__EventTerminate   *message,
+/* Tethering__EventTerminate methods */
+void   tethering__event_terminate__init
+                     (Tethering__EventTerminate         *message);
+size_t tethering__event_terminate__get_packed_size
+                     (const Tethering__EventTerminate   *message);
+size_t tethering__event_terminate__pack
+                     (const Tethering__EventTerminate   *message,
                       uint8_t             *out);
-size_t injector__event_terminate__pack_to_buffer
-                     (const Injector__EventTerminate   *message,
+size_t tethering__event_terminate__pack_to_buffer
+                     (const Tethering__EventTerminate   *message,
                       ProtobufCBuffer     *buffer);
-Injector__EventTerminate *
-       injector__event_terminate__unpack
+Tethering__EventTerminate *
+       tethering__event_terminate__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__event_terminate__free_unpacked
-                     (Injector__EventTerminate *message,
+void   tethering__event_terminate__free_unpacked
+                     (Tethering__EventTerminate *message,
                       ProtobufCAllocator *allocator);
-/* Injector__SetSensorStatus methods */
-void   injector__set_sensor_status__init
-                     (Injector__SetSensorStatus         *message);
-size_t injector__set_sensor_status__get_packed_size
-                     (const Injector__SetSensorStatus   *message);
-size_t injector__set_sensor_status__pack
-                     (const Injector__SetSensorStatus   *message,
+/* Tethering__SetSensorStatus methods */
+void   tethering__set_sensor_status__init
+                     (Tethering__SetSensorStatus         *message);
+size_t tethering__set_sensor_status__get_packed_size
+                     (const Tethering__SetSensorStatus   *message);
+size_t tethering__set_sensor_status__pack
+                     (const Tethering__SetSensorStatus   *message,
                       uint8_t             *out);
-size_t injector__set_sensor_status__pack_to_buffer
-                     (const Injector__SetSensorStatus   *message,
+size_t tethering__set_sensor_status__pack_to_buffer
+                     (const Tethering__SetSensorStatus   *message,
                       ProtobufCBuffer     *buffer);
-Injector__SetSensorStatus *
-       injector__set_sensor_status__unpack
+Tethering__SetSensorStatus *
+       tethering__set_sensor_status__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__set_sensor_status__free_unpacked
-                     (Injector__SetSensorStatus *message,
+void   tethering__set_sensor_status__free_unpacked
+                     (Tethering__SetSensorStatus *message,
                       ProtobufCAllocator *allocator);
-/* Injector__SensorData methods */
-void   injector__sensor_data__init
-                     (Injector__SensorData         *message);
-size_t injector__sensor_data__get_packed_size
-                     (const Injector__SensorData   *message);
-size_t injector__sensor_data__pack
-                     (const Injector__SensorData   *message,
+/* Tethering__SensorData methods */
+void   tethering__sensor_data__init
+                     (Tethering__SensorData         *message);
+size_t tethering__sensor_data__get_packed_size
+                     (const Tethering__SensorData   *message);
+size_t tethering__sensor_data__pack
+                     (const Tethering__SensorData   *message,
                       uint8_t             *out);
-size_t injector__sensor_data__pack_to_buffer
-                     (const Injector__SensorData   *message,
+size_t tethering__sensor_data__pack_to_buffer
+                     (const Tethering__SensorData   *message,
                       ProtobufCBuffer     *buffer);
-Injector__SensorData *
-       injector__sensor_data__unpack
+Tethering__SensorData *
+       tethering__sensor_data__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__sensor_data__free_unpacked
-                     (Injector__SensorData *message,
+void   tethering__sensor_data__free_unpacked
+                     (Tethering__SensorData *message,
                       ProtobufCAllocator *allocator);
-/* Injector__SensorMsg methods */
-void   injector__sensor_msg__init
-                     (Injector__SensorMsg         *message);
-size_t injector__sensor_msg__get_packed_size
-                     (const Injector__SensorMsg   *message);
-size_t injector__sensor_msg__pack
-                     (const Injector__SensorMsg   *message,
+/* Tethering__SensorMsg methods */
+void   tethering__sensor_msg__init
+                     (Tethering__SensorMsg         *message);
+size_t tethering__sensor_msg__get_packed_size
+                     (const Tethering__SensorMsg   *message);
+size_t tethering__sensor_msg__pack
+                     (const Tethering__SensorMsg   *message,
                       uint8_t             *out);
-size_t injector__sensor_msg__pack_to_buffer
-                     (const Injector__SensorMsg   *message,
+size_t tethering__sensor_msg__pack_to_buffer
+                     (const Tethering__SensorMsg   *message,
                       ProtobufCBuffer     *buffer);
-Injector__SensorMsg *
-       injector__sensor_msg__unpack
+Tethering__SensorMsg *
+       tethering__sensor_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__sensor_msg__free_unpacked
-                     (Injector__SensorMsg *message,
+void   tethering__sensor_msg__free_unpacked
+                     (Tethering__SensorMsg *message,
                       ProtobufCAllocator *allocator);
-/* Injector__Resolution methods */
-void   injector__resolution__init
-                     (Injector__Resolution         *message);
-size_t injector__resolution__get_packed_size
-                     (const Injector__Resolution   *message);
-size_t injector__resolution__pack
-                     (const Injector__Resolution   *message,
+/* Tethering__Resolution methods */
+void   tethering__resolution__init
+                     (Tethering__Resolution         *message);
+size_t tethering__resolution__get_packed_size
+                     (const Tethering__Resolution   *message);
+size_t tethering__resolution__pack
+                     (const Tethering__Resolution   *message,
                       uint8_t             *out);
-size_t injector__resolution__pack_to_buffer
-                     (const Injector__Resolution   *message,
+size_t tethering__resolution__pack_to_buffer
+                     (const Tethering__Resolution   *message,
                       ProtobufCBuffer     *buffer);
-Injector__Resolution *
-       injector__resolution__unpack
+Tethering__Resolution *
+       tethering__resolution__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__resolution__free_unpacked
-                     (Injector__Resolution *message,
+void   tethering__resolution__free_unpacked
+                     (Tethering__Resolution *message,
                       ProtobufCAllocator *allocator);
-/* Injector__MultiTouchMaxCount methods */
-void   injector__multi_touch_max_count__init
-                     (Injector__MultiTouchMaxCount         *message);
-size_t injector__multi_touch_max_count__get_packed_size
-                     (const Injector__MultiTouchMaxCount   *message);
-size_t injector__multi_touch_max_count__pack
-                     (const Injector__MultiTouchMaxCount   *message,
+/* Tethering__MultiTouchMaxCount methods */
+void   tethering__multi_touch_max_count__init
+                     (Tethering__MultiTouchMaxCount         *message);
+size_t tethering__multi_touch_max_count__get_packed_size
+                     (const Tethering__MultiTouchMaxCount   *message);
+size_t tethering__multi_touch_max_count__pack
+                     (const Tethering__MultiTouchMaxCount   *message,
                       uint8_t             *out);
-size_t injector__multi_touch_max_count__pack_to_buffer
-                     (const Injector__MultiTouchMaxCount   *message,
+size_t tethering__multi_touch_max_count__pack_to_buffer
+                     (const Tethering__MultiTouchMaxCount   *message,
                       ProtobufCBuffer     *buffer);
-Injector__MultiTouchMaxCount *
-       injector__multi_touch_max_count__unpack
+Tethering__MultiTouchMaxCount *
+       tethering__multi_touch_max_count__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__multi_touch_max_count__free_unpacked
-                     (Injector__MultiTouchMaxCount *message,
+void   tethering__multi_touch_max_count__free_unpacked
+                     (Tethering__MultiTouchMaxCount *message,
                       ProtobufCAllocator *allocator);
-/* Injector__MultiTouchData methods */
-void   injector__multi_touch_data__init
-                     (Injector__MultiTouchData         *message);
-size_t injector__multi_touch_data__get_packed_size
-                     (const Injector__MultiTouchData   *message);
-size_t injector__multi_touch_data__pack
-                     (const Injector__MultiTouchData   *message,
+/* Tethering__MultiTouchData methods */
+void   tethering__multi_touch_data__init
+                     (Tethering__MultiTouchData         *message);
+size_t tethering__multi_touch_data__get_packed_size
+                     (const Tethering__MultiTouchData   *message);
+size_t tethering__multi_touch_data__pack
+                     (const Tethering__MultiTouchData   *message,
                       uint8_t             *out);
-size_t injector__multi_touch_data__pack_to_buffer
-                     (const Injector__MultiTouchData   *message,
+size_t tethering__multi_touch_data__pack_to_buffer
+                     (const Tethering__MultiTouchData   *message,
                       ProtobufCBuffer     *buffer);
-Injector__MultiTouchData *
-       injector__multi_touch_data__unpack
+Tethering__MultiTouchData *
+       tethering__multi_touch_data__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__multi_touch_data__free_unpacked
-                     (Injector__MultiTouchData *message,
+void   tethering__multi_touch_data__free_unpacked
+                     (Tethering__MultiTouchData *message,
                       ProtobufCAllocator *allocator);
-/* Injector__MultiTouchMsg methods */
-void   injector__multi_touch_msg__init
-                     (Injector__MultiTouchMsg         *message);
-size_t injector__multi_touch_msg__get_packed_size
-                     (const Injector__MultiTouchMsg   *message);
-size_t injector__multi_touch_msg__pack
-                     (const Injector__MultiTouchMsg   *message,
+/* Tethering__MultiTouchMsg methods */
+void   tethering__multi_touch_msg__init
+                     (Tethering__MultiTouchMsg         *message);
+size_t tethering__multi_touch_msg__get_packed_size
+                     (const Tethering__MultiTouchMsg   *message);
+size_t tethering__multi_touch_msg__pack
+                     (const Tethering__MultiTouchMsg   *message,
                       uint8_t             *out);
-size_t injector__multi_touch_msg__pack_to_buffer
-                     (const Injector__MultiTouchMsg   *message,
+size_t tethering__multi_touch_msg__pack_to_buffer
+                     (const Tethering__MultiTouchMsg   *message,
                       ProtobufCBuffer     *buffer);
-Injector__MultiTouchMsg *
-       injector__multi_touch_msg__unpack
+Tethering__MultiTouchMsg *
+       tethering__multi_touch_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__multi_touch_msg__free_unpacked
-                     (Injector__MultiTouchMsg *message,
+void   tethering__multi_touch_msg__free_unpacked
+                     (Tethering__MultiTouchMsg *message,
                       ProtobufCAllocator *allocator);
-/* Injector__InjectorMsg methods */
-void   injector__injector_msg__init
-                     (Injector__InjectorMsg         *message);
-size_t injector__injector_msg__get_packed_size
-                     (const Injector__InjectorMsg   *message);
-size_t injector__injector_msg__pack
-                     (const Injector__InjectorMsg   *message,
+/* Tethering__TetheringMsg methods */
+void   tethering__tethering_msg__init
+                     (Tethering__TetheringMsg         *message);
+size_t tethering__tethering_msg__get_packed_size
+                     (const Tethering__TetheringMsg   *message);
+size_t tethering__tethering_msg__pack
+                     (const Tethering__TetheringMsg   *message,
                       uint8_t             *out);
-size_t injector__injector_msg__pack_to_buffer
-                     (const Injector__InjectorMsg   *message,
+size_t tethering__tethering_msg__pack_to_buffer
+                     (const Tethering__TetheringMsg   *message,
                       ProtobufCBuffer     *buffer);
-Injector__InjectorMsg *
-       injector__injector_msg__unpack
+Tethering__TetheringMsg *
+       tethering__tethering_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   injector__injector_msg__free_unpacked
-                     (Injector__InjectorMsg *message,
+void   tethering__tethering_msg__free_unpacked
+                     (Tethering__TetheringMsg *message,
                       ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
-typedef void (*Injector__HandShakeReq_Closure)
-                 (const Injector__HandShakeReq *message,
+typedef void (*Tethering__HandShakeReq_Closure)
+                 (const Tethering__HandShakeReq *message,
                   void *closure_data);
-typedef void (*Injector__HandShakeAns_Closure)
-                 (const Injector__HandShakeAns *message,
+typedef void (*Tethering__HandShakeAns_Closure)
+                 (const Tethering__HandShakeAns *message,
                   void *closure_data);
-typedef void (*Injector__EmulatorState_Closure)
-                 (const Injector__EmulatorState *message,
+typedef void (*Tethering__EmulatorState_Closure)
+                 (const Tethering__EmulatorState *message,
                   void *closure_data);
-typedef void (*Injector__AppState_Closure)
-                 (const Injector__AppState *message,
+typedef void (*Tethering__AppState_Closure)
+                 (const Tethering__AppState *message,
                   void *closure_data);
-typedef void (*Injector__StartReq_Closure)
-                 (const Injector__StartReq *message,
+typedef void (*Tethering__StartReq_Closure)
+                 (const Tethering__StartReq *message,
                   void *closure_data);
-typedef void (*Injector__StartAns_Closure)
-                 (const Injector__StartAns *message,
+typedef void (*Tethering__StartAns_Closure)
+                 (const Tethering__StartAns *message,
                   void *closure_data);
-typedef void (*Injector__SetEventStatus_Closure)
-                 (const Injector__SetEventStatus *message,
+typedef void (*Tethering__SetEventStatus_Closure)
+                 (const Tethering__SetEventStatus *message,
                   void *closure_data);
-typedef void (*Injector__EventMsg_Closure)
-                 (const Injector__EventMsg *message,
+typedef void (*Tethering__EventMsg_Closure)
+                 (const Tethering__EventMsg *message,
                   void *closure_data);
-typedef void (*Injector__EventTerminate_Closure)
-                 (const Injector__EventTerminate *message,
+typedef void (*Tethering__EventTerminate_Closure)
+                 (const Tethering__EventTerminate *message,
                   void *closure_data);
-typedef void (*Injector__SetSensorStatus_Closure)
-                 (const Injector__SetSensorStatus *message,
+typedef void (*Tethering__SetSensorStatus_Closure)
+                 (const Tethering__SetSensorStatus *message,
                   void *closure_data);
-typedef void (*Injector__SensorData_Closure)
-                 (const Injector__SensorData *message,
+typedef void (*Tethering__SensorData_Closure)
+                 (const Tethering__SensorData *message,
                   void *closure_data);
-typedef void (*Injector__SensorMsg_Closure)
-                 (const Injector__SensorMsg *message,
+typedef void (*Tethering__SensorMsg_Closure)
+                 (const Tethering__SensorMsg *message,
                   void *closure_data);
-typedef void (*Injector__Resolution_Closure)
-                 (const Injector__Resolution *message,
+typedef void (*Tethering__Resolution_Closure)
+                 (const Tethering__Resolution *message,
                   void *closure_data);
-typedef void (*Injector__MultiTouchMaxCount_Closure)
-                 (const Injector__MultiTouchMaxCount *message,
+typedef void (*Tethering__MultiTouchMaxCount_Closure)
+                 (const Tethering__MultiTouchMaxCount *message,
                   void *closure_data);
-typedef void (*Injector__MultiTouchData_Closure)
-                 (const Injector__MultiTouchData *message,
+typedef void (*Tethering__MultiTouchData_Closure)
+                 (const Tethering__MultiTouchData *message,
                   void *closure_data);
-typedef void (*Injector__MultiTouchMsg_Closure)
-                 (const Injector__MultiTouchMsg *message,
+typedef void (*Tethering__MultiTouchMsg_Closure)
+                 (const Tethering__MultiTouchMsg *message,
                   void *closure_data);
-typedef void (*Injector__InjectorMsg_Closure)
-                 (const Injector__InjectorMsg *message,
+typedef void (*Tethering__TetheringMsg_Closure)
+                 (const Tethering__TetheringMsg *message,
                   void *closure_data);
 
 /* --- services --- */
@@ -680,33 +680,33 @@ typedef void (*Injector__InjectorMsg_Closure)
 
 /* --- descriptors --- */
 
-extern const ProtobufCEnumDescriptor    injector__result__descriptor;
-extern const ProtobufCEnumDescriptor    injector__connection_state__descriptor;
-extern const ProtobufCEnumDescriptor    injector__event__descriptor;
-extern const ProtobufCEnumDescriptor    injector__status__descriptor;
-extern const ProtobufCEnumDescriptor    injector__sensor_type__descriptor;
-extern const ProtobufCEnumDescriptor    injector__touch_status__descriptor;
-extern const ProtobufCMessageDescriptor injector__hand_shake_req__descriptor;
-extern const ProtobufCMessageDescriptor injector__hand_shake_ans__descriptor;
-extern const ProtobufCMessageDescriptor injector__emulator_state__descriptor;
-extern const ProtobufCMessageDescriptor injector__app_state__descriptor;
-extern const ProtobufCMessageDescriptor injector__start_req__descriptor;
-extern const ProtobufCMessageDescriptor injector__start_ans__descriptor;
-extern const ProtobufCMessageDescriptor injector__set_event_status__descriptor;
-extern const ProtobufCMessageDescriptor injector__event_msg__descriptor;
-extern const ProtobufCEnumDescriptor    injector__event_msg__type__descriptor;
-extern const ProtobufCMessageDescriptor injector__event_terminate__descriptor;
-extern const ProtobufCMessageDescriptor injector__set_sensor_status__descriptor;
-extern const ProtobufCMessageDescriptor injector__sensor_data__descriptor;
-extern const ProtobufCMessageDescriptor injector__sensor_msg__descriptor;
-extern const ProtobufCEnumDescriptor    injector__sensor_msg__type__descriptor;
-extern const ProtobufCMessageDescriptor injector__resolution__descriptor;
-extern const ProtobufCMessageDescriptor injector__multi_touch_max_count__descriptor;
-extern const ProtobufCMessageDescriptor injector__multi_touch_data__descriptor;
-extern const ProtobufCMessageDescriptor injector__multi_touch_msg__descriptor;
-extern const ProtobufCEnumDescriptor    injector__multi_touch_msg__type__descriptor;
-extern const ProtobufCMessageDescriptor injector__injector_msg__descriptor;
-extern const ProtobufCEnumDescriptor    injector__injector_msg__type__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__message_result__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__connection_state__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__event_type__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__state__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__sensor_type__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__touch_state__descriptor;
+extern const ProtobufCMessageDescriptor tethering__hand_shake_req__descriptor;
+extern const ProtobufCMessageDescriptor tethering__hand_shake_ans__descriptor;
+extern const ProtobufCMessageDescriptor tethering__emulator_state__descriptor;
+extern const ProtobufCMessageDescriptor tethering__app_state__descriptor;
+extern const ProtobufCMessageDescriptor tethering__start_req__descriptor;
+extern const ProtobufCMessageDescriptor tethering__start_ans__descriptor;
+extern const ProtobufCMessageDescriptor tethering__set_event_status__descriptor;
+extern const ProtobufCMessageDescriptor tethering__event_msg__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__event_msg__type__descriptor;
+extern const ProtobufCMessageDescriptor tethering__event_terminate__descriptor;
+extern const ProtobufCMessageDescriptor tethering__set_sensor_status__descriptor;
+extern const ProtobufCMessageDescriptor tethering__sensor_data__descriptor;
+extern const ProtobufCMessageDescriptor tethering__sensor_msg__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__sensor_msg__type__descriptor;
+extern const ProtobufCMessageDescriptor tethering__resolution__descriptor;
+extern const ProtobufCMessageDescriptor tethering__multi_touch_max_count__descriptor;
+extern const ProtobufCMessageDescriptor tethering__multi_touch_data__descriptor;
+extern const ProtobufCMessageDescriptor tethering__multi_touch_msg__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__multi_touch_msg__type__descriptor;
+extern const ProtobufCMessageDescriptor tethering__tethering_msg__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__tethering_msg__type__descriptor;
 
 PROTOBUF_C_END_DECLS
 
