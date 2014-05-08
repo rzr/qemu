@@ -28,29 +28,13 @@
  */
 
 
-#include "maru_common.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/time.h>
 #include <pthread.h>
+#include "maru_common.h"
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
-#include "qemu/thread.h"
-#include "emul_state.h"
-#include "maruskin_client.h"
-#include "emulator.h"
+#include "maru_display.h"
 #include "maru_err_table.h"
 #include "ecs/ecs.h"
-
-#ifndef CONFIG_USE_SHM
-#include "maru_sdl.h"
-#else
-#include "maru_shm.h"
-#endif
 
 #ifdef CONFIG_WIN32
 #include <windows.h>
@@ -59,7 +43,7 @@
 
 #define SLEEP(x) Sleep(x)
 #define SOCKET_CLOSE(sock) closesocket(sock)
-#define SOCKET_ERROR() WSAGetLastError()
+#define SOCKET_ERR() WSAGetLastError()
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -67,7 +51,7 @@
 
 #define SLEEP(x) usleep(x * 1000)
 #define SOCKET_CLOSE(sock) close(sock)
-#define SOCKET_ERROR() errno
+#define SOCKET_ERR() errno
 #endif
 
 #include "debug_ch.h"
@@ -752,7 +736,7 @@ static void* run_skin_server(void* args)
                     is_force_close_client = 0;
                 } else {
                     ERR("skin_server read error (%d): %d\n",
-                        SOCKET_ERROR(), read_cnt);
+                        SOCKET_ERR(), read_cnt);
                     perror("skin_server read error : ");
                 }
 
@@ -1028,11 +1012,7 @@ static void* run_skin_server(void* args)
                         is_rotate = true;
                     }
 
-#ifndef CONFIG_USE_SHM
-                    maruskin_sdl_resize();
-#else
-                    maruskin_shm_resize();
-#endif
+                    maru_display_resize();
 
                     /* after display resizing */
                     if (is_rotate == true && is_sensord_initialized == 1) {

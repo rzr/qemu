@@ -213,7 +213,7 @@ DisplayChangeListenerOps maru_dcl_ops = {
     .dpy_gfx_switch    = qemu_ds_shm_switch,
 };
 
-void maruskin_shm_init(uint64 swt_handle,
+void maru_shm_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide)
 {
@@ -266,7 +266,7 @@ void maruskin_shm_init(uint64 swt_handle,
     INFO("Memory attached at 0x%X\n", (int)shared_memory);
 }
 
-void maruskin_shm_quit(void)
+void maru_shm_quit(void)
 {
     struct shmid_ds shm_info;
 
@@ -298,7 +298,7 @@ void maruskin_shm_quit(void)
     }
 }
 
-void maruskin_shm_resize(void)
+void maru_shm_resize(void)
 {
     shm_skip_update = 0;
 }

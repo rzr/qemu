@@ -38,7 +38,6 @@
 #include "maru_shm.h"
 #endif
 
-
 MULTI_DEBUG_CHANNEL(tizen, display);
 
 MaruScreenshot* maru_screenshot = NULL;
@@ -47,6 +46,12 @@ MaruScreenshot* maru_screenshot = NULL;
 void maru_display_init(DisplayState *ds)
 {
     INFO("init qemu display\n");
+
+#ifndef CONFIG_USE_SHM
+    maru_sdl_pre_init();
+#else
+    /* do nothing */
+#endif
 
     /*  graphics context information */
     DisplayChangeListener *dcl;
@@ -68,16 +73,25 @@ void maru_display_fini(void)
     g_free(maru_screenshot);
 
 #ifndef CONFIG_USE_SHM
-    maruskin_sdl_quit();
+    maru_sdl_quit();
 #else
-    maruskin_shm_quit();
+    maru_shm_quit();
+#endif
+}
+
+void maru_display_resize(void)
+{
+#ifndef CONFIG_USE_SHM
+    maru_sdl_resize();
+#else
+    maru_shm_resize();
 #endif
 }
 
 void maru_display_update(void)
 {
 #ifndef CONFIG_USE_SHM
-    maruskin_sdl_update();
+    maru_sdl_update();
 #else
     /* do nothing */
 #endif
@@ -86,7 +100,7 @@ void maru_display_update(void)
 void maru_display_invalidate(bool on)
 {
 #ifndef CONFIG_USE_SHM
-    maruskin_sdl_invalidate(on);
+    maru_sdl_invalidate(on);
 #else
     /* do nothing */
 #endif
@@ -95,21 +109,21 @@ void maru_display_invalidate(bool on)
 void maru_display_interpolation(bool on)
 {
 #ifndef CONFIG_USE_SHM
-    maruskin_sdl_interpolation(on);
+    maru_sdl_interpolation(on);
 #else
     /* do nothing */
 #endif
 }
 
-void maruskin_init(uint64 swt_handle,
+void maru_ds_surface_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide)
 {
 #ifndef CONFIG_USE_SHM
-    maruskin_sdl_init(swt_handle,
+    maru_sdl_init(swt_handle,
         display_width, display_height, blank_guide);
 #else
-    maruskin_shm_init(swt_handle,
+    maru_shm_init(swt_handle,
         display_width, display_height, blank_guide);
 #endif
 }

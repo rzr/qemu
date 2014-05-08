@@ -41,10 +41,11 @@ typedef struct MaruScreenshot {
 
 void maru_display_init(DisplayState *ds);
 void maru_display_fini(void);
+void maru_display_resize(void);
 void maru_display_update(void);
 void maru_display_invalidate(bool on);
 void maru_display_interpolation(bool on);
-void maruskin_init(uint64 swt_handle,
+void maru_ds_surface_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide);
 

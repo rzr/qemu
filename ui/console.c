@@ -29,8 +29,7 @@
 #include "sysemu/char.h"
 
 #ifdef SDL_THREAD
-#include <pthread.h>
-extern pthread_mutex_t sdl_mutex;
+extern QemuMutex sdl_mutex;
 #endif
 
 //#define DEBUG_CONSOLE
@@ -1321,7 +1320,7 @@ void register_displaychangelistener(DisplayChangeListener *dcl)
     }
     if (dcl->ops->dpy_gfx_switch) {
 #ifdef SDL_THREAD
-        pthread_mutex_lock(&sdl_mutex);
+        qemu_mutex_lock(&sdl_mutex);
 #endif
 
         if (con) {
@@ -1334,7 +1333,7 @@ void register_displaychangelistener(DisplayChangeListener *dcl)
         }
 
 #ifdef SDL_THREAD
-        pthread_mutex_unlock(&sdl_mutex);
+        qemu_mutex_unlock(&sdl_mutex);
 #endif
     }
 }
@@ -1396,7 +1395,7 @@ void dpy_gfx_replace_surface(QemuConsole *con,
     DisplayChangeListener *dcl;
 
 #ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
+    qemu_mutex_lock(&sdl_mutex);
 #endif
 
     con->surface = surface;
@@ -1410,7 +1409,7 @@ void dpy_gfx_replace_surface(QemuConsole *con,
     }
 
 #ifdef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
+    qemu_mutex_unlock(&sdl_mutex);
 #endif
 
     qemu_free_displaysurface(old_surface);
