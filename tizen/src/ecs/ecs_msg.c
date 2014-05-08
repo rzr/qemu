@@ -502,7 +502,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             do_host_kbd_enable(is_on);
             notify_host_kbd_state(is_on);
         }
-    } else if (!strncmp(cmd, "gesture", strlen("gesture"))) {
+    } else if (!strncmp(cmd, "TGesture", strlen("TGesture"))) {
         /* release multi-touch */
 #ifndef CONFIG_USE_SHM
         if (get_multi_touch_enable() != 0) {
@@ -513,7 +513,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 #endif
 
         if (data == NULL) {
-            ERR("gesture data is NULL\n");
+            ERR("touch gesture data is NULL\n");
             return false;
         }
 
