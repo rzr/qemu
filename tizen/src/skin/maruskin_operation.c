@@ -90,7 +90,7 @@ void start_display(uint64 handle_id,
         scale_factor, rotation_type, blank_guide);
 
     set_emul_win_scale(scale_factor);
-    maruskin_init(handle_id,
+    maru_ds_surface_init(handle_id,
         display_width, display_height, blank_guide);
 }
 

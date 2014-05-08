@@ -35,10 +35,10 @@
 
 extern DisplayChangeListenerOps maru_dcl_ops;
 
-void maruskin_shm_init(uint64 swt_handle,
+void maru_shm_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide);
-void maruskin_shm_resize(void);
-void maruskin_shm_quit(void);
+void maru_shm_resize(void);
+void maru_shm_quit(void);
 
 #endif /* MARU_SHM_H_ */

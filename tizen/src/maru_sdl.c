@@ -29,7 +29,6 @@
  */
 
 
-#include <pthread.h>
 #include <png.h>
 #include "qemu/main-loop.h"
 #include "emulator.h"
@@ -70,24 +69,27 @@ static unsigned int blank_cnt;
 #define BLANK_GUIDE_IMAGE_NAME "blank-guide.png"
 
 #ifdef SDL_THREAD
-pthread_mutex_t sdl_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t sdl_cond = PTHREAD_COND_INITIALIZER;
+QemuMutex sdl_mutex;
+QemuCond sdl_cond;
 static int sdl_thread_initialized;
 #endif
 
 #define SDL_FLAGS (SDL_SWSURFACE | SDL_ASYNCBLIT | SDL_NOFRAME)
 #define SDL_BPP 32
 
+static void qemu_update(void);
+
+
 static void qemu_ds_sdl_update(DisplayChangeListener *dcl,
                                int x, int y, int w, int h)
 {
     /* call sdl update */
 #ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
+    qemu_mutex_lock(&sdl_mutex);
 
-    pthread_cond_signal(&sdl_cond);
+    qemu_cond_signal(&sdl_cond);
 
-    pthread_mutex_unlock(&sdl_mutex);
+    qemu_mutex_unlock(&sdl_mutex);
 #else
     qemu_update();
 #endif
@@ -251,7 +253,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
 
 #ifdef TARGET_ARM
 #ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
+    qemu_mutex_lock(&sdl_mutex);
 #endif
 
     /*
@@ -262,7 +264,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
     SDL_UpdateRect(surface_screen, 0, 0, 0, 0);
 
 #ifdef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
+    qemu_mutex_unlock(&sdl_mutex);
 #endif
 #endif
 }
@@ -274,7 +276,7 @@ DisplayChangeListenerOps maru_dcl_ops = {
     .dpy_refresh       = qemu_ds_sdl_refresh,
 };
 
-void maruskin_sdl_interpolation(bool on)
+void maru_sdl_interpolation(bool on)
 {
     if (on == true) {
         INFO("set PIXMAN_FILTER_BEST filter for image processing\n");
@@ -358,13 +360,13 @@ static void qemu_update(void)
 static void *run_qemu_update(void *arg)
 {
     while(1) {
-        pthread_mutex_lock(&sdl_mutex);
+        qemu_mutex_lock(&sdl_mutex);
 
-        pthread_cond_wait(&sdl_cond, &sdl_mutex);
+        qemu_cond_wait(&sdl_cond, &sdl_mutex);
 
         qemu_update();
 
-        pthread_mutex_unlock(&sdl_mutex);
+        qemu_mutex_unlock(&sdl_mutex);
     }
 
     return NULL;
@@ -389,7 +391,7 @@ static void maru_sdl_resize_bh(void *opaque)
     sdl_skip_update = 0;
 
 #ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
+    qemu_mutex_lock(&sdl_mutex);
 #endif
 
     /* get current setting information and calculate screen size */
@@ -429,7 +431,7 @@ static void maru_sdl_resize_bh(void *opaque)
             get_emul_sdl_bpp(), SDL_GetError());
 
 #ifdef SDL_THREAD
-        pthread_mutex_unlock(&sdl_mutex);
+        qemu_mutex_unlock(&sdl_mutex);
 #endif
 
         return;
@@ -464,7 +466,7 @@ static void maru_sdl_resize_bh(void *opaque)
     }
 
 #ifdef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
+    qemu_mutex_unlock(&sdl_mutex);
 #endif
 
     graphic_hw_invalidate(NULL);
@@ -493,16 +495,25 @@ static void maru_sdl_init_bh(void *opaque)
 
         INFO("sdl update thread create\n");
 
-        pthread_t thread_id;
-        if (pthread_create(&thread_id, NULL, run_qemu_update, NULL) != 0) {
-            ERR("pthread_create fail\n");
-            return;
-        }
+        QemuThread sdl_thread;
+        qemu_thread_create(&sdl_thread, "sdl-workthread", run_qemu_update,
+            NULL, QEMU_THREAD_JOINABLE);
     }
 #endif
 }
 
-void maruskin_sdl_init(uint64 swt_handle,
+void maru_sdl_pre_init(void) {
+    sdl_init_bh = qemu_bh_new(maru_sdl_init_bh, NULL);
+    sdl_resize_bh = qemu_bh_new(maru_sdl_resize_bh, NULL);
+    sdl_update_bh = qemu_bh_new(maru_sdl_update_bh, NULL);
+
+#ifdef SDL_THREAD
+    qemu_mutex_init(&sdl_mutex);
+    qemu_cond_init(&sdl_cond);
+#endif
+}
+
+void maru_sdl_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide)
 {
@@ -512,10 +523,6 @@ void maruskin_sdl_init(uint64 swt_handle,
 
     INFO("maru sdl init\n");
 
-    sdl_init_bh = qemu_bh_new(maru_sdl_init_bh, NULL);
-    sdl_resize_bh = qemu_bh_new(maru_sdl_resize_bh, NULL);
-    sdl_update_bh = qemu_bh_new(maru_sdl_update_bh, NULL);
-
     sprintf(SDL_windowhack, "%ld", window_id);
     g_setenv("SDL_WINDOWID", SDL_windowhack, 1);
 
@@ -524,7 +531,7 @@ void maruskin_sdl_init(uint64 swt_handle,
 
     set_emul_resolution(display_width, display_height);
     set_emul_sdl_bpp(SDL_BPP);
-    maruskin_sdl_interpolation(false);
+    maru_sdl_interpolation(false);
     init_multi_touch_state();
 
     if (blank_guide_enable == true) {
@@ -534,7 +541,7 @@ void maruskin_sdl_init(uint64 swt_handle,
     qemu_bh_schedule(sdl_init_bh);
 }
 
-void maruskin_sdl_quit(void)
+void maru_sdl_quit(void)
 {
     INFO("maru sdl quit\n");
 
@@ -556,32 +563,32 @@ void maruskin_sdl_quit(void)
     sdl_alteration = -1;
 
 #ifdef SDL_THREAD
-    pthread_mutex_lock(&sdl_mutex);
+    qemu_mutex_lock(&sdl_mutex);
 #endif
 
     SDL_Quit();
 
 #ifdef SDL_THREAD
-    pthread_mutex_unlock(&sdl_mutex);
-    pthread_cond_destroy(&sdl_cond);
-#endif
+    qemu_mutex_unlock(&sdl_mutex);
+    qemu_cond_destroy(&sdl_cond);
 
-    pthread_mutex_destroy(&sdl_mutex);
+    qemu_mutex_destroy(&sdl_mutex);
+#endif
 }
 
-void maruskin_sdl_resize(void)
+void maru_sdl_resize(void)
 {
     INFO("maru sdl resize\n");
 
     qemu_bh_schedule(sdl_resize_bh);
 }
 
-void maruskin_sdl_update(void)
+void maru_sdl_update(void)
 {
     qemu_bh_schedule(sdl_update_bh);
 }
 
-void maruskin_sdl_invalidate(bool on)
+void maru_sdl_invalidate(bool on)
 {
     sdl_invalidate = on;
 }
