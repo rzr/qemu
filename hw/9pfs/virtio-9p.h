@@ -5,7 +5,13 @@
 #include <dirent.h>
 #include <sys/time.h>
 #include <utime.h>
+#ifdef CONFIG_MARU
+#ifndef CONFIG_WIN32
 #include <sys/resource.h>
+#endif
+#else
+#include <sys/resource.h>
+#endif
 #include "hw/virtio/virtio.h"
 #include "fsdev/file-op-9p.h"
 #include "fsdev/virtio-9p-marshal.h"
@@ -114,8 +120,20 @@ enum p9_proto_version {
 #define FID_NON_RECLAIMABLE     0x2
 static inline const char *rpath(FsContext *ctx, const char *path, char *buffer)
 {
+#ifndef CONFIG_MARU
     snprintf(buffer, PATH_MAX, "%s/%s", ctx->fs_root, path);
     return buffer;
+#else
+#ifndef CONFIG_WIN32
+    snprintf(buffer, PATH_MAX, "%s/%s", ctx->fs_root, path);
+#else
+    snprintf(buffer, PATH_MAX, "%s\\%s", ctx->fs_root, path);
+    while(buffer[strlen(buffer)-1] == '\\'){
+        buffer[strlen(buffer)-1] = '\0';
+    }
+#endif
+    return buffer;
+#endif
 }
 
 /*

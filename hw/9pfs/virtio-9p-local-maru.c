@@ -1,18 +1,35 @@
 /*
- * Virtio 9p Posix callback
+ * Virtio 9p backend for Maru
+ * Based on hw/9pfs/virtio-9p-local.c:
  *
- * Copyright IBM, Corp. 2010
+ * Copyright (c) 2014 Samsung Electronics Co., Ltd All Rights Reserved
  *
- * Authors:
- *  Anthony Liguori   <aliguori@us.ibm.com>
+ * Contact:
+ *  Sooyoung Ha <yoosah.ha@samsung.com>
+ *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
- * This work is licensed under the terms of the GNU GPL, version 2.  See
- * the COPYING file in the top-level directory.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ * Contributors:
+ * - S-Core Co., Ltd
  *
  */
 
 #include "hw/virtio/virtio.h"
 #include "virtio-9p.h"
+#ifndef CONFIG_WIN32
 #include "virtio-9p-xattr.h"
 #include <arpa/inet.h>
 #include <pwd.h>
@@ -20,12 +37,20 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "qemu/xattr.h"
+#endif
 #include <libgen.h>
+#ifdef CONFIG_LINUX
 #include <linux/fs.h>
+#endif
 #ifdef CONFIG_LINUX_MAGIC_H
 #include <linux/magic.h>
 #endif
+#ifndef CONFIG_WIN32
 #include <sys/ioctl.h>
+#endif
+
+#include "../../tizen/src/debug_ch.h"
+MULTI_DEBUG_CHANNEL(tizen, qemu_9p_local);
 
 #ifndef XFS_SUPER_MAGIC
 #define XFS_SUPER_MAGIC  0x58465342
@@ -40,7 +65,22 @@
 #define BTRFS_SUPER_MAGIC 0x9123683E
 #endif
 
+#ifdef CONFIG_WIN32
+#ifndef MSDOS_SUPER_MAGIC
+#define MSDOS_SUPER_MAGIC 0x4d44
+#endif
+#ifndef NTFS_SUPER_MAGIC
+#define NTFS_SUPER_MAGIC 0x5346544e
+#endif
+
+uint64_t hostBytesPerSector = -1;
+#endif
+
 #define VIRTFS_META_DIR ".virtfs_metadata"
+
+#ifndef CONFIG_LINUX
+#define AT_REMOVEDIR 0x200
+#endif
 
 static const char *local_mapped_attr_path(FsContext *ctx,
                                           const char *path, char *buffer)
@@ -52,16 +92,27 @@ static const char *local_mapped_attr_path(FsContext *ctx,
     /* NULL terminate the directory */
     dir_name = tmp_path;
     *(base_name - 1) = '\0';
-
+#ifndef CONFIG_WIN32
     snprintf(buffer, PATH_MAX, "%s/%s/%s/%s",
              ctx->fs_root, dir_name, VIRTFS_META_DIR, base_name);
+#else
+    snprintf(buffer, PATH_MAX, "%s\\%s\\%s\\%s",
+             ctx->fs_root, dir_name, VIRTFS_META_DIR, base_name);
+    while(buffer[strlen(buffer)-1] == '\\'){
+        buffer[strlen(buffer)-1] = '\0';
+    }
+#endif
     g_free(tmp_path);
     return buffer;
 }
 
 static FILE *local_fopen(const char *path, const char *mode)
 {
-    int fd, o_mode = 0;
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
+    int fd;
+#ifndef CONFIG_WIN32
+    int o_mode = 0;
+#endif
     FILE *fp;
     int flags = O_NOFOLLOW;
     /*
@@ -71,11 +122,17 @@ static FILE *local_fopen(const char *path, const char *mode)
         flags |= O_RDONLY;
     } else if (mode[0] == 'w') {
         flags |= O_WRONLY | O_TRUNC | O_CREAT;
+#ifndef CONFIG_WIN32
         o_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+#endif
     } else {
         return NULL;
     }
+#ifndef CONFIG_WIN32
     fd = open(path, flags, o_mode);
+#else
+    fd = open(path, flags | O_BINARY);
+#endif
     if (fd == -1) {
         return NULL;
     }
@@ -87,9 +144,11 @@ static FILE *local_fopen(const char *path, const char *mode)
 }
 
 #define ATTR_MAX 100
+#ifndef CONFIG_WIN32
 static void local_mapped_file_attr(FsContext *ctx, const char *path,
                                    struct stat *stbuf)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     FILE *fp;
     char buf[ATTR_MAX];
     char attr_path[PATH_MAX];
@@ -114,13 +173,16 @@ static void local_mapped_file_attr(FsContext *ctx, const char *path,
     }
     fclose(fp);
 }
+#endif
 
 static int local_lstat(FsContext *fs_ctx, V9fsPath *fs_path, struct stat *stbuf)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
     char buffer[PATH_MAX];
     char *path = fs_path->data;
 
+#ifndef CONFIG_WIN32
     err =  lstat(rpath(fs_ctx, path, buffer), stbuf);
     if (err) {
         return err;
@@ -131,6 +193,7 @@ static int local_lstat(FsContext *fs_ctx, V9fsPath *fs_path, struct stat *stbuf)
         gid_t tmp_gid;
         mode_t tmp_mode;
         dev_t tmp_dev;
+#ifdef CONFIG_LINUX
         if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.uid", &tmp_uid,
                     sizeof(uid_t)) > 0) {
             stbuf->st_uid = tmp_uid;
@@ -144,25 +207,75 @@ static int local_lstat(FsContext *fs_ctx, V9fsPath *fs_path, struct stat *stbuf)
             stbuf->st_mode = tmp_mode;
         }
         if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.rdev", &tmp_dev,
-                        sizeof(dev_t)) > 0) {
-                stbuf->st_rdev = tmp_dev;
+                    sizeof(dev_t)) > 0) {
+            stbuf->st_rdev = tmp_dev;
         }
+#else
+	/*
+	 *  extra two parameters on Mac OS X.
+	 *  first one is position which specifies an offset within the extended attribute.
+	 *  i.e. extended attribute means "user.virtfs.uid". Currently, it is only used with
+	 *  resource fork attribute and all other extended attributes, it is reserved and should be zero.
+	 *  second one is options which specify option for retrieving extended attributes:
+	 *  (XATTR_NOFOLLOW, XATTR_SHOWCOMPRESSION)
+	 */
+        if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.uid", &tmp_uid,
+                    sizeof(uid_t), 0, 0) > 0) {
+            stbuf->st_uid = tmp_uid;
+        }
+        if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.gid", &tmp_gid,
+                    sizeof(gid_t), 0, 0) > 0) {
+            stbuf->st_gid = tmp_gid;
+        }
+        if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.mode",
+                    &tmp_mode, sizeof(mode_t), 0, 0) > 0) {
+            stbuf->st_mode = tmp_mode;
+        }
+        if (getxattr(rpath(fs_ctx, path, buffer), "user.virtfs.rdev", &tmp_dev,
+                    sizeof(dev_t), 0, 0) > 0) {
+            stbuf->st_rdev = tmp_dev;
+        }
+#endif
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         local_mapped_file_attr(fs_ctx, path, stbuf);
     }
+#else
+    const char * pathname = rpath(fs_ctx, path, buffer);
+    if (hostBytesPerSector == -1) {
+        DWORD BytesPerSector;
+        TCHAR tmpName[PATH_MAX] = {0};
+
+        strncpy(tmpName, pathname, 3 > PATH_MAX ? PATH_MAX : 3);
+        tmpName[4 > PATH_MAX ? PATH_MAX : 4] = '\0';
+        LPCTSTR RootPathName = (LPCTSTR)tmpName;
+
+        GetDiskFreeSpace(RootPathName, NULL, &BytesPerSector, NULL, NULL);
+        hostBytesPerSector = BytesPerSector;
+    }
+    err = _stat(pathname, stbuf);
+
+    /* Modify the permission to 777 except the directories. */
+    stbuf->st_mode = stbuf->st_mode | 0777;
+#endif
     return err;
 }
 
 static int local_create_mapped_attr_dir(FsContext *ctx, const char *path)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
     char attr_dir[PATH_MAX];
     char *tmp_path = g_strdup(path);
-
+#ifndef CONFIG_WIN32
     snprintf(attr_dir, PATH_MAX, "%s/%s/%s",
              ctx->fs_root, dirname(tmp_path), VIRTFS_META_DIR);
-
     err = mkdir(attr_dir, 0700);
+#else
+    snprintf(attr_dir, PATH_MAX, "%s\\%s\\%s",
+             ctx->fs_root, dirname(tmp_path), VIRTFS_META_DIR);
+    err = mkdir(attr_dir);
+#endif
+
     if (err < 0 && errno == EEXIST) {
         err = 0;
     }
@@ -173,6 +286,7 @@ static int local_create_mapped_attr_dir(FsContext *ctx, const char *path)
 static int local_set_mapped_file_attr(FsContext *ctx,
                                       const char *path, FsCred *credp)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     FILE *fp;
     int ret = 0;
     char buf[ATTR_MAX];
@@ -225,7 +339,6 @@ update_map_file:
         rdev = credp->fc_rdev;
     }
 
-
     if (uid != -1) {
         fprintf(fp, "virtfs.uid=%d\n", uid);
     }
@@ -244,10 +357,12 @@ err_out:
     return ret;
 }
 
+#ifndef CONFIG_WIN32
 static int local_set_xattr(const char *path, FsCred *credp)
 {
-    int err;
+    int err = 0;
 
+#ifdef CONFIG_LINUX
     if (credp->fc_uid != -1) {
         err = setxattr(path, "user.virtfs.uid", &credp->fc_uid, sizeof(uid_t),
                 0);
@@ -276,12 +391,50 @@ static int local_set_xattr(const char *path, FsCred *credp)
             return err;
         }
     }
+#else
+    /*
+     * In case of setxattr on OS X, position parameter has been added.
+     * Its purpose is the same as getxattr. Last parameter options is the same as flags on Linux.
+     * XATTR_NOFOLLOW / XATTR_CREATE / XATTR_REPLACE
+     */
+    if (credp->fc_uid != -1) {
+        err = setxattr(path, "user.virtfs.uid", &credp->fc_uid, sizeof(uid_t),
+                 0, 0);
+         if (err) {
+             return err;
+         }
+     }
+     if (credp->fc_gid != -1) {
+         err = setxattr(path, "user.virtfs.gid", &credp->fc_gid, sizeof(gid_t),
+                 0, 0);
+         if (err) {
+             return err;
+         }
+     }
+     if (credp->fc_mode != -1) {
+         err = setxattr(path, "user.virtfs.mode", &credp->fc_mode,
+                 sizeof(mode_t), 0, 0);
+         if (err) {
+             return err;
+         }
+     }
+     if (credp->fc_rdev != -1) {
+         err = setxattr(path, "user.virtfs.rdev", &credp->fc_rdev,
+                 sizeof(dev_t), 0, 0);
+         if (err) {
+             return err;
+         }
+     }
+#endif
+
     return 0;
 }
+#endif
 
 static int local_post_create_passthrough(FsContext *fs_ctx, const char *path,
                                          FsCred *credp)
 {
+#ifndef CONFIG_WIN32
     char buffer[PATH_MAX];
 
     if (lchown(rpath(fs_ctx, path, buffer), credp->fc_uid,
@@ -298,13 +451,16 @@ static int local_post_create_passthrough(FsContext *fs_ctx, const char *path,
     if (chmod(rpath(fs_ctx, path, buffer), credp->fc_mode & 07777) < 0) {
         return -1;
     }
+#endif
     return 0;
 }
 
 static ssize_t local_readlink(FsContext *fs_ctx, V9fsPath *fs_path,
                               char *buf, size_t bufsz)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     ssize_t tsize = -1;
+#ifndef CONFIG_WIN32
     char buffer[PATH_MAX];
     char *path = fs_path->data;
 
@@ -324,32 +480,41 @@ static ssize_t local_readlink(FsContext *fs_ctx, V9fsPath *fs_path,
                (fs_ctx->export_flags & V9FS_SM_NONE)) {
         tsize = readlink(rpath(fs_ctx, path, buffer), buf, bufsz);
     }
+#endif
     return tsize;
 }
 
 static int local_close(FsContext *ctx, V9fsFidOpenState *fs)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     return close(fs->fd);
 }
 
 static int local_closedir(FsContext *ctx, V9fsFidOpenState *fs)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     return closedir(fs->dir);
 }
 
 static int local_open(FsContext *ctx, V9fsPath *fs_path,
                       int flags, V9fsFidOpenState *fs)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     char buffer[PATH_MAX];
     char *path = fs_path->data;
+#ifdef CONFIG_WIN32
+    flags |= O_BINARY;
+#endif
 
     fs->fd = open(rpath(ctx, path, buffer), flags | O_NOFOLLOW);
+
     return fs->fd;
 }
 
 static int local_opendir(FsContext *ctx,
                          V9fsPath *fs_path, V9fsFidOpenState *fs)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     char buffer[PATH_MAX];
     char *path = fs_path->data;
 
@@ -362,11 +527,13 @@ static int local_opendir(FsContext *ctx,
 
 static void local_rewinddir(FsContext *ctx, V9fsFidOpenState *fs)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     return rewinddir(fs->dir);
 }
 
 static off_t local_telldir(FsContext *ctx, V9fsFidOpenState *fs)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     return telldir(fs->dir);
 }
 
@@ -374,9 +541,11 @@ static int local_readdir_r(FsContext *ctx, V9fsFidOpenState *fs,
                            struct dirent *entry,
                            struct dirent **result)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int ret;
 
 again:
+#ifndef CONFIG_WIN32
     ret = readdir_r(fs->dir, entry, result);
     if (ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         if (!ret && *result != NULL &&
@@ -385,11 +554,25 @@ again:
             goto again;
         }
     }
+#else
+    ret = errno;
+    *result = readdir(fs->dir);
+    ret = (ret == errno ? 0 : errno);
+    entry = *result;
+    if (ctx->export_flags & V9FS_SM_MAPPED_FILE) {
+        if (!ret && *result != NULL &&
+            !strcmp(entry->d_name, VIRTFS_META_DIR)) {
+            /* skp the meta data directory */
+            goto again;
+        }
+    }
+#endif
     return ret;
 }
 
 static void local_seekdir(FsContext *ctx, V9fsFidOpenState *fs, off_t off)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     return seekdir(fs->dir, off);
 }
 
@@ -413,8 +596,8 @@ static ssize_t local_pwritev(FsContext *ctx, V9fsFidOpenState *fs,
                              const struct iovec *iov,
                              int iovcnt, off_t offset)
 {
-    ssize_t ret
-;
+    ssize_t ret;
+
 #ifdef CONFIG_PREADV
     ret = pwritev(fs->fd, iov, iovcnt, offset);
 #else
@@ -441,6 +624,8 @@ static ssize_t local_pwritev(FsContext *ctx, V9fsFidOpenState *fs,
 
 static int local_chmod(FsContext *fs_ctx, V9fsPath *fs_path, FsCred *credp)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
+#ifndef CONFIG_WIN32
     char buffer[PATH_MAX];
     char *path = fs_path->data;
 
@@ -452,14 +637,17 @@ static int local_chmod(FsContext *fs_ctx, V9fsPath *fs_path, FsCred *credp)
                (fs_ctx->export_flags & V9FS_SM_NONE)) {
         return chmod(rpath(fs_ctx, path, buffer), credp->fc_mode);
     }
+#endif
     return -1;
 }
 
 static int local_mknod(FsContext *fs_ctx, V9fsPath *dir_path,
                        const char *name, FsCred *credp)
 {
-    char *path;
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err = -1;
+#ifndef CONFIG_WIN32
+    char *path;
     int serrno = 0;
     V9fsString fullname;
     char buffer[PATH_MAX];
@@ -512,12 +700,14 @@ err_end:
     errno = serrno;
 out:
     v9fs_string_free(&fullname);
+#endif
     return err;
 }
 
 static int local_mkdir(FsContext *fs_ctx, V9fsPath *dir_path,
                        const char *name, FsCred *credp)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     char *path;
     int err = -1;
     int serrno = 0;
@@ -525,9 +715,17 @@ static int local_mkdir(FsContext *fs_ctx, V9fsPath *dir_path,
     char buffer[PATH_MAX];
 
     v9fs_string_init(&fullname);
+#ifndef CONFIG_WIN32
     v9fs_string_sprintf(&fullname, "%s/%s", dir_path->data, name);
+#else
+    v9fs_string_sprintf(&fullname, "%s\\%s", dir_path->data, name);
+    while((fullname.data)[strlen(fullname.data)-1] == '\\'){
+        (fullname.data)[strlen(fullname.data)-1] = '\0';
+    }
+#endif
     path = fullname.data;
 
+#ifndef CONFIG_WIN32
     /* Determine the security model */
     if (fs_ctx->export_flags & V9FS_SM_MAPPED) {
         err = mkdir(rpath(fs_ctx, path, buffer), SM_LOCAL_DIR_MODE_BITS);
@@ -563,6 +761,9 @@ static int local_mkdir(FsContext *fs_ctx, V9fsPath *dir_path,
             goto err_end;
         }
     }
+#else
+    err = mkdir(rpath(fs_ctx, path, buffer));
+#endif
     goto out;
 
 err_end:
@@ -576,10 +777,15 @@ out:
 static int local_fstat(FsContext *fs_ctx, int fid_type,
                        V9fsFidOpenState *fs, struct stat *stbuf)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err, fd;
 
     if (fid_type == P9_FID_DIR) {
+#ifndef CONFIG_WIN32
         fd = dirfd(fs->dir);
+#else
+        fd = fs->fd;
+#endif
     } else {
         fd = fs->fd;
     }
@@ -589,12 +795,14 @@ static int local_fstat(FsContext *fs_ctx, int fid_type,
         return err;
     }
     if (fs_ctx->export_flags & V9FS_SM_MAPPED) {
+#ifndef CONFIG_WIN32
         /* Actual credentials are part of extended attrs */
         uid_t tmp_uid;
         gid_t tmp_gid;
         mode_t tmp_mode;
         dev_t tmp_dev;
 
+#ifdef CONFIG_LINUX
         if (fgetxattr(fd, "user.virtfs.uid",
                       &tmp_uid, sizeof(uid_t)) > 0) {
             stbuf->st_uid = tmp_uid;
@@ -611,6 +819,25 @@ static int local_fstat(FsContext *fs_ctx, int fid_type,
                       &tmp_dev, sizeof(dev_t)) > 0) {
                 stbuf->st_rdev = tmp_dev;
         }
+#else
+        if (fgetxattr(fd, "user.virtfs.uid",
+                      &tmp_uid, sizeof(uid_t), 0, 0) > 0) {
+            stbuf->st_uid = tmp_uid;
+        }
+        if (fgetxattr(fd, "user.virtfs.gid",
+                      &tmp_gid, sizeof(gid_t), 0, 0) > 0) {
+            stbuf->st_gid = tmp_gid;
+        }
+        if (fgetxattr(fd, "user.virtfs.mode",
+                      &tmp_mode, sizeof(mode_t), 0, 0) > 0) {
+            stbuf->st_mode = tmp_mode;
+        }
+        if (fgetxattr(fd, "user.virtfs.rdev",
+                      &tmp_dev, sizeof(dev_t), 0, 0) > 0) {
+                stbuf->st_rdev = tmp_dev;
+        }
+#endif
+#endif
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         errno = EOPNOTSUPP;
         return -1;
@@ -621,6 +848,7 @@ static int local_fstat(FsContext *fs_ctx, int fid_type,
 static int local_open2(FsContext *fs_ctx, V9fsPath *dir_path, const char *name,
                        int flags, FsCred *credp, V9fsFidOpenState *fs)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     char *path;
     int fd = -1;
     int err = -1;
@@ -634,7 +862,12 @@ static int local_open2(FsContext *fs_ctx, V9fsPath *dir_path, const char *name,
     flags |= O_NOFOLLOW;
 
     v9fs_string_init(&fullname);
+#ifndef CONFIG_WIN32
     v9fs_string_sprintf(&fullname, "%s/%s", dir_path->data, name);
+#else
+    v9fs_string_sprintf(&fullname, "%s\\%s", dir_path->data, name);
+    flags |= O_BINARY;
+#endif
     path = fullname.data;
 
     /* Determine the security model */
@@ -644,6 +877,7 @@ static int local_open2(FsContext *fs_ctx, V9fsPath *dir_path, const char *name,
             err = fd;
             goto out;
         }
+#ifndef CONFIG_WIN32
         credp->fc_mode = credp->fc_mode|S_IFREG;
         /* Set cleint credentials in xattr */
         err = local_set_xattr(rpath(fs_ctx, path, buffer), credp);
@@ -651,6 +885,7 @@ static int local_open2(FsContext *fs_ctx, V9fsPath *dir_path, const char *name,
             serrno = errno;
             goto err_end;
         }
+#endif
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         fd = open(rpath(fs_ctx, path, buffer), flags, SM_LOCAL_MODE_BITS);
         if (fd == -1) {
@@ -690,15 +925,18 @@ out:
     return err;
 }
 
-
 static int local_symlink(FsContext *fs_ctx, const char *oldpath,
                          V9fsPath *dir_path, const char *name, FsCred *credp)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err = -1;
+#ifndef CONFIG_WIN32
     int serrno = 0;
     char *newpath;
     V9fsString fullname;
     char buffer[PATH_MAX];
+
+    int flags = O_CREAT|O_EXCL|O_RDWR|O_NOFOLLOW;
 
     v9fs_string_init(&fullname);
     v9fs_string_sprintf(&fullname, "%s/%s", dir_path->data, name);
@@ -708,9 +946,7 @@ static int local_symlink(FsContext *fs_ctx, const char *oldpath,
     if (fs_ctx->export_flags & V9FS_SM_MAPPED) {
         int fd;
         ssize_t oldpath_size, write_size;
-        fd = open(rpath(fs_ctx, newpath, buffer),
-                  O_CREAT|O_EXCL|O_RDWR|O_NOFOLLOW,
-                  SM_LOCAL_MODE_BITS);
+        fd = open(rpath(fs_ctx, newpath, buffer), flags, SM_LOCAL_MODE_BITS);
         if (fd == -1) {
             err = fd;
             goto out;
@@ -738,9 +974,7 @@ static int local_symlink(FsContext *fs_ctx, const char *oldpath,
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         int fd;
         ssize_t oldpath_size, write_size;
-        fd = open(rpath(fs_ctx, newpath, buffer),
-                  O_CREAT|O_EXCL|O_RDWR|O_NOFOLLOW,
-                  SM_LOCAL_MODE_BITS);
+        fd = open(rpath(fs_ctx, newpath, buffer), flags, SM_LOCAL_MODE_BITS);
         if (fd == -1) {
             err = fd;
             goto out;
@@ -792,13 +1026,16 @@ err_end:
     errno = serrno;
 out:
     v9fs_string_free(&fullname);
+#endif
     return err;
 }
 
 static int local_link(FsContext *ctx, V9fsPath *oldpath,
                       V9fsPath *dirpath, const char *name)
 {
-    int ret;
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
+    int ret = 0;
+#ifndef CONFIG_WIN32
     V9fsString newpath;
     char buffer[PATH_MAX], buffer1[PATH_MAX];
 
@@ -823,20 +1060,34 @@ static int local_link(FsContext *ctx, V9fsPath *oldpath,
     }
 err_out:
     v9fs_string_free(&newpath);
+#endif
     return ret;
 }
 
 static int local_truncate(FsContext *ctx, V9fsPath *fs_path, off_t size)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     char buffer[PATH_MAX];
     char *path = fs_path->data;
-
+#ifndef CONFIG_WIN32
     return truncate(rpath(ctx, path, buffer), size);
+#else
+    int ret;
+    int fd = open(rpath(ctx, path, buffer), O_RDWR | O_BINARY | O_NOFOLLOW);
+    if(fd < 0) {
+        ret = -1;
+    } else {
+        ret = ftruncate(fd, size);
+        close(fd);
+    }
+    return ret;
+#endif
 }
 
 static int local_rename(FsContext *ctx, const char *oldpath,
-                        const char *newpath)
+        const char *newpath)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
     char buffer[PATH_MAX], buffer1[PATH_MAX];
 
@@ -852,11 +1103,24 @@ static int local_rename(FsContext *ctx, const char *oldpath,
             return err;
         }
     }
+#ifndef CONFIG_WIN32
     return rename(rpath(ctx, oldpath, buffer), rpath(ctx, newpath, buffer1));
+#else
+    if (!MoveFileEx((LPCTSTR)rpath(ctx, oldpath, buffer),
+                    (LPCTSTR)rpath(ctx, newpath, buffer1), MOVEFILE_REPLACE_EXISTING)){
+        err = -(GetLastError());
+        ERR("[%d][ >> %s] err: %d\n", __LINE__, __func__, err);
+    } else {
+        err = 0;
+    }
+    return err;
+#endif
 }
 
 static int local_chown(FsContext *fs_ctx, V9fsPath *fs_path, FsCred *credp)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
+#ifndef CONFIG_WIN32
     char buffer[PATH_MAX];
     char *path = fs_path->data;
 
@@ -870,26 +1134,124 @@ static int local_chown(FsContext *fs_ctx, V9fsPath *fs_path, FsCred *credp)
     } else if (fs_ctx->export_flags & V9FS_SM_MAPPED_FILE) {
         return local_set_mapped_file_attr(fs_ctx, path, credp);
     }
+#endif
     return -1;
 }
+
+#ifdef CONFIG_WIN32
+/* The function that change file last access and modification times for WIN32 */
+static int win_utimes (const char *filename, const struct timeval tv[2])
+{
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
+
+    FILETIME LastAccessTime, LastWriteTime;
+
+    ULARGE_INTEGER tmpTime;
+
+    ULONGLONG WindowsUnixTimeGap = 11644473600; // between 1601.01.01 and 1970.01.01
+    ULONGLONG WindowsSecond = 10000000; // 1sec / 100nanosec
+
+    int res = 0;
+
+    HANDLE hFile = CreateFile(filename, FILE_WRITE_ATTRIBUTES,
+                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+                            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        if (GetFileAttributes(filename) & FILE_ATTRIBUTE_DIRECTORY) {
+            res = 0;
+        }
+        else {
+            res = -1;
+        }
+    } else {
+        if (!tv) { // case of NULL
+            GetSystemTimeAsFileTime(&LastAccessTime);
+            LastWriteTime = LastAccessTime;
+        } else {
+            tmpTime.QuadPart = UInt32x32To64(WindowsUnixTimeGap + tv[0].tv_sec, WindowsSecond)
+                               + tv[0].tv_usec * 10;
+            LastAccessTime.dwHighDateTime = tmpTime.HighPart;
+            LastAccessTime.dwLowDateTime = tmpTime.LowPart;
+
+            tmpTime.QuadPart = UInt32x32To64(WindowsUnixTimeGap + tv[1].tv_sec, WindowsSecond)
+                               + tv[1].tv_usec * 10;
+            LastWriteTime.dwHighDateTime = tmpTime.HighPart;
+            LastWriteTime.dwLowDateTime = tmpTime.LowPart;
+        }
+        if (!SetFileTime(hFile, NULL, &LastAccessTime, &LastWriteTime)) {
+            res = -1;
+        } else {
+            res = 0;
+        }
+    }
+
+    if (hFile) {
+        CloseHandle(hFile);
+    }
+    return res;
+}
+#endif
 
 static int local_utimensat(FsContext *s, V9fsPath *fs_path,
                            const struct timespec *buf)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     char buffer[PATH_MAX];
     char *path = fs_path->data;
-
+#ifndef CONFIG_WIN32
     return qemu_utimens(rpath(s, path, buffer), buf);
+#else
+    const char * r_path = rpath(s, path, buffer);
+    struct timeval tv[2], tv_now;
+    struct stat st;
+    int i;
+
+    /* happy if special cases */
+    if (buf[0].tv_nsec == UTIME_OMIT && buf[1].tv_nsec == UTIME_OMIT) {
+        return 0;
+    }
+    if (buf[0].tv_nsec == UTIME_NOW && buf[1].tv_nsec == UTIME_NOW) {
+        return win_utimes(r_path, NULL);
+    }
+
+    /* prepare for hard cases */
+    if (buf[0].tv_nsec == UTIME_NOW || buf[1].tv_nsec == UTIME_NOW) {
+        gettimeofday(&tv_now, NULL);
+    }
+    if (buf[0].tv_nsec == UTIME_OMIT || buf[1].tv_nsec == UTIME_OMIT) {
+        _stat(r_path, &st);
+    }
+
+    for (i = 0; i < 2; i++) {
+        if (buf[i].tv_nsec == UTIME_NOW) {
+            tv[i].tv_sec = tv_now.tv_sec;
+            tv[i].tv_usec = tv_now.tv_usec;
+        } else if (buf[i].tv_nsec == UTIME_OMIT) {
+            tv[i].tv_sec = (i == 0) ? st.st_atime : st.st_mtime;
+            tv[i].tv_usec = 0;
+        } else {
+            tv[i].tv_sec = buf[i].tv_sec;
+            tv[i].tv_usec = buf[i].tv_nsec / 1000;
+        }
+    }
+
+    return win_utimes(r_path, &tv[0]);
+#endif
 }
 
 static int local_remove(FsContext *ctx, const char *path)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
     struct stat stbuf;
     char buffer[PATH_MAX];
 
     if (ctx->export_flags & V9FS_SM_MAPPED_FILE) {
+#ifndef CONFIG_WIN32
         err =  lstat(rpath(ctx, path, buffer), &stbuf);
+#else
+        err = _stat(rpath(ctx, path, buffer), &stbuf);
+#endif
         if (err) {
             goto err_out;
         }
@@ -898,7 +1260,11 @@ static int local_remove(FsContext *ctx, const char *path)
          * directory
          */
         if (S_ISDIR(stbuf.st_mode)) {
+#ifndef CONFIG_WIN32
             sprintf(buffer, "%s/%s/%s", ctx->fs_root, path, VIRTFS_META_DIR);
+#else
+            sprintf(buffer, "%s\\%s\\%s", ctx->fs_root, path, VIRTFS_META_DIR);
+#endif
             err = remove(buffer);
             if (err < 0 && errno != ENOENT) {
                 /*
@@ -929,67 +1295,180 @@ err_out:
 static int local_fsync(FsContext *ctx, int fid_type,
                        V9fsFidOpenState *fs, int datasync)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int fd;
 
     if (fid_type == P9_FID_DIR) {
+#ifndef CONFIG_WIN32
         fd = dirfd(fs->dir);
+#else
+        fd = fs->fd;
+#endif
     } else {
         fd = fs->fd;
     }
-
+#ifndef CONFIG_WIN32
     if (datasync) {
         return qemu_fdatasync(fd);
     } else {
         return fsync(fd);
     }
+#else
+    return _commit(fd);
+#endif
 }
 
 static int local_statfs(FsContext *s, V9fsPath *fs_path, struct statfs *stbuf)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     char buffer[PATH_MAX];
     char *path = fs_path->data;
 
+#ifndef CONFIG_WIN32
     return statfs(rpath(s, path, buffer), stbuf);
+#else
+    DWORD VolumeSerialNumber,
+          MaximumComponentLength,
+          FileSystemFlags;
+
+    DWORD SectorsPerCluster,
+          BytesPerSector,
+          NumberOfFreeClusters,
+          TotalNumberOfClusters,
+          BytesPerCluster;
+
+    ULARGE_INTEGER TotalNumberOfBytes,
+                   TotalNumberOfFreeBytes,
+                   FreeBytesAvailableToCaller;
+
+    TCHAR tmpName[PATH_MAX] = {0};
+    TCHAR VolumeNameBuffer[PATH_MAX] = {0};
+    TCHAR FileSystemNameBuffer[PATH_MAX] = {0};
+
+    strncpy(tmpName, rpath(s, path, buffer), 3 > PATH_MAX ? PATH_MAX : 3);
+    tmpName[4 > PATH_MAX ? PATH_MAX : 4] = '\0';
+    LPCTSTR RootPathName = (LPCTSTR)tmpName;
+
+    if (RootPathName == NULL) {
+        ERR("[%d][%s] >> err = %d\n", __LINE__, __func__, GetLastError());
+        stbuf = NULL;
+        return -1;
+    }
+
+    if (!GetVolumeInformation(RootPathName, (LPTSTR)&VolumeNameBuffer, PATH_MAX,
+                        &VolumeSerialNumber, &MaximumComponentLength, &FileSystemFlags,
+                        (LPTSTR)&FileSystemNameBuffer, PATH_MAX)) {
+        ERR("[%d][%s] >> err = %d\n", __LINE__, __func__, GetLastError());
+        return -1;
+    }
+
+    if (!GetDiskFreeSpace(RootPathName, &SectorsPerCluster, &BytesPerSector,
+                        &NumberOfFreeClusters, &TotalNumberOfClusters)) {
+        SectorsPerCluster = 1;
+        BytesPerSector = 1;
+        NumberOfFreeClusters = 0;
+        TotalNumberOfClusters = 0;
+    }
+
+    BytesPerCluster = SectorsPerCluster * BytesPerSector;
+    TotalNumberOfBytes.QuadPart = Int32x32To64(TotalNumberOfClusters, BytesPerCluster);
+    TotalNumberOfFreeBytes.QuadPart = Int32x32To64(NumberOfFreeClusters, BytesPerCluster);
+    FreeBytesAvailableToCaller=TotalNumberOfFreeBytes;
+
+    if (!strcmp(FileSystemNameBuffer, "NTFS")) {
+        stbuf->f_type = NTFS_SUPER_MAGIC;
+    }
+    /* need to check more about other filesystems (ex CD) */
+    else {
+        stbuf->f_type = MSDOS_SUPER_MAGIC;
+    }
+    stbuf->f_bsize       = BytesPerSector;
+    stbuf->f_blocks      = TotalNumberOfBytes.QuadPart / BytesPerSector;
+    stbuf->f_bfree       = TotalNumberOfFreeBytes.QuadPart / BytesPerSector;
+    stbuf->f_bavail      = FreeBytesAvailableToCaller.QuadPart / BytesPerSector;
+    stbuf->f_files       = stbuf->f_blocks / SectorsPerCluster;
+    stbuf->f_ffree       = stbuf->f_bfree / SectorsPerCluster;
+    stbuf->f_fsid.val[0] = HIWORD(VolumeSerialNumber);
+    stbuf->f_fsid.val[1] = LOWORD(VolumeSerialNumber);
+    stbuf->f_namelen     = MaximumComponentLength;
+    stbuf->f_spare[0]    = 0;
+    stbuf->f_spare[1]    = 0;
+    stbuf->f_spare[2]    = 0;
+    stbuf->f_spare[3]    = 0;
+    stbuf->f_spare[4]    = 0;
+    stbuf->f_spare[5]    = 0;
+
+    return 0;
+#endif
 }
 
 static ssize_t local_lgetxattr(FsContext *ctx, V9fsPath *fs_path,
                                const char *name, void *value, size_t size)
 {
+#ifndef CONFIG_WIN32
     char *path = fs_path->data;
 
     return v9fs_get_xattr(ctx, path, name, value, size);
+#else
+    /* xattr doesn't support on Windows */
+    return -1;
+#endif
 }
 
 static ssize_t local_llistxattr(FsContext *ctx, V9fsPath *fs_path,
                                 void *value, size_t size)
 {
+#ifndef CONFIG_WIN32
     char *path = fs_path->data;
 
     return v9fs_list_xattr(ctx, path, value, size);
+#else
+    /* xattr doesn't support on Windows */
+    return -1;
+#endif
 }
 
 static int local_lsetxattr(FsContext *ctx, V9fsPath *fs_path, const char *name,
                            void *value, size_t size, int flags)
 {
+#ifndef CONFIG_WIN32
     char *path = fs_path->data;
 
     return v9fs_set_xattr(ctx, path, name, value, size, flags);
+#else
+    /* xattr doesn't support on Windows */
+    return -1;
+#endif
 }
 
 static int local_lremovexattr(FsContext *ctx, V9fsPath *fs_path,
                               const char *name)
 {
+#ifndef CONFIG_WIN32
     char *path = fs_path->data;
 
     return v9fs_remove_xattr(ctx, path, name);
+#else
+    /* xattr doesn't support on Windows */
+    return -1;
+#endif
 }
 
 static int local_name_to_path(FsContext *ctx, V9fsPath *dir_path,
                               const char *name, V9fsPath *target)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     if (dir_path) {
+#ifndef CONFIG_WIN32
         v9fs_string_sprintf((V9fsString *)target, "%s/%s",
                             dir_path->data, name);
+#else
+        v9fs_string_sprintf((V9fsString *)target, "%s\\%s",
+                            dir_path->data, name);
+    while((target->data)[strlen(target->data)-1] == '\\'){
+        (target->data)[strlen(target->data)-1] = '\0';
+    }
+#endif
     } else {
         v9fs_string_sprintf((V9fsString *)target, "%s", name);
     }
@@ -1002,14 +1481,20 @@ static int local_renameat(FsContext *ctx, V9fsPath *olddir,
                           const char *old_name, V9fsPath *newdir,
                           const char *new_name)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int ret;
     V9fsString old_full_name, new_full_name;
 
     v9fs_string_init(&old_full_name);
     v9fs_string_init(&new_full_name);
 
+#ifndef CONFIG_WIN32
     v9fs_string_sprintf(&old_full_name, "%s/%s", olddir->data, old_name);
     v9fs_string_sprintf(&new_full_name, "%s/%s", newdir->data, new_name);
+#else
+    v9fs_string_sprintf(&old_full_name, "%s\\%s", olddir->data, old_name);
+    v9fs_string_sprintf(&new_full_name, "%s\\%s", newdir->data, new_name);
+#endif
 
     ret = local_rename(ctx, old_full_name.data, new_full_name.data);
     v9fs_string_free(&old_full_name);
@@ -1020,21 +1505,36 @@ static int local_renameat(FsContext *ctx, V9fsPath *olddir,
 static int local_unlinkat(FsContext *ctx, V9fsPath *dir,
                           const char *name, int flags)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int ret;
     V9fsString fullname;
     char buffer[PATH_MAX];
 
     v9fs_string_init(&fullname);
 
+#ifndef CONFIG_WIN32
     v9fs_string_sprintf(&fullname, "%s/%s", dir->data, name);
+#else
+    v9fs_string_sprintf(&fullname, "%s\\%s", dir->data, name);
+    while(fullname.data[strlen(fullname.data)-1] == '\\'){
+        fullname.data[strlen(fullname.data)-1] = '\0';
+    }
+#endif
     if (ctx->export_flags & V9FS_SM_MAPPED_FILE) {
+#ifdef CONFIG_VIRTFS_DARWIN
+        // TODO: find something to replace AT_REMOVEDIR feature.
         if (flags == AT_REMOVEDIR) {
             /*
              * If directory remove .virtfs_metadata contained in the
              * directory
              */
+#ifndef CONFIG_WIN32
             sprintf(buffer, "%s/%s/%s", ctx->fs_root,
                     fullname.data, VIRTFS_META_DIR);
+#else
+            sprintf(buffer, "%s\\%s\\%s", ctx->fs_root,
+                    fullname.data, VIRTFS_META_DIR);
+#endif
             ret = remove(buffer);
             if (ret < 0 && errno != ENOENT) {
                 /*
@@ -1044,6 +1544,7 @@ static int local_unlinkat(FsContext *ctx, V9fsPath *dir,
                 goto err_out;
             }
         }
+#endif
         /*
          * Now remove the name from parent directory
          * .virtfs_metadata directory.
@@ -1058,17 +1559,28 @@ static int local_unlinkat(FsContext *ctx, V9fsPath *dir,
         }
     }
     /* Remove the name finally */
+#ifndef CONFIG_WIN32
     ret = remove(rpath(ctx, fullname.data, buffer));
+#else
+    if (flags == AT_REMOVEDIR) { // is dir
+        ret = rmdir(rpath(ctx, fullname.data, buffer));
+    } else { //is file
+        ret = remove(rpath(ctx, fullname.data, buffer));
+    }
+#endif
     v9fs_string_free(&fullname);
 
 err_out:
     return ret;
 }
 
+#ifndef CONFIG_WIN32
 static int local_ioc_getversion(FsContext *ctx, V9fsPath *path,
                                 mode_t st_mode, uint64_t *st_gen)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
+
 #ifdef FS_IOC_GETVERSION
     V9fsFidOpenState fid_open;
 
@@ -1090,12 +1602,17 @@ static int local_ioc_getversion(FsContext *ctx, V9fsPath *path,
 #endif
     return err;
 }
+#endif
 
 static int local_init(FsContext *ctx)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err = 0;
+#ifdef FS_IOC_GETVERSION
     struct statfs stbuf;
+#endif
 
+#ifndef CONFIG_WIN32
     if (ctx->export_flags & V9FS_SM_PASSTHROUGH) {
         ctx->xops = passthrough_xattr_ops;
     } else if (ctx->export_flags & V9FS_SM_MAPPED) {
@@ -1109,6 +1626,9 @@ static int local_init(FsContext *ctx)
          */
         ctx->xops = passthrough_xattr_ops;
     }
+#else
+    ctx->xops = NULL;
+#endif
     ctx->export_flags |= V9FS_PATHNAME_FSCONTEXT;
 #ifdef FS_IOC_GETVERSION
     /*
@@ -1131,6 +1651,7 @@ static int local_init(FsContext *ctx)
 
 static int local_parse_opts(QemuOpts *opts, struct FsDriverEntry *fse)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     const char *sec_model = qemu_opt_get(opts, "security_model");
     const char *path = qemu_opt_get(opts, "path");
 
@@ -1179,27 +1700,27 @@ FileOperations local_ops = {
     .telldir = local_telldir,
     .readdir_r = local_readdir_r,
     .seekdir = local_seekdir,
+    .statfs = local_statfs,
     .preadv = local_preadv,
     .pwritev = local_pwritev,
-    .chmod = local_chmod,
-    .mknod = local_mknod,
-    .mkdir = local_mkdir,
-    .fstat = local_fstat,
-    .open2 = local_open2,
-    .symlink = local_symlink,
-    .link = local_link,
     .truncate = local_truncate,
-    .rename = local_rename,
-    .chown = local_chown,
     .utimensat = local_utimensat,
-    .remove = local_remove,
-    .fsync = local_fsync,
-    .statfs = local_statfs,
+    .open2 = local_open2,
     .lgetxattr = local_lgetxattr,
     .llistxattr = local_llistxattr,
     .lsetxattr = local_lsetxattr,
     .lremovexattr = local_lremovexattr,
+    .mkdir = local_mkdir,
+    .symlink = local_symlink,
+    .remove = local_remove,
+    .fstat = local_fstat,
+    .chmod = local_chmod,
+    .mknod = local_mknod,
+    .link = local_link,
+    .rename = local_rename,
+    .chown = local_chown,
+    .fsync = local_fsync,
     .name_to_path = local_name_to_path,
-    .renameat  = local_renameat,
     .unlinkat = local_unlinkat,
+    .renameat  = local_renameat,
 };

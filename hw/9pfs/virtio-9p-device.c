@@ -128,7 +128,15 @@ static int virtio_9p_device_init(VirtIODevice *vdev)
      * call back to do that. Since we are in the init path, we don't
      * use co-routines here.
      */
+#ifdef CONFIG_MARU
+#ifndef CONFIG_WIN32
     if (s->ops->name_to_path(&s->ctx, NULL, "/", &path) < 0) {
+#else
+    if (s->ops->name_to_path(&s->ctx, NULL, "\\", &path) < 0) {
+#endif
+#else
+    if (s->ops->name_to_path(&s->ctx, NULL, "/", &path) < 0) {
+#endif
         fprintf(stderr,
                 "error in converting name to path %s", strerror(errno));
         goto out;

@@ -1,6 +1,12 @@
 #ifndef _QEMU_VIRTIO_9P_MARSHAL_H
 #define _QEMU_VIRTIO_9P_MARSHAL_H
 
+#ifdef CONFIG_MARU
+#ifdef CONFIG_WIN32
+#include "tizen/src/resources_win32.h"
+#endif
+#endif
+
 typedef struct V9fsString
 {
     uint16_t size;

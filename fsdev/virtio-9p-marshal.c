@@ -10,7 +10,8 @@
  * the COPYING file in the top-level directory.
  *
  */
-
+#include "qemu-common.h"
+#ifndef CONFIG_MARU
 #include <glib.h>
 #include <glib/gprintf.h>
 #include <sys/types.h>
@@ -25,6 +26,26 @@
 #include "qemu/compiler.h"
 #include "virtio-9p-marshal.h"
 #include "qemu/bswap.h"
+
+#else /* CONFIG_MARU */
+#include <glib.h>
+#include <glib/gprintf.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/time.h>
+#include <utime.h>
+#include <string.h>
+#include <stdint.h>
+#include <errno.h>
+
+#include "qemu/compiler.h"
+#include "qemu/bswap.h"
+#include "virtio-9p-marshal.h"
+
+#ifndef CONFIG_WIN32
+#include <sys/uio.h>
+#endif
+#endif
 
 void v9fs_string_free(V9fsString *str)
 {

@@ -3767,9 +3767,12 @@ if test "$softmmu" = yes ; then
     if test "$cap" = yes && test "$linux" = yes && test "$attr" = yes ; then
       virtfs=yes
       tools="$tools fsdev/virtfs-proxy-helper\$(EXESUF)"
-	elif test "$darwin" = yes ; then
-		echo "Enable VirtFS on Darwin"
-		virtfs=yes
+    elif test "$darwin" = yes ; then
+      echo "Enable VirtFS on Darwin"
+      virtfs=yes
+    elif test "$mingw32" = yes ; then
+      echo "Enable VirtFS on Windows"
+      virtfs=yes
     else
       if test "$virtfs" = yes; then
         error_exit "VirtFS is supported only on Linux and requires libcap-devel and libattr-devel"
