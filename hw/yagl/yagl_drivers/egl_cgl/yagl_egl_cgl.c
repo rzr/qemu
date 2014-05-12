@@ -88,6 +88,16 @@ struct yagl_egl_cgl_context
     bool is_3_2_core;
 };
 
+static const char *gl_3_2_check_funcs[] =
+{
+    "glGenTransformFeedbacks",
+    "glBindTransformFeedback",
+    "glPauseTransformFeedback",
+    "glResumeTransformFeedback",
+    "glDeleteTransformFeedbacks",
+    "glVertexAttribDivisor"
+};
+
 static bool yagl_egl_cgl_get_gl_version(struct yagl_egl_cgl *egl_cgl,
                                         yagl_gl_version *version)
 {
@@ -96,6 +106,7 @@ static bool yagl_egl_cgl_get_gl_version(struct yagl_egl_cgl *egl_cgl,
     const char *tmp;
     CGLPixelFormatObj pixel_format;
     int n;
+    unsigned int i;
 
     YAGL_LOG_FUNC_ENTER(yagl_egl_cgl_get_gl_version, NULL);
 
@@ -136,6 +147,19 @@ static bool yagl_egl_cgl_get_gl_version(struct yagl_egl_cgl *egl_cgl,
     }
 
     CGLDestroyPixelFormat(pixel_format);
+
+    for (i = 0;
+         i < sizeof(gl_3_2_check_funcs)/sizeof(gl_3_2_check_funcs[0]);
+         ++i) {
+        if (!yagl_dyn_lib_get_sym(egl_cgl->base.dyn_lib,
+                                  gl_3_2_check_funcs[i])) {
+            YAGL_LOG_INFO("Failed to find function \"%s\", using OpenGL 2.1",
+                          gl_3_2_check_funcs[i]);
+            *version = yagl_gl_2;
+            res = true;
+            goto out;
+        }
+    }
 
     YAGL_LOG_INFO("Using OpenGL 3.2");
     *version = yagl_gl_3_2;

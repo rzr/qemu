@@ -88,6 +88,16 @@ struct vigs_gl_backend_cgl
     CGLContextObj context;
 };
 
+static const char *gl_3_2_check_funcs[] =
+{
+    "glGenTransformFeedbacks",
+    "glBindTransformFeedback",
+    "glPauseTransformFeedback",
+    "glResumeTransformFeedback",
+    "glDeleteTransformFeedbacks",
+    "glVertexAttribDivisor"
+};
+
 static bool vigs_gl_backend_cgl_check_gl_version(struct vigs_gl_backend_cgl *gl_backend_cgl,
                                                  bool *is_gl_2)
 {
@@ -96,6 +106,7 @@ static bool vigs_gl_backend_cgl_check_gl_version(struct vigs_gl_backend_cgl *gl_
     const char *tmp;
     CGLPixelFormatObj pixel_format;
     int n;
+    unsigned int i;
 
     tmp = getenv("GL_VERSION");
 
@@ -134,6 +145,19 @@ static bool vigs_gl_backend_cgl_check_gl_version(struct vigs_gl_backend_cgl *gl_
     }
 
     CGLDestroyPixelFormat(pixel_format);
+
+    for (i = 0;
+         i < sizeof(gl_3_2_check_funcs)/sizeof(gl_3_2_check_funcs[0]);
+         ++i) {
+        if (!dlsym(gl_backend_cgl->handle,
+                   gl_3_2_check_funcs[i])) {
+            VIGS_LOG_INFO("Failed to find function \"%s\", using OpenGL 2.1",
+                          gl_3_2_check_funcs[i]);
+            *is_gl_2 = true;
+            res = true;
+            goto out;
+        }
+    }
 
     VIGS_LOG_INFO("Using OpenGL 3.2");
     *is_gl_2 = false;
