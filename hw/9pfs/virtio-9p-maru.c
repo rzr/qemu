@@ -1,13 +1,29 @@
 /*
- * Virtio 9p backend
+ * Virtio 9p backend for Maru
+ * Based on hw/9pfs/virtio-9p.c:
  *
- * Copyright IBM, Corp. 2010
+ * Copyright (c) 2014 Samsung Electronics Co., Ltd All Rights Reserved
  *
- * Authors:
- *  Anthony Liguori   <aliguori@us.ibm.com>
+ * Contact:
+ *  Sooyoung Ha <yoosah.ha@samsung.com>
+ *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
- * This work is licensed under the terms of the GNU GPL, version 2.  See
- * the COPYING file in the top-level directory.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ * Contributors:
+ * - S-Core Co., Ltd
  *
  */
 
@@ -20,6 +36,25 @@
 #include "virtio-9p-coth.h"
 #include "trace.h"
 #include "migration/migration.h"
+
+#ifdef CONFIG_WIN32
+#include "tizen/src/resources_win32.h"
+
+/* On windows, there's no mknod function. The device number is meaningless */
+#define makedev(x,y) 0
+#define major(x) 0
+#define minor(x) 0
+
+extern uint64_t hostBytesPerSector;
+#endif
+
+#ifdef CONFIG_DARWIN
+#define O_DIRECT 040000 /* Direct disk access */
+#define O_NOATIME 01000000 /* Do not set atime */
+#endif
+
+#include "../../tizen/src/debug_ch.h"
+MULTI_DEBUG_CHANNEL(tizen, qemu_9p_test);
 
 int open_fd_hw;
 int total_open_fd;
@@ -131,6 +166,7 @@ static int get_dotl_openflags(V9fsState *s, int oflags)
      * Ignore direct disk access hint until the server supports it.
      */
     flags &= ~O_DIRECT;
+
     return flags;
 }
 
@@ -158,8 +194,9 @@ void v9fs_path_copy(V9fsPath *lhs, V9fsPath *rhs)
 int v9fs_name_to_path(V9fsState *s, V9fsPath *dirpath,
                       const char *name, V9fsPath *path)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
-    err = s->ops->name_to_path(&s->ctx, dirpath, name, path);
+    err = s->ops->name_to_path(&s->ctx, dirpath, name, path); // local_name_to_path
     if (err < 0) {
         err = -errno;
     }
@@ -175,7 +212,11 @@ int v9fs_name_to_path(V9fsState *s, V9fsPath *dirpath,
 static int v9fs_path_is_ancestor(V9fsPath *s1, V9fsPath *s2)
 {
     if (!strncmp(s1->data, s2->data, s1->size - 1)) {
+#ifndef CONFIG_WIN32
         if (s2->data[s1->size - 1] == '\0' || s2->data[s1->size - 1] == '/') {
+#else
+        if (s2->data[s1->size - 1] == '\0' || s2->data[s1->size - 1] == '\\') {
+#endif
             return 1;
         }
     }
@@ -191,6 +232,7 @@ static size_t v9fs_string_size(V9fsString *str)
  * returns 0 if fid got re-opened, 1 if not, < 0 on error */
 static int v9fs_reopen_fid(V9fsPDU *pdu, V9fsFidState *f)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err = 1;
     if (f->fid_type == P9_FID_FILE) {
         if (f->fs.fd == -1) {
@@ -210,6 +252,7 @@ static int v9fs_reopen_fid(V9fsPDU *pdu, V9fsFidState *f)
 
 static V9fsFidState *get_fid(V9fsPDU *pdu, int32_t fid)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
     V9fsFidState *f;
     V9fsState *s = pdu->s;
@@ -231,6 +274,7 @@ static V9fsFidState *get_fid(V9fsPDU *pdu, int32_t fid)
              */
             err = v9fs_reopen_fid(pdu, f);
             if (err < 0) {
+                ERR("[%d][ >> %s]\n", __LINE__, __func__);
                 f->ref--;
                 return NULL;
             }
@@ -253,6 +297,7 @@ static V9fsFidState *alloc_fid(V9fsState *s, int32_t fid)
         /* If fid is already there return NULL */
         BUG_ON(f->clunked);
         if (f->fid == fid) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             return NULL;
         }
     }
@@ -271,8 +316,10 @@ static V9fsFidState *alloc_fid(V9fsState *s, int32_t fid)
     return f;
 }
 
+#ifndef CONFIG_WIN32
 static int v9fs_xattr_fid_clunk(V9fsPDU *pdu, V9fsFidState *fidp)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int retval = 0;
 
     if (fidp->fs.xattr.copied_len == -1) {
@@ -304,9 +351,11 @@ free_value:
     }
     return retval;
 }
+#endif
 
 static int free_fid(V9fsPDU *pdu, V9fsFidState *fidp)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int retval = 0;
 
     if (fidp->fid_type == P9_FID_FILE) {
@@ -319,7 +368,11 @@ static int free_fid(V9fsPDU *pdu, V9fsFidState *fidp)
             retval = v9fs_co_closedir(pdu, &fidp->fs);
         }
     } else if (fidp->fid_type == P9_FID_XATTR) {
+#ifndef CONFIG_WIN32
         retval = v9fs_xattr_fid_clunk(pdu, fidp);
+#else
+	retval = -1;
+#endif
     }
     v9fs_path_free(&fidp->path);
     g_free(fidp);
@@ -453,6 +506,7 @@ void v9fs_reclaim_fd(V9fsPDU *pdu)
 
 static int v9fs_mark_fids_unreclaim(V9fsPDU *pdu, V9fsPath *path)
 {
+    TRACE("[%d][ >> %s]\n", __LINE__, __func__);
     int err;
     V9fsState *s = pdu->s;
     V9fsFidState *fidp, head_fid;
@@ -486,6 +540,7 @@ static int v9fs_mark_fids_unreclaim(V9fsPDU *pdu, V9fsPath *path)
 
 static void virtfs_reset(V9fsPDU *pdu)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     V9fsState *s = pdu->s;
     V9fsFidState *fidp = NULL;
 
@@ -505,6 +560,7 @@ static void virtfs_reset(V9fsPDU *pdu)
         error_report("9pfs:%s: One or more uncluncked fids "
                      "found during reset", __func__);
     }
+    return;
 }
 
 #define P9_QID_TYPE_DIR         0x80
@@ -545,13 +601,18 @@ static void stat_to_qid(const struct stat *stbuf, V9fsQID *qidp)
     if (S_ISDIR(stbuf->st_mode)) {
         qidp->type |= P9_QID_TYPE_DIR;
     }
+#ifndef CONFIG_WIN32
     if (S_ISLNK(stbuf->st_mode)) {
+#else
+    if (((stbuf->st_mode) & S_IFMT) == 0xA000) {
+#endif
         qidp->type |= P9_QID_TYPE_SYMLINK;
     }
 }
 
 static int fid_to_qid(V9fsPDU *pdu, V9fsFidState *fidp, V9fsQID *qidp)
 {
+    TRACE("[%d][ >> %s]\n", __LINE__, __func__);
     struct stat stbuf;
     int err;
 
@@ -599,6 +660,7 @@ static void complete_pdu(V9fsState *s, V9fsPDU *pdu, ssize_t len)
     int8_t id = pdu->id + 1; /* Response */
 
     if (len < 0) {
+        WARN("[%d][ >> %s]\n", __LINE__, __func__);
         int err = -len;
         len = 7;
 
@@ -639,6 +701,7 @@ static void complete_pdu(V9fsState *s, V9fsPDU *pdu, ssize_t len)
     free_pdu(s, pdu);
 }
 
+#ifndef CONFIG_WIN32
 static mode_t v9mode_to_mode(uint32_t mode, V9fsString *extension)
 {
     mode_t ret;
@@ -678,9 +741,9 @@ static mode_t v9mode_to_mode(uint32_t mode, V9fsString *extension)
     if (mode & P9_STAT_MODE_SETVTX) {
         ret |= S_ISVTX;
     }
-
     return ret;
 }
+#endif
 
 static int donttouch_stat(V9fsStat *stat)
 {
@@ -729,6 +792,7 @@ static uint32_t stat_to_v9mode(const struct stat *stbuf)
     uint32_t mode;
 
     mode = stbuf->st_mode & 0777;
+#ifndef CONFIG_WIN32
     if (S_ISDIR(stbuf->st_mode)) {
         mode |= P9_STAT_MODE_DIR;
     }
@@ -760,7 +824,7 @@ static uint32_t stat_to_v9mode(const struct stat *stbuf)
     if (stbuf->st_mode & S_ISVTX) {
         mode |= P9_STAT_MODE_SETVTX;
     }
-
+#endif
     return mode;
 }
 
@@ -768,6 +832,7 @@ static int stat_to_v9stat(V9fsPDU *pdu, V9fsPath *name,
                             const struct stat *stbuf,
                             V9fsStat *v9stat)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
     const char *str;
 
@@ -852,14 +917,39 @@ static void stat_to_v9stat_dotl(V9fsState *s, const struct stat *stbuf,
     v9lstat->st_gid = stbuf->st_gid;
     v9lstat->st_rdev = stbuf->st_rdev;
     v9lstat->st_size = stbuf->st_size;
+#ifndef CONFIG_WIN32
     v9lstat->st_blksize = stbuf->st_blksize;
     v9lstat->st_blocks = stbuf->st_blocks;
+#else
+    v9lstat->st_blksize = hostBytesPerSector;
+    v9lstat->st_blocks = (uint64_t)(v9lstat->st_size / 512
+                            + (v9lstat->st_size % 512 ? 1 : 0)); //round up
+#endif
+#ifdef CONFIG_LINUX
     v9lstat->st_atime_sec = stbuf->st_atime;
     v9lstat->st_atime_nsec = stbuf->st_atim.tv_nsec;
     v9lstat->st_mtime_sec = stbuf->st_mtime;
     v9lstat->st_mtime_nsec = stbuf->st_mtim.tv_nsec;
     v9lstat->st_ctime_sec = stbuf->st_ctime;
     v9lstat->st_ctime_nsec = stbuf->st_ctim.tv_nsec;
+#else // darwin
+#ifndef CONFIG_WIN32
+    v9lstat->st_atime_sec = stbuf->st_atimespec.tv_sec;
+    v9lstat->st_atime_nsec = stbuf->st_atimespec.tv_nsec;
+    v9lstat->st_mtime_sec = stbuf->st_mtimespec.tv_sec;
+    v9lstat->st_mtime_nsec = stbuf->st_mtimespec.tv_nsec;
+    v9lstat->st_ctime_sec = stbuf->st_ctimespec.tv_sec;
+    v9lstat->st_ctime_nsec = stbuf->st_ctimespec.tv_nsec;
+#else
+    v9lstat->st_atime_sec = stbuf->st_atime;
+    v9lstat->st_atime_nsec = 0;
+    v9lstat->st_mtime_sec = stbuf->st_mtime;
+    v9lstat->st_mtime_nsec = 0;
+    v9lstat->st_ctime_sec = stbuf->st_ctime;
+    v9lstat->st_ctime_nsec = 0;
+#endif
+#endif
+
     /* Currently we only support BASIC fields in stat */
     v9lstat->st_result_mask = P9_STATS_BASIC;
 
@@ -899,6 +989,7 @@ static inline bool is_ro_export(FsContext *ctx)
 
 static void v9fs_version(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     ssize_t err;
     V9fsPDU *pdu = opaque;
     V9fsState *s = pdu->s;
@@ -933,10 +1024,12 @@ static void v9fs_version(void *opaque)
 out:
     complete_pdu(s, pdu, offset);
     v9fs_string_free(&version);
+    return;
 }
 
 static void v9fs_attach(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     V9fsPDU *pdu = opaque;
     V9fsState *s = pdu->s;
     int32_t fid, afid, n_uname;
@@ -961,7 +1054,11 @@ static void v9fs_attach(void *opaque)
         goto out_nofid;
     }
     fidp->uid = n_uname;
+#ifndef CONFIG_WIN32
     err = v9fs_co_name_to_path(pdu, NULL, "/", &fidp->path);
+#else
+    err = v9fs_co_name_to_path(pdu, NULL, "\\", &fidp->path);
+#endif
     if (err < 0) {
         err = -EINVAL;
         clunk_fid(s, fid);
@@ -1001,6 +1098,7 @@ out_nofid:
 
 static void v9fs_stat(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     V9fsStat v9stat;
     ssize_t err = 0;
@@ -1046,6 +1144,7 @@ out_nofid:
 
 static void v9fs_getattr(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     size_t offset = 7;
     ssize_t retval = 0;
@@ -1114,6 +1213,7 @@ out_nofid:
 
 static void v9fs_setattr(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err = 0;
     int32_t fid;
     V9fsFidState *fidp;
@@ -1133,7 +1233,11 @@ static void v9fs_setattr(void *opaque)
         goto out_nofid;
     }
     if (v9iattr.valid & P9_ATTR_MODE) {
+#ifndef CONFIG_WIN32
         err = v9fs_co_chmod(pdu, &fidp->path, v9iattr.mode);
+#else
+        err = -EPERM;
+#endif
         if (err < 0) {
             goto out;
         }
@@ -1178,8 +1282,12 @@ static void v9fs_setattr(void *opaque)
         if (!(v9iattr.valid & P9_ATTR_GID)) {
             v9iattr.gid = -1;
         }
+#ifndef CONFIG_WIN32
         err = v9fs_co_chown(pdu, &fidp->path, v9iattr.uid,
                             v9iattr.gid);
+#else
+        err = -EPERM;
+#endif
         if (err < 0) {
             goto out;
         }
@@ -1205,12 +1313,14 @@ static int v9fs_walk_marshal(V9fsPDU *pdu, uint16_t nwnames, V9fsQID *qids)
 
     err = pdu_marshal(pdu, offset, "w", nwnames);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         return err;
     }
     offset += err;
     for (i = 0; i < nwnames; i++) {
         err = pdu_marshal(pdu, offset, "Q", &qids[i]);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             return err;
         }
         offset += err;
@@ -1220,6 +1330,7 @@ static int v9fs_walk_marshal(V9fsPDU *pdu, uint16_t nwnames, V9fsQID *qids)
 
 static void v9fs_walk(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int name_idx;
     V9fsQID *qids = NULL;
     int i, err = 0;
@@ -1236,6 +1347,7 @@ static void v9fs_walk(void *opaque)
 
     err = pdu_unmarshal(pdu, offset, "ddw", &fid, &newfid, &nwnames);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         complete_pdu(s, pdu, err);
         return ;
     }
@@ -1249,16 +1361,19 @@ static void v9fs_walk(void *opaque)
         for (i = 0; i < nwnames; i++) {
             err = pdu_unmarshal(pdu, offset, "s", &wnames[i]);
             if (err < 0) {
+                ERR("[%d][ >> %s]\n", __LINE__, __func__);
                 goto out_nofid;
             }
             offset += err;
         }
     } else if (nwnames > P9_MAXWELEM) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -EINVAL;
         goto out_nofid;
     }
     fidp = get_fid(pdu, fid);
     if (fidp == NULL) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -ENOENT;
         goto out_nofid;
     }
@@ -1273,6 +1388,7 @@ static void v9fs_walk(void *opaque)
     for (name_idx = 0; name_idx < nwnames; name_idx++) {
         err = v9fs_co_name_to_path(pdu, &dpath, wnames[name_idx].data, &path);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = v9fs_co_lstat(pdu, &path, &stbuf);
@@ -1284,10 +1400,12 @@ static void v9fs_walk(void *opaque)
     }
     if (fid == newfid) {
         BUG_ON(fidp->fid_type != P9_FID_NONE);
+        WARN("[%d][ >> %s]\n", __LINE__, __func__);
         v9fs_path_copy(&fidp->path, &path);
     } else {
         newfidp = alloc_fid(s, newfid);
         if (newfidp == NULL) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             err = -EINVAL;
             goto out;
         }
@@ -1312,6 +1430,7 @@ out_nofid:
         g_free(wnames);
         g_free(qids);
     }
+    return;
 }
 
 static int32_t get_iounit(V9fsPDU *pdu, V9fsPath *path)
@@ -1336,6 +1455,7 @@ static int32_t get_iounit(V9fsPDU *pdu, V9fsPath *path)
 
 static void v9fs_open(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int flags;
     int32_t fid;
     int32_t mode;
@@ -1356,12 +1476,14 @@ static void v9fs_open(void *opaque)
         mode = modebyte;
     }
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out_nofid;
     }
     trace_v9fs_open(pdu->tag, pdu->id, fid, mode);
 
     fidp = get_fid(pdu, fid);
     if (fidp == NULL) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -ENOENT;
         goto out_nofid;
     }
@@ -1369,17 +1491,20 @@ static void v9fs_open(void *opaque)
 
     err = v9fs_co_lstat(pdu, &fidp->path, &stbuf);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out;
     }
     stat_to_qid(&stbuf, &qid);
     if (S_ISDIR(stbuf.st_mode)) {
         err = v9fs_co_opendir(pdu, fidp);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         fidp->fid_type = P9_FID_DIR;
         err = pdu_marshal(pdu, offset, "Qd", &qid, 0);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err += offset;
@@ -1392,12 +1517,14 @@ static void v9fs_open(void *opaque)
         if (is_ro_export(&s->ctx)) {
             if (mode & O_WRONLY || mode & O_RDWR ||
                 mode & O_APPEND || mode & O_TRUNC) {
+                ERR("[%d][ >> %s]\n", __LINE__, __func__);
                 err = -EROFS;
                 goto out;
             }
         }
         err = v9fs_co_open(pdu, fidp, flags);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         fidp->fid_type = P9_FID_FILE;
@@ -1412,6 +1539,7 @@ static void v9fs_open(void *opaque)
         iounit = get_iounit(pdu, &fidp->path);
         err = pdu_marshal(pdu, offset, "Qd", &qid, iounit);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err += offset;
@@ -1426,6 +1554,7 @@ out_nofid:
 
 static void v9fs_lcreate(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t dfid, flags, mode;
     gid_t gid;
     ssize_t err = 0;
@@ -1441,12 +1570,14 @@ static void v9fs_lcreate(void *opaque)
     err = pdu_unmarshal(pdu, offset, "dsddd", &dfid,
                         &name, &flags, &mode, &gid);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out_nofid;
     }
     trace_v9fs_lcreate(pdu->tag, pdu->id, dfid, flags, mode, gid);
 
     fidp = get_fid(pdu, dfid);
     if (fidp == NULL) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -ENOENT;
         goto out_nofid;
     }
@@ -1455,6 +1586,7 @@ static void v9fs_lcreate(void *opaque)
     err = v9fs_co_open2(pdu, fidp, &name, gid,
                         flags | O_CREAT, mode, &stbuf);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out;
     }
     fidp->fid_type = P9_FID_FILE;
@@ -1470,6 +1602,7 @@ static void v9fs_lcreate(void *opaque)
     stat_to_qid(&stbuf, &qid);
     err = pdu_marshal(pdu, offset, "Qd", &qid, iounit);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out;
     }
     err += offset;
@@ -1484,6 +1617,7 @@ out_nofid:
 
 static void v9fs_fsync(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
     int32_t fid;
     int datasync;
@@ -1494,6 +1628,7 @@ static void v9fs_fsync(void *opaque)
 
     err = pdu_unmarshal(pdu, offset, "dd", &fid, &datasync);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out_nofid;
     }
     trace_v9fs_fsync(pdu->tag, pdu->id, fid, datasync);
@@ -1501,6 +1636,7 @@ static void v9fs_fsync(void *opaque)
     fidp = get_fid(pdu, fid);
     if (fidp == NULL) {
         err = -ENOENT;
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out_nofid;
     }
     err = v9fs_co_fsync(pdu, fidp, datasync);
@@ -1545,6 +1681,7 @@ out_nofid:
     complete_pdu(s, pdu, err);
 }
 
+#ifndef CONFIG_WIN32
 static int v9fs_xattr_read(V9fsState *s, V9fsPDU *pdu, V9fsFidState *fidp,
                            uint64_t off, uint32_t max_count)
 {
@@ -1577,10 +1714,12 @@ static int v9fs_xattr_read(V9fsState *s, V9fsPDU *pdu, V9fsFidState *fidp,
     offset += err;
     return offset;
 }
+#endif
 
 static int v9fs_do_readdir_with_stat(V9fsPDU *pdu,
                                      V9fsFidState *fidp, uint32_t max_count)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     V9fsPath path;
     V9fsStat v9stat;
     int len, err = 0;
@@ -1601,18 +1740,22 @@ static int v9fs_do_readdir_with_stat(V9fsPDU *pdu,
         v9fs_path_init(&path);
         err = v9fs_co_readdir_r(pdu, fidp, dent, &result);
         if (err || !result) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             break;
         }
         err = v9fs_co_name_to_path(pdu, &fidp->path, dent->d_name, &path);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = v9fs_co_lstat(pdu, &path, &stbuf);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = stat_to_v9stat(pdu, &path, &stbuf, &v9stat);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         /* 11 = 7 + 4 (7 = start offset, 4 = space for storing count) */
@@ -1628,7 +1771,11 @@ static int v9fs_do_readdir_with_stat(V9fsPDU *pdu,
         count += len;
         v9fs_stat_free(&v9stat);
         v9fs_path_free(&path);
+#ifdef CONFIG_LINUX
         saved_dir_pos = dent->d_off;
+#else
+        saved_dir_pos = v9fs_co_telldir(pdu, fidp);
+#endif
     }
 out:
     g_free(dent);
@@ -1673,6 +1820,7 @@ static void v9fs_init_qiov_from_pdu(QEMUIOVector *qiov, V9fsPDU *pdu,
 
 static void v9fs_read(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     uint64_t off;
     ssize_t err = 0;
@@ -1685,12 +1833,14 @@ static void v9fs_read(void *opaque)
 
     err = pdu_unmarshal(pdu, offset, "dqd", &fid, &off, &max_count);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out_nofid;
     }
     trace_v9fs_read(pdu->tag, pdu->id, fid, off, max_count);
 
     fidp = get_fid(pdu, fid);
     if (fidp == NULL) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -EINVAL;
         goto out_nofid;
     }
@@ -1701,11 +1851,13 @@ static void v9fs_read(void *opaque)
         }
         count = v9fs_do_readdir_with_stat(pdu, fidp, max_count);
         if (count < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             err = count;
             goto out;
         }
         err = pdu_marshal(pdu, offset, "d", count);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err += offset + count;
@@ -1732,20 +1884,25 @@ static void v9fs_read(void *opaque)
             } while (len == -EINTR && !pdu->cancelled);
             if (len < 0) {
                 /* IO error return the error */
+                ERR("[%d][ >> %s]\n", __LINE__, __func__);
                 err = len;
                 goto out;
             }
         } while (count < max_count && len > 0);
         err = pdu_marshal(pdu, offset, "d", count);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err += offset + count;
         qemu_iovec_destroy(&qiov);
         qemu_iovec_destroy(&qiov_full);
+#ifndef CONFIG_WIN32
     } else if (fidp->fid_type == P9_FID_XATTR) {
         err = v9fs_xattr_read(s, pdu, fidp, off, max_count);
+#endif
     } else {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -EINVAL;
     }
     trace_v9fs_read_return(pdu->tag, pdu->id, count, err);
@@ -1767,6 +1924,7 @@ static size_t v9fs_readdir_data_size(V9fsString *name)
 static int v9fs_do_readdir(V9fsPDU *pdu,
                            V9fsFidState *fidp, int32_t max_count)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     size_t size;
     V9fsQID qid;
     V9fsString name;
@@ -1774,6 +1932,9 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
     int32_t count = 0;
     off_t saved_dir_pos;
     struct dirent *dent, *result;
+#ifndef CONFIG_LINUX
+    uint64_t d_offset = 0;
+#endif
 
     /* save the directory position */
     saved_dir_pos = v9fs_co_telldir(pdu, fidp);
@@ -1785,9 +1946,17 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
 
     while (1) {
         err = v9fs_co_readdir_r(pdu, fidp, dent, &result);
-        if (err || !result) {
+        dent = result;
+        if (err) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             break;
         }
+
+        if (!result) {
+            TRACE("[%d][ >> %s] v9fs_co_readdir_r has no result.\n", __LINE__, __func__);
+            break;
+        }
+
         v9fs_string_init(&name);
         v9fs_string_sprintf(&name, "%s", dent->d_name);
         if ((count + v9fs_readdir_data_size(&name)) > max_count) {
@@ -1809,9 +1978,16 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
         qid.version = 0;
 
         /* 11 = 7 + 4 (7 = start offset, 4 = space for storing count) */
+#ifdef CONFIG_LINUX
         len = pdu_marshal(pdu, 11 + count, "Qqbs",
                           &qid, dent->d_off,
                           dent->d_type, &name);
+#else
+        d_offset = v9fs_co_telldir(pdu, fidp);
+        len = pdu_marshal(pdu, 11 + count, "Qqbs",
+                          &qid, d_offset,
+                          dent->d_type, &name);
+#endif
         if (len < 0) {
             v9fs_co_seekdir(pdu, fidp, saved_dir_pos);
             v9fs_string_free(&name);
@@ -1820,7 +1996,11 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
         }
         count += len;
         v9fs_string_free(&name);
+#ifdef CONFIG_LINUX
         saved_dir_pos = dent->d_off;
+#else
+        saved_dir_pos = d_offset;
+#endif
     }
     g_free(dent);
     if (err < 0) {
@@ -1831,6 +2011,7 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
 
 static void v9fs_readdir(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     V9fsFidState *fidp;
     ssize_t retval = 0;
@@ -1844,16 +2025,19 @@ static void v9fs_readdir(void *opaque)
     retval = pdu_unmarshal(pdu, offset, "dqd", &fid,
                            &initial_offset, &max_count);
     if (retval < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out_nofid;
     }
     trace_v9fs_readdir(pdu->tag, pdu->id, fid, initial_offset, max_count);
 
     fidp = get_fid(pdu, fid);
     if (fidp == NULL) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         retval = -EINVAL;
         goto out_nofid;
     }
     if (!fidp->fs.dir) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         retval = -EINVAL;
         goto out;
     }
@@ -1864,11 +2048,13 @@ static void v9fs_readdir(void *opaque)
     }
     count = v9fs_do_readdir(pdu, fidp, max_count);
     if (count < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         retval = count;
         goto out;
     }
     retval = pdu_marshal(pdu, offset, "d", count);
     if (retval < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out;
     }
     retval += count + offset;
@@ -1879,6 +2065,7 @@ out_nofid:
     complete_pdu(s, pdu, retval);
 }
 
+#ifndef CONFIG_WIN32
 static int v9fs_xattr_write(V9fsState *s, V9fsPDU *pdu, V9fsFidState *fidp,
                             uint64_t off, uint32_t count,
                             struct iovec *sg, int cnt)
@@ -1925,9 +2112,10 @@ static int v9fs_xattr_write(V9fsState *s, V9fsPDU *pdu, V9fsFidState *fidp,
 out:
     return err;
 }
-
+#endif
 static void v9fs_write(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     ssize_t err;
     int32_t fid;
     uint64_t off;
@@ -1943,6 +2131,7 @@ static void v9fs_write(void *opaque)
 
     err = pdu_unmarshal(pdu, offset, "dqd", &fid, &off, &count);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         return complete_pdu(s, pdu, err);
     }
     offset += err;
@@ -1951,11 +2140,13 @@ static void v9fs_write(void *opaque)
 
     fidp = get_fid(pdu, fid);
     if (fidp == NULL) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -EINVAL;
         goto out_nofid;
     }
     if (fidp->fid_type == P9_FID_FILE) {
         if (fidp->fs.fd == -1) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             err = -EINVAL;
             goto out;
         }
@@ -1963,10 +2154,13 @@ static void v9fs_write(void *opaque)
         /*
          * setxattr operation
          */
+#ifndef CONFIG_WIN32
         err = v9fs_xattr_write(s, pdu, fidp, off, count,
                                qiov_full.iov, qiov_full.niov);
+#endif
         goto out;
     } else {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -EINVAL;
         goto out;
     }
@@ -1987,6 +2181,7 @@ static void v9fs_write(void *opaque)
         } while (len == -EINTR && !pdu->cancelled);
         if (len < 0) {
             /* IO error return the error */
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             err = len;
             goto out_qiov;
         }
@@ -1995,6 +2190,7 @@ static void v9fs_write(void *opaque)
     offset = 7;
     err = pdu_marshal(pdu, offset, "d", total);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out;
     }
     err += offset;
@@ -2010,6 +2206,7 @@ out_nofid:
 
 static void v9fs_create(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     int err = 0;
     size_t offset = 7;
@@ -2030,12 +2227,14 @@ static void v9fs_create(void *opaque)
     err = pdu_unmarshal(pdu, offset, "dsdbs", &fid, &name,
                         &perm, &mode, &extension);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out_nofid;
     }
     trace_v9fs_create(pdu->tag, pdu->id, fid, name.data, perm, mode);
 
     fidp = get_fid(pdu, fid);
     if (fidp == NULL) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         err = -EINVAL;
         goto out_nofid;
     }
@@ -2043,26 +2242,32 @@ static void v9fs_create(void *opaque)
         err = v9fs_co_mkdir(pdu, fidp, &name, perm & 0777,
                             fidp->uid, -1, &stbuf);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = v9fs_co_name_to_path(pdu, &fidp->path, name.data, &path);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         v9fs_path_copy(&fidp->path, &path);
         err = v9fs_co_opendir(pdu, fidp);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         fidp->fid_type = P9_FID_DIR;
+#ifndef CONFIG_WIN32
     } else if (perm & P9_STAT_MODE_SYMLINK) {
         err = v9fs_co_symlink(pdu, fidp, &name,
                               extension.data, -1 , &stbuf);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = v9fs_co_name_to_path(pdu, &fidp->path, name.data, &path);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         v9fs_path_copy(&fidp->path, &path);
@@ -2070,22 +2275,26 @@ static void v9fs_create(void *opaque)
         int32_t ofid = atoi(extension.data);
         V9fsFidState *ofidp = get_fid(pdu, ofid);
         if (ofidp == NULL) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             err = -EINVAL;
             goto out;
         }
         err = v9fs_co_link(pdu, ofidp, fidp, &name);
         put_fid(pdu, ofidp);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = v9fs_co_name_to_path(pdu, &fidp->path, name.data, &path);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             fidp->fid_type = P9_FID_NONE;
             goto out;
         }
         v9fs_path_copy(&fidp->path, &path);
         err = v9fs_co_lstat(pdu, &fidp->path, &stbuf);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             fidp->fid_type = P9_FID_NONE;
             goto out;
         }
@@ -2095,6 +2304,7 @@ static void v9fs_create(void *opaque)
         mode_t nmode = 0;
 
         if (sscanf(extension.data, "%c %u %u", &ctype, &major, &minor) != 3) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             err = -errno;
             goto out;
         }
@@ -2115,10 +2325,12 @@ static void v9fs_create(void *opaque)
         err = v9fs_co_mknod(pdu, fidp, &name, fidp->uid, -1,
                             makedev(major, minor), nmode, &stbuf);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = v9fs_co_name_to_path(pdu, &fidp->path, name.data, &path);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         v9fs_path_copy(&fidp->path, &path);
@@ -2126,10 +2338,12 @@ static void v9fs_create(void *opaque)
         err = v9fs_co_mknod(pdu, fidp, &name, fidp->uid, -1,
                             0, S_IFIFO | (perm & 0777), &stbuf);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = v9fs_co_name_to_path(pdu, &fidp->path, name.data, &path);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         v9fs_path_copy(&fidp->path, &path);
@@ -2137,17 +2351,21 @@ static void v9fs_create(void *opaque)
         err = v9fs_co_mknod(pdu, fidp, &name, fidp->uid, -1,
                             0, S_IFSOCK | (perm & 0777), &stbuf);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         err = v9fs_co_name_to_path(pdu, &fidp->path, name.data, &path);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         v9fs_path_copy(&fidp->path, &path);
+#endif
     } else {
         err = v9fs_co_open2(pdu, fidp, &name, -1,
                             omode_to_uflags(mode)|O_CREAT, perm, &stbuf);
         if (err < 0) {
+            ERR("[%d][ >> %s]\n", __LINE__, __func__);
             goto out;
         }
         fidp->fid_type = P9_FID_FILE;
@@ -2164,6 +2382,7 @@ static void v9fs_create(void *opaque)
     stat_to_qid(&stbuf, &qid);
     err = pdu_marshal(pdu, offset, "Qd", &qid, iounit);
     if (err < 0) {
+        ERR("[%d][ >> %s]\n", __LINE__, __func__);
         goto out;
     }
     err += offset;
@@ -2180,6 +2399,7 @@ out_nofid:
 
 static void v9fs_symlink(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     V9fsPDU *pdu = opaque;
     V9fsString name;
     V9fsString symname;
@@ -2204,7 +2424,11 @@ static void v9fs_symlink(void *opaque)
         err = -EINVAL;
         goto out_nofid;
     }
+#ifndef CONFIG_WIN32
     err = v9fs_co_symlink(pdu, dfidp, &name, symname.data, gid, &stbuf);
+#else
+    err = -EPERM;
+#endif
     if (err < 0) {
         goto out;
     }
@@ -2226,6 +2450,7 @@ out_nofid:
 
 static void v9fs_flush(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     ssize_t err;
     int16_t tag;
     size_t offset = 7;
@@ -2255,10 +2480,12 @@ static void v9fs_flush(void *opaque)
         free_pdu(pdu->s, cancel_pdu);
     }
     complete_pdu(s, pdu, 7);
+    return;
 }
 
 static void v9fs_link(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     V9fsPDU *pdu = opaque;
     V9fsState *s = pdu->s;
     int32_t dfid, oldfid;
@@ -2299,6 +2526,7 @@ out_nofid:
 /* Only works with path name based fid */
 static void v9fs_remove(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     int err = 0;
     size_t offset = 7;
@@ -2343,6 +2571,7 @@ out_nofid:
 
 static void v9fs_unlinkat(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err = 0;
     V9fsString name;
     int32_t dfid, flags;
@@ -2386,11 +2615,11 @@ out_nofid:
     v9fs_string_free(&name);
 }
 
-
 /* Only works with path name based fid */
 static int v9fs_complete_rename(V9fsPDU *pdu, V9fsFidState *fidp,
                                 int32_t newdirfid, V9fsString *name)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     char *end;
     int err = 0;
     V9fsPath new_path;
@@ -2448,6 +2677,7 @@ out_nofid:
 /* Only works with path name based fid */
 static void v9fs_rename(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     ssize_t err = 0;
     size_t offset = 7;
@@ -2518,6 +2748,7 @@ static int v9fs_complete_renameat(V9fsPDU *pdu, int32_t olddirfid,
                                   V9fsString *old_name, int32_t newdirfid,
                                   V9fsString *new_name)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err = 0;
     V9fsState *s = pdu->s;
     V9fsFidState *newdirfidp = NULL, *olddirfidp = NULL;
@@ -2559,6 +2790,7 @@ out:
 
 static void v9fs_renameat(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     ssize_t err = 0;
     size_t offset = 7;
     V9fsPDU *pdu = opaque;
@@ -2590,6 +2822,7 @@ out_err:
 
 static void v9fs_wstat(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     int err = 0;
     int16_t unused;
@@ -2631,9 +2864,13 @@ static void v9fs_wstat(void *opaque)
             err = -EIO;
             goto out;
         }
+#ifndef CONFIG_WIN32
         err = v9fs_co_chmod(pdu, &fidp->path,
                             v9mode_to_mode(v9stat.mode,
                                            &v9stat.extension));
+#else
+        err = -EPERM;
+#endif
         if (err < 0) {
             goto out;
         }
@@ -2658,7 +2895,11 @@ static void v9fs_wstat(void *opaque)
         }
     }
     if (v9stat.n_gid != -1 || v9stat.n_uid != -1) {
+#ifndef CONFIG_WIN32
         err = v9fs_co_chown(pdu, &fidp->path, v9stat.n_uid, v9stat.n_gid);
+#else
+        err = -EPERM;
+#endif
         if (err < 0) {
             goto out;
         }
@@ -2718,9 +2959,15 @@ static int v9fs_fill_statfs(V9fsState *s, V9fsPDU *pdu, struct statfs *stbuf)
     f_bavail = stbuf->f_bavail/bsize_factor;
     f_files  = stbuf->f_files;
     f_ffree  = stbuf->f_ffree;
+#ifdef CONFIG_LINUX
     fsid_val = (unsigned int) stbuf->f_fsid.__val[0] |
                (unsigned long long)stbuf->f_fsid.__val[1] << 32;
     f_namelen = stbuf->f_namelen;
+#else
+    fsid_val = (unsigned int) stbuf->f_fsid.val[0] |
+               (unsigned long long)stbuf->f_fsid.val[1] << 32;
+    f_namelen = 255;
+#endif
 
     return pdu_marshal(pdu, offset, "ddqqqqqqd",
                        f_type, f_bsize, f_blocks, f_bfree,
@@ -2730,6 +2977,7 @@ static int v9fs_fill_statfs(V9fsState *s, V9fsPDU *pdu, struct statfs *stbuf)
 
 static void v9fs_statfs(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int32_t fid;
     ssize_t retval = 0;
     size_t offset = 7;
@@ -2760,10 +3008,12 @@ out:
     put_fid(pdu, fidp);
 out_nofid:
     complete_pdu(s, pdu, retval);
+    return;
 }
 
 static void v9fs_mknod(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
 
     int mode;
     gid_t gid;
@@ -2791,8 +3041,12 @@ static void v9fs_mknod(void *opaque)
         err = -ENOENT;
         goto out_nofid;
     }
+#ifndef CONFIG_WIN32
     err = v9fs_co_mknod(pdu, fidp, &name, fidp->uid, gid,
                         makedev(major, minor), mode, &stbuf);
+#else
+    err = -EPERM;
+#endif
     if (err < 0) {
         goto out;
     }
@@ -2821,6 +3075,7 @@ out_nofid:
  */
 static void v9fs_lock(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int8_t status;
     V9fsFlock flock;
     size_t offset = 7;
@@ -2875,6 +3130,7 @@ out_nofid:
  */
 static void v9fs_getlock(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     size_t offset = 7;
     struct stat stbuf;
     V9fsFidState *fidp;
@@ -2921,6 +3177,7 @@ out_nofid:
 
 static void v9fs_mkdir(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     V9fsPDU *pdu = opaque;
     size_t offset = 7;
     int32_t fid;
@@ -2963,6 +3220,7 @@ out_nofid:
     v9fs_string_free(&name);
 }
 
+#ifndef CONFIG_WIN32
 static void v9fs_xattrwalk(void *opaque)
 {
     int64_t size;
@@ -3109,9 +3367,11 @@ out_nofid:
     complete_pdu(s, pdu, err);
     v9fs_string_free(&name);
 }
+#endif
 
 static void v9fs_readlink(void *opaque)
 {
+    TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     V9fsPDU *pdu = opaque;
     size_t offset = 7;
     V9fsString target;
@@ -3154,8 +3414,10 @@ static CoroutineEntry *pdu_co_handlers[] = {
     [P9_TSTATFS] = v9fs_statfs,
     [P9_TGETATTR] = v9fs_getattr,
     [P9_TSETATTR] = v9fs_setattr,
+#ifndef CONFIG_WIN32
     [P9_TXATTRWALK] = v9fs_xattrwalk,
     [P9_TXATTRCREATE] = v9fs_xattrcreate,
+#endif
     [P9_TMKNOD] = v9fs_mknod,
     [P9_TRENAME] = v9fs_rename,
     [P9_TLOCK] = v9fs_lock,
@@ -3188,12 +3450,14 @@ static CoroutineEntry *pdu_co_handlers[] = {
 
 static void v9fs_op_not_supp(void *opaque)
 {
+    WARN("[%d][%s] >> This operation is not supported.\n", __LINE__, __func__);
     V9fsPDU *pdu = opaque;
     complete_pdu(pdu->s, pdu, -EOPNOTSUPP);
 }
 
 static void v9fs_fs_ro(void *opaque)
 {
+    WARN("[%d][%s] >> This is the read-only operation.\n", __LINE__, __func__);
     V9fsPDU *pdu = opaque;
     complete_pdu(pdu->s, pdu, -EROFS);
 }
@@ -3270,6 +3534,7 @@ void handle_9p_output(VirtIODevice *vdev, VirtQueue *vq)
 
 static void __attribute__((__constructor__)) virtio_9p_set_fd_limit(void)
 {
+#ifndef CONFIG_WIN32
     struct rlimit rlim;
     if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
         fprintf(stderr, "Failed to get the resource limit\n");
@@ -3277,4 +3542,8 @@ static void __attribute__((__constructor__)) virtio_9p_set_fd_limit(void)
     }
     open_fd_hw = rlim.rlim_cur - MIN(400, rlim.rlim_cur/3);
     open_fd_rc = rlim.rlim_cur/2;
+#else
+    open_fd_hw = 3696; // 4096 - 400
+    open_fd_rc = 2048; // 4096 / 2
+#endif
 }

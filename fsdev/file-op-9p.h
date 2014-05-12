@@ -12,12 +12,16 @@
  */
 #ifndef _FILEOP_H
 #define _FILEOP_H
+#ifdef CONFIG_MARU
+
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/time.h>
 #include <utime.h>
 #include <sys/stat.h>
+#ifndef CONFIG_WIN32
 #include <sys/uio.h>
+#endif
 #ifdef CONFIG_LINUX
 #include <sys/vfs.h>
 #endif
@@ -25,7 +29,20 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #endif
+#ifdef CONFIG_WIN32
+#include "tizen/src/resources_win32.h"
+#endif
+struct iovec;
 
+#else /* ifndef CONFIG_MARU */
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/time.h>
+#include <utime.h>
+#include <sys/stat.h>
+#include <sys/uio.h>
+#include <sys/vfs.h>
+#endif
 #define SM_LOCAL_MODE_BITS    0600
 #define SM_LOCAL_DIR_MODE_BITS    0700
 

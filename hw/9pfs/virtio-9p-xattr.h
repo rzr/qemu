@@ -54,11 +54,20 @@ ssize_t pt_listxattr(FsContext *ctx, const char *path, char *name, void *value,
 static inline ssize_t pt_getxattr(FsContext *ctx, const char *path,
                                   const char *name, void *value, size_t size)
 {
+#ifdef CONFIG_MARU
+#ifndef CONFIG_WIN32
     char buffer[PATH_MAX];
 #ifdef CONFIG_LINUX
     return lgetxattr(rpath(ctx, path, buffer), name, value, size);
 #else
     return getxattr(rpath(ctx, path, buffer), name, value, size, 0, XATTR_NOFOLLOW);
+#endif
+#else
+    return 0;
+#endif
+#else
+    char buffer[PATH_MAX];
+    return lgetxattr(rpath(ctx, path, buffer), name, value, size);
 #endif
 }
 
@@ -66,22 +75,40 @@ static inline int pt_setxattr(FsContext *ctx, const char *path,
                               const char *name, void *value,
                               size_t size, int flags)
 {
+#ifdef CONFIG_MARU
+#ifndef CONFIG_WIN32
     char buffer[PATH_MAX];
 #ifdef CONFIG_LINUX
     return lsetxattr(rpath(ctx, path, buffer), name, value, size, flags);
 #else
     return setxattr(rpath(ctx, path, buffer), name, value, size, 0, flags | XATTR_NOFOLLOW);
 #endif
+#else
+    return 0;
+#endif
+#else
+    char buffer[PATH_MAX];
+    return lsetxattr(rpath(ctx, path, buffer), name, value, size, flags);
+#endif
 }
 
 static inline int pt_removexattr(FsContext *ctx,
                                  const char *path, const char *name)
 {
+#ifdef CONFIG_MARU
+#ifndef CONFIG_WIN32
     char buffer[PATH_MAX];
 #ifdef CONFIG_LINUX
     return lremovexattr(rpath(ctx, path, buffer), name);
 #else
-	return removexattr(rpath(ctx, path, buffer), name, XATTR_NOFOLLOW);
+    return removexattr(rpath(ctx, path, buffer), name, XATTR_NOFOLLOW);
+#endif
+#else
+    return 0;
+#endif
+#else
+    char buffer[PATH_MAX];
+    return lremovexattr(rpath(ctx, path, buffer), name);
 #endif
 }
 

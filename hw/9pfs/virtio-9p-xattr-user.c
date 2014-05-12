@@ -10,7 +10,6 @@
  * the COPYING file in the top-level directory.
  *
  */
-
 #include <sys/types.h>
 #include "hw/virtio/virtio.h"
 #include "virtio-9p.h"

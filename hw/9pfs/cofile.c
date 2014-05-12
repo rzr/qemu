@@ -17,6 +17,14 @@
 #include "block/coroutine.h"
 #include "virtio-9p-coth.h"
 
+#ifdef CONFIG_MARU
+#ifdef CONFIG_WIN32
+#ifdef fsync
+#undef fsync
+#endif
+#endif
+#endif
+
 int v9fs_co_st_gen(V9fsPDU *pdu, V9fsPath *path, mode_t st_mode,
                    V9fsStatDotl *v9stat)
 {
@@ -277,3 +285,11 @@ int v9fs_co_preadv(V9fsPDU *pdu, V9fsFidState *fidp,
         });
     return err;
 }
+
+#ifdef CONFIG_MARU
+#ifdef CONFIG_WIN32
+#ifndef fsync
+#define fsync _commit
+#endif
+#endif
+#endif
