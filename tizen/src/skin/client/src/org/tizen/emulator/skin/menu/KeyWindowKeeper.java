@@ -65,7 +65,7 @@ public class KeyWindowKeeper {
 	}
 
 	public void openKeyWindow(int dockValue, boolean recreate) {
-		if (keyWindow != null) {
+		if (getKeyWindow() != null) {
 			if (recreate == false) {
 				/* show the Key Window */
 				selectKeyWindowMenu(skin.isKeyWindow = true);
@@ -136,7 +136,7 @@ public class KeyWindowKeeper {
 	public void closeKeyWindow() {
 		selectKeyWindowMenu(skin.isKeyWindow = false);
 
-		if (keyWindow != null) {
+		if (getKeyWindow() != null) {
 			keyWindow.getShell().close();
 			keyWindow = null;
 		}
@@ -147,7 +147,7 @@ public class KeyWindowKeeper {
 	public void hideKeyWindow() {
 		selectKeyWindowMenu(skin.isKeyWindow = false);
 
-		if (keyWindow != null) {
+		if (getKeyWindow() != null) {
 			keyWindow.getShell().setVisible(false);
 		}
 
@@ -155,6 +155,11 @@ public class KeyWindowKeeper {
 	}
 
 	public SkinWindow getKeyWindow() {
+		if (keyWindow != null &&
+				keyWindow.getShell().isDisposed() == true) {
+			keyWindow = null;
+		}
+
 		return keyWindow;
 	}
 
