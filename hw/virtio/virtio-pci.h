@@ -32,9 +32,6 @@
 #endif
 
 #ifdef CONFIG_MARU
-#ifdef CONFIG_GL_BACKEND
-// #include "../tizen/src/hw/maru_virtio_gl.h"
-#endif
 #include "../tizen/src/mloop_event.h"
 #include "../tizen/src/hw/maru_device_ids.h"
 #include "../tizen/src/hw/maru_virtio_evdi.h"
@@ -42,7 +39,6 @@
 #include "../tizen/src/hw/maru_virtio_hwkey.h"
 #include "../tizen/src/hw/maru_virtio_keyboard.h"
 #include "../tizen/src/hw/maru_virtio_touchscreen.h"
-#include "../tizen/src/hw/virtio-gl.h"
 #include "../tizen/src/hw/maru_virtio_sensor.h"
 #include "../tizen/src/hw/maru_virtio_jack.h"
 #include "../tizen/src/hw/maru_virtio_power.h"
@@ -59,7 +55,6 @@ typedef struct VHostSCSIPCI VHostSCSIPCI;
 typedef struct VirtIORngPCI VirtIORngPCI;
 
 #ifdef CONFIG_MARU
-typedef struct VirtIOGLPCI VirtIOGLPCI;
 typedef struct VirtIOTouchscreenPCI VirtIOTouchscreenPCI;
 typedef struct VirtIOEVDIPCI VirtIOEVDIPCI;
 typedef struct VirtIOESMPCI VirtIOESMPCI;
@@ -113,7 +108,6 @@ typedef struct VirtioPCIClass {
 
 struct VirtIOPCIProxy {
     PCIDevice pci_dev;
-    VirtIODevice *vdev;
     MemoryRegion bar;
     uint32_t flags;
     uint32_t class_code;
@@ -232,18 +226,6 @@ struct VirtIORngPCI {
 };
 
 #ifdef CONFIG_MARU
-
-/*
- * virtio-gl-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_GL_PCI "virtio-gl-pci"
-#define VIRTIO_GL_PCI(obj) \
-        OBJECT_CHECK(VirtIOGLPCI, (obj), TYPE_VIRTIO_GL_PCI)
-
-struct VirtIOGLPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOGL vdev;
-};
 
 /*
  * virtio-touchscreen-pci: This extends VirtioPCIProxy.

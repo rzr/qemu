@@ -496,7 +496,7 @@ static void maru_sdl_init_bh(void *opaque)
         INFO("sdl update thread create\n");
 
         QemuThread sdl_thread;
-        qemu_thread_create(&sdl_thread, run_qemu_update,
+        qemu_thread_create(&sdl_thread, "sdl-workthread", run_qemu_update,
             NULL, QEMU_THREAD_JOINABLE);
     }
 #endif

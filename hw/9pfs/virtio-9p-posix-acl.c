@@ -26,12 +26,17 @@
 static ssize_t mp_pacl_getxattr(FsContext *ctx, const char *path,
                                 const char *name, void *value, size_t size)
 {
-    char buffer[PATH_MAX];
+    char *buffer;
+    ssize_t ret;
+
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lgetxattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS, value, size);
+    ret = lgetxattr(buffer, MAP_ACL_ACCESS, value, size);
 #else
-    return getxattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS, value, size, 0, XATTR_NOFOLLOW);
+    ret = getxattr(buffer, MAP_ACL_ACCESS, value, size, 0, XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 }
 
 static ssize_t mp_pacl_listxattr(FsContext *ctx, const char *path,
@@ -56,34 +61,35 @@ static ssize_t mp_pacl_listxattr(FsContext *ctx, const char *path,
 static int mp_pacl_setxattr(FsContext *ctx, const char *path, const char *name,
                             void *value, size_t size, int flags)
 {
-    char buffer[PATH_MAX];
+    char *buffer;
+    int ret;
+
+    buffer = rpath(ctx, path);
+    ret = lsetxattr(buffer, MAP_ACL_ACCESS, value, size, flags);
+
 #ifdef CONFIG_LINUX
-    return lsetxattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS, value,
-            size, flags);
+    ret = lsetxattr(buffer, MAP_ACL_ACCESS, value, size, flags);
 #else
-    return setxattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS, value,
-            size, 0, flags | XATTR_NOFOLLOW);
+    ret = setxattr(buffer, MAP_ACL_ACCESS, value, size, 0, flags | XATTR_NOFOLLOW);
 #endif
+
+    g_free(buffer);
+    return ret;
 }
 
 static int mp_pacl_removexattr(FsContext *ctx,
                                const char *path, const char *name)
 {
     int ret;
-    char buffer[PATH_MAX];
+    char *buffer;
+
+    buffer = rpath(ctx, path);
+
 #ifdef CONFIG_LINUX
-    ret  = lremovexattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS);
-    if (ret == -1 && errno == ENODATA) {
-        /*
-         * We don't get ENODATA error when trying to remove a
-         * posix acl that is not present. So don't throw the error
-         * even in case of mapped security model
-         */
-        errno = 0;
-        ret = 0;
-    }
+    ret  = lremovexattr(buffer, MAP_ACL_ACCESS);
 #else
-    ret  = removexattr(rpath(ctx, path, buffer), MAP_ACL_ACCESS, XATTR_NOFOLLOW);
+    ret  = removexattr(buffer, MAP_ACL_ACCESS, XATTR_NOFOLLOW);
+#endif
     if (ret == -1 && errno == ENODATA) {
         /*
          * We don't get ENODATA error when trying to remove a
@@ -93,19 +99,24 @@ static int mp_pacl_removexattr(FsContext *ctx,
         errno = 0;
         ret = 0;
     }
-#endif
+    g_free(buffer);
     return ret;
 }
 
 static ssize_t mp_dacl_getxattr(FsContext *ctx, const char *path,
                                 const char *name, void *value, size_t size)
 {
-    char buffer[PATH_MAX];
+    char *buffer;
+    ssize_t ret;
+
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lgetxattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT, value, size);
+    ret = lgetxattr(buffer, MAP_ACL_DEFAULT, value, size);
 #else
-    return getxattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT, value, size, 0, XATTR_NOFOLLOW);
+    ret = getxattr(buffer, MAP_ACL_DEFAULT, value, size, 0, XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 }
 
 static ssize_t mp_dacl_listxattr(FsContext *ctx, const char *path,
@@ -130,45 +141,43 @@ static ssize_t mp_dacl_listxattr(FsContext *ctx, const char *path,
 static int mp_dacl_setxattr(FsContext *ctx, const char *path, const char *name,
                             void *value, size_t size, int flags)
 {
-    char buffer[PATH_MAX];
+    char *buffer;
+    int ret;
+
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lsetxattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT, value,
+    return lsetxattr(buffer, MAP_ACL_DEFAULT, value,
             size, flags);
 #else
-    return setxattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT, value,
+    return setxattr(buffer, MAP_ACL_DEFAULT, value,
             size, 0, flags | XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 }
 
 static int mp_dacl_removexattr(FsContext *ctx,
                                const char *path, const char *name)
 {
     int ret;
-    char buffer[PATH_MAX];
-#ifdef CONFIG_LINUX
-    ret  = lremovexattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT);
-    if (ret == -1 && errno == ENODATA) {
-        /*
-         * We don't get ENODATA error when trying to remove a
-         * posix acl that is not present. So don't throw the error
-         * even in case of mapped security model
-         */
-        errno = 0;
-        ret = 0;
-    }
-#else
-    ret  = removexattr(rpath(ctx, path, buffer), MAP_ACL_DEFAULT, XATTR_NOFOLLOW);
-    if (ret == -1 && errno == ENODATA) {
-        /*
-         * We don't get ENODATA error when trying to remove a
-         * posix acl that is not present. So don't throw the error
-         * even in case of mapped security model
-         */
-        errno = 0;
-        ret = 0;
-    }
-#endif
+    char *buffer;
 
+    buffer = rpath(ctx, path);
+#ifdef CONFIG_LINUX
+    ret  = lremovexattr(buffer, MAP_ACL_DEFAULT);
+#else
+    ret  = removexattr(buffer, MAP_ACL_DEFAULT, XATTR_NOFOLLOW);
+#endif
+    if (ret == -1 && errno == ENODATA) {
+        /*
+         * We don't get ENODATA error when trying to remove a
+         * posix acl that is not present. So don't throw the error
+         * even in case of mapped security model
+         */
+        errno = 0;
+        ret = 0;
+    }
+    g_free(buffer);
     return ret;
 }
 

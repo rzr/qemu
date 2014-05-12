@@ -842,4 +842,4 @@ fail:
     ERR("invalid message type : %d\n", master->type);
     ecs__master__free_unpacked(master, NULL);
     return false;
-} 
+}

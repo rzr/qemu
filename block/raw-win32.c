@@ -205,6 +205,35 @@ static int set_sparse(int fd)
 				 NULL, 0, NULL, 0, &returned, NULL);
 }
 
+static void raw_probe_alignment(BlockDriverState *bs)
+{
+    BDRVRawState *s = bs->opaque;
+    DWORD sectorsPerCluster, freeClusters, totalClusters, count;
+    DISK_GEOMETRY_EX dg;
+    BOOL status;
+
+    if (s->type == FTYPE_CD) {
+        bs->request_alignment = 2048;
+        return;
+    }
+    if (s->type == FTYPE_HARDDISK) {
+        status = DeviceIoControl(s->hfile, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX,
+                                 NULL, 0, &dg, sizeof(dg), &count, NULL);
+        if (status != 0) {
+            bs->request_alignment = dg.Geometry.BytesPerSector;
+            return;
+        }
+        /* try GetDiskFreeSpace too */
+    }
+
+    if (s->drive_path[0]) {
+        GetDiskFreeSpace(s->drive_path, &sectorsPerCluster,
+                         &dg.Geometry.BytesPerSector,
+                         &freeClusters, &totalClusters);
+        bs->request_alignment = dg.Geometry.BytesPerSector;
+    }
+}
+
 #ifndef CONFIG_MARU
 static void raw_parse_flags(int flags, int *access_flags, DWORD *overlapped)
 {
@@ -226,6 +255,17 @@ static void raw_parse_flags(int flags, int *access_flags, DWORD *overlapped)
     }
 }
 #endif
+
+static void raw_parse_filename(const char *filename, QDict *options,
+                               Error **errp)
+{
+    /* The filename does not have to be prefixed by the protocol name, since
+     * "file" is the default protocol; therefore, the return value of this
+     * function call can be ignored. */
+    strstart(filename, "file:", &filename);
+
+    qdict_put_obj(options, "filename", QOBJECT(qstring_from_str(filename)));
+}
 
 static QemuOptsList raw_runtime_opts = {
     .name = "raw",
@@ -257,9 +297,9 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags,
 
     s->type = FTYPE_FILE;
 
-    opts = qemu_opts_create_nofail(&raw_runtime_opts);
+    opts = qemu_opts_create(&raw_runtime_opts, NULL, 0, &error_abort);
     qemu_opts_absorb_qdict(opts, options, &local_err);
-    if (error_is_set(&local_err)) {
+    if (local_err) {
         error_propagate(errp, local_err);
         ret = -EINVAL;
         goto fail;
@@ -277,6 +317,17 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags,
             ret = -EINVAL;
             goto fail;
         }
+    }
+
+    if (filename[0] && filename[1] == ':') {
+        snprintf(s->drive_path, sizeof(s->drive_path), "%c:\\", filename[0]);
+    } else if (filename[0] == '\\' && filename[1] == '\\') {
+        s->drive_path[0] = 0;
+    } else {
+        /* Relative path.  */
+        char buf[MAX_PATH];
+        GetCurrentDirectory(MAX_PATH, buf);
+        snprintf(s->drive_path, sizeof(s->drive_path), "%c:\\", buf[0]);
     }
 
     s->hfile = CreateFile(filename, access_flags,
@@ -337,6 +388,7 @@ static int raw_open(BlockDriverState *bs, QDict *options, int flags,
         s->aio = aio;
     }
 
+    raw_probe_alignment(bs);
     ret = 0;
 fail:
     qemu_opts_del(opts);
@@ -473,6 +525,8 @@ static int raw_create(const char *filename, QEMUOptionParameter *options,
     int fd;
     int64_t total_size = 0;
 
+    strstart(filename, "file:", &filename);
+
     /* Read out options */
     while (options && options->name) {
         if (!strcmp(options->name, BLOCK_OPT_SIZE)) {
@@ -507,6 +561,7 @@ static BlockDriver bdrv_file = {
     .protocol_name	= "file",
     .instance_size	= sizeof(BDRVRawState),
     .bdrv_needs_filename = true,
+    .bdrv_parse_filename = raw_parse_filename,
     .bdrv_file_open	= raw_open,
     .bdrv_close		= raw_close,
     .bdrv_create	= raw_create,
@@ -582,6 +637,15 @@ static int hdev_probe_device(const char *filename)
     return 0;
 }
 
+static void hdev_parse_filename(const char *filename, QDict *options,
+                                Error **errp)
+{
+    /* The prefix is optional, just as for "file". */
+    strstart(filename, "host_device:", &filename);
+
+    qdict_put_obj(options, "filename", QOBJECT(qstring_from_str(filename)));
+}
+
 static int hdev_open(BlockDriverState *bs, QDict *options, int flags,
                      Error **errp)
 {
@@ -599,9 +663,10 @@ static int hdev_open(BlockDriverState *bs, QDict *options, int flags,
     Error *local_err = NULL;
     const char *filename;
 
-    QemuOpts *opts = qemu_opts_create_nofail(&raw_runtime_opts);
+    QemuOpts *opts = qemu_opts_create(&raw_runtime_opts, NULL, 0,
+                                      &error_abort);
     qemu_opts_absorb_qdict(opts, options, &local_err);
-    if (error_is_set(&local_err)) {
+    if (local_err) {
         error_propagate(errp, local_err);
         ret = -EINVAL;
         goto done;
@@ -690,6 +755,7 @@ static BlockDriver bdrv_host_device = {
     .protocol_name	= "host_device",
     .instance_size	= sizeof(BDRVRawState),
     .bdrv_needs_filename = true,
+    .bdrv_parse_filename = hdev_parse_filename,
     .bdrv_probe_device	= hdev_probe_device,
     .bdrv_file_open	= hdev_open,
     .bdrv_close		= raw_close,

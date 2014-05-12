@@ -56,18 +56,28 @@ static inline ssize_t pt_getxattr(FsContext *ctx, const char *path,
 {
 #ifdef CONFIG_MARU
 #ifndef CONFIG_WIN32
-    char buffer[PATH_MAX];
+    char *buffer;
+    ssize_t ret;
+
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lgetxattr(rpath(ctx, path, buffer), name, value, size);
+    ret = lgetxattr(buffer, name, value, size);
 #else
-    return getxattr(rpath(ctx, path, buffer), name, value, size, 0, XATTR_NOFOLLOW);
+    ret = getxattr(buffer, name, value, size, 0, XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 #else
     return 0;
 #endif
 #else
-    char buffer[PATH_MAX];
-    return lgetxattr(rpath(ctx, path, buffer), name, value, size);
+    char *buffer;
+    ssize_t ret;
+
+    buffer = rpath(ctx, path);
+    ret = lgetxattr(buffer, name, value, size);
+    g_free(buffer);
+    return ret;
 #endif
 }
 
@@ -77,18 +87,28 @@ static inline int pt_setxattr(FsContext *ctx, const char *path,
 {
 #ifdef CONFIG_MARU
 #ifndef CONFIG_WIN32
-    char buffer[PATH_MAX];
+    char *buffer;
+    int ret;
+
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lsetxattr(rpath(ctx, path, buffer), name, value, size, flags);
+    ret = lsetxattr(buffer, name, value, size, flags);
 #else
-    return setxattr(rpath(ctx, path, buffer), name, value, size, 0, flags | XATTR_NOFOLLOW);
+    ret =  setxattr(buffer, name, value, size, 0, flags | XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 #else
     return 0;
 #endif
 #else
-    char buffer[PATH_MAX];
-    return lsetxattr(rpath(ctx, path, buffer), name, value, size, flags);
+    char *buffer;
+    int ret;
+
+    buffer = rpath(ctx, path);
+    ret = lsetxattr(buffer, name, value, size, flags);
+    g_free(buffer);
+    return ret;
 #endif
 }
 
@@ -97,18 +117,28 @@ static inline int pt_removexattr(FsContext *ctx,
 {
 #ifdef CONFIG_MARU
 #ifndef CONFIG_WIN32
-    char buffer[PATH_MAX];
+    char *buffer;
+    int ret;
+
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lremovexattr(rpath(ctx, path, buffer), name);
+    ret = lremovexattr(path, name);
 #else
-    return removexattr(rpath(ctx, path, buffer), name, XATTR_NOFOLLOW);
+    ret = removexattr(path, name, XATTR_NOFOLLOW);
 #endif
 #else
     return 0;
 #endif
+    g_free(buffer);
+    return ret;
 #else
-    char buffer[PATH_MAX];
-    return lremovexattr(rpath(ctx, path, buffer), name);
+    char *buffer;
+    int ret;
+
+    buffer = rpath(ctx, path);
+    ret = lremovexattr(path, name);
+    g_free(buffer);
+    return ret;
 #endif
 }
 

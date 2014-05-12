@@ -193,22 +193,22 @@ static void maru_hwkey_bh(void *opaque)
     maru_virtio_hwkey_notify();
 }
 
-static int virtio_hwkey_device_init(VirtIODevice *vdev)
+static void virtio_hwkey_device_realize(DeviceState *dev, Error **errp)
 {
     INFO("initialize the hwkey device\n");
-    DeviceState *qdev = DEVICE(vdev);
-    vhk = VIRTIO_HWKEY(vdev);
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
+    vhk = VIRTIO_HWKEY(dev);
 
     if (vdev == NULL) {
         ERR("failed to initialize the hwkey device\n");
-        return -1;
+        return;
     }
 
     virtio_init(vdev, TYPE_VIRTIO_HWKEY, VIRTIO_ID_HWKEY, 0);
 
     vhk->vq = virtio_add_queue(vdev, MAX_BUF_COUNT, maru_virtio_hwkey_handle);
 
-    vhk->qdev = qdev;
+    vhk->qdev = dev;
 
     /* reset the counters */
     pthread_mutex_lock(&event_mutex);
@@ -219,13 +219,11 @@ static int virtio_hwkey_device_init(VirtIODevice *vdev)
 
     /* bottom-half */
     vhk->bh = qemu_bh_new(maru_hwkey_bh, vhk);
-
-    return 0;
 }
 
-static int virtio_hwkey_device_exit(DeviceState *qdev)
+static void virtio_hwkey_device_unrealize(DeviceState *dev, Error **errp)
 {
-    VirtIODevice *vdev = VIRTIO_DEVICE(qdev);
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
 
     INFO("exit the hwkey device\n");
 
@@ -236,8 +234,6 @@ static int virtio_hwkey_device_exit(DeviceState *qdev)
     virtio_cleanup(vdev);
 
     pthread_mutex_destroy(&event_mutex);
-
-    return 0;
 }
 
 static void virtio_hwkey_device_reset(VirtIODevice *vdev)
@@ -248,10 +244,9 @@ static void virtio_hwkey_device_reset(VirtIODevice *vdev)
 
 static void virtio_hwkey_class_init(ObjectClass *klass, void *data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_hwkey_device_exit;
-    vdc->init = virtio_hwkey_device_init;
+    vdc->unrealize = virtio_hwkey_device_unrealize;
+    vdc->realize = virtio_hwkey_device_realize;
     vdc->reset = virtio_hwkey_device_reset;
     vdc->get_features = virtio_hwkey_get_features;
 }

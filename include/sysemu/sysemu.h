@@ -107,16 +107,11 @@ extern int autostart;
 
 typedef enum {
     VGA_NONE, VGA_STD, VGA_CIRRUS, VGA_VMWARE, VGA_XENFB, VGA_QXL,
-#ifdef CONFIG_MARU
-    VGA_MARU,
-#endif
+    VGA_TCX, VGA_CG3, VGA_DEVICE,
 } VGAInterfaceType;
 
 extern int vga_interface_type;
 #define xenfb_enabled (vga_interface_type == VGA_XENFB)
-#ifdef CONFIG_MARU
-#define maru_vga_enabled (vga_interface_type == VGA_MARU)
-#endif
 
 extern int graphic_width;
 extern int graphic_height;
@@ -141,7 +136,14 @@ extern uint8_t qemu_extra_params_fw[2];
 extern QEMUClockType rtc_clock;
 
 #define MAX_NODES 64
+
+/* The following shall be true for all CPUs:
+ *   cpu->cpu_index < max_cpus <= MAX_CPUMASK_BITS
+ *
+ * Note that cpu->get_arch_id() may be larger than MAX_CPUMASK_BITS.
+ */
 #define MAX_CPUMASK_BITS 255
+
 extern int nb_numa_nodes;
 extern uint64_t node_mem[MAX_NODES];
 extern unsigned long *node_cpumask[MAX_NODES];
@@ -198,7 +200,7 @@ void rtc_change_mon_event(struct tm *tm);
 
 void add_boot_device_path(int32_t bootindex, DeviceState *dev,
                           const char *suffix);
-char *get_boot_devices_list(size_t *size);
+char *get_boot_devices_list(size_t *size, bool ignore_suffixes);
 
 DeviceState *get_boot_device(uint32_t position);
 

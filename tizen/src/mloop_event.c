@@ -47,7 +47,7 @@
 #include "monitor/monitor.h"
 #include "hw/pci/pci.h"
 #include "sysemu/sysemu.h"
-#include "exec/memory-internal.h"
+#include "exec/ram_addr.h"
 
 #include "emulator.h"
 #include "guest_debug.h"

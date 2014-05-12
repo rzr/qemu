@@ -35,6 +35,7 @@ MULTI_DEBUG_CHANNEL(qemu, brillcodec);
 
 // device
 #define CODEC_DEVICE_NAME   "codec-pci"
+#define CODEC_DEVICE_THREAD "codec-workthread"
 #define CODEC_VERSION       2
 
 // device memory
@@ -162,7 +163,7 @@ static void maru_brill_codec_threads_create(MaruBrillCodecState *s)
     qemu_mutex_unlock(&s->context_mutex);
 
     for (index = 0; index < s->worker_thread_cnt; index++) {
-        qemu_thread_create(&pthread[index],
+        qemu_thread_create(&pthread[index], CODEC_DEVICE_THREAD,
             maru_brill_codec_threads, (void *)s, QEMU_THREAD_JOINABLE);
     }
 

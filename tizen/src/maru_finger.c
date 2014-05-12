@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2011 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * GiWoong Kim <giwoong.kim@samsung.com>
  * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  * HyunJun Son
@@ -33,8 +33,8 @@
 #include <SDL.h>
 #include "maru_finger.h"
 #include "emul_state.h"
+#include "hw/maru_virtio_touchscreen.h"
 #include "debug_ch.h"
-#include "ui/console.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maru_finger);
 
@@ -56,7 +56,7 @@ static void sdl_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 }
 
 /*
-* This is an implementation of the Midpoint Circle Algorithm 
+* This is an implementation of the Midpoint Circle Algorithm
 * found on Wikipedia at the following link:
 *
 *   http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
@@ -318,7 +318,8 @@ void maru_finger_processing_1(
                 finger->y = y;
 
                 if (finger->id != 0) {
-                    kbd_mouse_event(x, y, _grab_finger_id - 1, QEMU_MOUSE_PRESSED);
+                    virtio_touchscreen_event(x, y,
+                        _grab_finger_id - 1, QEMU_MOUSE_PRESSED);
                     TRACE("id %d finger multi-touch dragging : (%d, %d)\n",
                         _grab_finger_id, x, y);
                 }
@@ -333,7 +334,7 @@ void maru_finger_processing_1(
                 return;
             }
 
-            kbd_mouse_event(x, y, 0, QEMU_MOUSE_PRESSED);
+            virtio_touchscreen_event(x, y, 0, QEMU_MOUSE_PRESSED);
         }
         else if ((finger = get_finger_point_search(x, y)) != NULL)
         { /* check the position of previous touch event */
@@ -348,7 +349,8 @@ void maru_finger_processing_1(
             finger = get_finger_point_from_slot(mts->finger_cnt_max - 1);
             if (finger != NULL) {
 #if 1 /* send release event?? */
-                kbd_mouse_event(finger->x, finger->y, mts->finger_cnt_max - 1, 0);
+                virtio_touchscreen_event(finger->x, finger->y,
+                    mts->finger_cnt_max - 1, QEMU_MOUSE_RELEASEED);
 #endif
 
                 finger->origin_x = origin_x;
@@ -356,15 +358,16 @@ void maru_finger_processing_1(
                 finger->x = x;
                 finger->y = y;
                 if (finger->id != 0) {
-                    kbd_mouse_event(x, y, mts->finger_cnt_max - 1, QEMU_MOUSE_PRESSED);
+                    virtio_touchscreen_event(x, y,
+                        mts->finger_cnt_max - 1, QEMU_MOUSE_PRESSED);
                 }
             }
         }
         else /* one more finger */
         {
-
-            add_finger_point(origin_x, origin_y, x, y) ;
-            kbd_mouse_event(x, y, mts->finger_cnt - 1, QEMU_MOUSE_PRESSED);
+            add_finger_point(origin_x, origin_y, x, y);
+            virtio_touchscreen_event(x, y,
+                mts->finger_cnt - 1, QEMU_MOUSE_PRESSED);
         }
 
     } else if (touch_type == MOUSE_UP) { /* released */
@@ -423,7 +426,8 @@ void maru_finger_processing_2(
                     finger->y += distance_y;
 
                     if (finger->id != 0) {
-                        kbd_mouse_event(finger->x, finger->y, i, QEMU_MOUSE_PRESSED);
+                        virtio_touchscreen_event(finger->x, finger->y,
+                            i, QEMU_MOUSE_PRESSED);
                         TRACE("id %d finger multi-touch dragging = (%d, %d)\n",
                             i + 1, finger->x, finger->y);
                     }
@@ -446,7 +450,7 @@ void maru_finger_processing_2(
                 return;
             }
 
-            kbd_mouse_event(x, y, 0, QEMU_MOUSE_PRESSED);
+            virtio_touchscreen_event(x, y, 0, QEMU_MOUSE_PRESSED);
         }
         else if ((finger = get_finger_point_search(x, y)) != NULL)
         { /* check the position of previous touch event */
@@ -464,7 +468,7 @@ void maru_finger_processing_2(
         {
 
             add_finger_point(origin_x, origin_y, x, y) ;
-            kbd_mouse_event(x, y, mts->finger_cnt - 1, QEMU_MOUSE_PRESSED);
+            virtio_touchscreen_event(x, y, mts->finger_cnt - 1, QEMU_MOUSE_PRESSED);
         }
 
     } else if (touch_type == MOUSE_UP) { /* released */
@@ -558,7 +562,8 @@ void clear_finger_slot(bool keep_enable)
         finger = get_finger_point_from_slot(i);
         if (finger != NULL) {
             if (finger->id > 0) {
-                kbd_mouse_event(finger->x, finger->y, finger->id - 1, QEMU_MOUSE_RELEASEED);
+                virtio_touchscreen_event(finger->x, finger->y,
+                    finger->id - 1, QEMU_MOUSE_RELEASEED);
             }
 
             finger->id = 0;

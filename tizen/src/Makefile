@@ -86,7 +86,7 @@ install: all
 		echo "Copying i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) to $(EMUL_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION)" ;\
 		cp -pP ../../i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION) ;\
 		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
-		cp -pP ../../pc-bios/bios.bin $(EMUL_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/bios-256k.bin $(EMUL_DIR)/data/bios ;\
 		cp -pP ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
 		cp -pP ../../pc-bios/efi-virtio.rom $(EMUL_DIR)/data/bios ;\
 		cp -pP ../../pc-bios/acpi-dsdt.aml $(EMUL_DIR)/data/bios ;\
@@ -191,7 +191,7 @@ install_dibs: all_dibs
 		echo "Copying i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) to $(DIBS_X86__DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION)" ;\
 		cp ../../i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) $(DIBS_X86_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION) ;\
 		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
-		cp -pP ../../pc-bios/bios.bin $(DIBS_X86_DIR)/data/bios ;\
+		cp -pP ../../pc-bios/bios-256k.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -pP ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -pP ../../pc-bios/efi-virtio.rom $(DIBS_X86_DIR)/data/bios ;\
 		cp -pP ../../pc-bios/acpi-dsdt.aml $(DIBS_X86_DIR)/data/bios ;\

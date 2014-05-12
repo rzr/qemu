@@ -258,7 +258,6 @@ static void overlay_classinit(ObjectClass *klass, void *data)
     DeviceClass *dc = DEVICE_CLASS(klass);
     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
 
-    k->no_hotplug = 1;
     k->init = overlay_initfn;
     k->exit = overlay_exitfn;
     dc->reset = overlay_reset;

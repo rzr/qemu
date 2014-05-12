@@ -206,38 +206,36 @@ static void maru_nfc_bh(void *opaque)
     flush_nfc_recv_queue();
 }
 
-static int virtio_nfc_init(VirtIODevice* vdev)
+static void virtio_nfc_realize(DeviceState* dev, Error **errp)
 {
-    INFO("initialize nfc device\n");
+    VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     vio_nfc = VIRTIO_NFC(vdev);
-
-    virtio_init(vdev, NFC_DEVICE_NAME, VIRTIO_ID_NFC, 0);
-
     if (vio_nfc == NULL) {
         ERR("failed to initialize nfc device\n");
-        return -1;
+        return;
     }
+
+    INFO("initialize nfc device\n");
+
+    virtio_init(vdev, NFC_DEVICE_NAME, VIRTIO_ID_NFC, 0);
 
     vio_nfc->rvq = virtio_add_queue(&vio_nfc->vdev, 256, virtio_nfc_recv);
     vio_nfc->svq = virtio_add_queue(&vio_nfc->vdev, 256, virtio_nfc_send);
 
     vio_nfc->bh = qemu_bh_new(maru_nfc_bh, vio_nfc);
-
-    return 0;
 }
 
-static int virtio_nfc_exit(DeviceState* dev)
+static void virtio_nfc_unrealize(DeviceState* dev, Error **errp)
 {
-    INFO("destroy nfc device\n");
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
+
+    INFO("destroy nfc device\n");
 
     if (vio_nfc->bh) {
         qemu_bh_delete(vio_nfc->bh);
     }
 
     virtio_cleanup(vdev);
-
-    return 0;
 }
 
 static void virtio_nfc_reset(VirtIODevice *vdev)
@@ -248,10 +246,9 @@ static void virtio_nfc_reset(VirtIODevice *vdev)
 
 static void virtio_nfc_class_init(ObjectClass *klass, void *data)
 {
-    DeviceClass *dc = DEVICE_CLASS(klass);
     VirtioDeviceClass *vdc = VIRTIO_DEVICE_CLASS(klass);
-    dc->exit = virtio_nfc_exit;
-    vdc->init = virtio_nfc_init;
+    vdc->realize = virtio_nfc_realize;
+    vdc->unrealize = virtio_nfc_unrealize;
     vdc->get_features = virtio_nfc_get_features;
     vdc->reset = virtio_nfc_reset;
 }

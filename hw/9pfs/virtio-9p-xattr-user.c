@@ -20,7 +20,9 @@
 static ssize_t mp_user_getxattr(FsContext *ctx, const char *path,
                                 const char *name, void *value, size_t size)
 {
-    char buffer[PATH_MAX];
+    char *buffer;
+    ssize_t ret;
+
     if (strncmp(name, "user.virtfs.", 12) == 0) {
         /*
          * Don't allow fetch of user.virtfs namesapce
@@ -29,11 +31,14 @@ static ssize_t mp_user_getxattr(FsContext *ctx, const char *path,
         errno = ENOATTR;
         return -1;
     }
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lgetxattr(rpath(ctx, path, buffer), name, value, size);
+    ret = lgetxattr(buffer, name, value, size);
 #else
-    return getxattr(rpath(ctx, path, buffer), name, value, size, 0, XATTR_NOFOLLOW);
+    ret = getxattr(buffer, name, value, size, 0, XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 }
 
 static ssize_t mp_user_listxattr(FsContext *ctx, const char *path,
@@ -72,7 +77,9 @@ static ssize_t mp_user_listxattr(FsContext *ctx, const char *path,
 static int mp_user_setxattr(FsContext *ctx, const char *path, const char *name,
                             void *value, size_t size, int flags)
 {
-    char buffer[PATH_MAX];
+    char *buffer;
+    int ret;
+
     if (strncmp(name, "user.virtfs.", 12) == 0) {
         /*
          * Don't allow fetch of user.virtfs namesapce
@@ -81,17 +88,22 @@ static int mp_user_setxattr(FsContext *ctx, const char *path, const char *name,
         errno = EACCES;
         return -1;
     }
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lsetxattr(rpath(ctx, path, buffer), name, value, size, flags);
+    ret = lsetxattr(buffer, name, value, size, flags);
 #else
-    return setxattr(rpath(ctx, path, buffer), name, value, size, 0, flags | XATTR_NOFOLLOW);
+    ret = setxattr(buffer, name, value, size, 0, flags | XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 }
 
 static int mp_user_removexattr(FsContext *ctx,
                                const char *path, const char *name)
 {
-    char buffer[PATH_MAX];
+    char *buffer;
+    int ret;
+
     if (strncmp(name, "user.virtfs.", 12) == 0) {
         /*
          * Don't allow fetch of user.virtfs namesapce
@@ -100,11 +112,14 @@ static int mp_user_removexattr(FsContext *ctx,
         errno = EACCES;
         return -1;
     }
+    buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lremovexattr(rpath(ctx, path, buffer), name);
+    ret = lremovexattr(buffer, name);
 #else
-    return removexattr(rpath(ctx, path, buffer), name, XATTR_NOFOLLOW);
+    ret = removexattr(buffer, name, XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 }
 
 XattrOperations mapped_user_xattr = {

@@ -140,8 +140,6 @@ else
 obj-y += hw/$(TARGET_BASE_ARCH)/
 endif
 
-main.o: QEMU_CFLAGS+=$(GPROF_CFLAGS)
-
 GENERATED_HEADERS += hmp-commands.h qmp-commands-old.h
 
 endif # CONFIG_SOFTMMU
@@ -149,7 +147,24 @@ endif # CONFIG_SOFTMMU
 # Workaround for http://gcc.gnu.org/PR55489, see configure.
 %/translate.o: QEMU_CFLAGS += $(TRANSLATE_OPT_CFLAGS)
 
-nested-vars += obj-y
+dummy := $(call unnest-vars,,obj-y)
+
+# we are making another call to unnest-vars with different vars, protect obj-y,
+# it can be overriden in subdir Makefile.objs
+obj-y-save := $(obj-y)
+
+block-obj-y :=
+common-obj-y :=
+
+include $(SRC_PATH)/Makefile.objs
+dummy := $(call unnest-vars,.., \
+               block-obj-y \
+               block-obj-m \
+               common-obj-y \
+               common-obj-m)
+
+# Now restore obj-y
+obj-y := $(obj-y-save)
 
 # Makefile for TIZEN-maru
 ifdef CONFIG_MARU
@@ -157,11 +172,8 @@ include $(SRC_PATH)/tizen/src/Makefile.tizen
 endif
 ##
 
-# This resolves all nested paths, so it must come last
-include $(SRC_PATH)/Makefile.objs
-
-all-obj-y = $(obj-y)
-all-obj-y += $(addprefix ../, $(common-obj-y))
+all-obj-y = $(obj-y) $(common-obj-y)
+all-obj-$(CONFIG_SOFTMMU) += $(block-obj-y)
 
 ifndef CONFIG_HAIKU
 LIBS+=-lm
@@ -178,7 +190,7 @@ $(QEMU_PROG): $(all-obj-y) ../libqemuutil.a ../libqemustub.a
 	$(call LINK,$^)
 endif
 
-CHECK_GL_OBJS = check_gl.o
+CHECK_GL_OBJS = check_gl.o check_gl_core.o
 CHECK_GL_LDFLAGS =
 CHECK_GL_TARGET =
 ifdef CONFIG_LINUX
@@ -203,6 +215,8 @@ check-gl: $(CHECK_GL_OBJS)
 	gcc -o $(CHECK_GL_TARGET) $(CHECK_GL_OBJS) $(CHECK_GL_LDFLAGS)
 check_gl.o: check_gl.c
 	gcc -c ../tizen/src/check_gl.c -I../hw/yagl/yagl_inc
+check_gl_core.o: check_gl_core.c
+	gcc -c ../tizen/src/check_gl_core.c -I../hw/yagl/yagl_inc
 check_gl_glx.o: check_gl_glx.c
 	gcc -c ../tizen/src/check_gl_glx.c -I../hw/yagl/yagl_inc
 check_gl_wgl.o: check_gl_wgl.c

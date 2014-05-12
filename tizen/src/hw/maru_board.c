@@ -73,7 +73,7 @@
 #include <X11/Xlib.h>
 #endif
 #include "vigs/vigs_device.h"
-#include "work_queue.h"
+#include "vigs/work_queue.h"
 extern int enable_yagl;
 extern const char *yagl_backend;
 extern int enable_vigs;
@@ -114,7 +114,7 @@ static void maru_device_init(void)
     struct winsys_interface *vigs_wsi = NULL;
 
     if (enable_vigs || enable_yagl) {
-        render_queue = work_queue_create();
+        render_queue = work_queue_create("render_queue");
     }
 
     if (enable_vigs) {
@@ -154,6 +154,7 @@ static QEMUMachine maru_x86_machine = {
     .desc = "Maru Board (x86)",
     .init = maru_x86_board_init,
     .hot_add_cpu = pc_hot_add_cpu,
+    .default_machine_opts = "firmware=bios-256k.bin"
 };
 
 static void maru_machine_init(void)

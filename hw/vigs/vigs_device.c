@@ -340,7 +340,7 @@ static int vigs_device_init(PCIDevice *dev)
 
     s->fence_ack_bh = qemu_bh_new(vigs_fence_ack_bh, s);
 
-    s->con = graphic_console_init(DEVICE(dev), &vigs_hw_ops, s);
+    s->con = graphic_console_init(DEVICE(dev), 0, &vigs_hw_ops, s);
 
     if (!s->con) {
         goto fail;

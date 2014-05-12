@@ -197,7 +197,7 @@ int start_skin_server(int argc, char** argv,
 
     QemuThread qemu_thread;
 
-    qemu_thread_create(&qemu_thread, run_skin_server,
+    qemu_thread_create(&qemu_thread, "skin-server", run_skin_server,
         NULL, QEMU_THREAD_JOINABLE);
 
     return 1;

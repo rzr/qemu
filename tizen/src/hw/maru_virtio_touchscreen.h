@@ -30,7 +30,6 @@
 #ifndef MARU_TOUCHSCREEN_H_
 #define MARU_TOUCHSCREEN_H_
 
-#include "ui/console.h"
 #include "hw/virtio/virtio.h"
 
 #define TYPE_VIRTIO_TOUCHSCREEN "virtio-touchscreen-device"
@@ -49,7 +48,6 @@ typedef struct VirtIOTouchscreen {
 
     QEMUBH *bh;
     DeviceState *qdev;
-    QEMUPutMouseEntry *eh_entry;
 
     unsigned int max_finger;
 } VirtIOTouchscreen;
@@ -60,10 +58,7 @@ typedef struct EmulTouchEvent {
     uint8_t state;
 } EmulTouchEvent;
 
-VirtIODevice *maru_virtio_touchscreen_init(DeviceState *dev);
-void maru_virtio_touchscreen_exit(VirtIODevice *vdev);
-
-void virtio_touchscreen_event(void *opaque, int x, int y, int z, int buttons_state);
+void virtio_touchscreen_event(int x, int y, int z, int buttons_state);
 void maru_virtio_touchscreen_notify(void);
 
 #endif /* MARU_TOUCHSCREEN_H_ */
