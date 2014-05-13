@@ -40,21 +40,6 @@ MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
 #define MSG_BUF_SIZE  255
 #define MSG_LEN_SIZE    4
 
-#if 0
-// ecs <-> ecp messages
-#define ECS_TETHERING_MSG_CATEGORY                      "tethering"
-
-#define ECS_TETHERING_MSG_GROUP_ECP                     1
-// #define TETHERING_MSG_GROUP_USB
-// #define TETHERING_MSG_GROUP_WIFI
-
-#define ECS_TETHERING_MSG_ACTION_CONNECT                1
-#define ECS_TETHERING_MSG_ACTION_DISCONNECT             2
-#define ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS      3
-#define ECS_TETHERING_MSG_ACTION_SENSOR_STATUS          4
-#define ECS_TETHERING_MSG_ACTION_TOUCH_STATUS           5
-#endif
-
 // static bool send_tethering_ntf(const char *data, const int len);
 static bool send_tethering_ntf(const char *data);
 static void send_tethering_status_ntf(type_group group, type_action action);
@@ -234,6 +219,7 @@ void send_tethering_touch_data(int x, int y, int index, int status)
 bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
 {
     gchar cmd[10] = {0};
+    gchar **server_addr = NULL;
 
     g_strlcpy(cmd, msg->category, sizeof(cmd));
     type_length length = (type_length) msg->length;
@@ -247,19 +233,41 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
         switch(action) {
         case ECS_TETHERING_MSG_ACTION_CONNECT:
         {
+            // get ip address and port
             if (msg->data.data && msg->data.len > 0) {
                 const gchar *data = (const gchar *)msg->data.data;
-                gint port = 0;
+                // gchar **server_addr = NULL;
+                gchar *ip_address = NULL;
+                guint64 port = 0;
 
-                port = g_ascii_strtoull(data, NULL, 10);
+                server_addr = g_strsplit(data, ":", 0);
+                if (server_addr && server_addr[0]) {
+                    int len = strlen(server_addr[0]);
 
-                TRACE(">> MSG_ACTION_CONNECT\n");
-                TRACE(">> len = %zd, data\" %s\"\n", strlen(data), data);
+                    if (len) {
+                        ip_address = g_malloc(len + 1);
+                        g_strlcpy(ip_address, server_addr[0], len + 1);
+                    }
+                    INFO("IP address: %s, length: %d\n", ip_address, len);
+                }
 
-                connect_tethering_app(port);
+                if (server_addr && server_addr[1]) {
+                    port = g_ascii_strtoull(server_addr[1], NULL, 10);
+                    INFO("port number: %d\n", port);
+                } else {
+                    ERR("failed to parse port number\n");
+                }
+
+                TRACE("MSG_ACTION_CONNECT");
+                TRACE("len = %zd, data\" %s\"", strlen(data), data);
+
+                connect_tethering_app(ip_address, port);
                 tethering_port = port;
 
                 TRACE(">> port_num: %d, %d\n", port, tethering_port);
+                g_free(ip_address);
+
+                g_strfreev(server_addr);
             }
         }
             break;

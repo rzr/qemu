@@ -45,7 +45,7 @@ enum touch_status {
     PRESSED,
 };
 
-int connect_tethering_app(int port);
+int connect_tethering_app(const char *ipaddress, int port);
 
 int disconnect_tethering_app(void);
 

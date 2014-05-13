@@ -865,16 +865,28 @@ static int destroy_tethering_io_handler(int fd)
     return ret;
 }
 
-static int start_tethering_socket(int port)
+static int start_tethering_socket(const char *ipaddress, int port)
 {
     struct sockaddr_in addr;
 
+    gchar serveraddr[32] = { 0, };
     int sock = -1;
     int ret = 0;
 
+
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port); // i.e. 1234
-    ret = inet_aton("127.0.0.1", &addr.sin_addr);
+
+    if (ipaddress == NULL) {
+        g_strlcpy(serveraddr, "127.0.0.1", sizeof(serveraddr));
+    } else {
+        g_strlcpy(serveraddr, ipaddress, sizeof(serveraddr));
+    }
+
+    INFO("server ip address: %s, port: %d\n", serveraddr, port);
+
+    ret = inet_aton(serveraddr, &addr.sin_addr);
+
     if (ret == 0) {
         ERR("inet_aton failure\n");
         return -1;
@@ -893,6 +905,7 @@ static int start_tethering_socket(int port)
     set_tethering_connection_status(CONNECTING);
     do {
         if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            perror("connect failure");
             INFO("tethering socket is connecting.\n");
             ret = -socket_error();
         } else {
@@ -901,14 +914,16 @@ static int start_tethering_socket(int port)
             // set_tethering_app_state(true);
             break;
         }
-        TRACE("ret: %d\n", ret);
+        INFO("ret: %d\n", ret);
     } while (ret == -EINPROGRESS);
 
     if (ret < 0 && ret != -EISCONN) {
         if (ret == -ECONNREFUSED) {
+            INFO("socket connection is refused\n");
             set_tethering_connection_status(CONNREFUSED);
         }
-        closesocket(sock);
+        INFO("close socket\n");
+        end_tethering_socket(sock);
         sock = -1;
     }
 
@@ -979,13 +994,13 @@ static void set_tethering_multitouch_status(int status)
     send_tethering_touch_status_ecp();
 }
 
-int connect_tethering_app(int port)
+int connect_tethering_app(const char *ipaddress, int port)
 {
     int sock = 0, ret = 0;
 
     TRACE("connect ecp to app\n");
 
-    sock = start_tethering_socket(port);
+    sock = start_tethering_socket(ipaddress, port);
     if (sock < 0) {
         ERR("failed to start tethering_socket\n");
         tethering_sock = -1;
