@@ -639,9 +639,9 @@ static ssize_t local_pwritev(FsContext *ctx, V9fsFidOpenState *fs,
 static int local_chmod(FsContext *fs_ctx, V9fsPath *fs_path, FsCred *credp)
 {
     TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
+    int ret = -1;
 #ifndef CONFIG_WIN32
     char *buffer;
-    int ret = -1;
     char *path = fs_path->data;
     buffer = rpath(fs_ctx, path);
 

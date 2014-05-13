@@ -126,11 +126,11 @@ static inline int pt_removexattr(FsContext *ctx,
 #else
     ret = removexattr(path, name, XATTR_NOFOLLOW);
 #endif
+    g_free(buffer);
+    return ret;
 #else
     return 0;
 #endif
-    g_free(buffer);
-    return ret;
 #else
     char *buffer;
     int ret;
