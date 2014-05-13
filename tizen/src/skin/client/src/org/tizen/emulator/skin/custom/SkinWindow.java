@@ -65,6 +65,10 @@ public class SkinWindow {
 
 	public void dock(int dockValue,
 			boolean correction, boolean enableLogger) {
+		if (shell.isDisposed() == true) {
+			return;
+		}
+
 		int x = 0;
 		int y = 0;
 

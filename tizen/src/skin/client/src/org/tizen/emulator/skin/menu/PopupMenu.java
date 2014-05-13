@@ -118,7 +118,6 @@ public class PopupMenu {
 		contextMenu = new Menu(shell);
 
 		addMenuItems(contextMenu);
-		shell.setMenu(contextMenu);
 	}
 
 	private void addMenuItems(final Menu menu) {
