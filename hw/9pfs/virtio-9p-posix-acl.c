@@ -65,8 +65,6 @@ static int mp_pacl_setxattr(FsContext *ctx, const char *path, const char *name,
     int ret;
 
     buffer = rpath(ctx, path);
-    ret = lsetxattr(buffer, MAP_ACL_ACCESS, value, size, flags);
-
 #ifdef CONFIG_LINUX
     ret = lsetxattr(buffer, MAP_ACL_ACCESS, value, size, flags);
 #else
