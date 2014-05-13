@@ -298,6 +298,17 @@ fail:
     return 0;
 }
 
+void check_gl_cleanup(void)
+{
+    ReleaseDC(win, dc);
+    DestroyWindow(win);
+    delete_context(init_ctx);
+    ReleaseDC(init_win, init_dc);
+    DestroyWindow(init_win);
+
+    UnregisterClassA((LPCTSTR)"CheckGLWinClass", NULL);
+}
+
 struct gl_context *check_gl_context_create(struct gl_context *share_ctx,
                                            gl_version version)
 {

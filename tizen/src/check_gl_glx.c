@@ -104,7 +104,7 @@ int check_gl_init(void)
 
     if (!handle) {
         check_gl_log(gl_error, "%s", dlerror());
-        return 0;
+        goto fail;
     }
 
     get_proc_address = dlsym(handle, "glXGetProcAddress");
@@ -115,7 +115,7 @@ int check_gl_init(void)
 
     if (!get_proc_address) {
         check_gl_log(gl_error, "%s", dlerror());
-        return 0;
+        goto fail;
     }
 
     GLX_GET_PROC(choose_fb_config, glXChooseFBConfig);
@@ -133,7 +133,7 @@ int check_gl_init(void)
 
     if (!configs || (n <= 0)) {
         check_gl_log(gl_error, "Unable to find suitable FB config");
-        return 0;
+        goto fail;
     }
 
     x_config = configs[0];
@@ -141,6 +141,16 @@ int check_gl_init(void)
     XFree(configs);
 
     return 1;
+
+fail:
+    XCloseDisplay(x_dpy);
+
+    return 0;
+}
+
+void check_gl_cleanup(void)
+{
+    XCloseDisplay(x_dpy);
 }
 
 struct gl_context *check_gl_context_create(struct gl_context *share_ctx,

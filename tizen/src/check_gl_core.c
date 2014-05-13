@@ -138,9 +138,10 @@ fail:
 
 int check_gl(void)
 {
-    struct gl_context *ctx_2;
-    struct gl_context *ctx_3_1;
-    struct gl_context *ctx_3_2;
+    int res = 1;
+    struct gl_context *ctx_2 = NULL;
+    struct gl_context *ctx_3_1 = NULL;
+    struct gl_context *ctx_3_2 = NULL;
     int have_es3 = 0;
     int have_es3_compatibility = 0;
     int have_es1 = 0;
@@ -152,7 +153,7 @@ int check_gl(void)
     if (!check_gl_procaddr((void**)&get_string, "glGetString", 0) ||
         !check_gl_procaddr((void**)&get_stringi, "glGetStringi", 1) ||
         !check_gl_procaddr((void**)&get_integerv, "glGetIntegerv", 0)) {
-        return 1;
+        goto out;
     }
 
     ctx_2 = check_gl_version(gl_2);
@@ -161,7 +162,7 @@ int check_gl(void)
 
     if (!ctx_2 && !ctx_3_1 && !ctx_3_2) {
         check_gl_log(gl_info, "Host does not have hardware GL acceleration!");
-        return 1;
+        goto out;
     }
 
     have_es1 = (ctx_2 != NULL);
@@ -247,5 +248,22 @@ int check_gl(void)
 
     check_gl_log(gl_info, "Host has hardware GL acceleration!");
 
-    return 0;
+    res = 0;
+
+out:
+    if (ctx_2) {
+        check_gl_context_destroy(ctx_2);
+    }
+
+    if (ctx_3_1) {
+        check_gl_context_destroy(ctx_3_1);
+    }
+
+    if (ctx_3_2) {
+        check_gl_context_destroy(ctx_3_2);
+    }
+
+    check_gl_cleanup();
+
+    return res;
 }
