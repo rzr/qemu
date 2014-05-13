@@ -1,3 +1,6 @@
+* 1.7.38
+- Apply Qemu 2.0.
+== Kitae Kim <kt920.kim@samsung.com> 2014-05-13
 * 1.7.37
 - added maru_sdl_processing file
 == GiWoong Kim <giwoong.kim@samsung.com> 2014-04-28
@@ -8,7 +11,7 @@
 - do not call qemu_ds_sdl_update directly
 == GiWoong Kim <giwoong.kim@samsung.com> 2014-04-17
 * 1.7.34
-- fix a booting problem on Mac OS X. 
+- fix a booting problem on Mac OS X.
 == Kitae Kim <kt920.kim@samsung.com> 2014-04-11
 * 1.7.33
 - add kernel parameter
