@@ -47,6 +47,16 @@ static const char *gl_version_str[gl_3_2 + 1] =
     "3.2"
 };
 
+static const char *gl_3_2_check_funcs[] =
+{
+    "glGenTransformFeedbacks",
+    "glBindTransformFeedback",
+    "glPauseTransformFeedback",
+    "glResumeTransformFeedback",
+    "glDeleteTransformFeedbacks",
+    "glVertexAttribDivisor"
+};
+
 void check_gl_log(gl_log_level level, const char *format, ...)
 {
     va_list args;
@@ -64,6 +74,7 @@ void check_gl_log(gl_log_level level, const char *format, ...)
 static const GLubyte *(GLAPIENTRY *get_string)(GLenum);
 static const GLubyte *(GLAPIENTRY *get_stringi)(GLenum, GLuint);
 static void (GLAPIENTRY *get_integerv)(GLenum, GLint*);
+static void (GLAPIENTRY *dummy)();
 
 static struct gl_context *check_gl_version(gl_version version)
 {
@@ -131,6 +142,7 @@ int check_gl(void)
     struct gl_context *ctx_3_1;
     struct gl_context *ctx_3_2;
     int have_es3 = 0;
+    int have_es3_compatibility = 0;
     int have_es1 = 0;
 
     if (!check_gl_init()) {
@@ -153,7 +165,25 @@ int check_gl(void)
     }
 
     have_es1 = (ctx_2 != NULL);
-    have_es3 = (ctx_3_2 != NULL);
+
+    if (ctx_3_2) {
+        unsigned int i;
+        int found_all = 1;
+
+        for (i = 0;
+             i < sizeof(gl_3_2_check_funcs)/sizeof(gl_3_2_check_funcs[0]);
+             ++i) {
+            if (!check_gl_procaddr((void**)&dummy, gl_3_2_check_funcs[i], 1) ||
+                !dummy) {
+                found_all = 0;
+                break;
+            }
+        }
+
+        if (found_all) {
+            have_es3 = 1;
+        }
+    }
 
     /*
      * Check if GL_ARB_ES3_compatibility is supported within
@@ -172,6 +202,7 @@ int check_gl(void)
 
             if (strcmp(tmp, "GL_ARB_ES3_compatibility") == 0) {
                 have_es3 = 1;
+                have_es3_compatibility = 1;
                 break;
             }
         }
@@ -183,11 +214,11 @@ int check_gl(void)
      * Check if OpenGL 2.1 contexts can be shared with OpenGL 3.x contexts
      */
 
-    if (ctx_2 && ((ctx_3_1 && have_es3) || ctx_3_2)) {
+    if (ctx_2 && have_es3) {
         struct gl_context *ctx = NULL;
 
-        ctx = check_gl_context_create(((ctx_3_1 && have_es3) ? ctx_3_1
-                                                             : ctx_3_2),
+        ctx = check_gl_context_create(((ctx_3_1 && have_es3_compatibility) ? ctx_3_1
+                                                                           : ctx_3_2),
                                       gl_2);
 
         if (ctx) {
