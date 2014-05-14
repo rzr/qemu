@@ -143,7 +143,6 @@ static int is_force_close_client = 0;
 static int is_started_heartbeat = 0;
 static int stop_heartbeat = 0;
 static int recv_heartbeat_count = 0;
-static pthread_t thread_id_heartbeat;
 
 /* 0: not drawing, 1: drawing */
 int draw_display_state = 0;
@@ -198,7 +197,7 @@ int start_skin_server(int argc, char** argv,
     QemuThread qemu_thread;
 
     qemu_thread_create(&qemu_thread, "skin-server", run_skin_server,
-        NULL, QEMU_THREAD_JOINABLE);
+        NULL, QEMU_THREAD_DETACHED);
 
     return 1;
 }
@@ -1448,12 +1447,9 @@ static int start_heart_beat(void)
     if (ignore_heartbeat) {
         return 1;
     } else {
-        if (0 != pthread_create(&thread_id_heartbeat, NULL, do_heart_beat, NULL)) {
-            ERR("[HB] fail to create heart beat thread\n");
-            return 0;
-        } else {
-            return 1;
-        }
+       QemuThread thread_id_heartbeat;
+       qemu_thread_create(&thread_id_heartbeat, "skin_heartbeat_thread", do_heart_beat, NULL, QEMU_THREAD_DETACHED);
+       return 1;
     }
 }
 

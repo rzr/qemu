@@ -343,14 +343,8 @@ int start_skin_client(int argc, char* argv[])
 
     skin_argc = argc;
     skin_argv = argv;
-
-    pthread_t thread_id;
-
-    if (0 != pthread_create(&thread_id, NULL, run_skin_client, NULL)) {
-        ERR("fail to create skin_client pthread\n");
-        return -1;
-    }
-
+    QemuThread thread_id;
+    qemu_thread_create(&thread_id, "skin_client", run_skin_client, NULL, QEMU_THREAD_DETACHED);
     return 1;
 }
 

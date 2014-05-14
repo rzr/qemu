@@ -500,16 +500,10 @@ static void* main_thread(void* args)
 int main(int argc, char *argv[])
 {
     char** args;
-    pthread_t main_thread_id;
-
+    QemuThread main_thread_id;
     g_argc = argc;
     args = argv;
-
-    if (0 != pthread_create(&main_thread_id, NULL, main_thread, args)) {
-        INFO("Create main thread failed\n");
-        return -1;
-    }
-
+    qemu_thread_create(&main_thread_id, "main_thread", main_thread, (void *)args, QEMU_THREAD_DETACHED);
     ns_event_loop(&thread_running);
 
     return 0;

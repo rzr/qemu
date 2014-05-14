@@ -620,20 +620,12 @@ static void* run_guest_server(void* args)
     return NULL;
 }
 
-pthread_t start_guest_server(int server_port)
+void start_guest_server(int server_port)
 {
+    QemuThread thread_id;
     svr_port = server_port;
-
-    pthread_t thread_id;
-
-    if (0 != pthread_create(&thread_id, NULL, run_guest_server, NULL)) {
-        INFO("fail to create guest_server pthread.\n");
-    } else {
-        INFO("created guest server thread\n");
-    }
-
-    return thread_id;
-
+    qemu_thread_create(&thread_id, "guest_server", run_guest_server, NULL, QEMU_THREAD_DETACHED);
+    INFO("created guest server thread\n");
 }
 
 void shutdown_guest_server(void)

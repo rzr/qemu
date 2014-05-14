@@ -1,5 +1,5 @@
 /*
- * 
+ *
  *
  * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
@@ -34,7 +34,7 @@
 
 #include <pthread.h>
 
-pthread_t start_guest_server( int server_port );
+void start_guest_server( int server_port );
 void shutdown_guest_server( void );
 
 #define STATE_RUNNING 0
