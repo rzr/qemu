@@ -95,12 +95,20 @@ MemoryRegion *get_ram_memory(void)
     return global_ram_memory;
 }
 
+#if defined(CONFIG_LINUX)
+static int x_error_handler(Display *dpy, XErrorEvent *e)
+{
+    return 0;
+}
+#endif
+
 /* maru specialized device init */
 static void maru_device_init(void)
 {
     PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
 
 #if defined(CONFIG_LINUX)
+    XSetErrorHandler(x_error_handler);
     XInitThreads();
     Display *display = XOpenDisplay(0);
     if (!display && !enable_spice) {
