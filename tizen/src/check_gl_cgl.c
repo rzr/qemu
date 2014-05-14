@@ -60,6 +60,10 @@ int check_gl_init(void)
     return 1;
 }
 
+void check_gl_cleanup(void)
+{
+}
+
 struct gl_context *check_gl_context_create(struct gl_context *share_ctx,
                                            gl_version version)
 {
