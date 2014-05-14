@@ -74,7 +74,6 @@
 #include "debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, ecs);
 
-#define MAX_BUF_SIZE  255
 // utility functions
 
 /*static function define*/
@@ -582,7 +581,18 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
     } else if (!strncmp(cmd, "vmname", strlen("vmname"))) {
         char* vmname = get_emul_vm_name();
         msgproc_device_ans(ccli, cmd, true, vmname);
-    } else{
+    } else if (!strncmp(cmd, "nfc", strlen("nfc"))) {
+        if (group == MSG_GROUP_STATUS) {
+            //TODO:
+            INFO("get nfc data: do nothing\n");
+        } else {
+            if (data != NULL) {
+                send_to_nfc(ccli->client_id, ccli->client_type, data, msg->data.len);
+            } else {
+                ERR("nfc data is null\n");
+            }
+        }
+    } else {
         ERR("unknown cmd [%s]\n", cmd);
     }
 
@@ -840,9 +850,9 @@ bool send_nfc_ntf(struct nfc_msg_info* msg)
 
     ntf.has_data = 1;
 
-    ntf.data.data = g_malloc(MAX_BUF_SIZE);
-    ntf.data.len = MAX_BUF_SIZE;
-    memcpy(ntf.data.data, msg->buf, MAX_BUF_SIZE);
+    ntf.data.data = g_malloc(NFC_MAX_BUF_SIZE);
+    ntf.data.len = NFC_MAX_BUF_SIZE;
+    memcpy(ntf.data.data, msg->buf, NFC_MAX_BUF_SIZE);
 
     printf("send to nfc injector: ");
     master.type = ECS__MASTER__TYPE__NFC_NTF;

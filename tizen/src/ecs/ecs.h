@@ -154,13 +154,13 @@ typedef struct ECS_Client {
     QTAILQ_ENTRY(ECS_Client) next;
 } ECS_Client;
 
-#define MAX_BUF_SIZE  255
+#define NFC_MAX_BUF_SIZE  4096
 
 typedef struct nfc_msg_info {
     unsigned char client_id;
     unsigned char client_type;
     uint32_t use;
-    unsigned char buf[MAX_BUF_SIZE];
+    unsigned char buf[NFC_MAX_BUF_SIZE];
 
 }nfc_msg_info;
 
