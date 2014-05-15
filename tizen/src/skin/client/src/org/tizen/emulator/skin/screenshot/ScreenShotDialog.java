@@ -45,9 +45,12 @@ import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.ImageTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -68,6 +71,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
@@ -91,8 +95,7 @@ public class ScreenShotDialog {
 	private final static String DEFAULT_FILE_EXTENSION = "png";
 	private static final int CANVAS_MARGIN = 30;
 	private static final int TOOLITEM_COOLTIME = 200;
-	private static final double MIN_SCALE_FACTOR = 12.5;
-	private static final double MAX_SCALE_FACTOR = 800;
+	private static final double MAX_SCALE_MULTIPLE = 8;
 
 	private static Logger logger =
 			SkinLogger.getSkinLogger(ScreenShotDialog.class).getLogger();
@@ -110,12 +113,15 @@ public class ScreenShotDialog {
 	private Composite statusComposite;
 	private Label labelResolution;
 	private Label labelScale;
+	private Label labelPoint;
 
 	private ToolItem refreshItem;
 	private ToolItem copyItem;
-	private ToolItem zoomInItem;
-	private ToolItem zoomOutItem;
+	private ToolItem scaleItem;
+	private Scale scale;
 	private double scaleLevel;
+	private double scaleSize;
+	private boolean isCtrlPressed;
 
 	/**
 	 * @brief constructor
@@ -128,6 +134,8 @@ public class ScreenShotDialog {
 
 		this.canvasGrabPosition = new Point(-1, -1);
 		this.scaleLevel = 100;
+
+		isCtrlPressed = false;
 
 		if (SwtUtil.isMacPlatform() == false) {
 			shell = new Shell(skin.getShell(), SWT.SHELL_TRIM);
@@ -164,6 +172,27 @@ public class ScreenShotDialog {
 
 		/* tool bar */
 		createToolBar(shell);
+
+		/* zoom in/out for using wheel */
+		shell.addMouseWheelListener(new MouseWheelListener() {
+			@Override
+			public void mouseScrolled(MouseEvent e) {
+				if (isCtrlPressed) {
+					if (e.count < 0 && scale.getSelection() > 0) {
+						downScaleLevel();
+						scale.setSelection(scale.getSelection() - 1);
+						scale.setToolTipText(getScaleLevel() + "%");
+					} else if (e.count > 0 && scale.getSelection() < 6) {
+						upScaleLevel();
+						scale.setSelection(scale.getSelection() + 1);
+						scale.setToolTipText(getScaleLevel() + "%");
+					} else {
+						return;
+					}
+					updateWindow();
+				}
+			}
+		});
 
 		/* screenshot canvas */
 		scrollComposite = new ScrolledComposite(shell, SWT.V_SCROLL | SWT.H_SCROLL);
@@ -243,6 +272,16 @@ public class ScreenShotDialog {
 					origin.y += canvasGrabPosition.y - e.y;
 					scrollComposite.setOrigin(origin);
 				}
+				int curX = e.x - CANVAS_MARGIN;;
+				int curY = e.y - CANVAS_MARGIN;;
+
+				if (curX < 0)
+					curX = 0;
+				if (curY < 0)
+					curY = 0;
+
+				labelPoint.setText(" x : " + curX + ", y : " + curY + " ");
+				labelPoint.update();
 			}
 		});
 
@@ -270,13 +309,30 @@ public class ScreenShotDialog {
 				}
 			}
 		});
+
+		canvas.addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (SWT.CTRL == e.keyCode) {
+					isCtrlPressed = true;
+					scrollComposite.setEnabled(false);
+					scale.setEnabled(false);
+				}
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				if (SWT.CTRL == e.keyCode) {
+					isCtrlPressed = false;
+					scrollComposite.setEnabled(true);
+					scale.setEnabled(true);
+				}
+			}
+		});
 	}
 
 	private void clickShutter() throws ScreenShotException {
 		capture();
-
-		/* set as 100% view */
-		setScaleLevel(100);
 
 		shell.getDisplay().asyncExec(new Runnable() {
 			@Override
@@ -319,20 +375,6 @@ public class ScreenShotDialog {
 			logger.info("update composite width : " + width + ", height : " + height);
 
 			scrollComposite.setMinSize(width, height);
-		}
-
-		/* update tool bar */
-		if (zoomInItem != null && zoomOutItem != null) {
-			if (getScaleLevel() >= MAX_SCALE_FACTOR) {
-				zoomInItem.setEnabled(false);
-				zoomOutItem.setEnabled(true);
-			} else if (getScaleLevel() <= MIN_SCALE_FACTOR) {
-				zoomOutItem.setEnabled(false);
-				zoomInItem.setEnabled(true);
-			} else {
-				zoomInItem.setEnabled(true);
-				zoomOutItem.setEnabled(true);
-			}
 		}
 
 		/* update image */
@@ -443,7 +485,7 @@ public class ScreenShotDialog {
 				fileDialog.setFilterNames(filterName);
 
 				String vmName = SkinUtil.getVmName(config);
-				SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-hhmmss");
+				SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-HHmmss");
 				String dateString = formatter.format(new Date(System.currentTimeMillis()));
 
 				fileDialog.setFileName(vmName + "-" +
@@ -591,31 +633,74 @@ public class ScreenShotDialog {
 
 		new ToolItem(toolBar, SWT.SEPARATOR);
 
-		/* zoom in */
-		zoomInItem = new ToolItem(toolBar, SWT.FLAT);
-		zoomInItem.setImage(imageRegistry.getIcon(IconName.INCREASE_SCALE));
-		zoomInItem.setToolTipText("Zoom in");
-
-		zoomInItem.addSelectionListener(new SelectionAdapter() {
+		/* zoom in & out slider */
+		scaleItem = new ToolItem(toolBar, SWT.SEPARATOR);
+		scaleItem.setWidth(100);
+		scale = new Scale(toolBar, SWT.HORIZONTAL);
+		scale.setMinimum(0);
+		scale.setMaximum(6);
+		scale.setPageIncrement(1);
+		scale.setIncrement(1);
+		scale.setSelection(3);
+		scale.setToolTipText(scaleLevel + "%");
+		scaleItem.setControl(scale);
+		scale.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				upScaleLevel();
+				scaleSize = scale.getSelection() - 3;
 
+				setScaleLevel(Math.pow(2, scaleSize) * 100);
 				updateWindow();
+
+				/* update tool tip text */
+				scale.setToolTipText(getScaleLevel() + "%");
+
+				/* update status bar */
+				if (labelScale != null) {
+					labelScale.setText(" " + scaleLevel + "% ");
+					labelScale.update();
+				}
 			}
 		});
 
-		/* zoom out */
-		zoomOutItem = new ToolItem(toolBar, SWT.FLAT);
-		zoomOutItem.setImage(imageRegistry.getIcon(IconName.DECREASE_SCALE));
-		zoomOutItem.setToolTipText("Zoom out");
+		scale.addKeyListener(new KeyListener() {
 
-		zoomOutItem.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
-				downScaleLevel();
+			public void keyPressed(KeyEvent e) {
+				if (SWT.CTRL == e.keyCode) {
+					isCtrlPressed = true;
+					scrollComposite.setEnabled(false);
+					scale.setEnabled(false);
+				}
+			}
 
-				updateWindow();
+			@Override
+			public void keyReleased(KeyEvent e) {
+				if (SWT.CTRL == e.keyCode) {
+					isCtrlPressed = false;
+					scrollComposite.setEnabled(true);
+					scale.setEnabled(true);
+				}
+			}
+		});
+
+		toolBar.addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (SWT.CTRL == e.keyCode) {
+					isCtrlPressed = true;
+					scrollComposite.setEnabled(false);
+					scale.setEnabled(false);
+				}
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				if (SWT.CTRL == e.keyCode) {
+					isCtrlPressed = false;
+					scrollComposite.setEnabled(true);
+					scale.setEnabled(true);
+				}
 			}
 		});
 	}
@@ -634,6 +719,10 @@ public class ScreenShotDialog {
 
 		labelScale = new Label(statusComposite, SWT.BORDER | SWT.SHADOW_IN);
 		labelScale.setText(" " + scaleLevel + "% ");
+
+		labelPoint = new Label(statusComposite, SWT.BORDER | SWT.SHADOW_IN);
+		labelPoint.setText(" x : " + skin.getEmulatorSkinState().getCurrentResolutionWidth() * (int)MAX_SCALE_MULTIPLE +
+				", y : " + skin.getEmulatorSkinState().getCurrentResolutionHeight() * (int)MAX_SCALE_MULTIPLE + " ");
 	}
 
 	private void saveFile(String fileFullPath, FileDialog fileDialog) {
