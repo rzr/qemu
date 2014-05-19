@@ -41,7 +41,7 @@
 #include <libv4l2.h>
 #include <libv4lconvert.h>
 
-MULTI_DEBUG_CHANNEL(tizen, camera_linux);
+MULTI_DEBUG_CHANNEL(tizen, maru-camera);
 
 #define MARUCAM_THREAD_NAME    "marucam_worker_thread"
 

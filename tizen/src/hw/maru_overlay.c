@@ -36,9 +36,9 @@
 #include "maru_overlay.h"
 #include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(qemu, maru_overlay);
+MULTI_DEBUG_CHANNEL(tizen, maru-overlay);
 
-#define QEMU_DEV_NAME       "maru_overlay"
+#define QEMU_DEV_NAME       "maru-overlay"
 
 #define OVERLAY_MEM_SIZE    (8192 * 1024)   /* 4MB(overlay0) + 4MB(overlay1) */
 #define OVERLAY_REG_SIZE    256
@@ -124,7 +124,7 @@ static void overlay_reg_write(void *opaque,
     switch (addr) {
     case OVERLAY_POWER:
         overlay0_power = val;
-        TRACE("SET => overlay0 power status(%d)\n", overlay0_power);
+        INFO("SET => overlay0 power status(%d)\n", overlay0_power);
         if (!overlay0_power) {
             /* clear the last overlay area. */
             memset(overlay_ptr, 0x00, (OVERLAY_MEM_SIZE / 2));
@@ -156,7 +156,7 @@ static void overlay_reg_write(void *opaque,
         break;
     case OVERLAY1_REG_OFFSET + OVERLAY_POWER:
         overlay1_power = val;
-        TRACE("SET => overlay1 power status(%d)\n", overlay1_power);
+        INFO("SET => overlay1 power status(%d)\n", overlay1_power);
         if (!overlay1_power) {
             /* clear the last overlay area. */
             memset(overlay_ptr + OVERLAY1_REG_OFFSET,
@@ -208,12 +208,12 @@ static int overlay_initfn(PCIDevice *dev)
     pci_config_set_device_id(pci_conf, PCI_DEVICE_ID_VIRTUAL_OVERLAY);
     pci_config_set_class(pci_conf, PCI_CLASS_DISPLAY_OTHER);
 
-    memory_region_init_ram(&s->mem_addr, NULL, "maru_overlay.ram", OVERLAY_MEM_SIZE);
+    memory_region_init_ram(&s->mem_addr, NULL, "maru-overlay.ram", OVERLAY_MEM_SIZE);
     overlay_ptr = memory_region_get_ram_ptr(&s->mem_addr);
 
     memory_region_init_io(&s->mmio_addr, NULL, &overlay_mmio_ops,
                           s,
-                          "maru_overlay_mmio",
+                          "maru-overlay-mmio",
                           OVERLAY_REG_SIZE);
 
     /* setup memory space */
@@ -221,7 +221,7 @@ static int overlay_initfn(PCIDevice *dev)
     /* memory #1 memory-mapped I/O */
     pci_register_bar(&s->dev, 0, PCI_BASE_ADDRESS_MEM_PREFETCH, &s->mem_addr);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
-    INFO("<%s>\n", __func__);
+    INFO("initialize maru-overlay device\n");
 
     return 0;
 }
@@ -241,7 +241,7 @@ static void overlay_reset(DeviceState *d)
         pixman_image_unref(overlay1_image);
         overlay1_image = NULL;
     }
-    INFO("<%s>\n", __func__);
+    INFO("reset maru-overlay device\n");
 }
 
 static void overlay_exitfn(PCIDevice *dev)
@@ -250,7 +250,7 @@ static void overlay_exitfn(PCIDevice *dev)
 
     memory_region_destroy(&s->mem_addr);
     memory_region_destroy(&s->mmio_addr);
-    INFO("<%s>\n", __func__);
+    INFO("finalize maru-overlay device\n");
 }
 
 static void overlay_classinit(ObjectClass *klass, void *data)

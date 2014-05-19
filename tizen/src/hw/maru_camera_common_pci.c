@@ -43,9 +43,9 @@
 #include "maru_device_ids.h"
 #include "tizen/src/debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(tizen, camera_pci);
+MULTI_DEBUG_CHANNEL(tizen, maru-camera);
 
-#define MARU_PCI_CAMERA_DEVICE_NAME     "maru_camera_pci"
+#define MARU_PCI_CAMERA_DEVICE_NAME     "maru-camera"
 
 #define MARUCAM_MEM_SIZE    (4 * 1024 * 1024)   /* 4MB */
 #define MARUCAM_REG_SIZE    (256)               /* 64 * 4Byte */
@@ -240,7 +240,7 @@ static int marucam_initfn(PCIDevice *dev)
 
     s->tx_bh = qemu_bh_new(marucam_tx_bh, s);
     s->initialized = true;
-    INFO("[%s] camera device was initialized.\n", __func__);
+    INFO("initialize maru-camera device\n");
 
     return 0;
 }
@@ -263,7 +263,7 @@ static void marucam_exitfn(PCIDevice *pci_dev)
         memory_region_destroy(&s->mmio);
     }
 
-    INFO("[%s] camera device was released.\n", __func__);
+    INFO("finalize maru-camera device\n");
 }
 
 static void marucam_resetfn(DeviceState *d)
@@ -277,13 +277,12 @@ static void marucam_resetfn(DeviceState *d)
         qemu_mutex_unlock(&s->thread_mutex);
         memset(s->vaddr, 0, MARUCAM_MEM_SIZE);
         memset(s->param, 0x00, sizeof(MaruCamParam));
-        TRACE("[%s] This device has been reset\n", __func__);
+        INFO("reset maru-camera device\n");
     }
 }
 
 int maru_camera_pci_init(PCIBus *bus)
 {
-    INFO("[%s] camera device was initialized.\n", __func__);
     pci_create_simple(bus, -1, MARU_PCI_CAMERA_DEVICE_NAME);
     return 0;
 }

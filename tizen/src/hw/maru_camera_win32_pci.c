@@ -39,7 +39,7 @@
 #include "mmsystem.h"    /* for MAKEFOURCC macro */
 #include "maru_camera_win32_interface.h"
 
-MULTI_DEBUG_CHANNEL(tizen, camera_win32);
+MULTI_DEBUG_CHANNEL(tizen, maru-camera);
 
 /*
  * COM Interface implementations
