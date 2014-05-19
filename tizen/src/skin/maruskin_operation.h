@@ -35,17 +35,15 @@
 
 extern int ret_hax_init;
 
-struct QemuSurfaceInfo {
+typedef struct ScreenShot {
     unsigned char* pixel_data;
     int pixel_data_length;
-};
-typedef struct QemuSurfaceInfo QemuSurfaceInfo;
+} QemuSurfaceInfo;
 
-struct DetailInfo {
+typedef struct DetailInfo {
     char* data;
     int data_length;
-};
-typedef struct DetailInfo DetailInfo;
+} DetailInfo;
 
 void start_display(uint64 handle_id,
     unsigned int display_width, unsigned int display_height,
@@ -60,7 +58,7 @@ void do_hw_key_event(int event_type, int keycode);
 void do_scale_event(double scale_factor);
 void do_rotation_event(int rotation_type);
 
-QemuSurfaceInfo *get_screenshot_info(void);
+QemuSurfaceInfo *request_screenshot(void);
 DetailInfo *get_detail_info(int qemu_argc, char **qemu_argv);
 void free_detail_info(DetailInfo *detail_info);
 void free_screenshot_info(QemuSurfaceInfo *);

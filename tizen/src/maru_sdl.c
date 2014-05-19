@@ -303,9 +303,8 @@ static void qemu_update(void)
     }
 
     if (surface_qemu != NULL) {
-        int i = 0;
-
         maru_do_pixman_dpy_surface(dpy_surface->image);
+
         set_maru_screenshot(dpy_surface);
 
         if (current_scale_factor != 1.0) {
@@ -333,6 +332,7 @@ static void qemu_update(void)
         /* draw multi-touch finger points */
         MultiTouchState *mts = get_emul_multi_touch_state();
         if (mts->multitouch_enable != 0 && mts->finger_point_surface != NULL) {
+            int i = 0;
             FingerPoint *finger = NULL;
             int finger_point_size_half = mts->finger_point_size / 2;
             SDL_Rect rect;
