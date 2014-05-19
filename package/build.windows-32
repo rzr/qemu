@@ -56,7 +56,7 @@ build()
 	prepare
 
 	cd $SRCDIR/tizen
-	./emulator_configure.sh x86 -e --disable-virtfs -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
+	./emulator_configure.sh x86 -e "$BUILD_CFLAGS $BUILD_LDFLAGS"
 	make all_dibs
 	if [ $? -eq 0 ]
 	then
