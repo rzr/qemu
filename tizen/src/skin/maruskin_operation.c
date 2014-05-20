@@ -607,15 +607,9 @@ void shutdown_qemu_gracefully(void)
         requested_shutdown_qemu_gracefully = 1;
 
         INFO("shutdown_qemu_gracefully was called\n");
-
-        pthread_t thread_id;
-        if (0 > pthread_create(
-            &thread_id, NULL, run_timed_shutdown_thread, NULL)) {
-
-            ERR("!!! Fail to create run_timed_shutdown_thread. \
-                shutdown qemu right now !!!\n");
-            qemu_system_shutdown_request();
-        }
+        QemuThread thread_id;
+        qemu_thread_create(&thread_id, "shutdown_thread", run_timed_shutdown_thread,
+                           NULL, QEMU_THREAD_DETACHED);
     } else {
         INFO("shutdown_qemu_gracefully was called twice\n");
         qemu_system_shutdown_request();
