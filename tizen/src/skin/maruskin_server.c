@@ -1024,12 +1024,13 @@ static void* run_skin_server(void* args)
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_SCREENSHOT_REQ ==\n");
                     TRACE(log_buf);
 
-                    QemuSurfaceInfo* info = get_screenshot_info();
+                    QemuSurfaceInfo* screenshot = request_screenshot();
 
-                    if (info) {
+                    if (screenshot != NULL) {
                         send_skin_data(client_sock, SEND_SCREENSHOT_DATA,
-                            info->pixel_data, info->pixel_data_length, 1);
-                        free_screenshot_info(info);
+                            screenshot->pixel_data, screenshot->pixel_data_length, 1);
+
+                        free_screenshot_info(screenshot);
                     } else {
                         ERR("Fail to get screen shot data\n");
                     }

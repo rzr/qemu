@@ -48,6 +48,7 @@
 #include "emul_state.h"
 #include "maruskin_keymap.h"
 #include "maruskin_server.h"
+#include "maru_display.h"
 #include "hw/maru_pm.h"
 #include "ecs/ecs.h"
 
@@ -395,21 +396,18 @@ void set_maru_screenshot(DisplaySurface *surface)
     pthread_mutex_unlock(&mutex_screenshot);
 }
 
-QemuSurfaceInfo *get_screenshot_info(void)
+QemuSurfaceInfo *request_screenshot(void)
 {
-    QemuSurfaceInfo *info =
-            (QemuSurfaceInfo *)g_malloc0(sizeof(QemuSurfaceInfo));
-    if (!info) {
-        ERR("Fail to malloc for QemuSurfaceInfo.\n");
+    const int length = get_emul_resolution_width() * get_emul_resolution_height() * 4;
+    INFO("screenshot data length : %d\n", length);
+
+    if (0 >= length) {
         return NULL;
     }
 
-    int length = get_emul_resolution_width() * get_emul_resolution_height() * 4;
-    INFO("screenshot data length:%d\n", length);
-
-    if (0 >= length) {
-        g_free(info);
-        ERR("screenshot data ( 0 >=length ). length:%d\n", length);
+    QemuSurfaceInfo *info = (QemuSurfaceInfo *)g_malloc0(sizeof(QemuSurfaceInfo));
+    if (!info) {
+        ERR("Fail to malloc for QemuSurfaceInfo.\n");
         return NULL;
     }
 
@@ -420,24 +418,26 @@ QemuSurfaceInfo *get_screenshot_info(void)
         return NULL;
     }
 
-    /* If the LCD is turned off, return empty buffer.
+    /* If display has been turned off, return empty buffer.
        Because the empty buffer is seen as a black. */
-    if (brightness_off) {
-        info->pixel_data_length = length;
-        return info;
-    }
+    if (brightness_off == 0) {
+        pthread_mutex_lock(&mutex_screenshot);
 
-    pthread_mutex_lock(&mutex_screenshot);
-    MaruScreenshot* maru_screenshot = get_maru_screenshot();
-    if (!maru_screenshot || maru_screenshot->isReady != 1) {
-        ERR("maru screenshot is NULL or not ready.\n");
-        memset(info->pixel_data, 0x00, length);
-    } else {
-        maru_screenshot->pixel_data = info->pixel_data;
-        maru_screenshot->request_screenshot = 1;
-        pthread_cond_wait(&cond_screenshot, &mutex_screenshot);
+        MaruScreenshot* maru_screenshot = get_maru_screenshot();
+        if (!maru_screenshot || maru_screenshot->isReady != 1) {
+            ERR("maru screenshot is NULL or not ready.\n");
+            memset(info->pixel_data, 0x00, length);
+        } else {
+            maru_screenshot->pixel_data = info->pixel_data;
+            maru_screenshot->request_screenshot = 1;
+            maru_display_update();
+
+            // TODO : do not wait on communication thread
+            pthread_cond_wait(&cond_screenshot, &mutex_screenshot);
+        }
+
+        pthread_mutex_unlock(&mutex_screenshot);
     }
-    pthread_mutex_unlock(&mutex_screenshot);
 
     info->pixel_data_length = length;
 
