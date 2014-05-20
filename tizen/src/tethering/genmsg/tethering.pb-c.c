@@ -6,738 +6,738 @@
 #endif
 
 #include "tethering.pb-c.h"
-void   injector__hand_shake_req__init
-                     (Injector__HandShakeReq         *message)
+void   tethering__hand_shake_req__init
+                     (Tethering__HandShakeReq         *message)
 {
-  static Injector__HandShakeReq init_value = INJECTOR__HAND_SHAKE_REQ__INIT;
+  static Tethering__HandShakeReq init_value = TETHERING__HAND_SHAKE_REQ__INIT;
   *message = init_value;
 }
-size_t injector__hand_shake_req__get_packed_size
-                     (const Injector__HandShakeReq *message)
+size_t tethering__hand_shake_req__get_packed_size
+                     (const Tethering__HandShakeReq *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__hand_shake_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hand_shake_req__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__hand_shake_req__pack
-                     (const Injector__HandShakeReq *message,
+size_t tethering__hand_shake_req__pack
+                     (const Tethering__HandShakeReq *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__hand_shake_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hand_shake_req__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__hand_shake_req__pack_to_buffer
-                     (const Injector__HandShakeReq *message,
+size_t tethering__hand_shake_req__pack_to_buffer
+                     (const Tethering__HandShakeReq *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__hand_shake_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hand_shake_req__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__HandShakeReq *
-       injector__hand_shake_req__unpack
+Tethering__HandShakeReq *
+       tethering__hand_shake_req__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__HandShakeReq *)
-     protobuf_c_message_unpack (&injector__hand_shake_req__descriptor,
+  return (Tethering__HandShakeReq *)
+     protobuf_c_message_unpack (&tethering__hand_shake_req__descriptor,
                                 allocator, len, data);
 }
-void   injector__hand_shake_req__free_unpacked
-                     (Injector__HandShakeReq *message,
+void   tethering__hand_shake_req__free_unpacked
+                     (Tethering__HandShakeReq *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__hand_shake_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hand_shake_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__hand_shake_ans__init
-                     (Injector__HandShakeAns         *message)
+void   tethering__hand_shake_ans__init
+                     (Tethering__HandShakeAns         *message)
 {
-  static Injector__HandShakeAns init_value = INJECTOR__HAND_SHAKE_ANS__INIT;
+  static Tethering__HandShakeAns init_value = TETHERING__HAND_SHAKE_ANS__INIT;
   *message = init_value;
 }
-size_t injector__hand_shake_ans__get_packed_size
-                     (const Injector__HandShakeAns *message)
+size_t tethering__hand_shake_ans__get_packed_size
+                     (const Tethering__HandShakeAns *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__hand_shake_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hand_shake_ans__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__hand_shake_ans__pack
-                     (const Injector__HandShakeAns *message,
+size_t tethering__hand_shake_ans__pack
+                     (const Tethering__HandShakeAns *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__hand_shake_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hand_shake_ans__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__hand_shake_ans__pack_to_buffer
-                     (const Injector__HandShakeAns *message,
+size_t tethering__hand_shake_ans__pack_to_buffer
+                     (const Tethering__HandShakeAns *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__hand_shake_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hand_shake_ans__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__HandShakeAns *
-       injector__hand_shake_ans__unpack
+Tethering__HandShakeAns *
+       tethering__hand_shake_ans__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__HandShakeAns *)
-     protobuf_c_message_unpack (&injector__hand_shake_ans__descriptor,
+  return (Tethering__HandShakeAns *)
+     protobuf_c_message_unpack (&tethering__hand_shake_ans__descriptor,
                                 allocator, len, data);
 }
-void   injector__hand_shake_ans__free_unpacked
-                     (Injector__HandShakeAns *message,
+void   tethering__hand_shake_ans__free_unpacked
+                     (Tethering__HandShakeAns *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__hand_shake_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hand_shake_ans__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__emulator_state__init
-                     (Injector__EmulatorState         *message)
+void   tethering__emulator_state__init
+                     (Tethering__EmulatorState         *message)
 {
-  static Injector__EmulatorState init_value = INJECTOR__EMULATOR_STATE__INIT;
+  static Tethering__EmulatorState init_value = TETHERING__EMULATOR_STATE__INIT;
   *message = init_value;
 }
-size_t injector__emulator_state__get_packed_size
-                     (const Injector__EmulatorState *message)
+size_t tethering__emulator_state__get_packed_size
+                     (const Tethering__EmulatorState *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__emulator_state__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__emulator_state__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__emulator_state__pack
-                     (const Injector__EmulatorState *message,
+size_t tethering__emulator_state__pack
+                     (const Tethering__EmulatorState *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__emulator_state__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__emulator_state__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__emulator_state__pack_to_buffer
-                     (const Injector__EmulatorState *message,
+size_t tethering__emulator_state__pack_to_buffer
+                     (const Tethering__EmulatorState *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__emulator_state__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__emulator_state__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__EmulatorState *
-       injector__emulator_state__unpack
+Tethering__EmulatorState *
+       tethering__emulator_state__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__EmulatorState *)
-     protobuf_c_message_unpack (&injector__emulator_state__descriptor,
+  return (Tethering__EmulatorState *)
+     protobuf_c_message_unpack (&tethering__emulator_state__descriptor,
                                 allocator, len, data);
 }
-void   injector__emulator_state__free_unpacked
-                     (Injector__EmulatorState *message,
+void   tethering__emulator_state__free_unpacked
+                     (Tethering__EmulatorState *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__emulator_state__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__emulator_state__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__app_state__init
-                     (Injector__AppState         *message)
+void   tethering__app_state__init
+                     (Tethering__AppState         *message)
 {
-  static Injector__AppState init_value = INJECTOR__APP_STATE__INIT;
+  static Tethering__AppState init_value = TETHERING__APP_STATE__INIT;
   *message = init_value;
 }
-size_t injector__app_state__get_packed_size
-                     (const Injector__AppState *message)
+size_t tethering__app_state__get_packed_size
+                     (const Tethering__AppState *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__app_state__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__app_state__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__app_state__pack
-                     (const Injector__AppState *message,
+size_t tethering__app_state__pack
+                     (const Tethering__AppState *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__app_state__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__app_state__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__app_state__pack_to_buffer
-                     (const Injector__AppState *message,
+size_t tethering__app_state__pack_to_buffer
+                     (const Tethering__AppState *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__app_state__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__app_state__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__AppState *
-       injector__app_state__unpack
+Tethering__AppState *
+       tethering__app_state__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__AppState *)
-     protobuf_c_message_unpack (&injector__app_state__descriptor,
+  return (Tethering__AppState *)
+     protobuf_c_message_unpack (&tethering__app_state__descriptor,
                                 allocator, len, data);
 }
-void   injector__app_state__free_unpacked
-                     (Injector__AppState *message,
+void   tethering__app_state__free_unpacked
+                     (Tethering__AppState *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__app_state__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__app_state__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__start_req__init
-                     (Injector__StartReq         *message)
+void   tethering__start_req__init
+                     (Tethering__StartReq         *message)
 {
-  static Injector__StartReq init_value = INJECTOR__START_REQ__INIT;
+  static Tethering__StartReq init_value = TETHERING__START_REQ__INIT;
   *message = init_value;
 }
-size_t injector__start_req__get_packed_size
-                     (const Injector__StartReq *message)
+size_t tethering__start_req__get_packed_size
+                     (const Tethering__StartReq *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__start_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__start_req__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__start_req__pack
-                     (const Injector__StartReq *message,
+size_t tethering__start_req__pack
+                     (const Tethering__StartReq *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__start_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__start_req__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__start_req__pack_to_buffer
-                     (const Injector__StartReq *message,
+size_t tethering__start_req__pack_to_buffer
+                     (const Tethering__StartReq *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__start_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__start_req__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__StartReq *
-       injector__start_req__unpack
+Tethering__StartReq *
+       tethering__start_req__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__StartReq *)
-     protobuf_c_message_unpack (&injector__start_req__descriptor,
+  return (Tethering__StartReq *)
+     protobuf_c_message_unpack (&tethering__start_req__descriptor,
                                 allocator, len, data);
 }
-void   injector__start_req__free_unpacked
-                     (Injector__StartReq *message,
+void   tethering__start_req__free_unpacked
+                     (Tethering__StartReq *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__start_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__start_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__start_ans__init
-                     (Injector__StartAns         *message)
+void   tethering__start_ans__init
+                     (Tethering__StartAns         *message)
 {
-  static Injector__StartAns init_value = INJECTOR__START_ANS__INIT;
+  static Tethering__StartAns init_value = TETHERING__START_ANS__INIT;
   *message = init_value;
 }
-size_t injector__start_ans__get_packed_size
-                     (const Injector__StartAns *message)
+size_t tethering__start_ans__get_packed_size
+                     (const Tethering__StartAns *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__start_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__start_ans__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__start_ans__pack
-                     (const Injector__StartAns *message,
+size_t tethering__start_ans__pack
+                     (const Tethering__StartAns *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__start_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__start_ans__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__start_ans__pack_to_buffer
-                     (const Injector__StartAns *message,
+size_t tethering__start_ans__pack_to_buffer
+                     (const Tethering__StartAns *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__start_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__start_ans__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__StartAns *
-       injector__start_ans__unpack
+Tethering__StartAns *
+       tethering__start_ans__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__StartAns *)
-     protobuf_c_message_unpack (&injector__start_ans__descriptor,
+  return (Tethering__StartAns *)
+     protobuf_c_message_unpack (&tethering__start_ans__descriptor,
                                 allocator, len, data);
 }
-void   injector__start_ans__free_unpacked
-                     (Injector__StartAns *message,
+void   tethering__start_ans__free_unpacked
+                     (Tethering__StartAns *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__start_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__start_ans__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__set_event_status__init
-                     (Injector__SetEventStatus         *message)
+void   tethering__set_event_status__init
+                     (Tethering__SetEventStatus         *message)
 {
-  static Injector__SetEventStatus init_value = INJECTOR__SET_EVENT_STATUS__INIT;
+  static Tethering__SetEventStatus init_value = TETHERING__SET_EVENT_STATUS__INIT;
   *message = init_value;
 }
-size_t injector__set_event_status__get_packed_size
-                     (const Injector__SetEventStatus *message)
+size_t tethering__set_event_status__get_packed_size
+                     (const Tethering__SetEventStatus *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__set_event_status__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__set_event_status__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__set_event_status__pack
-                     (const Injector__SetEventStatus *message,
+size_t tethering__set_event_status__pack
+                     (const Tethering__SetEventStatus *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__set_event_status__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__set_event_status__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__set_event_status__pack_to_buffer
-                     (const Injector__SetEventStatus *message,
+size_t tethering__set_event_status__pack_to_buffer
+                     (const Tethering__SetEventStatus *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__set_event_status__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__set_event_status__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__SetEventStatus *
-       injector__set_event_status__unpack
+Tethering__SetEventStatus *
+       tethering__set_event_status__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__SetEventStatus *)
-     protobuf_c_message_unpack (&injector__set_event_status__descriptor,
+  return (Tethering__SetEventStatus *)
+     protobuf_c_message_unpack (&tethering__set_event_status__descriptor,
                                 allocator, len, data);
 }
-void   injector__set_event_status__free_unpacked
-                     (Injector__SetEventStatus *message,
+void   tethering__set_event_status__free_unpacked
+                     (Tethering__SetEventStatus *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__set_event_status__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__set_event_status__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__event_msg__init
-                     (Injector__EventMsg         *message)
+void   tethering__event_msg__init
+                     (Tethering__EventMsg         *message)
 {
-  static Injector__EventMsg init_value = INJECTOR__EVENT_MSG__INIT;
+  static Tethering__EventMsg init_value = TETHERING__EVENT_MSG__INIT;
   *message = init_value;
 }
-size_t injector__event_msg__get_packed_size
-                     (const Injector__EventMsg *message)
+size_t tethering__event_msg__get_packed_size
+                     (const Tethering__EventMsg *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__event_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__event_msg__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__event_msg__pack
-                     (const Injector__EventMsg *message,
+size_t tethering__event_msg__pack
+                     (const Tethering__EventMsg *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__event_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__event_msg__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__event_msg__pack_to_buffer
-                     (const Injector__EventMsg *message,
+size_t tethering__event_msg__pack_to_buffer
+                     (const Tethering__EventMsg *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__event_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__event_msg__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__EventMsg *
-       injector__event_msg__unpack
+Tethering__EventMsg *
+       tethering__event_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__EventMsg *)
-     protobuf_c_message_unpack (&injector__event_msg__descriptor,
+  return (Tethering__EventMsg *)
+     protobuf_c_message_unpack (&tethering__event_msg__descriptor,
                                 allocator, len, data);
 }
-void   injector__event_msg__free_unpacked
-                     (Injector__EventMsg *message,
+void   tethering__event_msg__free_unpacked
+                     (Tethering__EventMsg *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__event_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__event_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__event_terminate__init
-                     (Injector__EventTerminate         *message)
+void   tethering__event_terminate__init
+                     (Tethering__EventTerminate         *message)
 {
-  static Injector__EventTerminate init_value = INJECTOR__EVENT_TERMINATE__INIT;
+  static Tethering__EventTerminate init_value = TETHERING__EVENT_TERMINATE__INIT;
   *message = init_value;
 }
-size_t injector__event_terminate__get_packed_size
-                     (const Injector__EventTerminate *message)
+size_t tethering__event_terminate__get_packed_size
+                     (const Tethering__EventTerminate *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__event_terminate__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__event_terminate__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__event_terminate__pack
-                     (const Injector__EventTerminate *message,
+size_t tethering__event_terminate__pack
+                     (const Tethering__EventTerminate *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__event_terminate__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__event_terminate__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__event_terminate__pack_to_buffer
-                     (const Injector__EventTerminate *message,
+size_t tethering__event_terminate__pack_to_buffer
+                     (const Tethering__EventTerminate *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__event_terminate__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__event_terminate__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__EventTerminate *
-       injector__event_terminate__unpack
+Tethering__EventTerminate *
+       tethering__event_terminate__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__EventTerminate *)
-     protobuf_c_message_unpack (&injector__event_terminate__descriptor,
+  return (Tethering__EventTerminate *)
+     protobuf_c_message_unpack (&tethering__event_terminate__descriptor,
                                 allocator, len, data);
 }
-void   injector__event_terminate__free_unpacked
-                     (Injector__EventTerminate *message,
+void   tethering__event_terminate__free_unpacked
+                     (Tethering__EventTerminate *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__event_terminate__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__event_terminate__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__set_sensor_status__init
-                     (Injector__SetSensorStatus         *message)
+void   tethering__set_sensor_status__init
+                     (Tethering__SetSensorStatus         *message)
 {
-  static Injector__SetSensorStatus init_value = INJECTOR__SET_SENSOR_STATUS__INIT;
+  static Tethering__SetSensorStatus init_value = TETHERING__SET_SENSOR_STATUS__INIT;
   *message = init_value;
 }
-size_t injector__set_sensor_status__get_packed_size
-                     (const Injector__SetSensorStatus *message)
+size_t tethering__set_sensor_status__get_packed_size
+                     (const Tethering__SetSensorStatus *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__set_sensor_status__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__set_sensor_status__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__set_sensor_status__pack
-                     (const Injector__SetSensorStatus *message,
+size_t tethering__set_sensor_status__pack
+                     (const Tethering__SetSensorStatus *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__set_sensor_status__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__set_sensor_status__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__set_sensor_status__pack_to_buffer
-                     (const Injector__SetSensorStatus *message,
+size_t tethering__set_sensor_status__pack_to_buffer
+                     (const Tethering__SetSensorStatus *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__set_sensor_status__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__set_sensor_status__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__SetSensorStatus *
-       injector__set_sensor_status__unpack
+Tethering__SetSensorStatus *
+       tethering__set_sensor_status__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__SetSensorStatus *)
-     protobuf_c_message_unpack (&injector__set_sensor_status__descriptor,
+  return (Tethering__SetSensorStatus *)
+     protobuf_c_message_unpack (&tethering__set_sensor_status__descriptor,
                                 allocator, len, data);
 }
-void   injector__set_sensor_status__free_unpacked
-                     (Injector__SetSensorStatus *message,
+void   tethering__set_sensor_status__free_unpacked
+                     (Tethering__SetSensorStatus *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__set_sensor_status__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__set_sensor_status__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__sensor_data__init
-                     (Injector__SensorData         *message)
+void   tethering__sensor_data__init
+                     (Tethering__SensorData         *message)
 {
-  static Injector__SensorData init_value = INJECTOR__SENSOR_DATA__INIT;
+  static Tethering__SensorData init_value = TETHERING__SENSOR_DATA__INIT;
   *message = init_value;
 }
-size_t injector__sensor_data__get_packed_size
-                     (const Injector__SensorData *message)
+size_t tethering__sensor_data__get_packed_size
+                     (const Tethering__SensorData *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_data__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__sensor_data__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__sensor_data__pack
-                     (const Injector__SensorData *message,
+size_t tethering__sensor_data__pack
+                     (const Tethering__SensorData *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_data__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__sensor_data__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__sensor_data__pack_to_buffer
-                     (const Injector__SensorData *message,
+size_t tethering__sensor_data__pack_to_buffer
+                     (const Tethering__SensorData *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_data__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__sensor_data__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__SensorData *
-       injector__sensor_data__unpack
+Tethering__SensorData *
+       tethering__sensor_data__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__SensorData *)
-     protobuf_c_message_unpack (&injector__sensor_data__descriptor,
+  return (Tethering__SensorData *)
+     protobuf_c_message_unpack (&tethering__sensor_data__descriptor,
                                 allocator, len, data);
 }
-void   injector__sensor_data__free_unpacked
-                     (Injector__SensorData *message,
+void   tethering__sensor_data__free_unpacked
+                     (Tethering__SensorData *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_data__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__sensor_data__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__sensor_msg__init
-                     (Injector__SensorMsg         *message)
+void   tethering__sensor_msg__init
+                     (Tethering__SensorMsg         *message)
 {
-  static Injector__SensorMsg init_value = INJECTOR__SENSOR_MSG__INIT;
+  static Tethering__SensorMsg init_value = TETHERING__SENSOR_MSG__INIT;
   *message = init_value;
 }
-size_t injector__sensor_msg__get_packed_size
-                     (const Injector__SensorMsg *message)
+size_t tethering__sensor_msg__get_packed_size
+                     (const Tethering__SensorMsg *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__sensor_msg__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__sensor_msg__pack
-                     (const Injector__SensorMsg *message,
+size_t tethering__sensor_msg__pack
+                     (const Tethering__SensorMsg *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__sensor_msg__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__sensor_msg__pack_to_buffer
-                     (const Injector__SensorMsg *message,
+size_t tethering__sensor_msg__pack_to_buffer
+                     (const Tethering__SensorMsg *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__sensor_msg__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__SensorMsg *
-       injector__sensor_msg__unpack
+Tethering__SensorMsg *
+       tethering__sensor_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__SensorMsg *)
-     protobuf_c_message_unpack (&injector__sensor_msg__descriptor,
+  return (Tethering__SensorMsg *)
+     protobuf_c_message_unpack (&tethering__sensor_msg__descriptor,
                                 allocator, len, data);
 }
-void   injector__sensor_msg__free_unpacked
-                     (Injector__SensorMsg *message,
+void   tethering__sensor_msg__free_unpacked
+                     (Tethering__SensorMsg *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__sensor_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__sensor_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__resolution__init
-                     (Injector__Resolution         *message)
+void   tethering__resolution__init
+                     (Tethering__Resolution         *message)
 {
-  static Injector__Resolution init_value = INJECTOR__RESOLUTION__INIT;
+  static Tethering__Resolution init_value = TETHERING__RESOLUTION__INIT;
   *message = init_value;
 }
-size_t injector__resolution__get_packed_size
-                     (const Injector__Resolution *message)
+size_t tethering__resolution__get_packed_size
+                     (const Tethering__Resolution *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__resolution__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__resolution__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__resolution__pack
-                     (const Injector__Resolution *message,
+size_t tethering__resolution__pack
+                     (const Tethering__Resolution *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__resolution__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__resolution__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__resolution__pack_to_buffer
-                     (const Injector__Resolution *message,
+size_t tethering__resolution__pack_to_buffer
+                     (const Tethering__Resolution *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__resolution__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__resolution__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__Resolution *
-       injector__resolution__unpack
+Tethering__Resolution *
+       tethering__resolution__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__Resolution *)
-     protobuf_c_message_unpack (&injector__resolution__descriptor,
+  return (Tethering__Resolution *)
+     protobuf_c_message_unpack (&tethering__resolution__descriptor,
                                 allocator, len, data);
 }
-void   injector__resolution__free_unpacked
-                     (Injector__Resolution *message,
+void   tethering__resolution__free_unpacked
+                     (Tethering__Resolution *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__resolution__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__resolution__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__multi_touch_max_count__init
-                     (Injector__MultiTouchMaxCount         *message)
+void   tethering__multi_touch_max_count__init
+                     (Tethering__MultiTouchMaxCount         *message)
 {
-  static Injector__MultiTouchMaxCount init_value = INJECTOR__MULTI_TOUCH_MAX_COUNT__INIT;
+  static Tethering__MultiTouchMaxCount init_value = TETHERING__MULTI_TOUCH_MAX_COUNT__INIT;
   *message = init_value;
 }
-size_t injector__multi_touch_max_count__get_packed_size
-                     (const Injector__MultiTouchMaxCount *message)
+size_t tethering__multi_touch_max_count__get_packed_size
+                     (const Tethering__MultiTouchMaxCount *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_max_count__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_max_count__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__multi_touch_max_count__pack
-                     (const Injector__MultiTouchMaxCount *message,
+size_t tethering__multi_touch_max_count__pack
+                     (const Tethering__MultiTouchMaxCount *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_max_count__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_max_count__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__multi_touch_max_count__pack_to_buffer
-                     (const Injector__MultiTouchMaxCount *message,
+size_t tethering__multi_touch_max_count__pack_to_buffer
+                     (const Tethering__MultiTouchMaxCount *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_max_count__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_max_count__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__MultiTouchMaxCount *
-       injector__multi_touch_max_count__unpack
+Tethering__MultiTouchMaxCount *
+       tethering__multi_touch_max_count__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__MultiTouchMaxCount *)
-     protobuf_c_message_unpack (&injector__multi_touch_max_count__descriptor,
+  return (Tethering__MultiTouchMaxCount *)
+     protobuf_c_message_unpack (&tethering__multi_touch_max_count__descriptor,
                                 allocator, len, data);
 }
-void   injector__multi_touch_max_count__free_unpacked
-                     (Injector__MultiTouchMaxCount *message,
+void   tethering__multi_touch_max_count__free_unpacked
+                     (Tethering__MultiTouchMaxCount *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_max_count__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_max_count__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__multi_touch_data__init
-                     (Injector__MultiTouchData         *message)
+void   tethering__multi_touch_data__init
+                     (Tethering__MultiTouchData         *message)
 {
-  static Injector__MultiTouchData init_value = INJECTOR__MULTI_TOUCH_DATA__INIT;
+  static Tethering__MultiTouchData init_value = TETHERING__MULTI_TOUCH_DATA__INIT;
   *message = init_value;
 }
-size_t injector__multi_touch_data__get_packed_size
-                     (const Injector__MultiTouchData *message)
+size_t tethering__multi_touch_data__get_packed_size
+                     (const Tethering__MultiTouchData *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_data__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_data__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__multi_touch_data__pack
-                     (const Injector__MultiTouchData *message,
+size_t tethering__multi_touch_data__pack
+                     (const Tethering__MultiTouchData *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_data__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_data__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__multi_touch_data__pack_to_buffer
-                     (const Injector__MultiTouchData *message,
+size_t tethering__multi_touch_data__pack_to_buffer
+                     (const Tethering__MultiTouchData *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_data__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_data__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__MultiTouchData *
-       injector__multi_touch_data__unpack
+Tethering__MultiTouchData *
+       tethering__multi_touch_data__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__MultiTouchData *)
-     protobuf_c_message_unpack (&injector__multi_touch_data__descriptor,
+  return (Tethering__MultiTouchData *)
+     protobuf_c_message_unpack (&tethering__multi_touch_data__descriptor,
                                 allocator, len, data);
 }
-void   injector__multi_touch_data__free_unpacked
-                     (Injector__MultiTouchData *message,
+void   tethering__multi_touch_data__free_unpacked
+                     (Tethering__MultiTouchData *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_data__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_data__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__multi_touch_msg__init
-                     (Injector__MultiTouchMsg         *message)
+void   tethering__multi_touch_msg__init
+                     (Tethering__MultiTouchMsg         *message)
 {
-  static Injector__MultiTouchMsg init_value = INJECTOR__MULTI_TOUCH_MSG__INIT;
+  static Tethering__MultiTouchMsg init_value = TETHERING__MULTI_TOUCH_MSG__INIT;
   *message = init_value;
 }
-size_t injector__multi_touch_msg__get_packed_size
-                     (const Injector__MultiTouchMsg *message)
+size_t tethering__multi_touch_msg__get_packed_size
+                     (const Tethering__MultiTouchMsg *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_msg__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__multi_touch_msg__pack
-                     (const Injector__MultiTouchMsg *message,
+size_t tethering__multi_touch_msg__pack
+                     (const Tethering__MultiTouchMsg *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_msg__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__multi_touch_msg__pack_to_buffer
-                     (const Injector__MultiTouchMsg *message,
+size_t tethering__multi_touch_msg__pack_to_buffer
+                     (const Tethering__MultiTouchMsg *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_msg__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__MultiTouchMsg *
-       injector__multi_touch_msg__unpack
+Tethering__MultiTouchMsg *
+       tethering__multi_touch_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__MultiTouchMsg *)
-     protobuf_c_message_unpack (&injector__multi_touch_msg__descriptor,
+  return (Tethering__MultiTouchMsg *)
+     protobuf_c_message_unpack (&tethering__multi_touch_msg__descriptor,
                                 allocator, len, data);
 }
-void   injector__multi_touch_msg__free_unpacked
-                     (Injector__MultiTouchMsg *message,
+void   tethering__multi_touch_msg__free_unpacked
+                     (Tethering__MultiTouchMsg *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__multi_touch_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__multi_touch_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   injector__injector_msg__init
-                     (Injector__InjectorMsg         *message)
+void   tethering__tethering_msg__init
+                     (Tethering__TetheringMsg         *message)
 {
-  static Injector__InjectorMsg init_value = INJECTOR__INJECTOR_MSG__INIT;
+  static Tethering__TetheringMsg init_value = TETHERING__TETHERING_MSG__INIT;
   *message = init_value;
 }
-size_t injector__injector_msg__get_packed_size
-                     (const Injector__InjectorMsg *message)
+size_t tethering__tethering_msg__get_packed_size
+                     (const Tethering__TetheringMsg *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__injector_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__tethering_msg__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t injector__injector_msg__pack
-                     (const Injector__InjectorMsg *message,
+size_t tethering__tethering_msg__pack
+                     (const Tethering__TetheringMsg *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__injector_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__tethering_msg__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t injector__injector_msg__pack_to_buffer
-                     (const Injector__InjectorMsg *message,
+size_t tethering__tethering_msg__pack_to_buffer
+                     (const Tethering__TetheringMsg *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__injector_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__tethering_msg__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-Injector__InjectorMsg *
-       injector__injector_msg__unpack
+Tethering__TetheringMsg *
+       tethering__tethering_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (Injector__InjectorMsg *)
-     protobuf_c_message_unpack (&injector__injector_msg__descriptor,
+  return (Tethering__TetheringMsg *)
+     protobuf_c_message_unpack (&tethering__tethering_msg__descriptor,
                                 allocator, len, data);
 }
-void   injector__injector_msg__free_unpacked
-                     (Injector__InjectorMsg *message,
+void   tethering__tethering_msg__free_unpacked
+                     (Tethering__TetheringMsg *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &injector__injector_msg__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__tethering_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor injector__hand_shake_req__field_descriptors[1] =
+static const ProtobufCFieldDescriptor tethering__hand_shake_req__field_descriptors[1] =
 {
   {
     "key",
@@ -745,37 +745,37 @@ static const ProtobufCFieldDescriptor injector__hand_shake_req__field_descriptor
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__HandShakeReq, key),
+    PROTOBUF_C_OFFSETOF(Tethering__HandShakeReq, key),
     NULL,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__hand_shake_req__field_indices_by_name[] = {
+static const unsigned tethering__hand_shake_req__field_indices_by_name[] = {
   0,   /* field[0] = key */
 };
-static const ProtobufCIntRange injector__hand_shake_req__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__hand_shake_req__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor injector__hand_shake_req__descriptor =
+const ProtobufCMessageDescriptor tethering__hand_shake_req__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.HandShakeReq",
+  "tethering.HandShakeReq",
   "HandShakeReq",
-  "Injector__HandShakeReq",
-  "injector",
-  sizeof(Injector__HandShakeReq),
+  "Tethering__HandShakeReq",
+  "tethering",
+  sizeof(Tethering__HandShakeReq),
   1,
-  injector__hand_shake_req__field_descriptors,
-  injector__hand_shake_req__field_indices_by_name,
-  1,  injector__hand_shake_req__number_ranges,
-  (ProtobufCMessageInit) injector__hand_shake_req__init,
+  tethering__hand_shake_req__field_descriptors,
+  tethering__hand_shake_req__field_indices_by_name,
+  1,  tethering__hand_shake_req__number_ranges,
+  (ProtobufCMessageInit) tethering__hand_shake_req__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor injector__hand_shake_ans__field_descriptors[1] =
+static const ProtobufCFieldDescriptor tethering__hand_shake_ans__field_descriptors[1] =
 {
   {
     "result",
@@ -783,37 +783,37 @@ static const ProtobufCFieldDescriptor injector__hand_shake_ans__field_descriptor
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__HandShakeAns, result),
-    &injector__result__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__HandShakeAns, result),
+    &tethering__message_result__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__hand_shake_ans__field_indices_by_name[] = {
+static const unsigned tethering__hand_shake_ans__field_indices_by_name[] = {
   0,   /* field[0] = result */
 };
-static const ProtobufCIntRange injector__hand_shake_ans__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__hand_shake_ans__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor injector__hand_shake_ans__descriptor =
+const ProtobufCMessageDescriptor tethering__hand_shake_ans__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.HandShakeAns",
+  "tethering.HandShakeAns",
   "HandShakeAns",
-  "Injector__HandShakeAns",
-  "injector",
-  sizeof(Injector__HandShakeAns),
+  "Tethering__HandShakeAns",
+  "tethering",
+  sizeof(Tethering__HandShakeAns),
   1,
-  injector__hand_shake_ans__field_descriptors,
-  injector__hand_shake_ans__field_indices_by_name,
-  1,  injector__hand_shake_ans__number_ranges,
-  (ProtobufCMessageInit) injector__hand_shake_ans__init,
+  tethering__hand_shake_ans__field_descriptors,
+  tethering__hand_shake_ans__field_indices_by_name,
+  1,  tethering__hand_shake_ans__number_ranges,
+  (ProtobufCMessageInit) tethering__hand_shake_ans__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor injector__emulator_state__field_descriptors[1] =
+static const ProtobufCFieldDescriptor tethering__emulator_state__field_descriptors[1] =
 {
   {
     "state",
@@ -821,37 +821,37 @@ static const ProtobufCFieldDescriptor injector__emulator_state__field_descriptor
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__EmulatorState, state),
-    &injector__connection_state__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__EmulatorState, state),
+    &tethering__connection_state__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__emulator_state__field_indices_by_name[] = {
+static const unsigned tethering__emulator_state__field_indices_by_name[] = {
   0,   /* field[0] = state */
 };
-static const ProtobufCIntRange injector__emulator_state__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__emulator_state__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor injector__emulator_state__descriptor =
+const ProtobufCMessageDescriptor tethering__emulator_state__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.EmulatorState",
+  "tethering.EmulatorState",
   "EmulatorState",
-  "Injector__EmulatorState",
-  "injector",
-  sizeof(Injector__EmulatorState),
+  "Tethering__EmulatorState",
+  "tethering",
+  sizeof(Tethering__EmulatorState),
   1,
-  injector__emulator_state__field_descriptors,
-  injector__emulator_state__field_indices_by_name,
-  1,  injector__emulator_state__number_ranges,
-  (ProtobufCMessageInit) injector__emulator_state__init,
+  tethering__emulator_state__field_descriptors,
+  tethering__emulator_state__field_indices_by_name,
+  1,  tethering__emulator_state__number_ranges,
+  (ProtobufCMessageInit) tethering__emulator_state__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor injector__app_state__field_descriptors[1] =
+static const ProtobufCFieldDescriptor tethering__app_state__field_descriptors[1] =
 {
   {
     "state",
@@ -859,55 +859,55 @@ static const ProtobufCFieldDescriptor injector__app_state__field_descriptors[1] 
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__AppState, state),
-    &injector__connection_state__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__AppState, state),
+    &tethering__connection_state__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__app_state__field_indices_by_name[] = {
+static const unsigned tethering__app_state__field_indices_by_name[] = {
   0,   /* field[0] = state */
 };
-static const ProtobufCIntRange injector__app_state__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__app_state__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor injector__app_state__descriptor =
+const ProtobufCMessageDescriptor tethering__app_state__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.AppState",
+  "tethering.AppState",
   "AppState",
-  "Injector__AppState",
-  "injector",
-  sizeof(Injector__AppState),
+  "Tethering__AppState",
+  "tethering",
+  sizeof(Tethering__AppState),
   1,
-  injector__app_state__field_descriptors,
-  injector__app_state__field_indices_by_name,
-  1,  injector__app_state__number_ranges,
-  (ProtobufCMessageInit) injector__app_state__init,
+  tethering__app_state__field_descriptors,
+  tethering__app_state__field_indices_by_name,
+  1,  tethering__app_state__number_ranges,
+  (ProtobufCMessageInit) tethering__app_state__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-#define injector__start_req__field_descriptors NULL
-#define injector__start_req__field_indices_by_name NULL
-#define injector__start_req__number_ranges NULL
-const ProtobufCMessageDescriptor injector__start_req__descriptor =
+#define tethering__start_req__field_descriptors NULL
+#define tethering__start_req__field_indices_by_name NULL
+#define tethering__start_req__number_ranges NULL
+const ProtobufCMessageDescriptor tethering__start_req__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.StartReq",
+  "tethering.StartReq",
   "StartReq",
-  "Injector__StartReq",
-  "injector",
-  sizeof(Injector__StartReq),
+  "Tethering__StartReq",
+  "tethering",
+  sizeof(Tethering__StartReq),
   0,
-  injector__start_req__field_descriptors,
-  injector__start_req__field_indices_by_name,
-  0,  injector__start_req__number_ranges,
-  (ProtobufCMessageInit) injector__start_req__init,
+  tethering__start_req__field_descriptors,
+  tethering__start_req__field_indices_by_name,
+  0,  tethering__start_req__number_ranges,
+  (ProtobufCMessageInit) tethering__start_req__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor injector__start_ans__field_descriptors[1] =
+static const ProtobufCFieldDescriptor tethering__start_ans__field_descriptors[1] =
 {
   {
     "result",
@@ -915,120 +915,37 @@ static const ProtobufCFieldDescriptor injector__start_ans__field_descriptors[1] 
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__StartAns, result),
-    &injector__result__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__StartAns, result),
+    &tethering__message_result__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__start_ans__field_indices_by_name[] = {
+static const unsigned tethering__start_ans__field_indices_by_name[] = {
   0,   /* field[0] = result */
 };
-static const ProtobufCIntRange injector__start_ans__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__start_ans__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor injector__start_ans__descriptor =
+const ProtobufCMessageDescriptor tethering__start_ans__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.StartAns",
+  "tethering.StartAns",
   "StartAns",
-  "Injector__StartAns",
-  "injector",
-  sizeof(Injector__StartAns),
+  "Tethering__StartAns",
+  "tethering",
+  sizeof(Tethering__StartAns),
   1,
-  injector__start_ans__field_descriptors,
-  injector__start_ans__field_indices_by_name,
-  1,  injector__start_ans__number_ranges,
-  (ProtobufCMessageInit) injector__start_ans__init,
+  tethering__start_ans__field_descriptors,
+  tethering__start_ans__field_indices_by_name,
+  1,  tethering__start_ans__number_ranges,
+  (ProtobufCMessageInit) tethering__start_ans__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor injector__set_event_status__field_descriptors[2] =
-{
-  {
-    "event",
-    1,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_ENUM,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SetEventStatus, event),
-    &injector__event__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "status",
-    2,
-    PROTOBUF_C_LABEL_REQUIRED,
-    PROTOBUF_C_TYPE_ENUM,
-    0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SetEventStatus, status),
-    &injector__status__descriptor,
-    NULL,
-    0,            /* packed */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned injector__set_event_status__field_indices_by_name[] = {
-  0,   /* field[0] = event */
-  1,   /* field[1] = status */
-};
-static const ProtobufCIntRange injector__set_event_status__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 2 }
-};
-const ProtobufCMessageDescriptor injector__set_event_status__descriptor =
-{
-  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.SetEventStatus",
-  "SetEventStatus",
-  "Injector__SetEventStatus",
-  "injector",
-  sizeof(Injector__SetEventStatus),
-  2,
-  injector__set_event_status__field_descriptors,
-  injector__set_event_status__field_indices_by_name,
-  1,  injector__set_event_status__number_ranges,
-  (ProtobufCMessageInit) injector__set_event_status__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-const ProtobufCEnumValue injector__event_msg__type__enum_values_by_number[4] =
-{
-  { "START_REQ", "INJECTOR__EVENT_MSG__TYPE__START_REQ", 2 },
-  { "START_ANS", "INJECTOR__EVENT_MSG__TYPE__START_ANS", 3 },
-  { "TERMINATE", "INJECTOR__EVENT_MSG__TYPE__TERMINATE", 4 },
-  { "EVENT_STATUS", "INJECTOR__EVENT_MSG__TYPE__EVENT_STATUS", 5 },
-};
-static const ProtobufCIntRange injector__event_msg__type__value_ranges[] = {
-{2, 0},{0, 4}
-};
-const ProtobufCEnumValueIndex injector__event_msg__type__enum_values_by_name[4] =
-{
-  { "EVENT_STATUS", 3 },
-  { "START_ANS", 1 },
-  { "START_REQ", 0 },
-  { "TERMINATE", 2 },
-};
-const ProtobufCEnumDescriptor injector__event_msg__type__descriptor =
-{
-  PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.EventMsg.TYPE",
-  "TYPE",
-  "Injector__EventMsg__TYPE",
-  "injector",
-  4,
-  injector__event_msg__type__enum_values_by_number,
-  4,
-  injector__event_msg__type__enum_values_by_name,
-  1,
-  injector__event_msg__type__value_ranges,
-  NULL,NULL,NULL,NULL   /* reserved[1234] */
-};
-static const ProtobufCFieldDescriptor injector__event_msg__field_descriptors[5] =
+static const ProtobufCFieldDescriptor tethering__set_event_status__field_descriptors[2] =
 {
   {
     "type",
@@ -1036,8 +953,91 @@ static const ProtobufCFieldDescriptor injector__event_msg__field_descriptors[5] 
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__EventMsg, type),
-    &injector__event_msg__type__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SetEventStatus, type),
+    &tethering__event_type__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "state",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_ENUM,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Tethering__SetEventStatus, state),
+    &tethering__state__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned tethering__set_event_status__field_indices_by_name[] = {
+  1,   /* field[1] = state */
+  0,   /* field[0] = type */
+};
+static const ProtobufCIntRange tethering__set_event_status__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor tethering__set_event_status__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "tethering.SetEventStatus",
+  "SetEventStatus",
+  "Tethering__SetEventStatus",
+  "tethering",
+  sizeof(Tethering__SetEventStatus),
+  2,
+  tethering__set_event_status__field_descriptors,
+  tethering__set_event_status__field_indices_by_name,
+  1,  tethering__set_event_status__number_ranges,
+  (ProtobufCMessageInit) tethering__set_event_status__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+const ProtobufCEnumValue tethering__event_msg__type__enum_values_by_number[4] =
+{
+  { "START_REQ", "TETHERING__EVENT_MSG__TYPE__START_REQ", 2 },
+  { "START_ANS", "TETHERING__EVENT_MSG__TYPE__START_ANS", 3 },
+  { "TERMINATE", "TETHERING__EVENT_MSG__TYPE__TERMINATE", 4 },
+  { "EVENT_STATUS", "TETHERING__EVENT_MSG__TYPE__EVENT_STATUS", 5 },
+};
+static const ProtobufCIntRange tethering__event_msg__type__value_ranges[] = {
+{2, 0},{0, 4}
+};
+const ProtobufCEnumValueIndex tethering__event_msg__type__enum_values_by_name[4] =
+{
+  { "EVENT_STATUS", 3 },
+  { "START_ANS", 1 },
+  { "START_REQ", 0 },
+  { "TERMINATE", 2 },
+};
+const ProtobufCEnumDescriptor tethering__event_msg__type__descriptor =
+{
+  PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
+  "tethering.EventMsg.TYPE",
+  "TYPE",
+  "Tethering__EventMsg__TYPE",
+  "tethering",
+  4,
+  tethering__event_msg__type__enum_values_by_number,
+  4,
+  tethering__event_msg__type__enum_values_by_name,
+  1,
+  tethering__event_msg__type__value_ranges,
+  NULL,NULL,NULL,NULL   /* reserved[1234] */
+};
+static const ProtobufCFieldDescriptor tethering__event_msg__field_descriptors[5] =
+{
+  {
+    "type",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_ENUM,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Tethering__EventMsg, type),
+    &tethering__event_msg__type__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1048,8 +1048,8 @@ static const ProtobufCFieldDescriptor injector__event_msg__field_descriptors[5] 
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__EventMsg, startreq),
-    &injector__start_req__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__EventMsg, startreq),
+    &tethering__start_req__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1060,8 +1060,8 @@ static const ProtobufCFieldDescriptor injector__event_msg__field_descriptors[5] 
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__EventMsg, startans),
-    &injector__start_ans__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__EventMsg, startans),
+    &tethering__start_ans__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1072,8 +1072,8 @@ static const ProtobufCFieldDescriptor injector__event_msg__field_descriptors[5] 
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__EventMsg, terminate),
-    &injector__event_terminate__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__EventMsg, terminate),
+    &tethering__event_terminate__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1084,113 +1084,113 @@ static const ProtobufCFieldDescriptor injector__event_msg__field_descriptors[5] 
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__EventMsg, setstatus),
-    &injector__set_event_status__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__EventMsg, setstatus),
+    &tethering__set_event_status__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__event_msg__field_indices_by_name[] = {
+static const unsigned tethering__event_msg__field_indices_by_name[] = {
   4,   /* field[4] = setStatus */
   2,   /* field[2] = startAns */
   1,   /* field[1] = startReq */
   3,   /* field[3] = terminate */
   0,   /* field[0] = type */
 };
-static const ProtobufCIntRange injector__event_msg__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__event_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 5 }
 };
-const ProtobufCMessageDescriptor injector__event_msg__descriptor =
+const ProtobufCMessageDescriptor tethering__event_msg__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.EventMsg",
+  "tethering.EventMsg",
   "EventMsg",
-  "Injector__EventMsg",
-  "injector",
-  sizeof(Injector__EventMsg),
+  "Tethering__EventMsg",
+  "tethering",
+  sizeof(Tethering__EventMsg),
   5,
-  injector__event_msg__field_descriptors,
-  injector__event_msg__field_indices_by_name,
-  1,  injector__event_msg__number_ranges,
-  (ProtobufCMessageInit) injector__event_msg__init,
+  tethering__event_msg__field_descriptors,
+  tethering__event_msg__field_indices_by_name,
+  1,  tethering__event_msg__number_ranges,
+  (ProtobufCMessageInit) tethering__event_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-#define injector__event_terminate__field_descriptors NULL
-#define injector__event_terminate__field_indices_by_name NULL
-#define injector__event_terminate__number_ranges NULL
-const ProtobufCMessageDescriptor injector__event_terminate__descriptor =
+#define tethering__event_terminate__field_descriptors NULL
+#define tethering__event_terminate__field_indices_by_name NULL
+#define tethering__event_terminate__number_ranges NULL
+const ProtobufCMessageDescriptor tethering__event_terminate__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.EventTerminate",
+  "tethering.EventTerminate",
   "EventTerminate",
-  "Injector__EventTerminate",
-  "injector",
-  sizeof(Injector__EventTerminate),
+  "Tethering__EventTerminate",
+  "tethering",
+  sizeof(Tethering__EventTerminate),
   0,
-  injector__event_terminate__field_descriptors,
-  injector__event_terminate__field_indices_by_name,
-  0,  injector__event_terminate__number_ranges,
-  (ProtobufCMessageInit) injector__event_terminate__init,
+  tethering__event_terminate__field_descriptors,
+  tethering__event_terminate__field_indices_by_name,
+  0,  tethering__event_terminate__number_ranges,
+  (ProtobufCMessageInit) tethering__event_terminate__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor injector__set_sensor_status__field_descriptors[2] =
+static const ProtobufCFieldDescriptor tethering__set_sensor_status__field_descriptors[2] =
 {
   {
-    "sensor",
+    "type",
     1,
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SetSensorStatus, sensor),
-    &injector__sensor_type__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SetSensorStatus, type),
+    &tethering__sensor_type__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "status",
+    "state",
     2,
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SetSensorStatus, status),
-    &injector__status__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SetSensorStatus, state),
+    &tethering__state__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__set_sensor_status__field_indices_by_name[] = {
-  0,   /* field[0] = sensor */
-  1,   /* field[1] = status */
+static const unsigned tethering__set_sensor_status__field_indices_by_name[] = {
+  1,   /* field[1] = state */
+  0,   /* field[0] = type */
 };
-static const ProtobufCIntRange injector__set_sensor_status__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__set_sensor_status__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 2 }
 };
-const ProtobufCMessageDescriptor injector__set_sensor_status__descriptor =
+const ProtobufCMessageDescriptor tethering__set_sensor_status__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.SetSensorStatus",
+  "tethering.SetSensorStatus",
   "SetSensorStatus",
-  "Injector__SetSensorStatus",
-  "injector",
-  sizeof(Injector__SetSensorStatus),
+  "Tethering__SetSensorStatus",
+  "tethering",
+  sizeof(Tethering__SetSensorStatus),
   2,
-  injector__set_sensor_status__field_descriptors,
-  injector__set_sensor_status__field_indices_by_name,
-  1,  injector__set_sensor_status__number_ranges,
-  (ProtobufCMessageInit) injector__set_sensor_status__init,
+  tethering__set_sensor_status__field_descriptors,
+  tethering__set_sensor_status__field_indices_by_name,
+  1,  tethering__set_sensor_status__number_ranges,
+  (ProtobufCMessageInit) tethering__set_sensor_status__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-char injector__sensor_data__x__default_value[] = "0";
-char injector__sensor_data__y__default_value[] = "0";
-char injector__sensor_data__z__default_value[] = "0";
-static const ProtobufCFieldDescriptor injector__sensor_data__field_descriptors[4] =
+char tethering__sensor_data__x__default_value[] = "0";
+char tethering__sensor_data__y__default_value[] = "0";
+char tethering__sensor_data__z__default_value[] = "0";
+static const ProtobufCFieldDescriptor tethering__sensor_data__field_descriptors[4] =
 {
   {
     "sensor",
@@ -1198,8 +1198,8 @@ static const ProtobufCFieldDescriptor injector__sensor_data__field_descriptors[4
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorData, sensor),
-    &injector__sensor_type__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SensorData, sensor),
+    &tethering__sensor_type__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1210,9 +1210,9 @@ static const ProtobufCFieldDescriptor injector__sensor_data__field_descriptors[4
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorData, x),
+    PROTOBUF_C_OFFSETOF(Tethering__SensorData, x),
     NULL,
-    &injector__sensor_data__x__default_value,
+    &tethering__sensor_data__x__default_value,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
@@ -1222,9 +1222,9 @@ static const ProtobufCFieldDescriptor injector__sensor_data__field_descriptors[4
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorData, y),
+    PROTOBUF_C_OFFSETOF(Tethering__SensorData, y),
     NULL,
-    &injector__sensor_data__y__default_value,
+    &tethering__sensor_data__y__default_value,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
@@ -1234,51 +1234,51 @@ static const ProtobufCFieldDescriptor injector__sensor_data__field_descriptors[4
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorData, z),
+    PROTOBUF_C_OFFSETOF(Tethering__SensorData, z),
     NULL,
-    &injector__sensor_data__z__default_value,
+    &tethering__sensor_data__z__default_value,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__sensor_data__field_indices_by_name[] = {
+static const unsigned tethering__sensor_data__field_indices_by_name[] = {
   0,   /* field[0] = sensor */
   1,   /* field[1] = x */
   2,   /* field[2] = y */
   3,   /* field[3] = z */
 };
-static const ProtobufCIntRange injector__sensor_data__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__sensor_data__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 4 }
 };
-const ProtobufCMessageDescriptor injector__sensor_data__descriptor =
+const ProtobufCMessageDescriptor tethering__sensor_data__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.SensorData",
+  "tethering.SensorData",
   "SensorData",
-  "Injector__SensorData",
-  "injector",
-  sizeof(Injector__SensorData),
+  "Tethering__SensorData",
+  "tethering",
+  sizeof(Tethering__SensorData),
   4,
-  injector__sensor_data__field_descriptors,
-  injector__sensor_data__field_indices_by_name,
-  1,  injector__sensor_data__number_ranges,
-  (ProtobufCMessageInit) injector__sensor_data__init,
+  tethering__sensor_data__field_descriptors,
+  tethering__sensor_data__field_indices_by_name,
+  1,  tethering__sensor_data__number_ranges,
+  (ProtobufCMessageInit) tethering__sensor_data__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue injector__sensor_msg__type__enum_values_by_number[5] =
+const ProtobufCEnumValue tethering__sensor_msg__type__enum_values_by_number[5] =
 {
-  { "START_REQ", "INJECTOR__SENSOR_MSG__TYPE__START_REQ", 2 },
-  { "START_ANS", "INJECTOR__SENSOR_MSG__TYPE__START_ANS", 3 },
-  { "TERMINATE", "INJECTOR__SENSOR_MSG__TYPE__TERMINATE", 4 },
-  { "SENSOR_STATUS", "INJECTOR__SENSOR_MSG__TYPE__SENSOR_STATUS", 5 },
-  { "SENSOR_DATA", "INJECTOR__SENSOR_MSG__TYPE__SENSOR_DATA", 6 },
+  { "START_REQ", "TETHERING__SENSOR_MSG__TYPE__START_REQ", 2 },
+  { "START_ANS", "TETHERING__SENSOR_MSG__TYPE__START_ANS", 3 },
+  { "TERMINATE", "TETHERING__SENSOR_MSG__TYPE__TERMINATE", 4 },
+  { "SENSOR_STATUS", "TETHERING__SENSOR_MSG__TYPE__SENSOR_STATUS", 5 },
+  { "SENSOR_DATA", "TETHERING__SENSOR_MSG__TYPE__SENSOR_DATA", 6 },
 };
-static const ProtobufCIntRange injector__sensor_msg__type__value_ranges[] = {
+static const ProtobufCIntRange tethering__sensor_msg__type__value_ranges[] = {
 {2, 0},{0, 5}
 };
-const ProtobufCEnumValueIndex injector__sensor_msg__type__enum_values_by_name[5] =
+const ProtobufCEnumValueIndex tethering__sensor_msg__type__enum_values_by_name[5] =
 {
   { "SENSOR_DATA", 4 },
   { "SENSOR_STATUS", 3 },
@@ -1286,22 +1286,22 @@ const ProtobufCEnumValueIndex injector__sensor_msg__type__enum_values_by_name[5]
   { "START_REQ", 0 },
   { "TERMINATE", 2 },
 };
-const ProtobufCEnumDescriptor injector__sensor_msg__type__descriptor =
+const ProtobufCEnumDescriptor tethering__sensor_msg__type__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.SensorMsg.Type",
+  "tethering.SensorMsg.Type",
   "Type",
-  "Injector__SensorMsg__Type",
-  "injector",
+  "Tethering__SensorMsg__Type",
+  "tethering",
   5,
-  injector__sensor_msg__type__enum_values_by_number,
+  tethering__sensor_msg__type__enum_values_by_number,
   5,
-  injector__sensor_msg__type__enum_values_by_name,
+  tethering__sensor_msg__type__enum_values_by_name,
   1,
-  injector__sensor_msg__type__value_ranges,
+  tethering__sensor_msg__type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-static const ProtobufCFieldDescriptor injector__sensor_msg__field_descriptors[6] =
+static const ProtobufCFieldDescriptor tethering__sensor_msg__field_descriptors[6] =
 {
   {
     "type",
@@ -1309,8 +1309,8 @@ static const ProtobufCFieldDescriptor injector__sensor_msg__field_descriptors[6]
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorMsg, type),
-    &injector__sensor_msg__type__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SensorMsg, type),
+    &tethering__sensor_msg__type__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1321,8 +1321,8 @@ static const ProtobufCFieldDescriptor injector__sensor_msg__field_descriptors[6]
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorMsg, startreq),
-    &injector__start_req__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SensorMsg, startreq),
+    &tethering__start_req__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1333,8 +1333,8 @@ static const ProtobufCFieldDescriptor injector__sensor_msg__field_descriptors[6]
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorMsg, startans),
-    &injector__start_ans__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SensorMsg, startans),
+    &tethering__start_ans__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1345,8 +1345,8 @@ static const ProtobufCFieldDescriptor injector__sensor_msg__field_descriptors[6]
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorMsg, terminate),
-    &injector__event_terminate__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SensorMsg, terminate),
+    &tethering__event_terminate__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1357,8 +1357,8 @@ static const ProtobufCFieldDescriptor injector__sensor_msg__field_descriptors[6]
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorMsg, setstatus),
-    &injector__set_sensor_status__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SensorMsg, setstatus),
+    &tethering__set_sensor_status__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1369,14 +1369,14 @@ static const ProtobufCFieldDescriptor injector__sensor_msg__field_descriptors[6]
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__SensorMsg, data),
-    &injector__sensor_data__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__SensorMsg, data),
+    &tethering__sensor_data__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__sensor_msg__field_indices_by_name[] = {
+static const unsigned tethering__sensor_msg__field_indices_by_name[] = {
   5,   /* field[5] = data */
   4,   /* field[4] = setStatus */
   2,   /* field[2] = startAns */
@@ -1384,27 +1384,27 @@ static const unsigned injector__sensor_msg__field_indices_by_name[] = {
   3,   /* field[3] = terminate */
   0,   /* field[0] = type */
 };
-static const ProtobufCIntRange injector__sensor_msg__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__sensor_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 6 }
 };
-const ProtobufCMessageDescriptor injector__sensor_msg__descriptor =
+const ProtobufCMessageDescriptor tethering__sensor_msg__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.SensorMsg",
+  "tethering.SensorMsg",
   "SensorMsg",
-  "Injector__SensorMsg",
-  "injector",
-  sizeof(Injector__SensorMsg),
+  "Tethering__SensorMsg",
+  "tethering",
+  sizeof(Tethering__SensorMsg),
   6,
-  injector__sensor_msg__field_descriptors,
-  injector__sensor_msg__field_indices_by_name,
-  1,  injector__sensor_msg__number_ranges,
-  (ProtobufCMessageInit) injector__sensor_msg__init,
+  tethering__sensor_msg__field_descriptors,
+  tethering__sensor_msg__field_indices_by_name,
+  1,  tethering__sensor_msg__number_ranges,
+  (ProtobufCMessageInit) tethering__sensor_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor injector__resolution__field_descriptors[2] =
+static const ProtobufCFieldDescriptor tethering__resolution__field_descriptors[2] =
 {
   {
     "width",
@@ -1412,7 +1412,7 @@ static const ProtobufCFieldDescriptor injector__resolution__field_descriptors[2]
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__Resolution, width),
+    PROTOBUF_C_OFFSETOF(Tethering__Resolution, width),
     NULL,
     NULL,
     0,            /* packed */
@@ -1424,90 +1424,90 @@ static const ProtobufCFieldDescriptor injector__resolution__field_descriptors[2]
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__Resolution, height),
+    PROTOBUF_C_OFFSETOF(Tethering__Resolution, height),
     NULL,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__resolution__field_indices_by_name[] = {
+static const unsigned tethering__resolution__field_indices_by_name[] = {
   1,   /* field[1] = height */
   0,   /* field[0] = width */
 };
-static const ProtobufCIntRange injector__resolution__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__resolution__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 2 }
 };
-const ProtobufCMessageDescriptor injector__resolution__descriptor =
+const ProtobufCMessageDescriptor tethering__resolution__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.Resolution",
+  "tethering.Resolution",
   "Resolution",
-  "Injector__Resolution",
-  "injector",
-  sizeof(Injector__Resolution),
+  "Tethering__Resolution",
+  "tethering",
+  sizeof(Tethering__Resolution),
   2,
-  injector__resolution__field_descriptors,
-  injector__resolution__field_indices_by_name,
-  1,  injector__resolution__number_ranges,
-  (ProtobufCMessageInit) injector__resolution__init,
+  tethering__resolution__field_descriptors,
+  tethering__resolution__field_indices_by_name,
+  1,  tethering__resolution__number_ranges,
+  (ProtobufCMessageInit) tethering__resolution__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const int32_t injector__multi_touch_max_count__max__default_value = 10;
-static const ProtobufCFieldDescriptor injector__multi_touch_max_count__field_descriptors[1] =
+static const int32_t tethering__multi_touch_max_count__max__default_value = 10;
+static const ProtobufCFieldDescriptor tethering__multi_touch_max_count__field_descriptors[1] =
 {
   {
     "max",
     1,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_INT32,
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMaxCount, has_max),
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMaxCount, max),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMaxCount, has_max),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMaxCount, max),
     NULL,
-    &injector__multi_touch_max_count__max__default_value,
+    &tethering__multi_touch_max_count__max__default_value,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__multi_touch_max_count__field_indices_by_name[] = {
+static const unsigned tethering__multi_touch_max_count__field_indices_by_name[] = {
   0,   /* field[0] = max */
 };
-static const ProtobufCIntRange injector__multi_touch_max_count__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__multi_touch_max_count__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 1 }
 };
-const ProtobufCMessageDescriptor injector__multi_touch_max_count__descriptor =
+const ProtobufCMessageDescriptor tethering__multi_touch_max_count__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.MultiTouchMaxCount",
+  "tethering.MultiTouchMaxCount",
   "MultiTouchMaxCount",
-  "Injector__MultiTouchMaxCount",
-  "injector",
-  sizeof(Injector__MultiTouchMaxCount),
+  "Tethering__MultiTouchMaxCount",
+  "tethering",
+  sizeof(Tethering__MultiTouchMaxCount),
   1,
-  injector__multi_touch_max_count__field_descriptors,
-  injector__multi_touch_max_count__field_indices_by_name,
-  1,  injector__multi_touch_max_count__number_ranges,
-  (ProtobufCMessageInit) injector__multi_touch_max_count__init,
+  tethering__multi_touch_max_count__field_descriptors,
+  tethering__multi_touch_max_count__field_indices_by_name,
+  1,  tethering__multi_touch_max_count__number_ranges,
+  (ProtobufCMessageInit) tethering__multi_touch_max_count__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const int32_t injector__multi_touch_data__index__default_value = 0;
-static const float injector__multi_touch_data__x_point__default_value = 0;
-static const float injector__multi_touch_data__y_point__default_value = 0;
-static const ProtobufCFieldDescriptor injector__multi_touch_data__field_descriptors[4] =
+static const int32_t tethering__multi_touch_data__index__default_value = 0;
+static const float tethering__multi_touch_data__x_point__default_value = 0;
+static const float tethering__multi_touch_data__y_point__default_value = 0;
+static const ProtobufCFieldDescriptor tethering__multi_touch_data__field_descriptors[4] =
 {
   {
     "index",
     1,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_INT32,
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchData, has_index),
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchData, index),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchData, has_index),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchData, index),
     NULL,
-    &injector__multi_touch_data__index__default_value,
+    &tethering__multi_touch_data__index__default_value,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
@@ -1516,10 +1516,10 @@ static const ProtobufCFieldDescriptor injector__multi_touch_data__field_descript
     2,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_FLOAT,
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchData, has_xpoint),
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchData, xpoint),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchData, has_xpoint),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchData, xpoint),
     NULL,
-    &injector__multi_touch_data__x_point__default_value,
+    &tethering__multi_touch_data__x_point__default_value,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
@@ -1528,65 +1528,65 @@ static const ProtobufCFieldDescriptor injector__multi_touch_data__field_descript
     3,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_FLOAT,
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchData, has_ypoint),
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchData, ypoint),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchData, has_ypoint),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchData, ypoint),
     NULL,
-    &injector__multi_touch_data__y_point__default_value,
+    &tethering__multi_touch_data__y_point__default_value,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "status",
+    "state",
     4,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_ENUM,
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchData, has_status),
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchData, status),
-    &injector__touch_status__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchData, has_state),
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchData, state),
+    &tethering__touch_state__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__multi_touch_data__field_indices_by_name[] = {
+static const unsigned tethering__multi_touch_data__field_indices_by_name[] = {
   0,   /* field[0] = index */
-  3,   /* field[3] = status */
+  3,   /* field[3] = state */
   1,   /* field[1] = xPoint */
   2,   /* field[2] = yPoint */
 };
-static const ProtobufCIntRange injector__multi_touch_data__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__multi_touch_data__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 4 }
 };
-const ProtobufCMessageDescriptor injector__multi_touch_data__descriptor =
+const ProtobufCMessageDescriptor tethering__multi_touch_data__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.MultiTouchData",
+  "tethering.MultiTouchData",
   "MultiTouchData",
-  "Injector__MultiTouchData",
-  "injector",
-  sizeof(Injector__MultiTouchData),
+  "Tethering__MultiTouchData",
+  "tethering",
+  sizeof(Tethering__MultiTouchData),
   4,
-  injector__multi_touch_data__field_descriptors,
-  injector__multi_touch_data__field_indices_by_name,
-  1,  injector__multi_touch_data__number_ranges,
-  (ProtobufCMessageInit) injector__multi_touch_data__init,
+  tethering__multi_touch_data__field_descriptors,
+  tethering__multi_touch_data__field_indices_by_name,
+  1,  tethering__multi_touch_data__number_ranges,
+  (ProtobufCMessageInit) tethering__multi_touch_data__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue injector__multi_touch_msg__type__enum_values_by_number[6] =
+const ProtobufCEnumValue tethering__multi_touch_msg__type__enum_values_by_number[6] =
 {
-  { "START_REQ", "INJECTOR__MULTI_TOUCH_MSG__TYPE__START_REQ", 2 },
-  { "START_ANS", "INJECTOR__MULTI_TOUCH_MSG__TYPE__START_ANS", 3 },
-  { "TERMINATE", "INJECTOR__MULTI_TOUCH_MSG__TYPE__TERMINATE", 4 },
-  { "MAX_COUNT", "INJECTOR__MULTI_TOUCH_MSG__TYPE__MAX_COUNT", 5 },
-  { "TOUCH_DATA", "INJECTOR__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA", 6 },
-  { "RESOLUTION", "INJECTOR__MULTI_TOUCH_MSG__TYPE__RESOLUTION", 7 },
+  { "START_REQ", "TETHERING__MULTI_TOUCH_MSG__TYPE__START_REQ", 2 },
+  { "START_ANS", "TETHERING__MULTI_TOUCH_MSG__TYPE__START_ANS", 3 },
+  { "TERMINATE", "TETHERING__MULTI_TOUCH_MSG__TYPE__TERMINATE", 4 },
+  { "MAX_COUNT", "TETHERING__MULTI_TOUCH_MSG__TYPE__MAX_COUNT", 5 },
+  { "TOUCH_DATA", "TETHERING__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA", 6 },
+  { "RESOLUTION", "TETHERING__MULTI_TOUCH_MSG__TYPE__RESOLUTION", 7 },
 };
-static const ProtobufCIntRange injector__multi_touch_msg__type__value_ranges[] = {
+static const ProtobufCIntRange tethering__multi_touch_msg__type__value_ranges[] = {
 {2, 0},{0, 6}
 };
-const ProtobufCEnumValueIndex injector__multi_touch_msg__type__enum_values_by_name[6] =
+const ProtobufCEnumValueIndex tethering__multi_touch_msg__type__enum_values_by_name[6] =
 {
   { "MAX_COUNT", 3 },
   { "RESOLUTION", 5 },
@@ -1595,22 +1595,22 @@ const ProtobufCEnumValueIndex injector__multi_touch_msg__type__enum_values_by_na
   { "TERMINATE", 2 },
   { "TOUCH_DATA", 4 },
 };
-const ProtobufCEnumDescriptor injector__multi_touch_msg__type__descriptor =
+const ProtobufCEnumDescriptor tethering__multi_touch_msg__type__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.MultiTouchMsg.Type",
+  "tethering.MultiTouchMsg.Type",
   "Type",
-  "Injector__MultiTouchMsg__Type",
-  "injector",
+  "Tethering__MultiTouchMsg__Type",
+  "tethering",
   6,
-  injector__multi_touch_msg__type__enum_values_by_number,
+  tethering__multi_touch_msg__type__enum_values_by_number,
   6,
-  injector__multi_touch_msg__type__enum_values_by_name,
+  tethering__multi_touch_msg__type__enum_values_by_name,
   1,
-  injector__multi_touch_msg__type__value_ranges,
+  tethering__multi_touch_msg__type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descriptors[7] =
+static const ProtobufCFieldDescriptor tethering__multi_touch_msg__field_descriptors[7] =
 {
   {
     "type",
@@ -1618,8 +1618,8 @@ static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descripto
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMsg, type),
-    &injector__multi_touch_msg__type__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMsg, type),
+    &tethering__multi_touch_msg__type__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1630,8 +1630,8 @@ static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descripto
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMsg, startreq),
-    &injector__start_req__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMsg, startreq),
+    &tethering__start_req__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1642,8 +1642,8 @@ static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descripto
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMsg, startans),
-    &injector__start_ans__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMsg, startans),
+    &tethering__start_ans__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1654,8 +1654,8 @@ static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descripto
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMsg, terminate),
-    &injector__event_terminate__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMsg, terminate),
+    &tethering__event_terminate__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1666,8 +1666,8 @@ static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descripto
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMsg, maxcount),
-    &injector__multi_touch_max_count__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMsg, maxcount),
+    &tethering__multi_touch_max_count__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1678,8 +1678,8 @@ static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descripto
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMsg, touchdata),
-    &injector__multi_touch_data__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMsg, touchdata),
+    &tethering__multi_touch_data__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1690,14 +1690,14 @@ static const ProtobufCFieldDescriptor injector__multi_touch_msg__field_descripto
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__MultiTouchMsg, resolution),
-    &injector__resolution__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMsg, resolution),
+    &tethering__resolution__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__multi_touch_msg__field_indices_by_name[] = {
+static const unsigned tethering__multi_touch_msg__field_indices_by_name[] = {
   4,   /* field[4] = maxCount */
   6,   /* field[6] = resolution */
   2,   /* field[2] = startAns */
@@ -1706,40 +1706,40 @@ static const unsigned injector__multi_touch_msg__field_indices_by_name[] = {
   5,   /* field[5] = touchData */
   0,   /* field[0] = type */
 };
-static const ProtobufCIntRange injector__multi_touch_msg__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__multi_touch_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 7 }
 };
-const ProtobufCMessageDescriptor injector__multi_touch_msg__descriptor =
+const ProtobufCMessageDescriptor tethering__multi_touch_msg__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.MultiTouchMsg",
+  "tethering.MultiTouchMsg",
   "MultiTouchMsg",
-  "Injector__MultiTouchMsg",
-  "injector",
-  sizeof(Injector__MultiTouchMsg),
+  "Tethering__MultiTouchMsg",
+  "tethering",
+  sizeof(Tethering__MultiTouchMsg),
   7,
-  injector__multi_touch_msg__field_descriptors,
-  injector__multi_touch_msg__field_indices_by_name,
-  1,  injector__multi_touch_msg__number_ranges,
-  (ProtobufCMessageInit) injector__multi_touch_msg__init,
+  tethering__multi_touch_msg__field_descriptors,
+  tethering__multi_touch_msg__field_indices_by_name,
+  1,  tethering__multi_touch_msg__number_ranges,
+  (ProtobufCMessageInit) tethering__multi_touch_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue injector__injector_msg__type__enum_values_by_number[7] =
+const ProtobufCEnumValue tethering__tethering_msg__type__enum_values_by_number[7] =
 {
-  { "HANDSHAKE_REQ", "INJECTOR__INJECTOR_MSG__TYPE__HANDSHAKE_REQ", 2 },
-  { "HANDSHAKE_ANS", "INJECTOR__INJECTOR_MSG__TYPE__HANDSHAKE_ANS", 3 },
-  { "EMUL_STATE", "INJECTOR__INJECTOR_MSG__TYPE__EMUL_STATE", 4 },
-  { "APP_STATE", "INJECTOR__INJECTOR_MSG__TYPE__APP_STATE", 5 },
-  { "EVENT_MSG", "INJECTOR__INJECTOR_MSG__TYPE__EVENT_MSG", 6 },
-  { "SENSOR_MSG", "INJECTOR__INJECTOR_MSG__TYPE__SENSOR_MSG", 7 },
-  { "TOUCH_MSG", "INJECTOR__INJECTOR_MSG__TYPE__TOUCH_MSG", 8 },
+  { "HANDSHAKE_REQ", "TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_REQ", 2 },
+  { "HANDSHAKE_ANS", "TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_ANS", 3 },
+  { "EMUL_STATE", "TETHERING__TETHERING_MSG__TYPE__EMUL_STATE", 4 },
+  { "APP_STATE", "TETHERING__TETHERING_MSG__TYPE__APP_STATE", 5 },
+  { "EVENT_MSG", "TETHERING__TETHERING_MSG__TYPE__EVENT_MSG", 6 },
+  { "SENSOR_MSG", "TETHERING__TETHERING_MSG__TYPE__SENSOR_MSG", 7 },
+  { "TOUCH_MSG", "TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG", 8 },
 };
-static const ProtobufCIntRange injector__injector_msg__type__value_ranges[] = {
+static const ProtobufCIntRange tethering__tethering_msg__type__value_ranges[] = {
 {2, 0},{0, 7}
 };
-const ProtobufCEnumValueIndex injector__injector_msg__type__enum_values_by_name[7] =
+const ProtobufCEnumValueIndex tethering__tethering_msg__type__enum_values_by_name[7] =
 {
   { "APP_STATE", 3 },
   { "EMUL_STATE", 2 },
@@ -1749,22 +1749,22 @@ const ProtobufCEnumValueIndex injector__injector_msg__type__enum_values_by_name[
   { "SENSOR_MSG", 5 },
   { "TOUCH_MSG", 6 },
 };
-const ProtobufCEnumDescriptor injector__injector_msg__type__descriptor =
+const ProtobufCEnumDescriptor tethering__tethering_msg__type__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.InjectorMsg.Type",
+  "tethering.TetheringMsg.Type",
   "Type",
-  "Injector__InjectorMsg__Type",
-  "injector",
+  "Tethering__TetheringMsg__Type",
+  "tethering",
   7,
-  injector__injector_msg__type__enum_values_by_number,
+  tethering__tethering_msg__type__enum_values_by_number,
   7,
-  injector__injector_msg__type__enum_values_by_name,
+  tethering__tethering_msg__type__enum_values_by_name,
   1,
-  injector__injector_msg__type__value_ranges,
+  tethering__tethering_msg__type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[8] =
+static const ProtobufCFieldDescriptor tethering__tethering_msg__field_descriptors[8] =
 {
   {
     "type",
@@ -1772,8 +1772,8 @@ static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__InjectorMsg, type),
-    &injector__injector_msg__type__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__TetheringMsg, type),
+    &tethering__tethering_msg__type__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1784,8 +1784,8 @@ static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__InjectorMsg, handshakereq),
-    &injector__hand_shake_req__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__TetheringMsg, handshakereq),
+    &tethering__hand_shake_req__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1796,8 +1796,8 @@ static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__InjectorMsg, handshakeans),
-    &injector__hand_shake_ans__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__TetheringMsg, handshakeans),
+    &tethering__hand_shake_ans__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1808,8 +1808,8 @@ static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__InjectorMsg, emulstate),
-    &injector__emulator_state__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__TetheringMsg, emulstate),
+    &tethering__emulator_state__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1820,8 +1820,8 @@ static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__InjectorMsg, appstate),
-    &injector__app_state__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__TetheringMsg, appstate),
+    &tethering__app_state__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1832,8 +1832,8 @@ static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__InjectorMsg, eventmsg),
-    &injector__event_msg__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__TetheringMsg, eventmsg),
+    &tethering__event_msg__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1844,8 +1844,8 @@ static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__InjectorMsg, sensormsg),
-    &injector__sensor_msg__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__TetheringMsg, sensormsg),
+    &tethering__sensor_msg__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1856,14 +1856,14 @@ static const ProtobufCFieldDescriptor injector__injector_msg__field_descriptors[
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(Injector__InjectorMsg, touchmsg),
-    &injector__multi_touch_msg__descriptor,
+    PROTOBUF_C_OFFSETOF(Tethering__TetheringMsg, touchmsg),
+    &tethering__multi_touch_msg__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned injector__injector_msg__field_indices_by_name[] = {
+static const unsigned tethering__tethering_msg__field_indices_by_name[] = {
   4,   /* field[4] = appState */
   3,   /* field[3] = emulState */
   5,   /* field[5] = eventMsg */
@@ -1873,154 +1873,154 @@ static const unsigned injector__injector_msg__field_indices_by_name[] = {
   7,   /* field[7] = touchMsg */
   0,   /* field[0] = type */
 };
-static const ProtobufCIntRange injector__injector_msg__number_ranges[1 + 1] =
+static const ProtobufCIntRange tethering__tethering_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 8 }
 };
-const ProtobufCMessageDescriptor injector__injector_msg__descriptor =
+const ProtobufCMessageDescriptor tethering__tethering_msg__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "injector.InjectorMsg",
-  "InjectorMsg",
-  "Injector__InjectorMsg",
-  "injector",
-  sizeof(Injector__InjectorMsg),
+  "tethering.TetheringMsg",
+  "TetheringMsg",
+  "Tethering__TetheringMsg",
+  "tethering",
+  sizeof(Tethering__TetheringMsg),
   8,
-  injector__injector_msg__field_descriptors,
-  injector__injector_msg__field_indices_by_name,
-  1,  injector__injector_msg__number_ranges,
-  (ProtobufCMessageInit) injector__injector_msg__init,
+  tethering__tethering_msg__field_descriptors,
+  tethering__tethering_msg__field_indices_by_name,
+  1,  tethering__tethering_msg__number_ranges,
+  (ProtobufCMessageInit) tethering__tethering_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue injector__result__enum_values_by_number[3] =
+const ProtobufCEnumValue tethering__message_result__enum_values_by_number[3] =
 {
-  { "SUCCESS", "INJECTOR__RESULT__SUCCESS", 1 },
-  { "FAILURE", "INJECTOR__RESULT__FAILURE", 2 },
-  { "CANCEL", "INJECTOR__RESULT__CANCEL", 3 },
+  { "SUCCESS", "TETHERING__MESSAGE_RESULT__SUCCESS", 1 },
+  { "FAILURE", "TETHERING__MESSAGE_RESULT__FAILURE", 2 },
+  { "CANCEL", "TETHERING__MESSAGE_RESULT__CANCEL", 3 },
 };
-static const ProtobufCIntRange injector__result__value_ranges[] = {
+static const ProtobufCIntRange tethering__message_result__value_ranges[] = {
 {1, 0},{0, 3}
 };
-const ProtobufCEnumValueIndex injector__result__enum_values_by_name[3] =
+const ProtobufCEnumValueIndex tethering__message_result__enum_values_by_name[3] =
 {
   { "CANCEL", 2 },
   { "FAILURE", 1 },
   { "SUCCESS", 0 },
 };
-const ProtobufCEnumDescriptor injector__result__descriptor =
+const ProtobufCEnumDescriptor tethering__message_result__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.Result",
-  "Result",
-  "Injector__Result",
-  "injector",
+  "tethering.MessageResult",
+  "MessageResult",
+  "Tethering__MessageResult",
+  "tethering",
   3,
-  injector__result__enum_values_by_number,
+  tethering__message_result__enum_values_by_number,
   3,
-  injector__result__enum_values_by_name,
+  tethering__message_result__enum_values_by_name,
   1,
-  injector__result__value_ranges,
+  tethering__message_result__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-const ProtobufCEnumValue injector__connection_state__enum_values_by_number[3] =
+const ProtobufCEnumValue tethering__connection_state__enum_values_by_number[3] =
 {
-  { "CONNECT", "INJECTOR__CONNECTION_STATE__CONNECT", 1 },
-  { "DISCONNECT", "INJECTOR__CONNECTION_STATE__DISCONNECT", 2 },
-  { "TERMINATE", "INJECTOR__CONNECTION_STATE__TERMINATE", 3 },
+  { "CONNECTED", "TETHERING__CONNECTION_STATE__CONNECTED", 1 },
+  { "DISCONNECTED", "TETHERING__CONNECTION_STATE__DISCONNECTED", 2 },
+  { "TERMINATED", "TETHERING__CONNECTION_STATE__TERMINATED", 3 },
 };
-static const ProtobufCIntRange injector__connection_state__value_ranges[] = {
+static const ProtobufCIntRange tethering__connection_state__value_ranges[] = {
 {1, 0},{0, 3}
 };
-const ProtobufCEnumValueIndex injector__connection_state__enum_values_by_name[3] =
+const ProtobufCEnumValueIndex tethering__connection_state__enum_values_by_name[3] =
 {
-  { "CONNECT", 0 },
-  { "DISCONNECT", 1 },
-  { "TERMINATE", 2 },
+  { "CONNECTED", 0 },
+  { "DISCONNECTED", 1 },
+  { "TERMINATED", 2 },
 };
-const ProtobufCEnumDescriptor injector__connection_state__descriptor =
+const ProtobufCEnumDescriptor tethering__connection_state__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.ConnectionState",
+  "tethering.ConnectionState",
   "ConnectionState",
-  "Injector__ConnectionState",
-  "injector",
+  "Tethering__ConnectionState",
+  "tethering",
   3,
-  injector__connection_state__enum_values_by_number,
+  tethering__connection_state__enum_values_by_number,
   3,
-  injector__connection_state__enum_values_by_name,
+  tethering__connection_state__enum_values_by_name,
   1,
-  injector__connection_state__value_ranges,
+  tethering__connection_state__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-const ProtobufCEnumValue injector__event__enum_values_by_number[2] =
+const ProtobufCEnumValue tethering__event_type__enum_values_by_number[2] =
 {
-  { "SENSOR", "INJECTOR__EVENT__SENSOR", 1 },
-  { "MULTITOUCH", "INJECTOR__EVENT__MULTITOUCH", 2 },
+  { "SENSOR", "TETHERING__EVENT_TYPE__SENSOR", 1 },
+  { "TOUCH", "TETHERING__EVENT_TYPE__TOUCH", 2 },
 };
-static const ProtobufCIntRange injector__event__value_ranges[] = {
+static const ProtobufCIntRange tethering__event_type__value_ranges[] = {
 {1, 0},{0, 2}
 };
-const ProtobufCEnumValueIndex injector__event__enum_values_by_name[2] =
+const ProtobufCEnumValueIndex tethering__event_type__enum_values_by_name[2] =
 {
-  { "MULTITOUCH", 1 },
   { "SENSOR", 0 },
+  { "TOUCH", 1 },
 };
-const ProtobufCEnumDescriptor injector__event__descriptor =
+const ProtobufCEnumDescriptor tethering__event_type__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.Event",
-  "Event",
-  "Injector__Event",
-  "injector",
+  "tethering.EventType",
+  "EventType",
+  "Tethering__EventType",
+  "tethering",
   2,
-  injector__event__enum_values_by_number,
+  tethering__event_type__enum_values_by_number,
   2,
-  injector__event__enum_values_by_name,
+  tethering__event_type__enum_values_by_name,
   1,
-  injector__event__value_ranges,
+  tethering__event_type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-const ProtobufCEnumValue injector__status__enum_values_by_number[2] =
+const ProtobufCEnumValue tethering__state__enum_values_by_number[2] =
 {
-  { "ENABLE", "INJECTOR__STATUS__ENABLE", 1 },
-  { "DISABLE", "INJECTOR__STATUS__DISABLE", 2 },
+  { "ENABLED", "TETHERING__STATE__ENABLED", 1 },
+  { "DISABLED", "TETHERING__STATE__DISABLED", 2 },
 };
-static const ProtobufCIntRange injector__status__value_ranges[] = {
+static const ProtobufCIntRange tethering__state__value_ranges[] = {
 {1, 0},{0, 2}
 };
-const ProtobufCEnumValueIndex injector__status__enum_values_by_name[2] =
+const ProtobufCEnumValueIndex tethering__state__enum_values_by_name[2] =
 {
-  { "DISABLE", 1 },
-  { "ENABLE", 0 },
+  { "DISABLED", 1 },
+  { "ENABLED", 0 },
 };
-const ProtobufCEnumDescriptor injector__status__descriptor =
+const ProtobufCEnumDescriptor tethering__state__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.Status",
-  "Status",
-  "Injector__Status",
-  "injector",
+  "tethering.State",
+  "State",
+  "Tethering__State",
+  "tethering",
   2,
-  injector__status__enum_values_by_number,
+  tethering__state__enum_values_by_number,
   2,
-  injector__status__enum_values_by_name,
+  tethering__state__enum_values_by_name,
   1,
-  injector__status__value_ranges,
+  tethering__state__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-const ProtobufCEnumValue injector__sensor_type__enum_values_by_number[5] =
+const ProtobufCEnumValue tethering__sensor_type__enum_values_by_number[5] =
 {
-  { "ACCEL", "INJECTOR__SENSOR_TYPE__ACCEL", 1 },
-  { "MAGNETIC", "INJECTOR__SENSOR_TYPE__MAGNETIC", 2 },
-  { "GYROSCOPE", "INJECTOR__SENSOR_TYPE__GYROSCOPE", 3 },
-  { "PROXIMITY", "INJECTOR__SENSOR_TYPE__PROXIMITY", 4 },
-  { "LIGHT", "INJECTOR__SENSOR_TYPE__LIGHT", 5 },
+  { "ACCEL", "TETHERING__SENSOR_TYPE__ACCEL", 1 },
+  { "MAGNETIC", "TETHERING__SENSOR_TYPE__MAGNETIC", 2 },
+  { "GYROSCOPE", "TETHERING__SENSOR_TYPE__GYROSCOPE", 3 },
+  { "PROXIMITY", "TETHERING__SENSOR_TYPE__PROXIMITY", 4 },
+  { "LIGHT", "TETHERING__SENSOR_TYPE__LIGHT", 5 },
 };
-static const ProtobufCIntRange injector__sensor_type__value_ranges[] = {
+static const ProtobufCIntRange tethering__sensor_type__value_ranges[] = {
 {1, 0},{0, 5}
 };
-const ProtobufCEnumValueIndex injector__sensor_type__enum_values_by_name[5] =
+const ProtobufCEnumValueIndex tethering__sensor_type__enum_values_by_name[5] =
 {
   { "ACCEL", 0 },
   { "GYROSCOPE", 2 },
@@ -2028,46 +2028,46 @@ const ProtobufCEnumValueIndex injector__sensor_type__enum_values_by_name[5] =
   { "MAGNETIC", 1 },
   { "PROXIMITY", 3 },
 };
-const ProtobufCEnumDescriptor injector__sensor_type__descriptor =
+const ProtobufCEnumDescriptor tethering__sensor_type__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.SensorType",
+  "tethering.SensorType",
   "SensorType",
-  "Injector__SensorType",
-  "injector",
+  "Tethering__SensorType",
+  "tethering",
   5,
-  injector__sensor_type__enum_values_by_number,
+  tethering__sensor_type__enum_values_by_number,
   5,
-  injector__sensor_type__enum_values_by_name,
+  tethering__sensor_type__enum_values_by_name,
   1,
-  injector__sensor_type__value_ranges,
+  tethering__sensor_type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-const ProtobufCEnumValue injector__touch_status__enum_values_by_number[2] =
+const ProtobufCEnumValue tethering__touch_state__enum_values_by_number[2] =
 {
-  { "PRESS", "INJECTOR__TOUCH_STATUS__PRESS", 1 },
-  { "RELEASE", "INJECTOR__TOUCH_STATUS__RELEASE", 2 },
+  { "PRESSED", "TETHERING__TOUCH_STATE__PRESSED", 1 },
+  { "RELEASED", "TETHERING__TOUCH_STATE__RELEASED", 2 },
 };
-static const ProtobufCIntRange injector__touch_status__value_ranges[] = {
+static const ProtobufCIntRange tethering__touch_state__value_ranges[] = {
 {1, 0},{0, 2}
 };
-const ProtobufCEnumValueIndex injector__touch_status__enum_values_by_name[2] =
+const ProtobufCEnumValueIndex tethering__touch_state__enum_values_by_name[2] =
 {
-  { "PRESS", 0 },
-  { "RELEASE", 1 },
+  { "PRESSED", 0 },
+  { "RELEASED", 1 },
 };
-const ProtobufCEnumDescriptor injector__touch_status__descriptor =
+const ProtobufCEnumDescriptor tethering__touch_state__descriptor =
 {
   PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
-  "injector.TouchStatus",
-  "TouchStatus",
-  "Injector__TouchStatus",
-  "injector",
+  "tethering.TouchState",
+  "TouchState",
+  "Tethering__TouchState",
+  "tethering",
   2,
-  injector__touch_status__enum_values_by_number,
+  tethering__touch_state__enum_values_by_number,
   2,
-  injector__touch_status__enum_values_by_name,
+  tethering__touch_state__enum_values_by_name,
   1,
-  injector__touch_status__value_ranges,
+  tethering__touch_state__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };

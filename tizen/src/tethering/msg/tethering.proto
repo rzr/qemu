@@ -1,32 +1,60 @@
-package injector;
+package tethering;
 
-option java_package = "event.injector.genmsg";
+option java_package = "device.tethering.genmsg";
 
-enum Result {
+// define value
+
+enum MessageResult {
 	SUCCESS = 1;
 	FAILURE = 2;
 	CANCEL = 3;
 }
+
+enum ConnectionState {
+	CONNECTED = 1;
+	DISCONNECTED = 2;
+	TERMINATED = 3;
+}
+
+enum EventType {
+	SENSOR = 1;
+	TOUCH = 2;
+}
+
+enum State {
+	ENABLED = 1;
+	DISABLED = 2;
+}
+
+enum SensorType{
+	ACCEL = 1;
+	MAGNETIC = 2;
+	GYROSCOPE = 3;
+	PROXIMITY = 4;
+	LIGHT = 5;
+}
+
+enum TouchState {
+	PRESSED = 1;
+	RELEASED = 2;
+}
+
+// define messages
 
 message HandShakeReq {
 	required int32 key = 1;
 }
 
 message HandShakeAns {
-	required Result result = 1;
+	required MessageResult result = 1;
 }
 
-enum ConnectionState {
-	CONNECT = 1;
-	DISCONNECT = 2;
-	TERMINATE = 3;
-}
 message EmulatorState {
 	required ConnectionState state = 1;
 }
 
 message AppState {
-	required ConnectionState state =1;
+	required ConnectionState state = 1;
 }
 
 message StartReq {
@@ -34,22 +62,12 @@ message StartReq {
 }
 
 message StartAns {
-	required Result result = 1;
-}
-
-enum Event {
-	SENSOR = 1;
-	MULTITOUCH = 2;
-}
-
-enum Status {
-	ENABLE = 1;
-	DISABLE = 2;
+	required MessageResult result = 1;
 }
 
 message SetEventStatus {
-	required Event event = 1;
-	required Status status = 2;
+	required EventType type = 1;
+	required State state = 2;
 }
 
 message EventMsg {
@@ -61,27 +79,19 @@ message EventMsg {
 	}
 
 	required TYPE type = 1;
-	optional StartReq startReq= 2;
-	optional StartAns startAns= 3;
+	optional StartReq startReq = 2;
+	optional StartAns startAns = 3;
 	optional EventTerminate terminate = 4;
-	optional SetEventStatus setStatus= 5;
+	optional SetEventStatus setStatus = 5;
 }
 
 message EventTerminate {
 
 }
 
-enum SensorType{
-	ACCEL = 1;
-	MAGNETIC = 2;
-	GYROSCOPE = 3;
-	PROXIMITY = 4;
-	LIGHT = 5;
-}
-
 message SetSensorStatus {
-	required SensorType sensor = 1;
-	required Status status = 2;
+	required SensorType type = 1;
+	required State state = 2;
 }
 
 message SensorData {
@@ -103,8 +113,8 @@ message SensorMsg {
 	required Type type = 1;
 	optional StartReq startReq= 2;
 	optional StartAns startAns= 3;
-	optional EventTerminate terminate= 4;
-	optional SetSensorStatus setStatus= 5;
+	optional EventTerminate terminate = 4;
+	optional SetSensorStatus setStatus = 5;
 	optional SensorData data = 6;
 }
 
@@ -117,16 +127,11 @@ message MultiTouchMaxCount {
 	optional int32 max = 1 [default = 10];
 }
 
-enum TouchStatus {
-	PRESS = 1;
-	RELEASE = 2;
-}
-
 message MultiTouchData {
 	optional int32 index = 1 [default = 0];
 	optional float xPoint = 2 [default = 0.0];
 	optional float yPoint = 3 [default = 0.0];
-	optional TouchStatus status = 4;
+	optional TouchState state = 4;
 }
 
 message MultiTouchMsg {
@@ -139,15 +144,15 @@ message MultiTouchMsg {
 		RESOLUTION = 7;
 	}
 	required Type type = 1;
-	optional StartReq startReq= 2;
-	optional StartAns startAns= 3;
-	optional EventTerminate terminate= 4;
+	optional StartReq startReq = 2;
+	optional StartAns startAns = 3;
+	optional EventTerminate terminate = 4;
 	optional MultiTouchMaxCount maxCount = 5;
 	optional MultiTouchData touchData = 6;
 	optional Resolution resolution = 7;
 }
 
-message InjectorMsg {
+message TetheringMsg {
 	enum Type {
 		HANDSHAKE_REQ = 2;
 		HANDSHAKE_ANS = 3;
@@ -166,4 +171,3 @@ message InjectorMsg {
 	optional SensorMsg sensorMsg = 7;
 	optional MultiTouchMsg touchMsg = 8;
 }
-
