@@ -45,6 +45,9 @@
 #define major(x) 0
 #define minor(x) 0
 
+/* Old MinGW's struct dirent doesn't support d_type member */
+#define WIN32_D_TYPE 0
+
 extern uint64_t hostBytesPerSector;
 #endif
 
@@ -1984,9 +1987,15 @@ static int v9fs_do_readdir(V9fsPDU *pdu,
                           dent->d_type, &name);
 #else
         d_offset = v9fs_co_telldir(pdu, fidp);
+#ifndef CONFIG_WIN32
         len = pdu_marshal(pdu, 11 + count, "Qqbs",
                           &qid, d_offset,
                           dent->d_type, &name);
+#else
+        len = pdu_marshal(pdu, 11 + count, "Qqbs",
+                          &qid, d_offset,
+                          WIN32_D_TYPE, &name);
+#endif
 #endif
         if (len < 0) {
             v9fs_co_seekdir(pdu, fidp, saved_dir_pos);
