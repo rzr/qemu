@@ -1,3 +1,6 @@
+* 1.7.40
+- fix screen shot feature
+== GiWoong Kim <giwoong.kim@samsung.com> 2014-05-20
 * 1.7.39
 - Apply Qemu 2.0 on windows.
 == Sooyoung Ha <yoosah.ha@samsung.com> 2014-05-13
