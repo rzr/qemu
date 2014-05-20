@@ -122,9 +122,9 @@ bool send_to_all_client(const char* data, const int len) {
     TRACE("data len: %d, data: %s\n", len, data);
     pthread_mutex_lock(&mutex_clilist);
 
-    ECS_Client *clii;
+    ECS_Client *clii,*next;
 
-    QTAILQ_FOREACH(clii, &clients, next)
+    QTAILQ_FOREACH_SAFE(clii, &clients, next, next)
     {
         send_to_client(clii->client_fd, data, len);
     }
@@ -197,7 +197,7 @@ static Monitor *monitor_create(void) {
 }
 
 static void ecs_close(ECS_State *cs) {
-    ECS_Client *clii;
+    ECS_Client *clii, *next;
     INFO("### Good bye! ECS ###\n");
 
     if (cs == NULL)
@@ -223,7 +223,7 @@ static void ecs_close(ECS_State *cs) {
         cs->alive_timer = NULL;
     }
 
-    QTAILQ_FOREACH(clii, &clients, next)
+    QTAILQ_FOREACH_SAFE(clii, &clients, next, next)
     {
         ecs_client_close(clii);
     }
@@ -369,9 +369,9 @@ static void epoll_cli_add(ECS_State *cs, int fd) {
 #endif
 
 static ECS_Client *ecs_find_client(int fd) {
-    ECS_Client *clii;
+    ECS_Client *clii, *next;
 
-    QTAILQ_FOREACH(clii, &clients, next)
+    QTAILQ_FOREACH_SAFE(clii, &clients, next, next)
     {
         if (clii->client_fd == fd)
             return clii;
@@ -380,9 +380,9 @@ static ECS_Client *ecs_find_client(int fd) {
 }
 
 ECS_Client *find_client(unsigned char id, unsigned char type) {
-    ECS_Client *clii;
+    ECS_Client *clii, *next;
 
-    QTAILQ_FOREACH(clii, &clients, next)
+    QTAILQ_FOREACH_SAFE(clii, &clients, next, next)
     {
         if (clii->client_id == id && clii->client_type == type)
             return clii;
@@ -513,13 +513,13 @@ static void make_keep_alive_msg(void) {
 
 static void alive_checker(void *opaque) {
 
-    ECS_Client *clii;
+    ECS_Client *clii, *next;
 
     if (NULL != current_ecs && !current_ecs->ecs_running) {
         return;
     }
 
-    QTAILQ_FOREACH(clii, &clients, next)
+    QTAILQ_FOREACH_SAFE(clii, &clients, next, next)
     {
         if (1 == clii->keep_alive) {
             INFO("get client fd %d - keep alive fail\n", clii->client_fd);
@@ -619,17 +619,14 @@ static int ecs_loop(ECS_State *cs)
     for (index = 0; index < cs->reads.fd_count; index++) {
         if (cs->reads.fd_array == NULL)
             continue;
-
         if (FD_ISSET(cs->reads.fd_array[index], &temps)) {
             if (cs->reads.fd_array[index] == cs->listen_fd) {
                 ecs_accept(cs);
                 continue;
             }
-
             ecs_read(ecs_find_client(cs->reads.fd_array[index]));
         }
     }
-
     return 0;
 }
 #elif defined(CONFIG_DARWIN)
@@ -729,7 +726,7 @@ int stop_ecs(void) {
     INFO("ecs is closing.\n");
     if (NULL != current_ecs) {
         current_ecs->ecs_running = 0;
-        ecs_close(current_ecs);
+    //    ecs_close(current_ecs);
     }
 
     pthread_mutex_destroy(&mutex_clilist);

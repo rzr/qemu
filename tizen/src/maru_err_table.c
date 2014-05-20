@@ -265,6 +265,11 @@ void maru_dump_backtrace(void *ptr, int depth)
         pTopFrame = (void *)((PCONTEXT)pContext)->Ebp;
     }
 
+    if (pTopFrame == NULL) {
+        INFO("ebp is null, skip this for now\n");
+        return ;
+    }
+
     nCount = 0;
     currentFrame.pNext = ((struct frame_layout *)pTopFrame)->pNext;
     currentFrame.pReturnAddr = ((struct frame_layout *)pTopFrame)->pReturnAddr;
