@@ -140,9 +140,9 @@ static void send_to_sdb_client(GS_Client* client, int state)
 void notify_all_sdb_clients(int state)
 {
     pthread_mutex_lock(&mutex_clilist);
-    GS_Client *client;
+    GS_Client *client, *next;
 
-    QTAILQ_FOREACH(client, &clients, next)
+    QTAILQ_FOREACH_SAFE(client, &clients, next, next)
     {
         send_to_sdb_client(client, state);
     }
@@ -153,7 +153,7 @@ void notify_all_sdb_clients(int state)
 static void add_sdb_client(struct sockaddr_in* addr, int port, const char* serial)
 {
     GS_Client *cli = NULL;
-    GS_Client *client = NULL;
+    GS_Client *client = NULL, *next;
 
     if (addr == NULL) {
         INFO("GS_Client client's address is EMPTY.\n");
@@ -166,7 +166,7 @@ static void add_sdb_client(struct sockaddr_in* addr, int port, const char* seria
         return;
     }
 
-    QTAILQ_FOREACH(cli, &clients, next)
+    QTAILQ_FOREACH_SAFE(cli, &clients, next, next)
     {
         if (!strcmp(serial, cli->serial) && !strcmp(inet_ntoa(addr->sin_addr), inet_ntoa((cli->addr).sin_addr))) {
             INFO("Client cannot be duplicated.\n");
@@ -546,9 +546,9 @@ static void server_process(void)
 static void close_clients(void)
 {
     pthread_mutex_lock(&mutex_clilist);
-    GS_Client * client;
+    GS_Client * client, *next;
 
-    QTAILQ_FOREACH(client, &clients, next)
+    QTAILQ_FOREACH_SAFE(client, &clients, next, next)
     {
         QTAILQ_REMOVE(&clients, client, next);
 
