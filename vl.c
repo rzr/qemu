@@ -4080,12 +4080,21 @@ int main(int argc, char **argv, char **envp)
     }
 
 #if defined(CONFIG_MARU)
+    // W/A for preserve larger continuous heap for RAM.
+    preallocated_ptr = g_malloc(ram_size);
+
+    kernel_cmdline = qemu_opt_get(qemu_get_machine_opts(), "append");
+    // Returned variable points different address from input variable.
+    kernel_cmdline = prepare_maru(kernel_cmdline);
+    qemu_opt_set(qemu_get_machine_opts(), "append", kernel_cmdline);
+
+    // for VIGS/YaGL
     if (enable_vigs) {
         if (!vigs_backend) {
             vigs_backend = g_strdup("gl");
         }
 
-        if (strcmp(vigs_backend, "gl") != 0 && strcmp(vigs_backend, "sw") != 0) {
+        if (g_strcmp0(vigs_backend, "gl") != 0 && g_strcmp0(vigs_backend, "sw") != 0) {
             fprintf (stderr, "Error: Bad VIGS backend - %s!\n", vigs_backend);
             exit(1);
         }
@@ -4096,13 +4105,13 @@ int main(int argc, char **argv, char **envp)
             yagl_backend = "offscreen";
         }
 
-        if (strcmp(yagl_backend, "offscreen") != 0) {
-            if (strcmp(yagl_backend, "vigs") == 0) {
+        if (g_strcmp0(yagl_backend, "offscreen") != 0) {
+            if (g_strcmp0(yagl_backend, "vigs") == 0) {
                 if (!enable_vigs) {
                     fprintf (stderr, "Error: Bad YaGL backend - %s, VIGS not enabled!\n", yagl_backend);
                     exit(1);
                 }
-                if (strcmp(vigs_backend, "gl") != 0) {
+                if (g_strcmp0(vigs_backend, "gl") != 0) {
                     fprintf (stderr, "Error: Bad YaGL backend - %s, VIGS is not configured with gl backend!\n", yagl_backend);
                     exit(1);
                 }
@@ -4314,10 +4323,6 @@ int main(int argc, char **argv, char **envp)
     if (ram_size == 0) {
         ram_size = DEFAULT_RAM_SIZE * 1024 * 1024;
     }
-#ifdef CONFIG_MARU
-    // W/A for preserve larger continuous heap for RAM.
-    preallocated_ptr = g_malloc(ram_size);
-#endif
 
     hax_pre_init(ram_size);
 
@@ -4533,10 +4538,6 @@ int main(int argc, char **argv, char **envp)
 
     qdev_machine_init();
 
-#ifdef CONFIG_MARU
-    // Returned variable points different address from input variable.
-    kernel_cmdline = prepare_maru_devices(kernel_cmdline);
-#endif
     QEMUMachineInitArgs args = { .machine = machine,
                                  .ram_size = ram_size,
                                  .boot_order = boot_order,
@@ -4678,10 +4679,6 @@ int main(int argc, char **argv, char **envp)
     } else if (autostart) {
         vm_start();
     }
-
-#ifdef CONFIG_MARU
-    prepare_maru();
-#endif
 
     os_setup_post();
 

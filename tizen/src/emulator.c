@@ -72,6 +72,9 @@ int thread_running = 1; /* Check if we need exit main */
 
 MULTI_DEBUG_CHANNEL(qemu, main);
 
+#define SUPPORT_LEGACY_ARGS
+
+#ifdef SUPPORT_LEGACY_ARGS
 #define QEMU_ARGS_PREFIX "--qemu-args"
 #define SKIN_ARGS_PREFIX "--skin-args"
 #define IMAGE_PATH_PREFIX   "file="
@@ -83,6 +86,7 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define DISPLAY_WIDTH_PREFIX "width="
 #define DISPLAY_HEIGHT_PREFIX "height="
 #define INPUT_TOUCH_PARAMETER "virtio-touchscreen-pci"
+#endif // SUPPORT_LEGACY_ARGS
 
 #define MIDBUF  128
 #define LEN_MARU_KERNEL_CMDLINE 512
@@ -267,26 +271,29 @@ static void print_system_info(void)
 }
 
 #define DEFAULT_QEMU_DNS_IP "10.0.2.3"
-static void prepare_basic_features(void)
+static void prepare_basic_features(gchar * const kernel_cmdline)
 {
     char http_proxy[MIDBUF] ={0}, https_proxy[MIDBUF] = {0,},
         ftp_proxy[MIDBUF] = {0,}, socks_proxy[MIDBUF] = {0,},
         dns[MIDBUF] = {0};
 
-    qemu_add_opts(&qemu_ecs_opts);
-
-    get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
-    /* using "DNS" provided by default QEMU */
-    g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
-
     set_base_port();
-
-    start_ecs();
 
     check_vm_lock();
     make_vm_lock();
 
-    sdb_setup(); /* determine the base port for emulator */
+    qemu_add_opts(&qemu_ecs_opts);
+    start_ecs();
+
+    start_guest_server(get_device_serial_number() + SDB_UDP_SENSOR_INDEX);
+
+    mloop_ev_init();
+
+    sdb_setup();
+
+    get_host_proxy(http_proxy, https_proxy, ftp_proxy, socks_proxy);
+    /* using "DNS" provided by default QEMU */
+    g_strlcpy(dns, DEFAULT_QEMU_DNS_IP, strlen(DEFAULT_QEMU_DNS_IP) + 1);
 
     gchar * const tmp_str = g_strdup_printf(" sdb_port=%d,"
         " http_proxy=%s https_proxy=%s ftp_proxy=%s socks_proxy=%s"
@@ -294,13 +301,13 @@ static void prepare_basic_features(void)
         http_proxy, https_proxy, ftp_proxy, socks_proxy, dns,
         get_emul_resolution_width(), get_emul_resolution_height());
 
-    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
+    g_strlcat(kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
 
     g_free(tmp_str);
 }
 
 #ifdef CONFIG_YAGL
-static void prepare_opengl_acceleration(void)
+static void prepare_opengl_acceleration(gchar * const kernel_cmdline)
 {
     int capability_check_gl = 0;
 
@@ -315,48 +322,41 @@ static void prepare_opengl_acceleration(void)
 
     gchar * const tmp_str = g_strdup_printf(" yagl=%d", enable_yagl);
 
-    g_strlcat(maru_kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
+    g_strlcat(kernel_cmdline, tmp_str, LEN_MARU_KERNEL_CMDLINE);
 
     g_free(tmp_str);
 }
 #endif
 
-const gchar *prepare_maru_devices(const gchar *kernel_cmdline)
+const gchar *prepare_maru(const gchar * const kernel_cmdline)
 {
-    INFO("Prepare maru specified kernel command line\n");
+    INFO("Prepare maru specified feature\n");
+
+    INFO("Construct main window\n");
+
+    construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
 
     g_strlcpy(maru_kernel_cmdline, kernel_cmdline, LEN_MARU_KERNEL_CMDLINE);
 
+    /* Prepare basic features */
+    INFO("Prepare_basic_features\n");
+    prepare_basic_features(maru_kernel_cmdline);
+
     /* Prepare GL acceleration */
 #ifdef CONFIG_YAGL
-    prepare_opengl_acceleration();
+    INFO("Prepare_opengl_acceleration\n");
+    prepare_opengl_acceleration(maru_kernel_cmdline);
 #endif
-
-    /* Prepare basic features */
-    prepare_basic_features();
 
     INFO("kernel command : %s\n", maru_kernel_cmdline);
 
     return maru_kernel_cmdline;
 }
 
-void prepare_maru(void)
-{
-    INFO("Prepare maru specified feature\n");
-
-    INFO("call construct_main_window\n");
-
-    construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
-
-    int guest_server_port = get_device_serial_number() + SDB_UDP_SENSOR_INDEX;
-    start_guest_server(guest_server_port);
-
-    mloop_ev_init();
-}
-
 int qemu_main(int argc, char **argv, char **envp);
 
-/* deprecated */
+#ifdef SUPPORT_LEGACY_ARGS
+// deprecated
 static void extract_qemu_info(int qemu_argc, char **qemu_argv)
 {
     int i = 0;
@@ -382,7 +382,7 @@ static void extract_qemu_info(int qemu_argc, char **qemu_argv)
     }
 }
 
-/* deprecated */
+// deprecated
 static void extract_skin_info(int skin_argc, char **skin_argv)
 {
     int i = 0;
@@ -408,7 +408,7 @@ static void extract_skin_info(int skin_argc, char **skin_argv)
     }
 }
 
-/* deprecated */
+// deprecated
 static void legacy_parse_options(int argc, char *argv[], int *skin_argc,
                         char ***skin_argv, int *qemu_argc, char ***qemu_argv)
 {
@@ -441,7 +441,7 @@ static void legacy_parse_options(int argc, char *argv[], int *skin_argc,
     }
 }
 
-/* deprecated */
+// deprecated
 static int legacy_emulator_main(int argc, char * argv[], char **envp)
 {
     legacy_parse_options(argc, argv, &_skin_argc,
@@ -484,10 +484,18 @@ static int legacy_emulator_main(int argc, char * argv[], char **envp)
 
     return 0;
 }
+#endif // SUPPORT_LEGACY_ARGS
 
 static int emulator_main(int argc, char *argv[], char **envp)
 {
-    return legacy_emulator_main(argc, argv, envp);
+#ifdef SUPPORT_LEGACY_ARGS
+    // for compatibilities...
+    if (argc > 2 && !g_strcmp0("--skin-args", argv[1])) {
+        return legacy_emulator_main(argc, argv, envp);
+    }
+#endif
+
+    return 0;
 }
 
 #ifdef CONFIG_DARWIN
@@ -522,7 +530,7 @@ int main(int argc, char *argv[], char **envp)
     maru_register_exception_handler();
     return emulator_main(argc, argv, envp);
 }
-#else
+#else // WIN32
 int main(int argc, char *argv[])
 {
     maru_register_exception_handler();
