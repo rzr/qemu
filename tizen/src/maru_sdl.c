@@ -72,6 +72,9 @@ static unsigned int blank_cnt;
 QemuMutex sdl_mutex;
 QemuCond sdl_cond;
 static int sdl_thread_initialized;
+
+QemuThread sdl_thread;
+static bool sdl_thread_exit;
 #endif
 
 #define SDL_FLAGS (SDL_SWSURFACE | SDL_ASYNCBLIT | SDL_NOFRAME)
@@ -359,16 +362,20 @@ static void qemu_update(void)
 #ifdef SDL_THREAD
 static void *run_qemu_update(void *arg)
 {
-    while(1) {
-        qemu_mutex_lock(&sdl_mutex);
+    qemu_mutex_lock(&sdl_mutex);
 
+    while (1) {
         qemu_cond_wait(&sdl_cond, &sdl_mutex);
-
+        if (sdl_thread_exit) {
+            INFO("make SDL Thread exit\n");
+            break;
+        }
         qemu_update();
-
-        qemu_mutex_unlock(&sdl_mutex);
     }
 
+    qemu_mutex_unlock(&sdl_mutex);
+
+    INFO("finish qemu_update routine\n");
     return NULL;
 }
 #endif
@@ -495,7 +502,7 @@ static void maru_sdl_init_bh(void *opaque)
 
         INFO("sdl update thread create\n");
 
-        QemuThread sdl_thread;
+        sdl_thread_exit = false;
         qemu_thread_create(&sdl_thread, "sdl-workthread", run_qemu_update,
             NULL, QEMU_THREAD_JOINABLE);
     }
@@ -569,9 +576,15 @@ void maru_sdl_quit(void)
     SDL_Quit();
 
 #ifdef SDL_THREAD
+    sdl_thread_exit = true;
+    qemu_cond_signal(&sdl_cond);
     qemu_mutex_unlock(&sdl_mutex);
-    qemu_cond_destroy(&sdl_cond);
 
+    INFO("join SDL thread\n");
+    qemu_thread_join(&sdl_thread);
+
+    INFO("destroy cond and mutex of SDL thread\n");
+    qemu_cond_destroy(&sdl_cond);
     qemu_mutex_destroy(&sdl_mutex);
 #endif
 }
