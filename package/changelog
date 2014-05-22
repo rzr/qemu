@@ -1,3 +1,7 @@
+* 1.7.41
+- modified some device names <(_) to (-)>
+- fix release routine for maru_sdl
+== Jinhyung Jo <jinhyung.jo@samsung.com> 2014-05-22
 * 1.7.40
 - fix screen shot feature
 == GiWoong Kim <giwoong.kim@samsung.com> 2014-05-20
