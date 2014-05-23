@@ -144,10 +144,10 @@ static int mp_dacl_setxattr(FsContext *ctx, const char *path, const char *name,
 
     buffer = rpath(ctx, path);
 #ifdef CONFIG_LINUX
-    return lsetxattr(buffer, MAP_ACL_DEFAULT, value,
+    ret = lsetxattr(buffer, MAP_ACL_DEFAULT, value,
             size, flags);
 #else
-    return setxattr(buffer, MAP_ACL_DEFAULT, value,
+    ret = setxattr(buffer, MAP_ACL_DEFAULT, value,
             size, 0, flags | XATTR_NOFOLLOW);
 #endif
     g_free(buffer);
