@@ -565,6 +565,49 @@ void   tethering__resolution__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__resolution__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   tethering__display_msg__init
+                     (Tethering__DisplayMsg         *message)
+{
+  static Tethering__DisplayMsg init_value = TETHERING__DISPLAY_MSG__INIT;
+  *message = init_value;
+}
+size_t tethering__display_msg__get_packed_size
+                     (const Tethering__DisplayMsg *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__display_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t tethering__display_msg__pack
+                     (const Tethering__DisplayMsg *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__display_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t tethering__display_msg__pack_to_buffer
+                     (const Tethering__DisplayMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__display_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Tethering__DisplayMsg *
+       tethering__display_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Tethering__DisplayMsg *)
+     protobuf_c_message_unpack (&tethering__display_msg__descriptor,
+                                allocator, len, data);
+}
+void   tethering__display_msg__free_unpacked
+                     (Tethering__DisplayMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__display_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   tethering__multi_touch_max_count__init
                      (Tethering__MultiTouchMaxCount         *message)
 {
@@ -1455,6 +1498,70 @@ const ProtobufCMessageDescriptor tethering__resolution__descriptor =
   (ProtobufCMessageInit) tethering__resolution__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
+static const ProtobufCFieldDescriptor tethering__display_msg__field_descriptors[3] =
+{
+  {
+    "onOff",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BOOL,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Tethering__DisplayMsg, onoff),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "frameRate",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    PROTOBUF_C_OFFSETOF(Tethering__DisplayMsg, has_framerate),
+    PROTOBUF_C_OFFSETOF(Tethering__DisplayMsg, framerate),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "imageData",
+    4,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_BYTES,
+    PROTOBUF_C_OFFSETOF(Tethering__DisplayMsg, has_imagedata),
+    PROTOBUF_C_OFFSETOF(Tethering__DisplayMsg, imagedata),
+    NULL,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned tethering__display_msg__field_indices_by_name[] = {
+  1,   /* field[1] = frameRate */
+  2,   /* field[2] = imageData */
+  0,   /* field[0] = onOff */
+};
+static const ProtobufCIntRange tethering__display_msg__number_ranges[1 + 1] =
+{
+  { 2, 0 },
+  { 0, 3 }
+};
+const ProtobufCMessageDescriptor tethering__display_msg__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "tethering.DisplayMsg",
+  "DisplayMsg",
+  "Tethering__DisplayMsg",
+  "tethering",
+  sizeof(Tethering__DisplayMsg),
+  3,
+  tethering__display_msg__field_descriptors,
+  tethering__display_msg__field_indices_by_name,
+  1,  tethering__display_msg__number_ranges,
+  (ProtobufCMessageInit) tethering__display_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const int32_t tethering__multi_touch_max_count__max__default_value = 10;
 static const ProtobufCFieldDescriptor tethering__multi_touch_max_count__field_descriptors[1] =
 {
@@ -1574,7 +1681,7 @@ const ProtobufCMessageDescriptor tethering__multi_touch_data__descriptor =
   (ProtobufCMessageInit) tethering__multi_touch_data__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue tethering__multi_touch_msg__type__enum_values_by_number[6] =
+const ProtobufCEnumValue tethering__multi_touch_msg__type__enum_values_by_number[7] =
 {
   { "START_REQ", "TETHERING__MULTI_TOUCH_MSG__TYPE__START_REQ", 2 },
   { "START_ANS", "TETHERING__MULTI_TOUCH_MSG__TYPE__START_ANS", 3 },
@@ -1582,12 +1689,14 @@ const ProtobufCEnumValue tethering__multi_touch_msg__type__enum_values_by_number
   { "MAX_COUNT", "TETHERING__MULTI_TOUCH_MSG__TYPE__MAX_COUNT", 5 },
   { "TOUCH_DATA", "TETHERING__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA", 6 },
   { "RESOLUTION", "TETHERING__MULTI_TOUCH_MSG__TYPE__RESOLUTION", 7 },
+  { "DISPLAY", "TETHERING__MULTI_TOUCH_MSG__TYPE__DISPLAY", 8 },
 };
 static const ProtobufCIntRange tethering__multi_touch_msg__type__value_ranges[] = {
-{2, 0},{0, 6}
+{2, 0},{0, 7}
 };
-const ProtobufCEnumValueIndex tethering__multi_touch_msg__type__enum_values_by_name[6] =
+const ProtobufCEnumValueIndex tethering__multi_touch_msg__type__enum_values_by_name[7] =
 {
+  { "DISPLAY", 6 },
   { "MAX_COUNT", 3 },
   { "RESOLUTION", 5 },
   { "START_ANS", 1 },
@@ -1602,15 +1711,15 @@ const ProtobufCEnumDescriptor tethering__multi_touch_msg__type__descriptor =
   "Type",
   "Tethering__MultiTouchMsg__Type",
   "tethering",
-  6,
+  7,
   tethering__multi_touch_msg__type__enum_values_by_number,
-  6,
+  7,
   tethering__multi_touch_msg__type__enum_values_by_name,
   1,
   tethering__multi_touch_msg__type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-static const ProtobufCFieldDescriptor tethering__multi_touch_msg__field_descriptors[7] =
+static const ProtobufCFieldDescriptor tethering__multi_touch_msg__field_descriptors[8] =
 {
   {
     "type",
@@ -1696,8 +1805,21 @@ static const ProtobufCFieldDescriptor tethering__multi_touch_msg__field_descript
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "display",
+    8,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Tethering__MultiTouchMsg, display),
+    &tethering__display_msg__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned tethering__multi_touch_msg__field_indices_by_name[] = {
+  7,   /* field[7] = display */
   4,   /* field[4] = maxCount */
   6,   /* field[6] = resolution */
   2,   /* field[2] = startAns */
@@ -1709,7 +1831,7 @@ static const unsigned tethering__multi_touch_msg__field_indices_by_name[] = {
 static const ProtobufCIntRange tethering__multi_touch_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 7 }
+  { 0, 8 }
 };
 const ProtobufCMessageDescriptor tethering__multi_touch_msg__descriptor =
 {
@@ -1719,7 +1841,7 @@ const ProtobufCMessageDescriptor tethering__multi_touch_msg__descriptor =
   "Tethering__MultiTouchMsg",
   "tethering",
   sizeof(Tethering__MultiTouchMsg),
-  7,
+  8,
   tethering__multi_touch_msg__field_descriptors,
   tethering__multi_touch_msg__field_indices_by_name,
   1,  tethering__multi_touch_msg__number_ranges,
