@@ -217,6 +217,7 @@ exec ./configure \
  --extra-cflags=-Werror=implicit-int \
  --extra-ldflags=-Wl,--large-address-aware \
  --cc=gcc \
+ --disable-coroutine-pool \
  --audio-drv-list=winwave \
  --enable-hax \
  --disable-vnc \
