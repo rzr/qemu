@@ -162,7 +162,12 @@ static QEMUMachine maru_x86_machine = {
     .desc = "Maru Board (x86)",
     .init = maru_x86_board_init,
     .hot_add_cpu = pc_hot_add_cpu,
-    .default_machine_opts = "firmware=bios-256k.bin"
+    .no_parallel = 1,
+    .no_floppy = 1,
+    .no_cdrom = 1,
+    .no_sdcard = 1,
+    .default_machine_opts = "firmware=bios-256k.bin",
+    .default_boot_order = "c",
 };
 
 static void maru_machine_init(void)
