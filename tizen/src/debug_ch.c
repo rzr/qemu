@@ -280,8 +280,6 @@ static void debug_init(void)
     char *debug = NULL;
     FILE *fp = NULL;
     char *tmp = NULL;
-    int open_flags;
-    int fd;
 
     if (nb_debug_options != -1) {
         return;  /* already initialized */
@@ -338,15 +336,6 @@ static void debug_init(void)
     if (tmp != NULL) {
         free(tmp);
     }
-
-    open_flags = O_BINARY | O_RDWR | O_CREAT | O_TRUNC;
-    fd = qemu_open(log_path, open_flags, 0666);
-    if (fd < 0) {
-        fprintf(stderr, "Can't open logfile: %s\n", log_path);
-        exit(1);
-    }
-
-    close(fd);
 }
 
 /* allocate some tmp string space */
@@ -476,6 +465,12 @@ int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
     va_start(valist, format);
     ret += vsnprintf(buf_msg + ret, sizeof(buf_msg) - ret, format, valist);
     va_end(valist);
+
+    // If "log_path" is not set, we use "stdout".
+    if (log_path[0] == '\0') {
+        fprintf(stdout, "%s", buf_msg);
+        return ret;
+    }
 
     open_flags = O_RDWR | O_APPEND | O_BINARY | O_CREAT;
 
