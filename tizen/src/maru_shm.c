@@ -170,7 +170,7 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
             if (blank_guide_enable == true) {
                 INFO("draw a blank guide image\n");
 
-                if (get_emul_skin_enable() == 1) {
+                if (get_emul_skin_enable()) {
                     /* draw guide image */
                     notify_draw_blank_guide();
                 }

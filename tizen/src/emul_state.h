@@ -81,7 +81,7 @@ enum {
 
 
 typedef  struct EmulatorConfigInfo {
-    int skin_enable;
+    bool skin_enable;
     int resolution_w;
     int resolution_h;
     int sdl_bpp;
@@ -107,7 +107,7 @@ typedef struct EmulatorConfigState {
 
 
 /* setter */
-void set_emul_skin_enable(int enable);
+void set_emul_skin_enable(bool enable);
 void set_emul_resolution(int width, int height);
 void set_emul_win_scale(double scale);
 void set_emul_sdl_bpp(int bpp);
@@ -124,7 +124,7 @@ void set_emul_num_lock_state(int state);
 void set_emul_vm_name(char *vm_name);
 
 /* getter */
-int get_emul_skin_enable(void);
+bool get_emul_skin_enable(void);
 int get_emul_resolution_width(void);
 int get_emul_resolution_height(void);
 double get_emul_win_scale(void);

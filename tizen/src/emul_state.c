@@ -47,12 +47,12 @@ static EmulatorConfigInfo _emul_info = {0,};
 static EmulatorConfigState _emul_state;
 
 /* start_skin_client or not ? */
-void set_emul_skin_enable(int enable)
+void set_emul_skin_enable(bool enable)
 {
     _emul_info.skin_enable = enable;
 }
 
-int get_emul_skin_enable(void)
+bool get_emul_skin_enable(void)
 {
     return _emul_info.skin_enable;
 }

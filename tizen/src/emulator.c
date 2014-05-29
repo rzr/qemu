@@ -142,7 +142,7 @@ static void construct_main_window(int skin_argc, char *skin_argv[],
     set_emul_num_lock_state(0);
 
     /* the next line checks for debugging and etc.. */
-    if (get_emul_skin_enable() == 1) {
+    if (get_emul_skin_enable()) {
         if (0 > start_skin_client(skin_argc, skin_argv)) {
             maru_register_exit_msg(MARU_EXIT_SKIN_SERVER_FAILED, NULL);
             exit(-1);

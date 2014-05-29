@@ -206,14 +206,14 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
     if (sdl_skip_update && brightness_off) {
         if (blank_cnt > MAX_BLANK_FRAME_CNT) {
 #ifdef CONFIG_WIN32
-            if (sdl_invalidate && get_emul_skin_enable() != 0) {
+            if (sdl_invalidate && get_emul_skin_enable()) {
                 draw_image(surface_screen, get_blank_guide_image());
             }
 #endif
 
             return;
         } else if (blank_cnt == MAX_BLANK_FRAME_CNT) {
-            if (blank_guide_enable == true && get_emul_skin_enable() != 0) {
+            if (blank_guide_enable == true && get_emul_skin_enable()) {
                 INFO("draw a blank guide image\n");
 
                 draw_image(surface_screen, get_blank_guide_image());
