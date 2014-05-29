@@ -438,15 +438,6 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(PixelStorei, glPixelStorei);
     VIGS_GL_GET_PROC(ReadPixels, glReadPixels);
     VIGS_GL_GET_PROC(Viewport, glViewport);
-    VIGS_GL_GET_PROC(GenFramebuffers, glGenFramebuffersEXT);
-    VIGS_GL_GET_PROC(GenRenderbuffers, glGenRenderbuffersEXT);
-    VIGS_GL_GET_PROC(DeleteFramebuffers, glDeleteFramebuffersEXT);
-    VIGS_GL_GET_PROC(DeleteRenderbuffers, glDeleteRenderbuffersEXT);
-    VIGS_GL_GET_PROC(BindFramebuffer, glBindFramebufferEXT);
-    VIGS_GL_GET_PROC(BindRenderbuffer, glBindRenderbufferEXT);
-    VIGS_GL_GET_PROC(RenderbufferStorage, glRenderbufferStorageEXT);
-    VIGS_GL_GET_PROC(FramebufferRenderbuffer, glFramebufferRenderbufferEXT);
-    VIGS_GL_GET_PROC(FramebufferTexture2D, glFramebufferTexture2DEXT);
     VIGS_GL_GET_PROC(GetIntegerv, glGetIntegerv);
     VIGS_GL_GET_PROC(GetString, glGetString);
     VIGS_GL_GET_PROC(DrawArrays, glDrawArrays);
@@ -488,7 +479,26 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
         goto fail2;
     }
 
-    if (!gl_backend_glx->base.is_gl_2) {
+    if (gl_backend_glx->base.is_gl_2) {
+        VIGS_GL_GET_PROC(GenFramebuffers, glGenFramebuffersEXT);
+        VIGS_GL_GET_PROC(GenRenderbuffers, glGenRenderbuffersEXT);
+        VIGS_GL_GET_PROC(DeleteFramebuffers, glDeleteFramebuffersEXT);
+        VIGS_GL_GET_PROC(DeleteRenderbuffers, glDeleteRenderbuffersEXT);
+        VIGS_GL_GET_PROC(BindFramebuffer, glBindFramebufferEXT);
+        VIGS_GL_GET_PROC(BindRenderbuffer, glBindRenderbufferEXT);
+        VIGS_GL_GET_PROC(RenderbufferStorage, glRenderbufferStorageEXT);
+        VIGS_GL_GET_PROC(FramebufferRenderbuffer, glFramebufferRenderbufferEXT);
+        VIGS_GL_GET_PROC(FramebufferTexture2D, glFramebufferTexture2DEXT);
+    } else {
+        VIGS_GL_GET_PROC(GenFramebuffers, glGenFramebuffers);
+        VIGS_GL_GET_PROC(GenRenderbuffers, glGenRenderbuffers);
+        VIGS_GL_GET_PROC(DeleteFramebuffers, glDeleteFramebuffers);
+        VIGS_GL_GET_PROC(DeleteRenderbuffers, glDeleteRenderbuffers);
+        VIGS_GL_GET_PROC(BindFramebuffer, glBindFramebuffer);
+        VIGS_GL_GET_PROC(BindRenderbuffer, glBindRenderbuffer);
+        VIGS_GL_GET_PROC(RenderbufferStorage, glRenderbufferStorage);
+        VIGS_GL_GET_PROC(FramebufferRenderbuffer, glFramebufferRenderbuffer);
+        VIGS_GL_GET_PROC(FramebufferTexture2D, glFramebufferTexture2D);
         VIGS_GL_GET_PROC(GenVertexArrays, glGenVertexArrays);
         VIGS_GL_GET_PROC(BindVertexArray, glBindVertexArray);
         VIGS_GL_GET_PROC(DeleteVertexArrays, glDeleteVertexArrays);
