@@ -1485,25 +1485,6 @@ public class EmulatorSkin {
 					return;
 				}
 
-				if (!communicator.isSensorDaemonStarted()) {
-					/* roll back a selection */
-					item.setSelection(false);
-
-					for (MenuItem m : rotationList) {
-						short rotationId = (Short) m.getData();
-						if (currentState.getCurrentRotationId() == rotationId) {
-							m.setSelection(true);
-							break;
-						}
-					}
-
-					SkinUtil.openMessage(shell, null,
-							"Rotation is not ready.\n"
-									+ "Please wait until the emulator is completely boot up.",
-							SWT.ICON_WARNING, config);
-					return;
-				}
-
 				final short rotationId = ((Short) item.getData());
 
 				shell.getDisplay().syncExec(new Runnable() {
@@ -1850,17 +1831,6 @@ public class EmulatorSkin {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				logger.info("Control Panel menu is selected");
-
-				if (communicator.isSdbDaemonStarted() == false) {
-//						|| communicator.isEcsServerStarted() == false) {
-					logger.warning("Control Panel is not ready.");
-
-					SkinUtil.openMessage(shell,null,
-							"Control Panel is not ready.\n"
-							+ "Please wait until the emulator is completely boot up.",
-							SWT.ICON_WARNING, config);
-					return;
-				}
 
 				String ecpPath = SkinUtil.getEcpPath();
 

@@ -75,7 +75,7 @@ public class SocketCommunicator implements ICommunicator {
 		private long sleep;
 		private long maxWaitTime;
 		private Timer timer;
-		
+
 		private DataTranfer() {
 			/* do nothing */
 		}
@@ -113,9 +113,7 @@ public class SocketCommunicator implements ICommunicator {
 
 	private AtomicInteger heartbeatCount;
 	private boolean isTerminated;
-	private boolean isSensorDaemonStarted;
 	private boolean isSdbDaemonStarted;
-	private boolean isEcsServerStarted;
 	private boolean isRamdump;
 	private TimerTask heartbeatExecutor;
 	private Timer heartbeatTimer;
@@ -417,27 +415,11 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case RECV_SENSORD_STARTED: {
-					logger.info("received SENSORD_STARTED from QEMU");
-
-					synchronized (this) {
-						isSensorDaemonStarted = true;
-					}
-					break;
-				}
 				case RECV_SDBD_STARTED: {
 					logger.info("received SDBD_STARTED from QEMU");
 
 					synchronized (this) {
 						isSdbDaemonStarted = true;
-					}
-					break;
-				}
-				case RECV_ECS_STARTED: {
-					logger.info("received ECS_STARTED from QEMU");
-
-					synchronized (this) {
-						isEcsServerStarted = true;
 					}
 					break;
 				}
@@ -463,9 +445,7 @@ public class SocketCommunicator implements ICommunicator {
 					logger.info("received EMUL_RESET from QEMU");
 
 					synchronized (this) {
-						isSensorDaemonStarted = false;
 						isSdbDaemonStarted = false;
-						isEcsServerStarted = false;
 					}
 
 					// TODO:
@@ -594,7 +574,7 @@ public class SocketCommunicator implements ICommunicator {
 			}
 		}
 	}
-	
+
 	private void sendToQEMUInternal(SkinSendData sendData) {
 		if (null == sendData) {
 			return;
@@ -677,25 +657,17 @@ public class SocketCommunicator implements ICommunicator {
 
 			receivedData = dataTranfer.receivedData;
 			dataTranfer.receivedData = null;
-			
+
 			return receivedData;
 		}
 	}
-	
+
 	public Socket getSocket() {
 		return socket;
 	}
 
-	public synchronized boolean isSensorDaemonStarted() {
-		return isSensorDaemonStarted;
-	}
-
 	public synchronized boolean isSdbDaemonStarted() {
 		return isSdbDaemonStarted;
-	}
-
-	public synchronized boolean isEcsServerStarted() {
-		return isEcsServerStarted;
 	}
 
 	public synchronized void setRamdumpFlag(boolean flag) {

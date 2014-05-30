@@ -117,9 +117,7 @@ enum {
     SEND_HOST_KBD_STATE = 8,
     SEND_MULTI_TOUCH_STATE = 9,
 
-    SEND_SENSORD_STARTED = 800,
     SEND_SDBD_STARTED = 801,
-    SEND_ECS_STARTED = 802,
     SEND_DRAW_FRAME = 900,
     SEND_DRAW_BLANK_GUIDE = 901,
     SEND_EMUL_RESET = 998,
@@ -133,9 +131,7 @@ static uint16_t svr_port = 0;
 static int server_sock = 0;
 static int client_sock = 0;
 static int stop_server = 0;
-static int is_sensord_initialized = 0;
 static int is_sdbd_initialized = 0;
-static int is_ecs_initialized = 0;
 static int ready_server = 0;
 static int ignore_heartbeat = 0;
 static int is_force_close_client = 0;
@@ -300,22 +296,6 @@ void notify_draw_blank_guide(void)
     }
 }
 
-void notify_ecs_server_start(void)
-{
-    INFO("notify_ecs_server_start\n");
-
-    is_ecs_initialized = 1;
-    if (client_sock) {
-        if (0 > send_skin_header_only(
-            client_sock, SEND_ECS_STARTED, 1)) {
-
-            ERR("fail to send SEND_ECS_STARTED to skin\n");
-        }
-    } else {
-        INFO("skin client socket is not connected yet\n");
-    }
-}
-
 void notify_sdb_daemon_start(void)
 {
     INFO("notify_sdb_daemon_start\n");
@@ -326,22 +306,6 @@ void notify_sdb_daemon_start(void)
             client_sock, SEND_SDBD_STARTED, 1)) {
 
             ERR("fail to send SEND_SDBD_STARTED to skin\n");
-        }
-    } else {
-        INFO("skin client socket is not connected yet\n");
-    }
-}
-
-void notify_sensor_daemon_start(void)
-{
-    INFO("notify_sensor_daemon_start\n");
-
-    is_sensord_initialized = 1;
-    if (client_sock) {
-        if (0 > send_skin_header_only(
-            client_sock, SEND_SENSORD_STARTED, 1)) {
-
-            ERR("fail to send SEND_SENSORD_STARTED to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -1014,7 +978,7 @@ static void* run_skin_server(void* args)
                     maru_display_resize();
 
                     /* after display resizing */
-                    if (is_rotate == true && is_sensord_initialized == 1) {
+                    if (is_rotate == true) {
                         do_rotation_event(rotation_type);
                     }
 
