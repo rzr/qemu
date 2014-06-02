@@ -99,20 +99,8 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
     YAGL_GLES_OGL_GET_PROC(driver, TexImage3D, glTexImage3D);
     YAGL_GLES_OGL_GET_PROC(driver, TexSubImage3D, glTexSubImage3D);
     YAGL_GLES_OGL_GET_PROC(driver, CopyTexSubImage3D, glCopyTexSubImage3D);
-    YAGL_GLES_OGL_GET_PROC(driver, GenFramebuffers, glGenFramebuffersEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, BindFramebuffer, glBindFramebufferEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture2D, glFramebufferTexture2DEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, FramebufferRenderbuffer, glFramebufferRenderbufferEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, DeleteFramebuffers, glDeleteFramebuffersEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, BlitFramebuffer, glBlitFramebufferEXT);
     YAGL_GLES_OGL_GET_PROC(driver, DrawBuffers, glDrawBuffers);
     YAGL_GLES_OGL_GET_PROC(driver, ReadBuffer, glReadBuffer);
-    YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture3D, glFramebufferTexture3DEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, GenRenderbuffers, glGenRenderbuffersEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, BindRenderbuffer, glBindRenderbufferEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, RenderbufferStorage, glRenderbufferStorageEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, DeleteRenderbuffers, glDeleteRenderbuffersEXT);
-    YAGL_GLES_OGL_GET_PROC(driver, GetRenderbufferParameteriv, glGetRenderbufferParameterivEXT);
     YAGL_GLES_OGL_GET_PROC(driver, CreateProgram, glCreateProgram);
     YAGL_GLES_OGL_GET_PROC(driver, CreateShader, glCreateShader);
     YAGL_GLES_OGL_GET_PROC(driver, DeleteProgram, glDeleteProgram);
@@ -186,7 +174,6 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
     YAGL_GLES_OGL_GET_PROC(driver, Disable, glDisable);
     YAGL_GLES_OGL_GET_PROC(driver, Flush, glFlush);
     YAGL_GLES_OGL_GET_PROC(driver, FrontFace, glFrontFace);
-    YAGL_GLES_OGL_GET_PROC(driver, GenerateMipmap, glGenerateMipmapEXT);
     YAGL_GLES_OGL_GET_PROC(driver, Hint, glHint);
     YAGL_GLES_OGL_GET_PROC(driver, LineWidth, glLineWidth);
     YAGL_GLES_OGL_GET_PROC(driver, PixelStorei, glPixelStorei);
@@ -237,12 +224,38 @@ struct yagl_gles_driver *yagl_gles_ogl_create(struct yagl_dyn_lib *dyn_lib,
     YAGL_GLES_OGL_GET_PROC(driver, Finish, glFinish);
 
     if (gl_version > yagl_gl_2) {
+        YAGL_GLES_OGL_GET_PROC(driver, GenFramebuffers, glGenFramebuffers);
+        YAGL_GLES_OGL_GET_PROC(driver, BindFramebuffer, glBindFramebuffer);
+        YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture2D, glFramebufferTexture2D);
+        YAGL_GLES_OGL_GET_PROC(driver, FramebufferRenderbuffer, glFramebufferRenderbuffer);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteFramebuffers, glDeleteFramebuffers);
+        YAGL_GLES_OGL_GET_PROC(driver, BlitFramebuffer, glBlitFramebuffer);
+        YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture3D, glFramebufferTexture3D);
+        YAGL_GLES_OGL_GET_PROC(driver, GenRenderbuffers, glGenRenderbuffers);
+        YAGL_GLES_OGL_GET_PROC(driver, BindRenderbuffer, glBindRenderbuffer);
+        YAGL_GLES_OGL_GET_PROC(driver, RenderbufferStorage, glRenderbufferStorage);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteRenderbuffers, glDeleteRenderbuffers);
+        YAGL_GLES_OGL_GET_PROC(driver, GetRenderbufferParameteriv, glGetRenderbufferParameteriv);
+        YAGL_GLES_OGL_GET_PROC(driver, GenerateMipmap, glGenerateMipmap);
         YAGL_GLES_OGL_GET_PROC(driver, MapBufferRange, glMapBufferRange);
         YAGL_GLES_OGL_GET_PROC(driver, GetStringi, glGetStringi);
         YAGL_GLES_OGL_GET_PROC(driver, GenVertexArrays, glGenVertexArrays);
         YAGL_GLES_OGL_GET_PROC(driver, BindVertexArray, glBindVertexArray);
         YAGL_GLES_OGL_GET_PROC(driver, DeleteVertexArrays, glDeleteVertexArrays);
     } else {
+        YAGL_GLES_OGL_GET_PROC(driver, GenFramebuffers, glGenFramebuffersEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, BindFramebuffer, glBindFramebufferEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture2D, glFramebufferTexture2DEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, FramebufferRenderbuffer, glFramebufferRenderbufferEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteFramebuffers, glDeleteFramebuffersEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, BlitFramebuffer, glBlitFramebufferEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, FramebufferTexture3D, glFramebufferTexture3DEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, GenRenderbuffers, glGenRenderbuffersEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, BindRenderbuffer, glBindRenderbufferEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, RenderbufferStorage, glRenderbufferStorageEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, DeleteRenderbuffers, glDeleteRenderbuffersEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, GetRenderbufferParameteriv, glGetRenderbufferParameterivEXT);
+        YAGL_GLES_OGL_GET_PROC(driver, GenerateMipmap, glGenerateMipmapEXT);
         YAGL_GLES_OGL_GET_PROC_OPT(driver, MapBufferRange, glMapBufferRange);
     }
 
