@@ -235,7 +235,6 @@ static int mloop_evsock_send(struct mloop_evsock *ev, struct mloop_evpack *p)
     return ret;
 }
 
-static USBDevice *usbkbd = NULL;
 static USBDevice *usbdisk = NULL;
 #ifdef TARGET_I386
 static PCIDevice *hostkbd = NULL;
@@ -249,13 +248,7 @@ static void mloop_evhandle_usb_add(char *name)
         return;
     }
 
-    if (strcmp(name, "keyboard") == 0) {
-        if (usbkbd == NULL) {
-            usbkbd = usbdevice_create(name);
-        } else if (usbkbd->attached == 0) {
-            usb_device_attach(usbkbd);
-        }
-    } else if (strncmp(name, "disk:", 5) == 0) {
+    if (strncmp(name, "disk:", 5) == 0) {
         if (usbdisk == NULL) {
             usbdisk = usbdevice_create(name);
         }
@@ -271,11 +264,7 @@ static void mloop_evhandle_usb_del(char *name)
         return;
     }
 
-    if (strcmp(name, "keyboard") == 0) {
-        if (usbkbd && usbkbd->attached != 0) {
-            usb_device_detach(usbkbd);
-        }
-    } else if (strncmp(name, "disk:", 5) == 0) {
+    if (strncmp(name, "disk:", 5) == 0) {
         if (usbdisk) {
 //            qdev_free(&usbdisk->qdev);
         }
@@ -574,15 +563,6 @@ void mloop_evcmd_lower_intr(void *irq)
     mloop_evsock_send(&mloop, &pack);
 }
 
-void mloop_evcmd_usbkbd(int on)
-{
-    struct mloop_evpack pack = { MLOOP_EVTYPE_USB_ADD, 13, "keyboard" };
-    if (on == 0) {
-        pack.type = MLOOP_EVTYPE_USB_DEL;
-    }
-    mloop_evsock_send(&mloop, &pack);
-}
-
 void mloop_evcmd_hostkbd(int on)
 {
     struct mloop_evpack pack
@@ -633,16 +613,6 @@ void mloop_evcmd_sdcard(char *img)
     }
 
     mloop_evsock_send(&mloop, &pack);
-}
-
-int mloop_evcmd_get_usbkbd_status(void)
-{
-    return (usbkbd && usbkbd->attached ? 1 : 0);
-}
-
-void mloop_evcmd_set_usbkbd(void *dev)
-{
-    usbkbd = (USBDevice *)dev;
 }
 
 void mloop_evcmd_set_usbdisk(void *dev)
