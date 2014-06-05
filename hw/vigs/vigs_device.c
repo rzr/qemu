@@ -34,29 +34,23 @@
 #include "vigs_regs.h"
 #include "vigs_fenceman.h"
 #include "hw/hw.h"
+#include "hw/work_queue.h"
 #include "ui/console.h"
 #include "qemu/main-loop.h"
+#include <X11/Xlib.h>
 
 #define PCI_VENDOR_ID_VIGS 0x19B2
 #define PCI_DEVICE_ID_VIGS 0x1011
 
 #define VIGS_IO_SIZE 0x1000
 
-#ifndef CONFIG_USE_SHM
-#define VIGS_EXTRA_INVALIDATION (9)
-#else
-#define VIGS_EXTRA_INVALIDATION (0)
-#endif
-
-struct work_queue;
+Display *vigs_display = NULL;
+struct work_queue *vigs_render_queue = NULL;
+struct winsys_interface *vigs_wsi = NULL;
 
 typedef struct VIGSState
 {
     VIGSDevice dev;
-
-    void *display;
-
-    struct work_queue *render_queue;
 
     MemoryRegion vram_bar;
     uint32_t vram_size;
@@ -82,9 +76,12 @@ typedef struct VIGSState
     uint32_t reg_int;
 } VIGSState;
 
-#define TYPE_VIGS_DEVICE "vigs"
+static int x_error_handler(Display *dpy, XErrorEvent *e)
+{
+    return 0;
+}
 
-static const char *vigs_backend = "gl";
+#define TYPE_VIGS_DEVICE "vigs"
 
 static void vigs_update_irq(VIGSState *s)
 {
@@ -150,7 +147,7 @@ static void vigs_hw_invalidate(void *opaque)
 {
     VIGSState *s = opaque;
 
-    s->invalidate_cnt = 1 + VIGS_EXTRA_INVALIDATION;
+    s->invalidate_cnt = 1;
 }
 
 static void vigs_dpy_resize(void *user_data,
@@ -294,6 +291,18 @@ static int vigs_device_init(PCIDevice *dev)
     VIGSState *s = DO_UPCAST(VIGSState, dev.pci_dev, dev);
     struct vigs_backend *backend = NULL;
 
+    XSetErrorHandler(x_error_handler);
+    XInitThreads();
+
+    vigs_display = XOpenDisplay(0);
+
+    if (!vigs_display) {
+        fprintf(stderr, "Cannot open X display\n");
+        exit(1);
+    }
+
+    vigs_render_queue = work_queue_create("render_queue");
+
     vigs_log_init();
 
     if (s->vram_size < 16 * 1024 * 1024) {
@@ -326,11 +335,7 @@ static int vigs_device_init(PCIDevice *dev)
     pci_register_bar(&s->dev.pci_dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->ram_bar);
     pci_register_bar(&s->dev.pci_dev, 2, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->io_bar);
 
-    if (!strcmp(vigs_backend, "gl")) {
-        backend = vigs_gl_backend_create(s->display);
-    } else if (!strcmp(vigs_backend, "sw")) {
-        backend = vigs_sw_backend_create();
-    }
+    backend = vigs_gl_backend_create(vigs_display);
 
     if (!backend) {
         goto fail;
@@ -351,13 +356,13 @@ static int vigs_device_init(PCIDevice *dev)
                                    &vigs_dpy_ops,
                                    s,
                                    backend,
-                                   s->render_queue);
+                                   vigs_render_queue);
 
     if (!s->server) {
         goto fail;
     }
 
-    s->dev.wsi = &s->server->wsi;
+    vigs_wsi = s->dev.wsi = &s->server->wsi;
 
     VIGS_LOG_INFO("VIGS initialized");
 
@@ -424,16 +429,6 @@ static void vigs_device_exit(PCIDevice *dev)
 }
 
 static Property vigs_properties[] = {
-    {
-        .name   = "display",
-        .info   = &qdev_prop_ptr,
-        .offset = offsetof(VIGSState, display),
-    },
-    {
-        .name   = "render_queue",
-        .info   = &qdev_prop_ptr,
-        .offset = offsetof(VIGSState, render_queue),
-    },
     DEFINE_PROP_UINT32("vram_size", VIGSState, vram_size,
                        32 * 1024 * 1024),
     DEFINE_PROP_UINT32("ram_size", VIGSState, ram_size,
