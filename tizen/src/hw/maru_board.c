@@ -69,16 +69,6 @@
 #include "maru_common.h"
 #include "guest_debug.h"
 #include "maru_pm.h"
-#if defined(__linux__)
-#include <X11/Xlib.h>
-#endif
-#include "vigs/vigs_device.h"
-#include "vigs/work_queue.h"
-extern int enable_yagl;
-extern const char *yagl_backend;
-extern int enable_vigs;
-extern const char *vigs_backend;
-extern int enable_spice;
 
 #define MAX_IDE_BUS 2
 
@@ -95,55 +85,10 @@ MemoryRegion *get_ram_memory(void)
     return global_ram_memory;
 }
 
-#if defined(CONFIG_LINUX)
-static int x_error_handler(Display *dpy, XErrorEvent *e)
-{
-    return 0;
-}
-#endif
-
 /* maru specialized device init */
 static void maru_device_init(void)
 {
-    PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
-
-#if defined(CONFIG_LINUX)
-    XSetErrorHandler(x_error_handler);
-    XInitThreads();
-    Display *display = XOpenDisplay(0);
-    if (!display && !enable_spice) {
-        fprintf(stderr, "Cannot open X display\n");
-        exit(1);
-    }
-#else
-    void *display = NULL;
-#endif
-    struct work_queue *render_queue = NULL;
-    struct winsys_interface *vigs_wsi = NULL;
-
-    if (enable_vigs || enable_yagl) {
-        render_queue = work_queue_create("render_queue");
-    }
-
-    if (enable_vigs) {
-        PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
-        qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
-        qdev_prop_set_ptr(&pci_dev->qdev, "render_queue", render_queue);
-        qdev_init_nofail(&pci_dev->qdev);
-        vigs_wsi = DO_UPCAST(VIGSDevice, pci_dev, pci_dev)->wsi;
-    }
-
-    if (enable_yagl) {
-        PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
-        qdev_prop_set_ptr(&pci_dev->qdev, "display", display);
-        qdev_prop_set_ptr(&pci_dev->qdev, "render_queue", render_queue);
-        if (vigs_wsi &&
-            (strcmp(yagl_backend, "vigs") == 0) &&
-            (strcmp(vigs_backend, "gl") == 0)) {
-            qdev_prop_set_ptr(&pci_dev->qdev, "winsys_gl_interface", vigs_wsi);
-        }
-        qdev_init_nofail(&pci_dev->qdev);
-    }
+    // do nothing for now...
 }
 
 extern void pc_init_pci(QEMUMachineInitArgs *args);

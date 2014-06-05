@@ -4091,41 +4091,8 @@ int main(int argc, char **argv, char **envp)
     // Returned variable points different address from input variable.
     kernel_cmdline = prepare_maru(kernel_cmdline);
     qemu_opt_set(qemu_get_machine_opts(), "append", kernel_cmdline);
-
-    // for VIGS/YaGL
-    if (enable_vigs) {
-        if (!vigs_backend) {
-            vigs_backend = g_strdup("gl");
-        }
-
-        if (g_strcmp0(vigs_backend, "gl") != 0 && g_strcmp0(vigs_backend, "sw") != 0) {
-            fprintf (stderr, "Error: Bad VIGS backend - %s!\n", vigs_backend);
-            exit(1);
-        }
-    }
-
-    if (enable_yagl) {
-        if (!yagl_backend) {
-            yagl_backend = "offscreen";
-        }
-
-        if (g_strcmp0(yagl_backend, "offscreen") != 0) {
-            if (g_strcmp0(yagl_backend, "vigs") == 0) {
-                if (!enable_vigs) {
-                    fprintf (stderr, "Error: Bad YaGL backend - %s, VIGS not enabled!\n", yagl_backend);
-                    exit(1);
-                }
-                if (g_strcmp0(vigs_backend, "gl") != 0) {
-                    fprintf (stderr, "Error: Bad YaGL backend - %s, VIGS is not configured with gl backend!\n", yagl_backend);
-                    exit(1);
-                }
-            } else {
-                fprintf (stderr, "Error: Bad YaGL backend - %s!\n", yagl_backend);
-                exit(1);
-            }
-        }
-    }
 #endif
+
     /* Open the logfile at this point, if necessary. We can't open the logfile
      * when encountering either of the logging options (-d or -D) because the
      * other one may be encountered later on the command line, changing the
@@ -4642,6 +4609,25 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_SPICE
     if (using_spice) {
         qemu_spice_display_init();
+    }
+#endif
+#ifdef CONFIG_VIGS
+    // To support legacy VIGS options
+    if (enable_vigs) {
+        PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
+        if (vigs_backend) {
+            qdev_prop_set_string(&pci_dev->qdev, "backend", vigs_backend);
+        }
+        qdev_init_nofail(&pci_dev->qdev);
+    }
+#endif
+#ifdef CONFIG_YAGL
+    // To support legacy YaGL options
+    if (enable_yagl) {
+        PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
+        qdev_init_nofail(&pci_dev->qdev);
     }
 #endif
 

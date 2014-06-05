@@ -33,9 +33,14 @@
 #include "vigs_backend.h"
 #include "vigs_regs.h"
 #include "vigs_fenceman.h"
+#include "work_queue.h"
 #include "hw/hw.h"
 #include "ui/console.h"
 #include "qemu/main-loop.h"
+
+#ifdef __linux__
+#include <X11/Xlib.h>
+#endif
 
 #define PCI_VENDOR_ID_VIGS 0x19B2
 #define PCI_DEVICE_ID_VIGS 0x1011
@@ -48,15 +53,18 @@
 #define VIGS_EXTRA_INVALIDATION (0)
 #endif
 
-struct work_queue;
+#ifdef __linux__
+Display *vigs_display = NULL;
+#else
+void *vigs_display = NULL;
+#endif
+
+struct work_queue *vigs_render_queue = NULL;
+struct winsys_interface *vigs_wsi = NULL;
 
 typedef struct VIGSState
 {
     VIGSDevice dev;
-
-    void *display;
-
-    struct work_queue *render_queue;
 
     MemoryRegion vram_bar;
     uint32_t vram_size;
@@ -71,6 +79,8 @@ typedef struct VIGSState
     QEMUBH *fence_ack_bh;
 
     struct vigs_server *server;
+
+    char *backend;
 
     /*
      * Our console.
@@ -289,10 +299,36 @@ static struct vigs_display_ops vigs_dpy_ops =
     .fence_ack = vigs_fence_ack,
 };
 
+#ifdef __linux__
+static int x_error_handler(Display *dpy, XErrorEvent *e)
+{
+    return 0;
+}
+
+static Display *get_display(void)
+{
+    XSetErrorHandler(x_error_handler);
+    XInitThreads();
+
+    Display *display = XOpenDisplay(0);
+
+    if (!display) {
+        fprintf(stderr, "Cannot open X display\n");
+        exit(1);
+    }
+
+    return display;
+}
+#endif
+
 static int vigs_device_init(PCIDevice *dev)
 {
     VIGSState *s = DO_UPCAST(VIGSState, dev.pci_dev, dev);
     struct vigs_backend *backend = NULL;
+
+    if (!vigs_render_queue) {
+        vigs_render_queue = work_queue_create("render_queue");
+    }
 
     vigs_log_init();
 
@@ -326,10 +362,23 @@ static int vigs_device_init(PCIDevice *dev)
     pci_register_bar(&s->dev.pci_dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->ram_bar);
     pci_register_bar(&s->dev.pci_dev, 2, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->io_bar);
 
-    if (!strcmp(vigs_backend, "gl")) {
-        backend = vigs_gl_backend_create(s->display);
-    } else if (!strcmp(vigs_backend, "sw")) {
+    if (!s->backend) {
+        VIGS_LOG_INFO("No backend is specified, defaulting to \"sw\"");
+        // choose "sw" backend as default.
         backend = vigs_sw_backend_create();
+    } else if (!strcmp(s->backend, "gl")) {
+        VIGS_LOG_INFO("vigs uses \"gl\" backend");
+#ifdef __linux__
+        if (!vigs_display) {
+            vigs_display = get_display();
+        }
+#endif
+        backend = vigs_gl_backend_create(vigs_display);
+    } else if (!strcmp(s->backend, "sw")) {
+        VIGS_LOG_INFO("vigs uses \"sw\" backend");
+        backend = vigs_sw_backend_create();
+    } else {
+        VIGS_LOG_CRITICAL("Unknown backend=\"%s\" is specified", s->backend);
     }
 
     if (!backend) {
@@ -351,13 +400,13 @@ static int vigs_device_init(PCIDevice *dev)
                                    &vigs_dpy_ops,
                                    s,
                                    backend,
-                                   s->render_queue);
+                                   vigs_render_queue);
 
     if (!s->server) {
         goto fail;
     }
 
-    s->dev.wsi = &s->server->wsi;
+    vigs_wsi = s->dev.wsi = &s->server->wsi;
 
     VIGS_LOG_INFO("VIGS initialized");
 
@@ -424,20 +473,11 @@ static void vigs_device_exit(PCIDevice *dev)
 }
 
 static Property vigs_properties[] = {
-    {
-        .name   = "display",
-        .info   = &qdev_prop_ptr,
-        .offset = offsetof(VIGSState, display),
-    },
-    {
-        .name   = "render_queue",
-        .info   = &qdev_prop_ptr,
-        .offset = offsetof(VIGSState, render_queue),
-    },
     DEFINE_PROP_UINT32("vram_size", VIGSState, vram_size,
                        32 * 1024 * 1024),
     DEFINE_PROP_UINT32("ram_size", VIGSState, ram_size,
                        1 * 1024 * 1024),
+    DEFINE_PROP_STRING("backend", VIGSState, backend),
     DEFINE_PROP_END_OF_LIST(),
 };
 
