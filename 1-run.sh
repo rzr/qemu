@@ -9,5 +9,6 @@
 -enable-kvm \
 -smp `grep -c 'cpu cores' /proc/cpuinfo` \
 -vga none \
+-soundhw all \
 -device vigs \
 -device yagl 1>./data/qemu.log 2>&1
