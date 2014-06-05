@@ -1,0 +1,2 @@
+# EGL GLX driver
+obj-y += yagl_egl_glx.o

@@ -1,0 +1,7 @@
+# EGL onscreen backend
+obj-y += yagl_egl_onscreen.o
+obj-y += yagl_egl_onscreen_ts.o
+obj-y += yagl_egl_onscreen_display.o
+obj-y += yagl_egl_onscreen_context.o
+obj-y += yagl_egl_onscreen_surface.o
+

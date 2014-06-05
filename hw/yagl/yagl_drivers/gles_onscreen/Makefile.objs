@@ -1,0 +1,3 @@
+# GLES onscreen driver
+obj-y += yagl_gles_onscreen.o
+

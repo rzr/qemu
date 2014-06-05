@@ -1,0 +1,2 @@
+obj-y += egl_offscreen/
+obj-y += egl_onscreen/
