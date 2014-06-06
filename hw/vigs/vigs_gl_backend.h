@@ -118,6 +118,7 @@ struct vigs_gl_backend
     GLint (GLAPIENTRY* GetAttribLocation)(GLuint program, const GLchar* name);
     GLint (GLAPIENTRY* GetUniformLocation)(GLuint program, const GLchar* name);
     void (GLAPIENTRY* VertexAttribPointer)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer);
+    void (GLAPIENTRY* Uniform2fv)(GLint location, GLsizei count, const GLfloat* value);
     void (GLAPIENTRY* Uniform4fv)(GLint location, GLsizei count, const GLfloat* value);
     void (GLAPIENTRY* UniformMatrix4fv)(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
 
@@ -163,6 +164,7 @@ struct vigs_gl_backend
      */
 
     GLuint vao;
+    GLuint vao2;
 
     GLuint tex_prog_vs_id;
     GLuint tex_prog_fs_id;
@@ -177,6 +179,14 @@ struct vigs_gl_backend
     GLint color_prog_proj_loc;
     GLint color_prog_vertCoord_loc;
     GLint color_prog_color_loc;
+
+    GLuint composite_prog_vs_id;
+    GLuint composite_prog_fs_id;
+    GLuint composite_prog_id;
+    GLint composite_prog_proj_loc;
+    GLint composite_prog_vertCoord_loc;
+    GLint composite_prog_texCoord_loc;
+    GLint composite_prog_texSize_loc;
 
     GLuint vbo;
     uint32_t vbo_size;

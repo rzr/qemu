@@ -37,22 +37,10 @@
 #include "hw/winsys_gl.h"
 #include "hw/work_queue.h"
 
+uint32_t vigs_window_width = 0;
+uint32_t vigs_window_height = 0;
+
 struct vigs_gl_surface;
-
-struct vigs_gl_backend_read_pixels_work_item
-{
-    struct work_queue_item base;
-
-    struct vigs_gl_backend *backend;
-
-    vigs_composite_start_cb start_cb;
-    vigs_composite_end_cb end_cb;
-    void *user_data;
-    uint32_t width;
-    uint32_t height;
-    uint32_t stride;
-    vigsp_surface_format format;
-};
 
 struct vigs_winsys_gl_surface
 {
@@ -203,6 +191,113 @@ static const char *g_fs_color_source_gl3 =
     "    FragColor = color;\n"
     "}\n";
 
+static const char *g_fs_composite_source_gl2 =
+"#version 120\n\
+\n\
+uniform sampler2D tex;\n\
+uniform vec2 texSize;\n\
+varying vec2 v_texCoord;\n\
+vec4 cubic(float x)\n\
+{\n\
+    float x2 = x * x;\n\
+    float x3 = x2 * x;\n\
+    vec4 w;\n\
+    w.x = -x3 + 3*x2 - 3*x + 1;\n\
+    w.y = 3*x3 - 6*x2 + 4;\n\
+    w.z = -3*x3 + 3*x2 + 3*x + 1;\n\
+    w.w = x3;\n\
+    return w / 6.f;\n\
+}\n\
+void main()\n\
+{\n\
+    vec2 texscale = vec2(1.0 / texSize.x, 1.0 / texSize.y);\n\
+    vec2 texcoord = vec2(v_texCoord.x * texSize.x, v_texCoord.y * texSize.y);\n\
+    float fx = fract(texcoord.x);\n\
+    float fy = fract(texcoord.y);\n\
+    texcoord.x -= fx;\n\
+    texcoord.y -= fy;\n\
+\n\
+    vec4 xcubic = cubic(fx);\n\
+    vec4 ycubic = cubic(fy);\n\
+\n\
+    vec4 c = vec4(texcoord.x - 0.5, texcoord.x + 1.5, texcoord.y -\n\
+0.5, texcoord.y + 1.5);\n\
+    vec4 s = vec4(xcubic.x + xcubic.y, xcubic.z + xcubic.w, ycubic.x +\n\
+ycubic.y, ycubic.z + ycubic.w);\n\
+    vec4 offset = c + vec4(xcubic.y, xcubic.w, ycubic.y, ycubic.w) /\n\
+s;\n\
+\n\
+    vec4 sample0 = texture2D(tex, vec2(offset.x, offset.z) *\n\
+texscale);\n\
+    vec4 sample1 = texture2D(tex, vec2(offset.y, offset.z) *\n\
+texscale);\n\
+    vec4 sample2 = texture2D(tex, vec2(offset.x, offset.w) *\n\
+texscale);\n\
+    vec4 sample3 = texture2D(tex, vec2(offset.y, offset.w) *\n\
+texscale);\n\
+\n\
+    float sx = s.x / (s.x + s.y);\n\
+    float sy = s.z / (s.z + s.w);\n\
+\n\
+    gl_FragColor = mix(\n\
+        mix(sample3, sample2, sx),\n\
+        mix(sample1, sample0, sx), sy);\n\
+}";
+
+static const char *g_fs_composite_source_gl3 =
+"#version 140\n\
+\n\
+uniform sampler2D tex;\n\
+uniform vec2 texSize;\n\
+in vec2 v_texCoord;\n\
+out vec4 FragColor;\n\
+vec4 cubic(float x)\n\
+{\n\
+    float x2 = x * x;\n\
+    float x3 = x2 * x;\n\
+    vec4 w;\n\
+    w.x = -x3 + 3*x2 - 3*x + 1;\n\
+    w.y = 3*x3 - 6*x2 + 4;\n\
+    w.z = -3*x3 + 3*x2 + 3*x + 1;\n\
+    w.w = x3;\n\
+    return w / 6.f;\n\
+}\n\
+void main()\n\
+{\n\
+    vec2 texscale = vec2(1.0 / texSize.x, 1.0 / texSize.y);\n\
+    vec2 texcoord = vec2(v_texCoord.x * texSize.x, v_texCoord.y * texSize.y);\n\
+    float fx = fract(texcoord.x);\n\
+    float fy = fract(texcoord.y);\n\
+    texcoord.x -= fx;\n\
+    texcoord.y -= fy;\n\
+\n\
+    vec4 xcubic = cubic(fx);\n\
+    vec4 ycubic = cubic(fy);\n\
+\n\
+    vec4 c = vec4(texcoord.x - 0.5, texcoord.x + 1.5, texcoord.y -\n\
+0.5, texcoord.y + 1.5);\n\
+    vec4 s = vec4(xcubic.x + xcubic.y, xcubic.z + xcubic.w, ycubic.x +\n\
+ycubic.y, ycubic.z + ycubic.w);\n\
+    vec4 offset = c + vec4(xcubic.y, xcubic.w, ycubic.y, ycubic.w) /\n\
+s;\n\
+\n\
+    vec4 sample0 = texture2D(tex, vec2(offset.x, offset.z) *\n\
+texscale);\n\
+    vec4 sample1 = texture2D(tex, vec2(offset.y, offset.z) *\n\
+texscale);\n\
+    vec4 sample2 = texture2D(tex, vec2(offset.x, offset.w) *\n\
+texscale);\n\
+    vec4 sample3 = texture2D(tex, vec2(offset.y, offset.w) *\n\
+texscale);\n\
+\n\
+    float sx = s.x / (s.x + s.y);\n\
+    float sy = s.z / (s.z + s.w);\n\
+\n\
+    FragColor = mix(\n\
+        mix(sample3, sample2, sx),\n\
+        mix(sample1, sample0, sx), sy);\n\
+}";
+
 static GLuint vigs_gl_backend_alloc_tmp_texture(void *user_data,
                                                 uint32_t width,
                                                 uint32_t height,
@@ -242,6 +337,8 @@ static GLuint vigs_gl_backend_alloc_tmp_texture(void *user_data,
      */
     backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     backend->TexImage2D(GL_TEXTURE_2D, 0, tex_internalformat,
                         width, height, 0,
@@ -451,6 +548,54 @@ static void vigs_gl_draw_color_prog(struct vigs_gl_backend *backend,
     backend->DisableVertexAttribArray(backend->color_prog_vertCoord_loc);
 }
 
+static void vigs_gl_draw_composite_prog(struct vigs_gl_backend *backend,
+                                        uint32_t count)
+{
+    uint32_t size = count * 16;
+    void *ptr;
+
+    if (size > backend->vbo_size) {
+        backend->vbo_size = size;
+        backend->BufferData(GL_ARRAY_BUFFER,
+                            size,
+                            0,
+                            GL_STREAM_DRAW);
+    }
+
+    if (backend->MapBufferRange) {
+        ptr = backend->MapBufferRange(GL_ARRAY_BUFFER, 0, size,
+                                      GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+        if (ptr) {
+            memcpy(ptr, vigs_vector_data(&backend->v1), size / 2);
+            memcpy(ptr + (size / 2), vigs_vector_data(&backend->v2), size / 2);
+
+            backend->UnmapBuffer(GL_ARRAY_BUFFER);
+        } else {
+            VIGS_LOG_ERROR("glMapBufferRange failed");
+        }
+    } else {
+        backend->Finish();
+        backend->BufferSubData(GL_ARRAY_BUFFER, 0,
+                               (size / 2), vigs_vector_data(&backend->v1));
+        backend->BufferSubData(GL_ARRAY_BUFFER, (size / 2),
+                               (size / 2), vigs_vector_data(&backend->v2));
+    }
+
+    backend->EnableVertexAttribArray(backend->composite_prog_vertCoord_loc);
+    backend->EnableVertexAttribArray(backend->composite_prog_texCoord_loc);
+
+    backend->VertexAttribPointer(backend->composite_prog_vertCoord_loc,
+                                 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    backend->VertexAttribPointer(backend->composite_prog_texCoord_loc,
+                                 2, GL_FLOAT, GL_FALSE, 0, NULL + (size / 2));
+
+    backend->DrawArrays(GL_TRIANGLES, 0, count);
+
+    backend->DisableVertexAttribArray(backend->composite_prog_texCoord_loc);
+    backend->DisableVertexAttribArray(backend->composite_prog_vertCoord_loc);
+}
+
 static void vigs_gl_create_ortho(GLfloat left, GLfloat right,
                                  GLfloat bottom, GLfloat top,
                                  GLfloat nearf, GLfloat farf,
@@ -511,6 +656,8 @@ static bool vigs_winsys_gl_surface_create_texture(struct vigs_winsys_gl_surface 
      */
     ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    ws_sfc->backend->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     ws_sfc->backend->TexImage2D(GL_TEXTURE_2D, 0, ws_sfc->tex_internalformat,
                                 ws_sfc->base.base.width, ws_sfc->base.base.height, 0,
@@ -1191,45 +1338,6 @@ static struct vigs_surface *vigs_gl_backend_create_surface(struct vigs_backend *
     return &gl_sfc->base;
 }
 
-static void vigs_gl_backend_read_pixels_work(struct work_queue_item *wq_item)
-{
-    struct vigs_gl_backend_read_pixels_work_item *item = (struct vigs_gl_backend_read_pixels_work_item*)wq_item;
-    struct vigs_gl_backend *backend = item->backend;
-    uint8_t *dst = NULL;
-
-    VIGS_LOG_TRACE("enter");
-
-    if (backend->read_pixels_make_current(backend, true)) {
-        uint8_t *src;
-
-        backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, backend->pbo);
-
-        src = backend->MapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
-
-        if (src) {
-            dst = item->start_cb(item->user_data,
-                                 item->width, item->height,
-                                 item->stride, item->format);
-
-            memcpy(dst, src, item->stride * item->height);
-
-            if (!backend->UnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB)) {
-                VIGS_LOG_CRITICAL("glUnmapBuffer failed");
-            }
-        } else {
-            VIGS_LOG_CRITICAL("glMapBuffer failed");
-        }
-
-        backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
-
-        backend->read_pixels_make_current(backend, false);
-    }
-
-    item->end_cb(item->user_data, (dst != NULL), true);
-
-    g_free(item);
-}
-
 static void vigs_gl_backend_composite(struct vigs_surface *surface,
                                       const struct vigs_plane *planes,
                                       vigs_composite_start_cb start_cb,
@@ -1243,22 +1351,34 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
     GLfloat *vert_coords;
     GLfloat *tex_coords;
     const struct vigs_plane *sorted_planes[VIGS_MAX_PLANES];
-    uint32_t size = surface->stride * surface->ws_sfc->height;
-    struct vigs_gl_backend_read_pixels_work_item *item;
+    GLfloat ortho[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    float window_aspect, sfc_aspect;
+    float texSize[2];
 
     VIGS_LOG_TRACE("enter");
 
-    if (!surface->ptr) {
-        if (!ws_root_sfc->tex) {
-            VIGS_LOG_WARN("compositing garbage (root surface) ???");
+    gl_backend->read_pixels_make_current(gl_backend, true);
+
+    if (!gl_backend->is_gl_2 && !gl_backend->vao2) {
+        gl_backend->GenVertexArrays(1, &gl_backend->vao2);
+
+        if (!gl_backend->vao2) {
+            VIGS_LOG_CRITICAL("cannot create VAO");
+            exit(1);
         }
 
-        if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc)) {
-            goto out;
-        }
+        gl_backend->BindVertexArray(gl_backend->vao2);
     }
 
-    if (!vigs_gl_surface_create_tmp_texture(gl_root_sfc)) {
+    gl_backend->BindBuffer(GL_ARRAY_BUFFER, gl_backend->vbo);
+    gl_backend->Disable(GL_DEPTH_TEST);
+    gl_backend->Disable(GL_BLEND);
+
+    if (!surface->ptr && !ws_root_sfc->tex) {
+        VIGS_LOG_WARN("compositing garbage (root surface) ???");
+    }
+
+    if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc)) {
         goto out;
     }
 
@@ -1282,11 +1402,41 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
         }
     }
 
-    if (!vigs_gl_surface_setup_framebuffer(gl_root_sfc,
-                                           gl_backend->tex_prog_id,
-                                           gl_backend->tex_prog_proj_loc)) {
-        goto out;
+    gl_backend->UseProgram(gl_backend->composite_prog_id);
+
+    gl_backend->Viewport(0, 0,
+                         vigs_window_width,
+                         vigs_window_height);
+
+    gl_backend->ClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    gl_backend->Clear(GL_COLOR_BUFFER_BIT);
+
+    window_aspect = (float)vigs_window_width / (float)vigs_window_height;
+    sfc_aspect = (float)ws_root_sfc->base.base.width / (float)ws_root_sfc->base.base.height;
+
+    if (window_aspect < sfc_aspect) {
+        float actual_height = (float)ws_root_sfc->base.base.width / window_aspect;
+        vigs_gl_create_ortho(0.0f, ws_root_sfc->base.base.width,
+                             -(actual_height - ws_root_sfc->base.base.height) / 2,
+                             actual_height - (actual_height - ws_root_sfc->base.base.height) / 2,
+                             -1.0f, 1.0f, ortho);
+    } else {
+        float actual_width = (float)ws_root_sfc->base.base.height * window_aspect;
+        vigs_gl_create_ortho(-(actual_width - ws_root_sfc->base.base.width) / 2,
+                             actual_width - (actual_width - ws_root_sfc->base.base.width) / 2,
+                             0.0f, ws_root_sfc->base.base.height,
+                             -1.0f, 1.0f, ortho);
     }
+
+    gl_backend->UniformMatrix4fv(gl_backend->composite_prog_proj_loc, 1, GL_FALSE,
+                                 ortho);
+
+    texSize[0] = ws_root_sfc->base.base.width;
+    texSize[1] = ws_root_sfc->base.base.height;
+
+    gl_backend->Uniform2fv(gl_backend->composite_prog_texSize_loc, 1, texSize);
+
+    gl_backend->BindTexture(GL_TEXTURE_2D, ws_root_sfc->tex);
 
     vigs_vector_resize(&gl_backend->v1, 0);
     vigs_vector_resize(&gl_backend->v2, 0);
@@ -1301,13 +1451,10 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
          * Root surface is scanout, upload it to texture.
          * Slow path.
          */
-
         gl_backend->PixelStorei(GL_UNPACK_ALIGNMENT, 1);
         gl_backend->PixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         gl_backend->PixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
         gl_backend->PixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-
-        gl_backend->BindTexture(GL_TEXTURE_2D, gl_root_sfc->tmp_tex);
 
         gl_backend->TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                                   ws_root_sfc->base.base.width,
@@ -1317,37 +1464,36 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
                                   surface->ptr);
     }
 
-    gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, gl_root_sfc->tmp_tex, 0);
+    vert_coords[6] = vert_coords[0] = 0;
+    vert_coords[7] = vert_coords[1] = ws_root_sfc->base.base.height;
+    vert_coords[2] = ws_root_sfc->base.base.width;
+    vert_coords[3] = ws_root_sfc->base.base.height;
+    vert_coords[8] = vert_coords[4] = ws_root_sfc->base.base.width;
+    vert_coords[9] = vert_coords[5] = 0;
+    vert_coords[10] = 0;
+    vert_coords[11] = 0;
 
-    if (!surface->ptr) {
-        /*
-         * If root surface is not scanout then we must render
-         * it.
-         */
-
-        vert_coords[6] = vert_coords[0] = 0;
-        vert_coords[7] = vert_coords[1] = ws_root_sfc->base.base.height;
-        vert_coords[2] = ws_root_sfc->base.base.width;
-        vert_coords[3] = ws_root_sfc->base.base.height;
-        vert_coords[8] = vert_coords[4] = ws_root_sfc->base.base.width;
-        vert_coords[9] = vert_coords[5] = 0;
-        vert_coords[10] = 0;
-        vert_coords[11] = 0;
-
+    if (surface->ptr) {
         tex_coords[6] = tex_coords[0] = 0;
-        tex_coords[7] =tex_coords[1] = 0;
+        tex_coords[7] = tex_coords[1] = 0;
         tex_coords[2] = 1;
         tex_coords[3] = 0;
         tex_coords[8] = tex_coords[4] = 1;
         tex_coords[9] = tex_coords[5] = 1;
         tex_coords[10] = 0;
         tex_coords[11] = 1;
-
-        gl_backend->BindTexture(GL_TEXTURE_2D, ws_root_sfc->tex);
-
-        vigs_gl_draw_tex_prog(gl_backend, 6);
+    } else {
+        tex_coords[6] = tex_coords[0] = 0;
+        tex_coords[7] = tex_coords[1] = 1;
+        tex_coords[2] = 1;
+        tex_coords[3] = 1;
+        tex_coords[8] = tex_coords[4] = 1;
+        tex_coords[9] = tex_coords[5] = 0;
+        tex_coords[10] = 0;
+        tex_coords[11] = 0;
     }
+
+    vigs_gl_draw_composite_prog(gl_backend, 6);
 
     /*
      * Sort planes, only 2 of them now, don't bother...
@@ -1393,68 +1539,21 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
         vert_coords[11] = plane->dst_y + (int)plane->dst_size.h;
 
         tex_coords[6] = tex_coords[0] = (GLfloat)plane->src_rect.pos.x / src_w;
-        tex_coords[7] = tex_coords[1] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
+        tex_coords[7] = tex_coords[1] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
         tex_coords[2] = (GLfloat)(plane->src_rect.pos.x + plane->src_rect.size.w) / src_w;
-        tex_coords[3] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
+        tex_coords[3] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
         tex_coords[8] = tex_coords[4] = (GLfloat)(plane->src_rect.pos.x + plane->src_rect.size.w) / src_w;
-        tex_coords[9] = tex_coords[5] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
+        tex_coords[9] = tex_coords[5] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
         tex_coords[10] = (GLfloat)plane->src_rect.pos.x / src_w;
-        tex_coords[11] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
+        tex_coords[11] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
 
         gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
 
-        vigs_gl_draw_tex_prog(gl_backend, 6);
+        vigs_gl_draw_composite_prog(gl_backend, 6);
     }
-
-    /*
-     * Now schedule asynchronous glReadPixels.
-     */
-
-    gl_backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, gl_backend->pbo);
-
-    if (size > gl_backend->pbo_size) {
-        gl_backend->pbo_size = size;
-        gl_backend->BufferData(GL_PIXEL_PACK_BUFFER_ARB,
-                               size,
-                               0,
-                               GL_STREAM_READ);
-    }
-
-    gl_backend->PixelStorei(GL_PACK_ALIGNMENT, 1);
-    gl_backend->ReadPixels(0, 0,
-                           surface->ws_sfc->width, surface->ws_sfc->height,
-                           ws_root_sfc->tex_format, ws_root_sfc->tex_type,
-                           NULL);
-
-    gl_backend->BindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
-
-    /*
-     * That's a tricky one, if we don't do this then it's not
-     * guaranteed that PBO will actually be updated by the time
-     * 'vigs_gl_backend_read_pixels_work' runs and since
-     * 'vigs_gl_backend_read_pixels_work' uses another OpenGL context
-     * we might get old results.
-     */
-    gl_backend->Finish();
-
-    item = g_malloc(sizeof(*item));
-
-    work_queue_item_init(&item->base, &vigs_gl_backend_read_pixels_work);
-
-    item->backend = gl_backend;
-
-    item->start_cb = start_cb;
-    item->end_cb = end_cb;
-    item->user_data = user_data;
-    item->width = surface->ws_sfc->width;
-    item->height = surface->ws_sfc->height;
-    item->stride = surface->stride;
-    item->format = surface->format;
-
-    work_queue_add_item(gl_backend->read_pixels_queue, &item->base);
 
 out:
-    gl_backend->BindFramebuffer(GL_FRAMEBUFFER, 0);
+    gl_backend->read_pixels_make_current(gl_backend, false);
 }
 
 static void vigs_gl_backend_batch_end(struct vigs_backend *backend)
@@ -1555,6 +1654,35 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     gl_backend->color_prog_vertCoord_loc = gl_backend->GetAttribLocation(gl_backend->color_prog_id, "vertCoord");
     gl_backend->color_prog_color_loc = gl_backend->GetUniformLocation(gl_backend->color_prog_id, "color");
 
+    gl_backend->composite_prog_vs_id = vigs_gl_create_shader(gl_backend,
+        (gl_backend->is_gl_2 ? g_vs_tex_source_gl2 : g_vs_tex_source_gl3),
+        GL_VERTEX_SHADER);
+
+    if (!gl_backend->composite_prog_vs_id) {
+        goto fail;
+    }
+
+    gl_backend->composite_prog_fs_id = vigs_gl_create_shader(gl_backend,
+        (gl_backend->is_gl_2 ? g_fs_composite_source_gl2 : g_fs_composite_source_gl3),
+        GL_FRAGMENT_SHADER);
+
+    if (!gl_backend->composite_prog_fs_id) {
+        goto fail;
+    }
+
+    gl_backend->composite_prog_id = vigs_gl_create_program(gl_backend,
+                                                           gl_backend->composite_prog_vs_id,
+                                                           gl_backend->composite_prog_fs_id);
+
+    if (!gl_backend->composite_prog_id) {
+        goto fail;
+    }
+
+    gl_backend->composite_prog_proj_loc = gl_backend->GetUniformLocation(gl_backend->composite_prog_id, "proj");
+    gl_backend->composite_prog_vertCoord_loc = gl_backend->GetAttribLocation(gl_backend->composite_prog_id, "vertCoord");
+    gl_backend->composite_prog_texCoord_loc = gl_backend->GetAttribLocation(gl_backend->composite_prog_id, "texCoord");
+    gl_backend->composite_prog_texSize_loc = gl_backend->GetUniformLocation(gl_backend->composite_prog_id, "texSize");
+
     gl_backend->GenBuffers(1, &gl_backend->vbo);
 
     if (!gl_backend->vbo) {
@@ -1604,6 +1732,13 @@ void vigs_gl_backend_cleanup(struct vigs_gl_backend *gl_backend)
     if (gl_backend->make_current(gl_backend, true)) {
         gl_backend->DeleteBuffers(1, &gl_backend->pbo);
         gl_backend->DeleteBuffers(1, &gl_backend->vbo);
+        gl_backend->DetachShader(gl_backend->composite_prog_id,
+                                 gl_backend->composite_prog_vs_id);
+        gl_backend->DetachShader(gl_backend->composite_prog_id,
+                                 gl_backend->composite_prog_fs_id);
+        gl_backend->DeleteShader(gl_backend->composite_prog_vs_id);
+        gl_backend->DeleteShader(gl_backend->composite_prog_fs_id);
+        gl_backend->DeleteProgram(gl_backend->composite_prog_id);
         gl_backend->DetachShader(gl_backend->color_prog_id,
                                  gl_backend->color_prog_vs_id);
         gl_backend->DetachShader(gl_backend->color_prog_id,

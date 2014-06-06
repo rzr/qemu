@@ -38,6 +38,7 @@
 #include "ui/console.h"
 #include "qemu/main-loop.h"
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 #define PCI_VENDOR_ID_VIGS 0x19B2
 #define PCI_DEVICE_ID_VIGS 0x1011
@@ -47,6 +48,7 @@
 Display *vigs_display = NULL;
 struct work_queue *vigs_render_queue = NULL;
 struct winsys_interface *vigs_wsi = NULL;
+XVisualInfo *vigs_visual_info = NULL;
 
 typedef struct VIGSState
 {
@@ -123,15 +125,7 @@ static void vigs_hw_update(void *opaque)
         return;
     }
 
-    if (vigs_server_update_display(s->server, s->invalidate_cnt)) {
-        /*
-         * 'vigs_server_update_display' could have updated the surface,
-         * so fetch it again.
-         */
-        ds = qemu_console_surface(s->con);
-
-        dpy_gfx_update(s->con, 0, 0, surface_width(ds), surface_height(ds));
-    }
+    vigs_server_update_display(s->server, s->invalidate_cnt);
 
     if (s->invalidate_cnt > 0) {
         s->invalidate_cnt--;
@@ -147,7 +141,7 @@ static void vigs_hw_invalidate(void *opaque)
 {
     VIGSState *s = opaque;
 
-    s->invalidate_cnt = 1;
+    ++s->invalidate_cnt;
 }
 
 static void vigs_dpy_resize(void *user_data,
@@ -290,6 +284,7 @@ static int vigs_device_init(PCIDevice *dev)
 {
     VIGSState *s = DO_UPCAST(VIGSState, dev.pci_dev, dev);
     struct vigs_backend *backend = NULL;
+    char buff[100];
 
     XSetErrorHandler(x_error_handler);
     XInitThreads();
@@ -340,6 +335,9 @@ static int vigs_device_init(PCIDevice *dev)
     if (!backend) {
         goto fail;
     }
+
+    sprintf(buff, "0x%lX", vigs_visual_info->visualid);
+    setenv("SDL_VIDEO_X11_VISUALID", buff, 1);
 
     s->fenceman = vigs_fenceman_create();
 

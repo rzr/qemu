@@ -32,6 +32,10 @@
 #include <GL/glx.h>
 #include <dlfcn.h>
 
+extern XVisualInfo *vigs_visual_info;
+
+Window vigs_window = 0;
+
 #ifndef GLX_VERSION_1_4
 #error GL/glx.h must be equal to or greater than GLX 1.4
 #endif
@@ -69,6 +73,8 @@
 /* GLX 1.0 */
 typedef void (*PFNGLXDESTROYCONTEXTPROC)(Display *dpy, GLXContext ctx);
 typedef GLXContext (*PFNGLXGETCURRENTCONTEXTPROC)(void);
+typedef Bool (*PFNGLXMAKECURRENTPROC)(Display* dpy, GLXDrawable drawable, GLXContext ctx);
+typedef void (*PFNGLXSWAPBUFFERS)(Display *dpy, GLXDrawable drawable);
 
 struct vigs_gl_backend_glx
 {
@@ -85,6 +91,9 @@ struct vigs_gl_backend_glx
     PFNGLXMAKECONTEXTCURRENTPROC glXMakeContextCurrent;
     PFNGLXGETCURRENTCONTEXTPROC glXGetCurrentContext;
     PFNGLXCREATENEWCONTEXTPROC glXCreateNewContext;
+    PFNGLXMAKECURRENTPROC glXMakeCurrent;
+    PFNGLXSWAPBUFFERS glXSwapBuffers;
+    PFNGLXGETVISUALFROMFBCONFIGPROC glXGetVisualFromFBConfig;
 
     /* GLX_ARB_create_context */
     PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
@@ -110,7 +119,7 @@ static bool vigs_gl_backend_glx_check_gl_version(struct vigs_gl_backend_glx *gl_
         GLX_DEPTH_SIZE, 24,
         GLX_STENCIL_SIZE, 8,
         GLX_RENDER_TYPE, GLX_RGBA_BIT,
-        GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT,
+        GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT | GLX_WINDOW_BIT,
         None
     };
     int ctx_attribs[] =
@@ -203,7 +212,7 @@ static GLXFBConfig vigs_gl_backend_glx_get_config(struct vigs_gl_backend_glx *gl
         GLX_DEPTH_SIZE, 24,
         GLX_STENCIL_SIZE, 8,
         GLX_RENDER_TYPE, GLX_RGBA_BIT,
-        GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT,
+        GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT | GLX_WINDOW_BIT,
         None
     };
     int n = 0;
@@ -337,14 +346,18 @@ static bool vigs_gl_backend_glx_read_pixels_make_current(struct vigs_gl_backend 
     struct vigs_gl_backend_glx *gl_backend_glx =
         (struct vigs_gl_backend_glx*)gl_backend;
     Bool ret;
+    GLXWindow wnd = (GLXWindow)vigs_window;
 
-    ret = gl_backend_glx->glXMakeContextCurrent(gl_backend_glx->dpy,
-                                                (enable ? gl_backend_glx->read_pixels_sfc : None),
-                                                (enable ? gl_backend_glx->read_pixels_sfc : None),
-                                                (enable ? gl_backend_glx->read_pixels_ctx : NULL));
+    if (!enable) {
+        gl_backend_glx->glXSwapBuffers(gl_backend_glx->dpy, wnd);
+    }
+
+    ret = gl_backend_glx->glXMakeCurrent(gl_backend_glx->dpy,
+                                         (enable ? wnd : None),
+                                         (enable ? gl_backend_glx->read_pixels_ctx : NULL));
 
     if (!ret) {
-        VIGS_LOG_CRITICAL("glXMakeContextCurrent failed");
+        VIGS_LOG_CRITICAL("glXMakeCurrent failed");
         return false;
     }
 
@@ -417,7 +430,10 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GLX_GET_PROC(PFNGLXMAKECONTEXTCURRENTPROC, glXMakeContextCurrent);
     VIGS_GLX_GET_PROC(PFNGLXGETCURRENTCONTEXTPROC, glXGetCurrentContext);
     VIGS_GLX_GET_PROC(PFNGLXCREATENEWCONTEXTPROC, glXCreateNewContext);
+    VIGS_GLX_GET_PROC(PFNGLXMAKECURRENTPROC, glXMakeCurrent);
     VIGS_GLX_GET_PROC(PFNGLXCREATECONTEXTATTRIBSARBPROC, glXCreateContextAttribsARB);
+    VIGS_GLX_GET_PROC(PFNGLXSWAPBUFFERS, glXSwapBuffers);
+    VIGS_GLX_GET_PROC(PFNGLXGETVISUALFROMFBCONFIGPROC, glXGetVisualFromFBConfig);
 
     VIGS_GL_GET_PROC(GenTextures, glGenTextures);
     VIGS_GL_GET_PROC(DeleteTextures, glDeleteTextures);
@@ -467,6 +483,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(GetAttribLocation, glGetAttribLocation);
     VIGS_GL_GET_PROC(GetUniformLocation, glGetUniformLocation);
     VIGS_GL_GET_PROC(VertexAttribPointer, glVertexAttribPointer);
+    VIGS_GL_GET_PROC(Uniform2fv, glUniform2fv);
     VIGS_GL_GET_PROC(Uniform4fv, glUniform4fv);
     VIGS_GL_GET_PROC(UniformMatrix4fv, glUniformMatrix4fv);
 
@@ -545,6 +562,8 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     if (!vigs_gl_backend_init(&gl_backend_glx->base)) {
         goto fail6;
     }
+
+    vigs_visual_info = gl_backend_glx->glXGetVisualFromFBConfig(x_display, config);
 
     VIGS_LOG_DEBUG("created");
 

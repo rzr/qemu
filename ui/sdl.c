@@ -37,6 +37,10 @@
 #include "x_keymap.h"
 #include "sdl_zoom.h"
 
+extern Window vigs_window;
+extern uint32_t vigs_window_width;
+extern uint32_t vigs_window_height;
+
 static DisplayChangeListener *dcl;
 static DisplaySurface *surface;
 static SDL_Surface *real_screen;
@@ -101,6 +105,9 @@ static void do_sdl_resize(int width, int height, int bpp)
     }
     if (gui_noframe)
         flags |= SDL_NOFRAME;
+
+    vigs_window_width = width;
+    vigs_window_height = height;
 
     tmp_screen = SDL_SetVideoMode(width, height, bpp, flags);
     if (!real_screen) {
@@ -197,6 +204,7 @@ static int check_for_evdev(void)
     if (!SDL_GetWMInfo(&info)) {
         return 0;
     }
+
     desc = XkbGetKeyboard(info.info.x11.display,
                           XkbGBN_AllComponentsMask,
                           XkbUseCoreKbd);
@@ -956,5 +964,15 @@ void sdl_display_init(DisplayState *ds, int full_screen, int no_frame)
     sdl_cursor_normal = SDL_GetCursor();
 
     atexit(sdl_cleanup);
+
+    {
+        SDL_SysWMinfo wm_info;
+        SDL_VERSION(&wm_info.version);
+        if (!SDL_GetWMInfo(&wm_info)) {
+            fprintf(stderr, "Cannot get SDL WM info\n");
+            exit(1);
+        }
+        vigs_window = wm_info.info.x11.window;
+    }
 }
 #endif

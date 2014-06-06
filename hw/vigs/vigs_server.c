@@ -40,6 +40,8 @@ struct vigs_server_work_item
     struct work_queue_item base;
 
     struct vigs_server *server;
+
+    bool invalidate;
 };
 
 struct vigs_server_set_root_surface_work_item
@@ -487,7 +489,6 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
     struct vigs_server *server = item->server;
     struct vigs_surface *root_sfc = server->root_sfc;
     int i;
-    bool planes_on = false;
     bool planes_dirty = false;
 
     if (!root_sfc) {
@@ -499,54 +500,34 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
         goto out;
     }
 
+    server->captured.height = root_sfc->ws_sfc->height;
+    server->captured.width = root_sfc->ws_sfc->width;
+
     for (i = 0; i < VIGS_MAX_PLANES; ++i) {
-        /*
-         * If plane was moved/resized or turned on/off
-         * then we're dirty.
-         */
         if (server->planes[i].is_dirty) {
+            /*
+             * If plane was moved/resized or turned on/off
+             * then we're dirty.
+             */
             planes_dirty = true;
         }
-
-        if (server->planes[i].sfc) {
-            planes_on = true;
-
+        if (server->planes[i].sfc && server->planes[i].sfc->is_dirty) {
             /*
              * If plane's surface is dirty then we're dirty.
              */
-            if (server->planes[i].sfc->is_dirty) {
-                planes_dirty = true;
-            }
+            planes_dirty = true;
         }
     }
 
-    if (root_sfc->ptr && !root_sfc->is_dirty && !planes_on) {
-        /*
-         * Root surface is scanout, it's not dirty and planes not on,
-         * finish immediately.
-         */
-        uint8_t *buff = vigs_server_update_display_start_cb(server,
-                                                            root_sfc->ws_sfc->width,
-                                                            root_sfc->ws_sfc->height,
-                                                            root_sfc->stride,
-                                                            root_sfc->format);
-
-        memcpy(buff,
-               root_sfc->ptr,
-               root_sfc->stride * root_sfc->ws_sfc->height);
-
-        vigs_server_update_display_end_cb(server, true, true);
-    } else if (root_sfc->ptr || root_sfc->is_dirty || planes_dirty) {
+    if (root_sfc->ptr || root_sfc->is_dirty || planes_dirty || item->invalidate) {
         /*
          * Composite root surface and planes.
          */
-        server->backend->batch_start(server->backend);
         server->backend->composite(root_sfc,
                                    &server->planes[0],
                                    &vigs_server_update_display_start_cb,
                                    &vigs_server_update_display_end_cb,
                                    server);
-        server->backend->batch_end(server->backend);
 
         root_sfc->is_dirty = false;
 
@@ -560,6 +541,8 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
                 server->planes[i].sfc->is_dirty = false;
             }
         }
+
+        vigs_server_update_display_end_cb(server, false, true);
     } else {
         /*
          * No changes, no-op.
@@ -775,73 +758,13 @@ void vigs_server_dispatch(struct vigs_server *server,
 
 bool vigs_server_update_display(struct vigs_server *server, int invalidate_cnt)
 {
-    bool updated = false;
-    uint32_t sfc_bpp;
-    uint32_t display_stride, display_bpp;
-    uint8_t *display_data;
-
-    qemu_mutex_lock(&server->capture_mutex);
-
-    if (!server->captured.data ||
-        (!server->captured.dirty && invalidate_cnt <= 0)) {
-        goto out;
+    if (server->captured.width != 0) {
+        server->display_ops->resize(server->display_user_data,
+                                    server->captured.width,
+                                    server->captured.height);
     }
 
     server->captured.dirty = false;
-    updated = true;
-
-    sfc_bpp = vigs_format_bpp(server->captured.format);
-
-    server->display_ops->resize(server->display_user_data,
-                                server->captured.width,
-                                server->captured.height);
-
-    display_stride = server->display_ops->get_stride(server->display_user_data);
-    display_bpp = server->display_ops->get_bpp(server->display_user_data);
-    display_data = server->display_ops->get_data(server->display_user_data);
-
-    if (sfc_bpp != display_bpp) {
-        VIGS_LOG_CRITICAL("bpp mismatch");
-        assert(false);
-        exit(1);
-    }
-
-    if (display_stride == server->captured.stride) {
-        switch (server->captured.format) {
-        case vigsp_surface_bgrx8888:
-        case vigsp_surface_bgra8888:
-            memcpy(display_data,
-                   server->captured.data,
-                   server->captured.height * display_stride);
-            break;
-        default:
-            assert(false);
-            VIGS_LOG_CRITICAL("unknown format: %d", server->captured.format);
-            exit(1);
-        }
-    } else {
-        uint32_t i;
-        uint8_t *src = server->captured.data;
-        uint8_t *dst = display_data;
-
-        for (i = 0; i < server->captured.height; ++i) {
-            switch (server->captured.format) {
-            case vigsp_surface_bgrx8888:
-            case vigsp_surface_bgra8888:
-                memcpy(dst, src, server->captured.width * sfc_bpp);
-                break;
-            default:
-                assert(false);
-                VIGS_LOG_CRITICAL("unknown format: %d", server->captured.format);
-                exit(1);
-            }
-            src += server->captured.stride;
-            dst += display_stride;
-        }
-    }
-
-out:
-    qemu_mutex_unlock(&server->capture_mutex);
 
     if (!server->is_capturing) {
         struct vigs_server_work_item *item;
@@ -854,8 +777,10 @@ out:
 
         server->is_capturing = true;
 
+        item->invalidate = invalidate_cnt > 0;
+
         work_queue_add_item(server->render_queue, &item->base);
     }
 
-    return updated;
+    return true;
 }

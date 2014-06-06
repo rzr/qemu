@@ -608,6 +608,7 @@ struct vigs_backend *vigs_gl_backend_create(void *display)
     VIGS_GL_GET_PROC(GetAttribLocation, glGetAttribLocation);
     VIGS_GL_GET_PROC(GetUniformLocation, glGetUniformLocation);
     VIGS_GL_GET_PROC(VertexAttribPointer, glVertexAttribPointer);
+    VIGS_GL_GET_PROC(Uniform2fv, glUniform2fv);
     VIGS_GL_GET_PROC(Uniform4fv, glUniform4fv);
     VIGS_GL_GET_PROC(UniformMatrix4fv, glUniformMatrix4fv);
 
