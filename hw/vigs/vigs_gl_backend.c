@@ -1351,9 +1351,7 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
     GLfloat *vert_coords;
     GLfloat *tex_coords;
     const struct vigs_plane *sorted_planes[VIGS_MAX_PLANES];
-    GLfloat ortho[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    float window_aspect, sfc_aspect;
-    float texSize[2];
+    bool scale;
 
     VIGS_LOG_TRACE("enter");
 
@@ -1402,39 +1400,39 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
         }
     }
 
-    gl_backend->UseProgram(gl_backend->composite_prog_id);
+    scale = (vigs_window_width != ws_root_sfc->base.base.width) ||
+            (vigs_window_height != ws_root_sfc->base.base.height);
 
     gl_backend->Viewport(0, 0,
                          vigs_window_width,
                          vigs_window_height);
 
-    gl_backend->ClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-    gl_backend->Clear(GL_COLOR_BUFFER_BIT);
+    if (scale) {
+        GLfloat ortho[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        float aspect;
+        float texSize[2];
 
-    window_aspect = (float)vigs_window_width / (float)vigs_window_height;
-    sfc_aspect = (float)ws_root_sfc->base.base.width / (float)ws_root_sfc->base.base.height;
+        gl_backend->UseProgram(gl_backend->composite_prog_id);
 
-    if (window_aspect < sfc_aspect) {
-        float actual_height = (float)ws_root_sfc->base.base.width / window_aspect;
-        vigs_gl_create_ortho(0.0f, ws_root_sfc->base.base.width,
-                             -(actual_height - ws_root_sfc->base.base.height) / 2,
-                             actual_height - (actual_height - ws_root_sfc->base.base.height) / 2,
-                             -1.0f, 1.0f, ortho);
-    } else {
-        float actual_width = (float)ws_root_sfc->base.base.height * window_aspect;
-        vigs_gl_create_ortho(-(actual_width - ws_root_sfc->base.base.width) / 2,
-                             actual_width - (actual_width - ws_root_sfc->base.base.width) / 2,
+        aspect = (float)vigs_window_width / (float)vigs_window_height;
+
+        vigs_gl_create_ortho(0.0f,
+                             (float)ws_root_sfc->base.base.height * aspect,
                              0.0f, ws_root_sfc->base.base.height,
                              -1.0f, 1.0f, ortho);
+
+        gl_backend->UniformMatrix4fv(gl_backend->composite_prog_proj_loc, 1, GL_FALSE,
+                                     ortho);
+
+        texSize[0] = ws_root_sfc->base.base.width;
+        texSize[1] = ws_root_sfc->base.base.height;
+
+        gl_backend->Uniform2fv(gl_backend->composite_prog_texSize_loc, 1, texSize);
+    } else {
+        gl_backend->UseProgram(gl_backend->tex_prog_id);
+        gl_backend->UniformMatrix4fv(gl_backend->tex_prog_proj_loc, 1, GL_FALSE,
+                                     gl_root_sfc->ortho);
     }
-
-    gl_backend->UniformMatrix4fv(gl_backend->composite_prog_proj_loc, 1, GL_FALSE,
-                                 ortho);
-
-    texSize[0] = ws_root_sfc->base.base.width;
-    texSize[1] = ws_root_sfc->base.base.height;
-
-    gl_backend->Uniform2fv(gl_backend->composite_prog_texSize_loc, 1, texSize);
 
     gl_backend->BindTexture(GL_TEXTURE_2D, ws_root_sfc->tex);
 
@@ -1493,7 +1491,11 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
         tex_coords[11] = 0;
     }
 
-    vigs_gl_draw_composite_prog(gl_backend, 6);
+    if (scale) {
+        vigs_gl_draw_composite_prog(gl_backend, 6);
+    } else {
+        vigs_gl_draw_tex_prog(gl_backend, 6);
+    }
 
     /*
      * Sort planes, only 2 of them now, don't bother...
@@ -1549,7 +1551,11 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
 
         gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
 
-        vigs_gl_draw_composite_prog(gl_backend, 6);
+        if (scale) {
+            vigs_gl_draw_composite_prog(gl_backend, 6);
+        } else {
+            vigs_gl_draw_tex_prog(gl_backend, 6);
+        }
     }
 
 out:

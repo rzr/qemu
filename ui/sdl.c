@@ -100,8 +100,6 @@ static void do_sdl_resize(int width, int height, int bpp)
     flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
     if (gui_fullscreen) {
         flags |= SDL_FULLSCREEN;
-    } else {
-        flags |= SDL_RESIZABLE;
     }
     if (gui_noframe)
         flags |= SDL_NOFRAME;
@@ -495,6 +493,8 @@ static void toggle_full_screen(void)
     int height = surface_height(surface);
     int bpp = surface_bits_per_pixel(surface);
 
+    return;
+
     gui_fullscreen = !gui_fullscreen;
     if (gui_fullscreen) {
         gui_saved_width = real_screen->w;
@@ -571,10 +571,10 @@ static void handle_keydown(SDL_Event *ev)
                 absolute_mouse_grab();
             }
             break;
-        case 0x1b: /* '+' */
-        case 0x35: /* '-' */
+        case 0x1e: /* 'a' */
+        case 0x2c: /* 'z' */
             if (!gui_fullscreen) {
-                int width = MAX(real_screen->w + (keycode == 0x1b ? 50 : -50),
+                int width = MAX(real_screen->w + (keycode == 0x1e ? 50 : -50),
                                 160);
                 int height = (surface_height(surface) * width) /
                     surface_width(surface);
@@ -814,7 +814,6 @@ static void sdl_refresh(DisplayChangeListener *dcl)
             handle_activation(ev);
             break;
         case SDL_VIDEORESIZE:
-            sdl_scale(ev->resize.w, ev->resize.h);
             graphic_hw_invalidate(NULL);
             graphic_hw_update(NULL);
             break;

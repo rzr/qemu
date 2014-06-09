@@ -32,3 +32,11 @@ put it to ./data
 ```
 ./1-run.sh
 ```
+
+### QEMU keys
+
+lctrl + lalt + a - zoom in
+
+lctrl + lalt + z - zoom out
+
+lctrl + lalt + u - default zoom
