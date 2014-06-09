@@ -39,7 +39,7 @@
 #define BRIGHTNESS_MAX          (100)
 
 extern uint32_t brightness_level;
-extern uint32_t brightness_off;
+extern bool display_off;
 extern uint8_t brightness_tbl[];
 extern pixman_image_t *brightness_image;
 

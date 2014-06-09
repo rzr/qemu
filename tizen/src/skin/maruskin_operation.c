@@ -105,7 +105,7 @@ void do_grabbing_enable(bool on)
 void do_mouse_event(int button_type, int event_type,
     int origin_x, int origin_y, int x, int y, int z)
 {
-    if (brightness_off) {
+    if (display_off) {
         if (button_type == 0) {
             INFO("auto mouse release\n");
             virtio_touchscreen_event(0, 0, 0, 0);
@@ -417,7 +417,7 @@ Framebuffer *request_screenshot(void)
 
     /* If display has been turned off, return empty buffer.
        Because the empty buffer is seen as a black. */
-    if (brightness_off == 0) {
+    if (!display_off) {
         pthread_mutex_lock(&mutex_screenshot);
 
         MaruScreenShot* screenshot = get_screenshot();

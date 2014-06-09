@@ -203,7 +203,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
     }
 
     /* draw cover image */
-    if (sdl_skip_update && brightness_off) {
+    if (sdl_skip_update && display_off) {
         if (blank_cnt > MAX_BLANK_FRAME_CNT) {
 #ifdef CONFIG_WIN32
             if (sdl_invalidate && get_emul_skin_enable()) {
@@ -243,7 +243,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
     /* Usually, continuously updated.
        When the display is turned off,
        ten more updates the screen for a black screen. */
-    if (brightness_off) {
+    if (display_off) {
         if (++sdl_skip_count > 10) {
             sdl_skip_update = 1;
         } else {

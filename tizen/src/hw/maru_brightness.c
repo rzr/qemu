@@ -57,7 +57,7 @@ enum {
 };
 
 uint32_t brightness_level = BRIGHTNESS_MAX;
-uint32_t brightness_off;
+bool display_off;
 pixman_color_t level_color;
 pixman_image_t *brightness_image;
 
@@ -74,7 +74,7 @@ uint8_t brightness_tbl[] = {155, /* level 0 : for dimming */
 /* level 81 ~ 90 */          29,  27,  26,  24,  23,  21,  20,  18,  17,  15,
 /* level 91 ~ 99 */          14,  12,  11,   9,   8,   6,   5,   3,   2,   0};
 
-QEMUBH *bh;
+QEMUBH *display_bh;
 
 static uint64_t brightness_reg_read(void *opaque,
                                     hwaddr addr,
@@ -85,8 +85,8 @@ static uint64_t brightness_reg_read(void *opaque,
         INFO("current brightness level = %lu\n", brightness_level);
         return brightness_level;
     case BRIGHTNESS_OFF:
-        INFO("device is turned %s\n", brightness_off ? "off" : "on");
-        return brightness_off;
+        INFO("device is turned %s\n", display_off ? "off" : "on");
+        return display_off;
     default:
         ERR("wrong brightness register read - addr : %d\n", (int)addr);
         break;
@@ -129,20 +129,21 @@ static void brightness_reg_write(void *opaque,
         }
         return;
     case BRIGHTNESS_OFF:
-        if (brightness_off == val) {
+        if (display_off == val) {
             return;
         }
 
         INFO("status changes: %s\n", val ? "OFF" : "ON");
-        brightness_off = val;
-        if (brightness_off) {
+
+        display_off = val;
+        if (display_off) {
             maru_pixman_image_set_alpha(0xFF); /* set black */
         } else {
             maru_pixman_image_set_alpha(brightness_tbl[brightness_level]);
         }
 
         /* notify to skin process */
-        qemu_bh_schedule(bh);
+        qemu_bh_schedule(display_bh);
 
         return;
     default:
@@ -161,8 +162,8 @@ static void brightness_exitfn(PCIDevice *dev)
 {
     BrightnessState *s = DO_UPCAST(BrightnessState, dev, dev);
 
-    if (bh) {
-        qemu_bh_delete(bh);
+    if (display_bh) {
+        qemu_bh_delete(display_bh);
     }
     if (brightness_image) {
         pixman_image_unref(brightness_image);
@@ -173,13 +174,9 @@ static void brightness_exitfn(PCIDevice *dev)
     INFO("finalize maru-brightness device\n");
 }
 
-static void maru_brightness_bh(void *opaque)
+static void maru_display_bh(void *opaque)
 {
-    if (brightness_off == 0) {
-        notify_brightness_state(true);
-    } else {
-        notify_brightness_state(false);
-    }
+    notify_display_power(!display_off);
 }
 
 static int brightness_initfn(PCIDevice *dev)
@@ -195,7 +192,7 @@ static int brightness_initfn(PCIDevice *dev)
                             "maru-brightness-mmio", BRIGHTNESS_REG_SIZE);
     pci_register_bar(&s->dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY, &s->mmio_addr);
 
-    bh = qemu_bh_new(maru_brightness_bh, s);
+    display_bh = qemu_bh_new(maru_display_bh, s);
     brightness_level = BRIGHTNESS_MAX;
     level_color.alpha = 0x0000;
     level_color.red = 0x0000;

@@ -42,7 +42,7 @@ public interface ICommunicator extends Runnable {
 	public final static short RECV_DETAIL_INFO_DATA = 3;
 	public final static short RECV_RAMDUMP_COMPLETED = 4;
 	public final static short RECV_BOOTING_PROGRESS = 5;
-	public final static short RECV_BRIGHTNESS_STATE = 6;
+	public final static short RECV_DISPLAY_POWER = 6;
 	public final static short RECV_HOST_KBD_STATE = 8;
 	public final static short RECV_MULTI_TOUCH_STATE = 9;
 
