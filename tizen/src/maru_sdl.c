@@ -308,7 +308,7 @@ static void qemu_update(void)
     if (surface_qemu != NULL) {
         maru_do_pixman_dpy_surface(dpy_surface->image);
 
-        set_maru_screenshot(dpy_surface);
+        save_screenshot(dpy_surface);
 
         if (current_scale_factor != 1.0) {
             rotated_screen = maru_do_pixman_rotate(
@@ -598,7 +598,9 @@ void maru_sdl_resize(void)
 
 void maru_sdl_update(void)
 {
-    qemu_bh_schedule(sdl_update_bh);
+    if (sdl_update_bh != NULL) {
+        qemu_bh_schedule(sdl_update_bh);
+    }
 }
 
 void maru_sdl_invalidate(bool on)
