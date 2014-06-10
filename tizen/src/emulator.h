@@ -51,6 +51,7 @@ extern gchar log_path[];
 void exit_emulator(void);
 char *get_bin_path(void);
 const gchar * prepare_maru(const gchar * const kernel_cmdline);
+void start_skin(void);
 
 const gchar * get_log_path(void);
 int maru_device_check(QemuOpts *opts);
