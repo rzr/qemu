@@ -4083,13 +4083,6 @@ int main(int argc, char **argv, char **envp)
     // W/A for preserve larger continuous heap for RAM.
     preallocated_ptr = g_malloc(ram_size);
 
-    if (skin_disabled == 1) {
-        /* do not start skin client process */
-        set_emul_skin_enable(false);
-    } else {
-        set_emul_skin_enable(true);
-    }
-
     kernel_cmdline = qemu_opt_get(qemu_get_machine_opts(), "append");
     // Returned variable points different address from input variable.
     kernel_cmdline = prepare_maru(kernel_cmdline);
@@ -4594,6 +4587,13 @@ int main(int argc, char **argv, char **envp)
 #if defined(CONFIG_MARU)
     case DT_MARU:
         maru_display_init(ds);
+        if (skin_disabled == 1) {
+            /* do not start skin client process */
+            set_emul_skin_enable(false);
+        } else {
+            set_emul_skin_enable(true);
+        }
+        start_skin();
         break;
 #endif
 #if defined(CONFIG_SDL)

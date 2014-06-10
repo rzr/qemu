@@ -332,10 +332,6 @@ const gchar *prepare_maru(const gchar * const kernel_cmdline)
 {
     INFO("Prepare maru specified feature\n");
 
-    INFO("Construct main window\n");
-
-    construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
-
     g_strlcpy(maru_kernel_cmdline, kernel_cmdline, LEN_MARU_KERNEL_CMDLINE);
 
     /* Prepare basic features */
@@ -351,6 +347,13 @@ const gchar *prepare_maru(const gchar * const kernel_cmdline)
     INFO("kernel command : %s\n", maru_kernel_cmdline);
 
     return maru_kernel_cmdline;
+}
+
+void start_skin(void)
+{
+    INFO("Start skin\n");
+
+    construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
 }
 
 int qemu_main(int argc, char **argv, char **envp);
