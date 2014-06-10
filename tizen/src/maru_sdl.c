@@ -203,7 +203,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
     }
 
     /* draw cover image */
-    if (sdl_skip_update && brightness_off) {
+    if (sdl_skip_update && display_off) {
         if (blank_cnt > MAX_BLANK_FRAME_CNT) {
 #ifdef CONFIG_WIN32
             if (sdl_invalidate && get_emul_skin_enable()) {
@@ -243,7 +243,7 @@ static void qemu_ds_sdl_refresh(DisplayChangeListener *dcl)
     /* Usually, continuously updated.
        When the display is turned off,
        ten more updates the screen for a black screen. */
-    if (brightness_off) {
+    if (display_off) {
         if (++sdl_skip_count > 10) {
             sdl_skip_update = 1;
         } else {
@@ -308,7 +308,7 @@ static void qemu_update(void)
     if (surface_qemu != NULL) {
         maru_do_pixman_dpy_surface(dpy_surface->image);
 
-        set_maru_screenshot(dpy_surface);
+        save_screenshot(dpy_surface);
 
         if (current_scale_factor != 1.0) {
             rotated_screen = maru_do_pixman_rotate(
@@ -598,7 +598,9 @@ void maru_sdl_resize(void)
 
 void maru_sdl_update(void)
 {
-    qemu_bh_schedule(sdl_update_bh);
+    if (sdl_update_bh != NULL) {
+        qemu_bh_schedule(sdl_update_bh);
+    }
 }
 
 void maru_sdl_invalidate(bool on)

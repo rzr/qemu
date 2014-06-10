@@ -162,7 +162,7 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
 {
     /* If the display is turned off,
     the screen does not update until the it is turned on */
-    if (shm_skip_update && brightness_off) {
+    if (shm_skip_update && display_off) {
         if (blank_cnt > MAX_BLANK_FRAME_CNT) {
             /* do nothing */
             return;
@@ -194,7 +194,7 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
     /* Usually, continuously updated.
     But when the display is turned off,
     ten more updates the surface for a black screen. */
-    if (brightness_off) {
+    if (display_off) {
         if (++shm_skip_count > 10) {
             shm_skip_update = 1;
         } else {

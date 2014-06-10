@@ -35,10 +35,10 @@
 
 extern int ret_hax_init;
 
-typedef struct ScreenShot {
-    unsigned char* pixel_data;
-    int pixel_data_length;
-} QemuSurfaceInfo;
+typedef struct Framebuffer {
+    unsigned char* data;
+    unsigned int data_length;
+} Framebuffer;
 
 typedef struct DetailInfo {
     char* data;
@@ -58,10 +58,10 @@ void do_hw_key_event(int event_type, int keycode);
 void do_scale_event(double scale_factor);
 void do_rotation_event(int rotation_type);
 
-QemuSurfaceInfo *request_screenshot(void);
+Framebuffer *request_screenshot(void);
 DetailInfo *get_detail_info(int qemu_argc, char **qemu_argv);
 void free_detail_info(DetailInfo *detail_info);
-void free_screenshot_info(QemuSurfaceInfo *);
+void free_screenshot(Framebuffer *);
 
 void do_open_shell(void);
 void do_host_kbd_enable(bool on);

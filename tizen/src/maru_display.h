@@ -33,11 +33,11 @@
 
 #include "ui/console.h"
 
-typedef struct MaruScreenshot {
-    unsigned char *pixel_data;
-    int request_screenshot;
-    int isReady;
-} MaruScreenshot;
+typedef struct MaruScreenShot {
+    unsigned char *pixels;
+    bool request;
+    bool ready;
+} MaruScreenShot;
 
 void maru_display_init(DisplayState *ds);
 void maru_display_fini(void);
@@ -49,7 +49,7 @@ void maru_ds_surface_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide);
 
-MaruScreenshot *get_maru_screenshot(void);
-void set_maru_screenshot(DisplaySurface *surface);
+MaruScreenShot *get_screenshot(void);
+void save_screenshot(DisplaySurface *surface);
 
 #endif /* __MARU_DISPLAY_H__ */

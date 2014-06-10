@@ -337,8 +337,8 @@ public class SocketCommunicator implements ICommunicator {
 
 					break;
 				}
-				case RECV_BRIGHTNESS_STATE: {
-					//logger.info("received BRIGHTNESS_STATE from QEMU");
+				case RECV_DISPLAY_POWER: {
+					//logger.info("received DISPLAY_POWER from QEMU");
 
 					resetDataTransfer(miscDataTransfer);
 					receiveData(sockInputStream, miscDataTransfer, header.length);
@@ -355,9 +355,9 @@ public class SocketCommunicator implements ICommunicator {
 						}
 
 						if (value == 0) {
-							skin.updateBrightness(false);
+							skin.updateDisplayPower(false);
 						} else {
-							skin.updateBrightness(true);
+							skin.updateDisplayPower(true);
 						}
 					}
 

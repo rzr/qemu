@@ -113,7 +113,7 @@ enum {
     SEND_DETAIL_INFO_DATA = 3,
     SEND_RAMDUMP_COMPLETED = 4,
     SEND_BOOTING_PROGRESS = 5,
-    SEND_BRIGHTNESS_STATE = 6,
+    SEND_DISPLAY_POWER = 6,
     SEND_HOST_KBD_STATE = 8,
     SEND_MULTI_TOUCH_STATE = 9,
 
@@ -352,25 +352,25 @@ void notify_booting_progress(unsigned int layer, int progress_value)
     }
 }
 
-void notify_brightness_state(bool on)
+void notify_display_power(bool on)
 {
-#define BRIGHTNESS_DATA_LENGTH 2
-    char brightness_data[BRIGHTNESS_DATA_LENGTH] = { 0, };
+#define DISPLAY_POWER_DATA_LENGTH 2
+    char power_data[DISPLAY_POWER_DATA_LENGTH] = { 0, };
 
     if (on == false) {
-        snprintf(brightness_data, BRIGHTNESS_DATA_LENGTH, "0");
+        snprintf(power_data, DISPLAY_POWER_DATA_LENGTH, "0");
     } else {
-        snprintf(brightness_data, BRIGHTNESS_DATA_LENGTH, "1");
+        snprintf(power_data, DISPLAY_POWER_DATA_LENGTH, "1");
     }
 
-    TRACE("notify brightness state : %s\n", brightness_data);
+    TRACE("notify display power : %s\n", power_data);
 
     if (client_sock) {
         if (0 > send_skin_data(client_sock,
-            SEND_BRIGHTNESS_STATE,
-            (unsigned char *)brightness_data, BRIGHTNESS_DATA_LENGTH, 0)) {
+            SEND_DISPLAY_POWER,
+            (unsigned char *)power_data, DISPLAY_POWER_DATA_LENGTH, 0)) {
 
-            ERR("fail to send SEND_BRIGHTNESS_STATE to skin\n");
+            ERR("fail to send SEND_DISPLAY_POWER to skin\n");
         }
     } else {
         INFO("skin client socket is not connected yet\n");
@@ -988,13 +988,14 @@ static void* run_skin_server(void* args)
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_SCREENSHOT_REQ ==\n");
                     TRACE(log_buf);
 
-                    QemuSurfaceInfo* screenshot = request_screenshot();
+                    Framebuffer* framebuffer = request_screenshot();
 
-                    if (screenshot != NULL) {
+                    if (framebuffer != NULL) {
                         send_skin_data(client_sock, SEND_SCREENSHOT_DATA,
-                            screenshot->pixel_data, screenshot->pixel_data_length, 1);
+                            framebuffer->data, framebuffer->data_length, 1);
 
-                        free_screenshot_info(screenshot);
+                        g_free(framebuffer->data);
+                        g_free(framebuffer);
                     } else {
                         ERR("Fail to get screen shot data\n");
                     }

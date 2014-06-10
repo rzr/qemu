@@ -105,7 +105,7 @@ void do_grabbing_enable(bool on)
 void do_mouse_event(int button_type, int event_type,
     int origin_x, int origin_y, int x, int y, int z)
 {
-    if (brightness_off) {
+    if (display_off) {
         if (button_type == 0) {
             INFO("auto mouse release\n");
             virtio_touchscreen_event(0, 0, 0, 0);
@@ -369,27 +369,29 @@ void do_rotation_event(int rotation_type)
 #endif
 }
 
-void set_maru_screenshot(DisplaySurface *surface)
+void save_screenshot(DisplaySurface *surface)
 {
     pthread_mutex_lock(&mutex_screenshot);
 
-    MaruScreenshot *maru_screenshot = get_maru_screenshot();
-    if (maru_screenshot) {
-        maru_screenshot->isReady = 1;
-        if (maru_screenshot->request_screenshot == 1) {
-            memcpy(maru_screenshot->pixel_data,
+    MaruScreenShot *screenshot = get_screenshot();
+    if (screenshot != NULL) {
+        screenshot->ready = true;
+
+        if (screenshot->request == true) {
+            memcpy(screenshot->pixels,
                    surface_data(surface),
                    surface_stride(surface) *
                    surface_height(surface));
-            maru_screenshot->request_screenshot = 0;
+            screenshot->request = false;
 
             pthread_cond_signal(&cond_screenshot);
         }
     }
+
     pthread_mutex_unlock(&mutex_screenshot);
 }
 
-QemuSurfaceInfo *request_screenshot(void)
+Framebuffer *request_screenshot(void)
 {
     const int length = get_emul_resolution_width() * get_emul_resolution_height() * 4;
     INFO("screenshot data length : %d\n", length);
@@ -398,31 +400,34 @@ QemuSurfaceInfo *request_screenshot(void)
         return NULL;
     }
 
-    QemuSurfaceInfo *info = (QemuSurfaceInfo *)g_malloc0(sizeof(QemuSurfaceInfo));
-    if (!info) {
-        ERR("Fail to malloc for QemuSurfaceInfo.\n");
+    Framebuffer *framebuffer = (Framebuffer *)g_malloc0(sizeof(Framebuffer));
+    if (framebuffer == NULL) {
+        ERR("failed to malloc for framebuffer\n");
+
         return NULL;
     }
 
-    info->pixel_data = (unsigned char *)g_malloc0(length);
-    if (!info->pixel_data) {
-        g_free(info);
-        ERR("Fail to malloc for pixel data.\n");
+    framebuffer->data = (unsigned char *)g_malloc0(length);
+    if (framebuffer->data == NULL) {
+        g_free(framebuffer);
+        ERR("failed to malloc for framebuffer data\n");
+
         return NULL;
     }
 
     /* If display has been turned off, return empty buffer.
        Because the empty buffer is seen as a black. */
-    if (brightness_off == 0) {
+    if (!display_off) {
         pthread_mutex_lock(&mutex_screenshot);
 
-        MaruScreenshot* maru_screenshot = get_maru_screenshot();
-        if (!maru_screenshot || maru_screenshot->isReady != 1) {
-            ERR("maru screenshot is NULL or not ready.\n");
-            memset(info->pixel_data, 0x00, length);
+        MaruScreenShot* screenshot = get_screenshot();
+        if (screenshot == NULL || screenshot->ready == false) {
+            WARN("screenshot is null\n");
+
+            memset(framebuffer->data, 0x00, length);
         } else {
-            maru_screenshot->pixel_data = info->pixel_data;
-            maru_screenshot->request_screenshot = 1;
+            screenshot->pixels = framebuffer->data;
+            screenshot->request = true;
             maru_display_update();
 
             // TODO : do not wait on communication thread
@@ -432,20 +437,9 @@ QemuSurfaceInfo *request_screenshot(void)
         pthread_mutex_unlock(&mutex_screenshot);
     }
 
-    info->pixel_data_length = length;
+    framebuffer->data_length = length;
 
-    return info;
-}
-
-void free_screenshot_info(QemuSurfaceInfo *info)
-{
-    if (info) {
-        if(info->pixel_data) {
-            g_free(info->pixel_data);
-        }
-
-        g_free(info);
-    }
+    return framebuffer;
 }
 
 DetailInfo* get_detail_info(int qemu_argc, char** qemu_argv)

@@ -1323,7 +1323,7 @@ public class EmulatorSkin {
 		});
 	}
 
-	public void updateBrightness(final boolean on) {
+	public void updateDisplayPower(final boolean on) {
 		getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
