@@ -1408,21 +1408,11 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
                          vigs_window_height);
 
     if (scale) {
-        GLfloat ortho[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        float aspect;
         float texSize[2];
 
         gl_backend->UseProgram(gl_backend->composite_prog_id);
-
-        aspect = (float)vigs_window_width / (float)vigs_window_height;
-
-        vigs_gl_create_ortho(0.0f,
-                             (float)ws_root_sfc->base.base.height * aspect,
-                             0.0f, ws_root_sfc->base.base.height,
-                             -1.0f, 1.0f, ortho);
-
         gl_backend->UniformMatrix4fv(gl_backend->composite_prog_proj_loc, 1, GL_FALSE,
-                                     ortho);
+                                     gl_root_sfc->ortho);
 
         texSize[0] = ws_root_sfc->base.base.width;
         texSize[1] = ws_root_sfc->base.base.height;
