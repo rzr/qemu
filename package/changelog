@@ -1,3 +1,6 @@
+* 2.0.0
+- Major package version up
+== Seokyeon Hwang <syeon.hwang@samsung.com> 2014-06-10
 * 1.7.41
 - modified some device names <(_) to (-)>
 - fix release routine for maru_sdl
