@@ -481,16 +481,7 @@ static void command_handler(char* readbuf, struct sockaddr_in* client_addr)
     TRACE("command:%s\n", command);
     if (strcmp(command, "2\n" ) == 0) {
         notify_sdb_daemon_start();
-    } else if (strcmp(command, "3\n" ) == 0) {
-        notify_sensor_daemon_start();
-        notify_ecs_server_start();
-    }
-#if 0
-    else if (strcmp(command, "4\n") == 0) {
-        handle_sdcard(readbuf);
-    }
-#endif
-    else if (strcmp(command, "5\n") == 0) {
+    } else if (strcmp(command, "5\n") == 0) {
         register_sdb_server(readbuf, client_addr);
     } else if (strcmp(command, "6\n") == 0) {
         wakeup_guest();

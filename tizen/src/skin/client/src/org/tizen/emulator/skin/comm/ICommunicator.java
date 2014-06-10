@@ -46,9 +46,7 @@ public interface ICommunicator extends Runnable {
 	public final static short RECV_HOST_KBD_STATE = 8;
 	public final static short RECV_MULTI_TOUCH_STATE = 9;
 
-	public final static short RECV_SENSORD_STARTED = 800;
 	public final static short RECV_SDBD_STARTED = 801;
-	public final static short RECV_ECS_STARTED = 802;
 	public final static short RECV_DRAW_FRAME = 900;
 	public final static short RECV_DRAW_BLANK_GUIDE = 901;
 	public final static short RECV_EMUL_RESET = 998;
