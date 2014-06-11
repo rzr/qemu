@@ -30,7 +30,6 @@
 
 
 #include "maru_sdl_processing.h"
-#include "hw/maru_overlay.h"
 #include "hw/maru_brightness.h"
 #include "debug_ch.h"
 
@@ -40,20 +39,6 @@ MULTI_DEBUG_CHANNEL(tizen, sdl_processing);
 /* Image processing functions using the pixman library */
 void maru_do_pixman_dpy_surface(pixman_image_t *dst_image)
 {
-    /* overlay0 */
-    if (overlay0_power) {
-        pixman_image_composite(PIXMAN_OP_OVER,
-                               overlay0_image, NULL, dst_image,
-                               0, 0, 0, 0, overlay0_left, overlay0_top,
-                               overlay0_width, overlay0_height);
-    }
-    /* overlay1 */
-    if (overlay1_power) {
-        pixman_image_composite(PIXMAN_OP_OVER,
-                               overlay1_image, NULL, dst_image,
-                               0, 0, 0, 0, overlay1_left, overlay1_top,
-                               overlay1_width, overlay1_height);
-    }
     /* apply the brightness level */
     if (brightness_level < BRIGHTNESS_MAX) {
         pixman_image_composite(PIXMAN_OP_OVER,

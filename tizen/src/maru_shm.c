@@ -35,7 +35,6 @@
 #include "maru_shm.h"
 #include "emul_state.h"
 #include "hw/maru_brightness.h"
-#include "hw/maru_overlay.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
 #include "maru_err_table.h"
@@ -66,20 +65,6 @@ static unsigned int drop_frame;
 /* Image processing functions using the pixman library */
 static void maru_do_pixman_dpy_surface(pixman_image_t *dst_image)
 {
-    /* overlay0 */
-    if (overlay0_power) {
-        pixman_image_composite(PIXMAN_OP_OVER,
-                               overlay0_image, NULL, dst_image,
-                               0, 0, 0, 0, overlay0_left, overlay0_top,
-                               overlay0_width, overlay0_height);
-    }
-    /* overlay1 */
-    if (overlay1_power) {
-        pixman_image_composite(PIXMAN_OP_OVER,
-                               overlay1_image, NULL, dst_image,
-                               0, 0, 0, 0, overlay1_left, overlay1_top,
-                               overlay1_width, overlay1_height);
-    }
     /* apply the brightness level */
     if (brightness_level < BRIGHTNESS_MAX) {
         pixman_image_composite(PIXMAN_OP_OVER,
