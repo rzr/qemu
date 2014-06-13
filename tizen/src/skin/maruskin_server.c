@@ -143,9 +143,9 @@ static int recv_heartbeat_count = 0;
 /* 0: not drawing, 1: drawing */
 int draw_display_state = 0;
 
-static pthread_mutex_t mutex_send_data = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t mutex_recv_heartbeat_count = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutex_draw_display = PTHREAD_MUTEX_INITIALIZER;
+static QemuMutex mutex_send_data;
+static QemuMutex mutex_recv_heartbeat_count;
+QemuMutex mutex_draw_display;
 pthread_mutex_t mutex_screenshot = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_screenshot = PTHREAD_COND_INITIALIZER;
 
@@ -190,8 +190,11 @@ int start_skin_server(int argc, char** argv,
     qmu_argc = qemu_argc;
     qmu_argv = qemu_argv;
 
-    QemuThread qemu_thread;
+    qemu_mutex_init(&mutex_send_data);
+    qemu_mutex_init(&mutex_recv_heartbeat_count);
+    qemu_mutex_init(&mutex_draw_display);
 
+    QemuThread qemu_thread;
     qemu_thread_create(&qemu_thread, "skin-server", run_skin_server,
         NULL, QEMU_THREAD_DETACHED);
 
@@ -259,9 +262,9 @@ void shutdown_skin_server(void)
         }
     }
 
-    pthread_mutex_destroy(&mutex_send_data);
-    pthread_mutex_destroy(&mutex_recv_heartbeat_count);
-    pthread_mutex_destroy(&mutex_draw_display);
+    qemu_mutex_destroy(&mutex_send_data);
+    qemu_mutex_destroy(&mutex_recv_heartbeat_count);
+    qemu_mutex_destroy(&mutex_draw_display);
 }
 
 void notify_draw_frame(void)
@@ -1033,9 +1036,9 @@ static void* run_skin_server(void* args)
                     break;
                 }
                 case RECV_RESPONSE_HEART_BEAT: {
-                    pthread_mutex_lock(&mutex_recv_heartbeat_count);
+                    qemu_mutex_lock(&mutex_recv_heartbeat_count);
                     recv_heartbeat_count = 0;
-                    pthread_mutex_unlock(&mutex_recv_heartbeat_count);
+                    qemu_mutex_unlock(&mutex_recv_heartbeat_count);
 
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_RESPONSE_HEART_BEAT ==\n");
 #if 0
@@ -1096,9 +1099,9 @@ static void* run_skin_server(void* args)
                     break;
                 }
                 case RECV_RESPONSE_DRAW_FRAME: {
-                    pthread_mutex_lock(&mutex_draw_display);
+                    qemu_mutex_lock(&mutex_draw_display);
                     draw_display_state = 0; /* framebuffer has been drawn */
-                    pthread_mutex_unlock(&mutex_draw_display);
+                    qemu_mutex_unlock(&mutex_draw_display);
 
                     log_cnt += sprintf(log_buf + log_cnt, "RECV_RESPONSE_DRAW_FRAME ==\n");
 #if 0
@@ -1261,19 +1264,19 @@ char header1[SEND_HEADER_SIZE] = { 0, };
 static int send_skin_header_only(int sockfd, short send_cmd, int print_log)
 {
     /* send */
-    pthread_mutex_lock(&mutex_send_data);
+    qemu_mutex_lock(&mutex_send_data);
 
     make_header(sockfd, send_cmd, 0, header1, print_log);
 
     int header_cnt = send(sockfd, header1, SEND_HEADER_SIZE, 0);
     if (0 > header_cnt) {
         ERR("failed to send header1\n");
-        pthread_mutex_unlock(&mutex_send_data);
+        qemu_mutex_unlock(&mutex_send_data);
 
         return header_cnt;
     }
 
-    pthread_mutex_unlock(&mutex_send_data);
+    qemu_mutex_unlock(&mutex_send_data);
 
     TRACE("send header result : %d\n", header_cnt);
 
@@ -1290,21 +1293,21 @@ static int send_skin_data(int sockfd,
     }
 
     /* send */
-    pthread_mutex_lock(&mutex_send_data);
+    qemu_mutex_lock(&mutex_send_data);
 
     make_header(sockfd, send_cmd, length, header2, 1);
 
     int header_cnt = send(sockfd, header2, SEND_HEADER_SIZE, 0);
     if (0 > header_cnt) {
         ERR("failed to send header2\n");
-        pthread_mutex_unlock(&mutex_send_data);
+        qemu_mutex_unlock(&mutex_send_data);
 
         return header_cnt;
     }
 
     int data_cnt = send_n(sockfd, data, length, big_data);
 
-    pthread_mutex_unlock(&mutex_send_data);
+    qemu_mutex_unlock(&mutex_send_data);
 
     TRACE("send data result : %d\n", data_cnt);
 
@@ -1359,12 +1362,14 @@ static void* do_heart_beat(void* args)
             break;
         }
 
-        pthread_mutex_lock(&mutex_recv_heartbeat_count);
+        qemu_mutex_lock(&mutex_recv_heartbeat_count);
+
         recv_heartbeat_count++;
         if (1 < recv_heartbeat_count) {
             INFO("[HB] recv_heartbeat_count : %d\n", recv_heartbeat_count);
         }
-        pthread_mutex_unlock(&mutex_recv_heartbeat_count);
+
+        qemu_mutex_unlock(&mutex_recv_heartbeat_count);
 
         if (HEART_BEAT_EXPIRE_COUNT < recv_heartbeat_count) {
             ERR("received heart beat count is expired\n");
@@ -1414,7 +1419,9 @@ static int start_heart_beat(void)
         return 1;
     } else {
        QemuThread thread_id_heartbeat;
-       qemu_thread_create(&thread_id_heartbeat, "skin_heartbeat_thread", do_heart_beat, NULL, QEMU_THREAD_DETACHED);
+       qemu_thread_create(&thread_id_heartbeat, "skin-hb", do_heart_beat,
+           NULL, QEMU_THREAD_DETACHED);
+
        return 1;
     }
 }

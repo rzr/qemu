@@ -53,7 +53,7 @@ static bool blank_guide_enable;
 static int blank_cnt;
 #define MAX_BLANK_FRAME_CNT 10
 
-extern pthread_mutex_t mutex_draw_display;
+extern QemuMutex mutex_draw_display;
 extern int draw_display_state;
 
 //#define INFO_FRAME_DROP_RATE
@@ -79,12 +79,12 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
                                int x, int y, int w, int h)
 {
     if (shared_memory != NULL) {
-        pthread_mutex_lock(&mutex_draw_display);
+        qemu_mutex_lock(&mutex_draw_display);
 
         if (draw_display_state == 0) {
             draw_display_state = 1;
 
-            pthread_mutex_unlock(&mutex_draw_display);
+            qemu_mutex_unlock(&mutex_draw_display);
 
             if (is_fit_console_size == true) {
                 maru_do_pixman_dpy_surface(dpy_surface->image);
@@ -107,7 +107,7 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
 #ifdef INFO_FRAME_DROP_RATE
             drop_frame++;
 #endif
-            pthread_mutex_unlock(&mutex_draw_display);
+            qemu_mutex_unlock(&mutex_draw_display);
         }
 
 #ifdef INFO_FRAME_DROP_RATE
