@@ -32,6 +32,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 
 #include "qemu/config-file.h"
 #include "qemu/sockets.h"
@@ -41,6 +42,7 @@
 #include "emul_state.h"
 #include "guest_debug.h"
 #include "guest_server.h"
+#include "emulator_options.h"
 #include "hw/maru_camera_common.h"
 #include "hw/maru_virtio_touchscreen.h"
 #include "check_gl.h"
@@ -94,6 +96,8 @@ gchar maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
 
 gchar bin_path[PATH_MAX] = { 0, };
 gchar log_path[PATH_MAX] = { 0, };
+
+gchar *vm_path;
 
 char tizen_target_path[PATH_MAX];
 char tizen_target_img_path[PATH_MAX];
@@ -173,65 +177,6 @@ static void check_vm_lock(void)
 static void make_vm_lock(void)
 {
     make_vm_lock_os();
-}
-
-static void set_image_and_log_path(char *qemu_argv)
-{
-    int i, j = 0;
-    int name_len = 0;
-    int prefix_len = 0;
-    int suffix_len = 0;
-    int max = 0;
-    char *path = malloc(PATH_MAX);
-    name_len = strlen(qemu_argv);
-    prefix_len = strlen(IMAGE_PATH_PREFIX);
-    suffix_len = strlen(IMAGE_PATH_SUFFIX);
-    max = name_len - suffix_len;
-    for (i = prefix_len , j = 0; i < max; i++) {
-        path[j++] = qemu_argv[i];
-    }
-    path[j] = '\0';
-    if (!g_path_is_absolute(path)) {
-        strcpy(tizen_target_path, g_get_current_dir());
-    } else {
-        strcpy(tizen_target_path, g_path_get_dirname(path));
-    }
-
-    set_emul_vm_name(g_path_get_basename(tizen_target_path));
-    strcpy(tizen_target_img_path, path);
-    free(path);
-
-    strcpy(log_path, tizen_target_path);
-    strcat(log_path, LOGS_SUFFIX);
-#ifdef CONFIG_WIN32
-    if (access(g_win32_locale_filename_from_utf8(log_path), R_OK) != 0) {
-        g_mkdir(g_win32_locale_filename_from_utf8(log_path), 0755);
-    }
-#else
-    if (access(log_path, R_OK) != 0) {
-        if (g_mkdir(log_path, 0755) < 0) {
-            fprintf(stderr, "failed to create log directory %s\n", log_path);
-        }
-    }
-#endif
-    strcat(log_path, LOGFILE);
-}
-
-static void redir_output(void)
-{
-    FILE *fp;
-
-    fp = freopen(log_path, "a+", stdout);
-    if (fp == NULL) {
-        fprintf(stderr, "log file open error\n");
-    }
-
-    fp = freopen(log_path, "a+", stderr);
-    if (fp == NULL) {
-        fprintf(stderr, "log file open error\n");
-    }
-    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
-    setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 }
 
 static void print_system_info(void)
@@ -359,6 +304,65 @@ void start_skin(void)
 int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef SUPPORT_LEGACY_ARGS
+static void set_image_and_log_path(char *qemu_argv)
+{
+    int i, j = 0;
+    int name_len = 0;
+    int prefix_len = 0;
+    int suffix_len = 0;
+    int max = 0;
+    char *path = malloc(PATH_MAX);
+    name_len = strlen(qemu_argv);
+    prefix_len = strlen(IMAGE_PATH_PREFIX);
+    suffix_len = strlen(IMAGE_PATH_SUFFIX);
+    max = name_len - suffix_len;
+    for (i = prefix_len , j = 0; i < max; i++) {
+        path[j++] = qemu_argv[i];
+    }
+    path[j] = '\0';
+    if (!g_path_is_absolute(path)) {
+        strcpy(tizen_target_path, g_get_current_dir());
+    } else {
+        strcpy(tizen_target_path, g_path_get_dirname(path));
+    }
+
+    set_emul_vm_name(g_path_get_basename(tizen_target_path));
+    strcpy(tizen_target_img_path, path);
+    free(path);
+
+    strcpy(log_path, tizen_target_path);
+    strcat(log_path, LOGS_SUFFIX);
+#ifdef CONFIG_WIN32
+    if (access(g_win32_locale_filename_from_utf8(log_path), R_OK) != 0) {
+        g_mkdir(g_win32_locale_filename_from_utf8(log_path), 0755);
+    }
+#else
+    if (access(log_path, R_OK) != 0) {
+        if (g_mkdir(log_path, 0755) < 0) {
+            fprintf(stderr, "failed to create log directory %s\n", log_path);
+        }
+    }
+#endif
+    strcat(log_path, LOGFILE);
+}
+
+static void redir_output(void)
+{
+    FILE *fp;
+
+    fp = freopen(log_path, "a+", stdout);
+    if (fp == NULL) {
+        fprintf(stderr, "log file open error\n");
+    }
+
+    fp = freopen(log_path, "a+", stderr);
+    if (fp == NULL) {
+        fprintf(stderr, "log file open error\n");
+    }
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+    setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+}
+
 // deprecated
 static void extract_qemu_info(int qemu_argc, char **qemu_argv)
 {
@@ -497,6 +501,122 @@ static int emulator_main(int argc, char *argv[], char **envp)
         return legacy_emulator_main(argc, argv, envp);
     }
 #endif
+
+    gchar *profile = NULL;
+    int c = 0;
+
+    _qemu_argv = g_malloc(sizeof(char*) * 256);
+    _skin_argv = g_malloc(sizeof(char*) * 256);
+
+    // parse arguments
+    // prevent the error message for undefined options
+    opterr = 0;
+
+    while (c != -1) {
+        static struct option long_options[] = {
+            {"profile",     required_argument,  0,  'p' },
+            {"additional",  required_argument,  0,  'a' },
+            {0,             0,                  0,  0   }
+        };
+
+        c = getopt_long(argc, argv, "p:v:", long_options, NULL);
+
+        if (c == -1)
+            break;
+
+        switch (c) {
+        case '?':
+            set_variable(argv[optind - 1], argv[optind], true);
+            break;
+        case 'p':
+            set_variable("profile", optarg, true);
+            profile = g_strdup(optarg);
+            break;
+        case 'a':
+            // TODO: additional options should be accepted
+            set_variable("additional", optarg, true);
+            c = -1;
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (!profile) {
+        fprintf(stderr, "Usage: %s {-p|--profile} profile\n", argv[0]);
+
+        return -1;
+    }
+
+    // load profile configurations
+    _qemu_argc = 0;
+    _qemu_argv[_qemu_argc++] = g_strdup(argv[0]);
+
+    set_bin_path(_qemu_argv[0]);
+
+    if (!load_profile_default(profile)) {
+        return -1;
+    }
+
+    // set emulator resolution
+    {
+        char *resolution = get_variable("resolution");
+        if (!resolution) {
+            fprintf(stderr, "[resolution] is required.\n");
+        }
+        char **splitted = g_strsplit(resolution, "x", 2);
+        if (!splitted[0] || !splitted[1]) {
+            fprintf(stderr, "resolution value [%s] is weird. Please use format \"WIDTHxHEIGHT\"\n", resolution);
+        }
+        set_emul_resolution(g_ascii_strtoull(splitted[0], NULL, 0),
+                            g_ascii_strtoull(splitted[1], NULL, 0));
+        g_strfreev(splitted);
+    }
+
+    // assemble arguments for qemu and skin
+    if (!assemble_profile_args(&_qemu_argc, _qemu_argv,
+                        &_skin_argc, _skin_argv)) {
+        return -1;
+    }
+
+
+    INFO("Emulator start !!!\n");
+    atexit(maru_atexit);
+
+    print_system_info();
+
+    INFO("Prepare running...\n");
+    INFO("tizen_target_img_path: %s\n", tizen_target_img_path);
+
+    int i;
+
+    fprintf(stdout, "qemu args: =========================================\n");
+    for (i = 0; i < _qemu_argc; ++i) {
+        fprintf(stdout, "%s ", _qemu_argv[i]);
+    }
+    fprintf(stdout, "\nqemu args: =========================================\n");
+
+    fprintf(stdout, "skin args: =========================================\n");
+    for (i = 0; i < _skin_argc; ++i) {
+        fprintf(stdout, "%s ", _skin_argv[i]);
+    }
+    fprintf(stdout, "\nskin args: =========================================\n");
+
+    INFO("socket initialize\n");
+    socket_init();
+
+    INFO("qemu main start!\n");
+    qemu_main(_qemu_argc, _qemu_argv, envp);
+
+    for (i = 0; i < _qemu_argc; ++i) {
+        g_free(_qemu_argv[i]);
+    }
+    for (i = 0; i < _skin_argc; ++i) {
+        g_free(_skin_argv[i]);
+    }
+    reset_variables();
+
+    exit_emulator();
 
     return 0;
 }
