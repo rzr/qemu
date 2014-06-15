@@ -213,13 +213,13 @@ void print_system_info_os(void)
 
     /* get linux distribution information */
     INFO("* Linux distribution infomation :\n");
-    const gchar lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c >> ";
+    const gchar lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c";
     gchar *buffer = NULL;
-    gint buffer_size = strlen(lsb_release_cmd) + strlen(log_path) + 1;
+    gint buffer_size = strlen(lsb_release_cmd) + 1;
 
     buffer = g_malloc(buffer_size);
 
-    g_snprintf(buffer, buffer_size, "%s%s", lsb_release_cmd, log_path);
+    g_snprintf(buffer, buffer_size, "%s", lsb_release_cmd);
 
     if (system(buffer) < 0) {
         INFO("system function command '%s' \
@@ -229,12 +229,12 @@ void print_system_info_os(void)
 
     /* pci device description */
     INFO("* Host PCI devices :\n");
-    const gchar lspci_cmd[MAXLEN] = "lspci >> ";
-    buffer_size = strlen(lspci_cmd) + strlen(log_path) + 1;
+    const gchar lspci_cmd[MAXLEN] = "lspci";
+    buffer_size = strlen(lspci_cmd) + 1;
 
     buffer = g_malloc(buffer_size);
 
-    g_snprintf(buffer, buffer_size, "%s%s", lspci_cmd, log_path);
+    g_snprintf(buffer, buffer_size, "%s", lspci_cmd);
 
     fflush(stdout);
     if (system(buffer) < 0) {
