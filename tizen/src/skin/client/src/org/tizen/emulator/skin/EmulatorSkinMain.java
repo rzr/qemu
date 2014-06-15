@@ -150,8 +150,7 @@ public class EmulatorSkinMain {
 			String skinPath = ".." + File.separator +
 					SKINS_FOLDER + File.separator + DEFAULT_SKIN_FOLDER;
 
-			File f = new File(argSkinPath);
-			if (f.isDirectory() == false) {
+			if (argSkinPath == null || new File(argSkinPath).isDirectory() == false) {
 				/* When emulator receive a invalid skin path,
 				 emulator uses default skin path instead of it */
 				logger.info("Emulator uses default skin path (" + skinPath +

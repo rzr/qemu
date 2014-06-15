@@ -49,7 +49,7 @@ import org.tizen.emulator.skin.util.StringUtil;
 
 
 /**
- * 
+ *
  *
  */
 public class EmulatorConfig {
@@ -69,6 +69,7 @@ public class EmulatorConfig {
 	public interface ArgsConstants {
 		public static final String SIMPLE_MESSAGE = "simple.msg";
 		public static final String UID = "uid";
+		public static final String RESOLUTION = "resolution";
 		public static final String RESOLUTION_WIDTH = "width";
 		public static final String RESOLUTION_HEIGHT = "height";
 		public static final String HEART_BEAT_IGNORE = "hb.ignore";
@@ -190,26 +191,26 @@ public class EmulatorConfig {
 			throw new ConfigException(msg);
 		}
 
-		if (args.containsKey(ArgsConstants.UID)) {
-			String uid = args.get(ArgsConstants.UID);
+		String value = null;
+
+		if ((value = args.get(ArgsConstants.UID)) != null) {
 			try {
-				Integer.parseInt(uid);
+				Integer.parseInt(value);
 			} catch (NumberFormatException e) {
 				String msg = INVALID_OPTION_MESSAGE + "The \'" +
 						ArgsConstants.UID +
-						"\' argument is not numeric.\n: " + uid;
+						"\' argument is not numeric.\n: " + value;
 				throw new ConfigException(msg);
 			}
 		}
 
-		if (args.containsKey(ArgsConstants.VM_SKIN_PORT)) {
-			String serverPort = args.get(ArgsConstants.VM_SKIN_PORT);
+		if ((value = args.get(ArgsConstants.VM_SKIN_PORT)) != null) {
 			try {
-				Integer.parseInt(serverPort);
+				Integer.parseInt(value);
 			} catch (NumberFormatException e) {
 				String msg = INVALID_OPTION_MESSAGE + "The \'" +
 						ArgsConstants.VM_SKIN_PORT +
-						"\' argument is not numeric.\n: " + serverPort;
+						"\' argument is not numeric.\n: " + value;
 				throw new ConfigException(msg);
 			}
 		} else {
@@ -218,14 +219,28 @@ public class EmulatorConfig {
 			throw new ConfigException(msg);
 		}
 
-		if (args.containsKey(ArgsConstants.RESOLUTION_WIDTH)) {
-			String width = args.get(ArgsConstants.RESOLUTION_WIDTH);
+		// If "resolution" is exists, override "width" and "height".
+		if ((value = args.get(ArgsConstants.RESOLUTION)) != null) {
+			String[] splitted = value.split("x");
+			if(splitted.length == 2) {
+				args.put(ArgsConstants.RESOLUTION_WIDTH, splitted[0]);
+				args.put(ArgsConstants.RESOLUTION_HEIGHT, splitted[1]);
+			}
+			else {
+				String msg = INVALID_OPTION_MESSAGE + "The \'" +
+						ArgsConstants.RESOLUTION +
+						"\' argument is invalid.\n: " + value;
+				throw new ConfigException(msg);
+			}
+		}
+
+		if ((value = args.get(ArgsConstants.RESOLUTION_WIDTH)) != null) {
 			try {
-				Integer.parseInt(width);
+				Integer.parseInt(value);
 			} catch (NumberFormatException e) {
 				String msg = INVALID_OPTION_MESSAGE + "The \'" +
 						ArgsConstants.RESOLUTION_WIDTH +
-						"\' argument is not numeric.\n: " + width;
+						"\' argument is not numeric.\n: " + value;
 				throw new ConfigException(msg);
 			}
 		} else {
@@ -234,14 +249,13 @@ public class EmulatorConfig {
 			throw new ConfigException(msg);
 		}
 
-		if (args.containsKey(ArgsConstants.RESOLUTION_HEIGHT)) {
-			String height = args.get(ArgsConstants.RESOLUTION_HEIGHT);
+		if ((value = args.get(ArgsConstants.RESOLUTION_HEIGHT)) != null) {
 			try {
-				Integer.parseInt(height);
+				Integer.parseInt(value);
 			} catch (NumberFormatException e) {
 				String msg = INVALID_OPTION_MESSAGE + "The \'" +
 						ArgsConstants.RESOLUTION_HEIGHT +
-						"\' argument is not numeric.\n: " + height;
+						"\' argument is not numeric.\n: " + value;
 				throw new ConfigException(msg);
 			}
 		} else {
