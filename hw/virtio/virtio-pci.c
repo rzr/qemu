@@ -1931,6 +1931,46 @@ static TypeInfo virtio_power_pci_info = {
     .class_init    = virtio_power_pci_class_init,
 };
 
+/* virtio-vmodem-pci */
+
+static int virtio_vmodem_pci_init(VirtIOPCIProxy *vpci_dev)
+{
+    VirtIOVModemPCI *dev = VIRTIO_VMODEM_PCI(vpci_dev);
+    DeviceState *vdev = DEVICE(&dev->vdev);
+
+    qdev_set_parent_bus(vdev, BUS(&vpci_dev->bus));
+    if (qdev_init(vdev) < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static void virtio_vmodem_pci_class_init(ObjectClass *klass, void *data)
+{
+    VirtioPCIClass *k = VIRTIO_PCI_CLASS(klass);
+    PCIDeviceClass *pcidev_k = PCI_DEVICE_CLASS(klass);
+
+    k->init = virtio_vmodem_pci_init;
+    pcidev_k->vendor_id = PCI_VENDOR_ID_REDHAT_QUMRANET;
+    pcidev_k->device_id = PCI_DEVICE_ID_VIRTIO_VMODEM;
+    pcidev_k->revision = VIRTIO_PCI_ABI_VERSION;
+    pcidev_k->class_id = PCI_CLASS_OTHERS;
+}
+
+static void virtio_vmodem_pci_instance_init(Object *obj)
+{
+    VirtIOVModemPCI *dev = VIRTIO_VMODEM_PCI(obj);
+    object_initialize(&dev->vdev, sizeof(dev->vdev), TYPE_VIRTIO_VMODEM);
+    object_property_add_child(obj, "virtio-backend", OBJECT(&dev->vdev), NULL);
+}
+
+static TypeInfo virtio_vmodem_pci_info = {
+    .name          = TYPE_VIRTIO_VMODEM_PCI,
+    .parent        = TYPE_VIRTIO_PCI,
+    .instance_size = sizeof(VirtIOVModemPCI),
+    .instance_init = virtio_vmodem_pci_instance_init,
+    .class_init    = virtio_vmodem_pci_class_init,
+};
 
 #endif
 
@@ -2001,6 +2041,7 @@ static void virtio_pci_register_types(void)
     type_register_static(&virtio_nfc_pci_info);
     type_register_static(&virtio_jack_pci_info);
     type_register_static(&virtio_power_pci_info);
+    type_register_static(&virtio_vmodem_pci_info);
 #endif
 }
 

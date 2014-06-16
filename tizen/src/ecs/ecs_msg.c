@@ -66,6 +66,7 @@
 #include "hw/maru_virtio_jack.h"
 #include "hw/maru_virtio_power.h"
 #include "hw/maru_virtio_nfc.h"
+#include "hw/maru_virtio_vmodem.h"
 #include "skin/maruskin_operation.h"
 #include "skin/maruskin_server.h"
 #include "emulator.h"
@@ -334,7 +335,14 @@ injector_send:
         }
     }
 
-    ret = send_to_evdi(route_ij, sndbuf, sndlen);
+    if(strcmp(cmd, "telephony") == 0) {
+       TRACE("telephony msg >>");
+       ret = send_to_vmodem(route_ij, sndbuf, sndlen);
+    } else {
+       TRACE("evdi msg >> %s", cmd);
+       ret = send_to_evdi(route_ij, sndbuf, sndlen);
+    }
+
 
     g_free(sndbuf);
 
