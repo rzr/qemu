@@ -133,58 +133,68 @@ static void reset_default_opts(void)
     }
 }
 
-static char *substitute_variables(char *str)
+static char *substitute_variables(char *src)
 {
     int i = 0;
     int start_index = -1;
     int end_index = -1;
+    char *str = g_strdup(src);
 
     for (i = 0; str[i]; ++i) {
         if(str[i] == '$' && str[i + 1] && str[i + 1] == '{') {
             start_index = i++;
+
+            continue;
         }
         else if(str[i] == '}') {
             end_index = i;
+
+            if (start_index == -1 || end_index == -1) {
+                // must not enter here
+                continue;
+            }
+
+            char name[TOKEN_LIMIT];
+            char *value = NULL;
+            char *buf = NULL;
+            int length;
+
+            g_strlcpy(name, str + start_index + 2, end_index - start_index - 1);
+
+            // search stored variables
+            value = get_variable(name);
+
+            // if there is no name in stored variables,
+            // try to search environment variables
+            if(!value) {
+                value = getenv(name);
+            }
+
+            if(!value) {
+                fprintf(stderr, "[%s] is not set."
+                        " Please input value using commandline argument"
+                        " \"--%s\" or profile default file or envirionment"
+                        " variable.\n", name, name);
+                value = (char *)"";
+            }
+
+            length = start_index + strlen(value) + (strlen(str) - end_index);
+            buf = g_malloc(length);
+
+            g_strlcpy(buf, str, start_index + 1);
+            g_strlcat(buf, value, length);
+            g_strlcat(buf, str + end_index + 1, length);
+
+            g_free(str);
+            str = buf;
+
+            i = start_index + strlen(value);
+
+            start_index = end_index = -1;
         }
     }
 
-    if (start_index != -1 && end_index != -1) {
-        char name[TOKEN_LIMIT];
-        char *value = NULL;
-        char *arg = NULL;
-        int length;
-
-        g_strlcpy(name, str + start_index + 2, end_index - start_index - 1);
-
-        // search stored variables
-        value = get_variable(name);
-
-        // if there is no name in stored variables,
-        // try to search environment variables
-        if(!value) {
-            value = getenv(name);
-        }
-
-        if(!value) {
-            fprintf(stderr, "[%s] is not set."
-                    " Please input value using commandline argument"
-                    " \"--%s\" or profile default file or envirionment"
-                    " variable.\n", name, name);
-            value = (char *)"";
-        }
-
-        length = start_index + strlen(value) + (strlen(str) - end_index);
-        arg = g_malloc(length);
-
-        g_strlcpy(arg, str, start_index + 1);
-        g_strlcat(arg, value, length);
-        g_strlcat(arg, str + end_index + 1, length);
-
-        return arg;
-    }
-    else {
-        return g_strdup(str);
-    }
+    return str;
 }
 
 bool load_profile_default(const char * const profile)
