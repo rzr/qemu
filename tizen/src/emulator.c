@@ -303,6 +303,13 @@ static int emulator_main(int argc, char *argv[], char **envp)
     }
 #endif
 
+#ifdef CONFIG_WIN32
+    // SDL_init() routes stdout and stderr to the respective files in win32.
+    // So we revert it.
+    freopen("CON", "w", stdout);
+    freopen("CON", "w", stderr);
+#endif
+
     gchar *profile = NULL;
     int c = 0;
 
@@ -364,13 +371,18 @@ static int emulator_main(int argc, char *argv[], char **envp)
         char *resolution = get_variable("resolution");
         if (!resolution) {
             fprintf(stderr, "[resolution] is required.\n");
+            return -1;
         }
         char **splitted = g_strsplit(resolution, "x", 2);
         if (!splitted[0] || !splitted[1]) {
             fprintf(stderr, "resolution value [%s] is weird. Please use format \"WIDTHxHEIGHT\"\n", resolution);
+            g_strfreev(splitted);
+            return -1;
         }
-        set_emul_resolution(g_ascii_strtoull(splitted[0], NULL, 0),
+        else {
+            set_emul_resolution(g_ascii_strtoull(splitted[0], NULL, 0),
                             g_ascii_strtoull(splitted[1], NULL, 0));
+        }
         g_strfreev(splitted);
     }
 
