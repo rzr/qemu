@@ -58,7 +58,7 @@
 void pc_init_pci(QEMUMachineInitArgs *args);
 
 extern MemoryRegion *global_ram_memory; 
-extern void *preallocated_ptr;
+extern void *preallocated_ram_ptr;
 #endif
 
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
@@ -162,13 +162,6 @@ static void pc_init1(QEMUMachineInitArgs *args,
 
     /* allocate ram and load rom/bios */
     if (!xen_enabled()) {
-#ifdef CONFIG_MARU
-        // W/A for allocate larger continuous heap.
-        // see vl.c
-        if(preallocated_ptr != NULL) {
-            g_free(preallocated_ptr);
-        }
-#endif
         fw_cfg = pc_memory_init(system_memory,
                 args->kernel_filename, args->kernel_cmdline,
                 args->initrd_filename,

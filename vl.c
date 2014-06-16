@@ -2987,8 +2987,9 @@ out:
 
 #ifdef CONFIG_MARU
 int use_qemu_display = 0; //0:use tizen qemu sdl, 1:use original qemu sdl
+
 // W/A for preserve larger continuous heap for RAM.
-void *preallocated_ptr = 0;
+extern void *preallocated_ram_ptr;
 #endif
 
 int main(int argc, char **argv, char **envp)
@@ -4080,8 +4081,7 @@ int main(int argc, char **argv, char **envp)
     }
 
 #if defined(CONFIG_MARU)
-    // W/A for preserve larger continuous heap for RAM.
-    preallocated_ptr = g_malloc(ram_size);
+    preallocated_ram_ptr = qemu_anon_ram_alloc(ram_size);
 
     kernel_cmdline = qemu_opt_get(qemu_get_machine_opts(), "append");
     // Returned variable points different address from input variable.

@@ -139,9 +139,17 @@ void *qemu_memalign(size_t alignment, size_t size)
     return ptr;
 }
 
+#ifdef CONFIG_MARU
+void *preallocated_ram_ptr = NULL;
+#endif
 /* alloc shared memory pages */
 void *qemu_anon_ram_alloc(size_t size)
 {
+#ifdef CONFIG_MARU
+    if (preallocated_ram_ptr) {
+        return preallocated_ram_ptr;
+    }
+#endif
     size_t align = QEMU_VMALLOC_ALIGN;
     size_t total = size + align - getpagesize();
     void *ptr = mmap(0, total, PROT_READ | PROT_WRITE,
