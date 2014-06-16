@@ -62,29 +62,17 @@ typedef struct tethering_recv_buf {
 } tethering_recv_buf;
 
 typedef struct _TetheringState {
-    int sock_fd;
-    int connection_status;
+    int fd;
+    int port;
+    gchar *ipaddress;
+
+    int status;
     tethering_recv_buf recv_buf;
+
+    QemuThread thread;
 } TetheringState;
 
-#if 0
-enum connection_status {
-    CONNECTED = 1,
-    DISCONNECTED,
-    CONNECTING,
-    CONNREFUSED,
-};
-
-enum device_status {
-    ENABLED = 1,
-    DISABLED,
-};
-
-enum touch_status {
-    RELEASED = 0,
-    PRESSED,
-};
-#endif
+static TetheringState *tethering_client;
 
 enum sensor_level {
     level_accel = 1,
@@ -103,8 +91,6 @@ const char *connection_status_str[4] = {"CONNECTED", "DISCONNECTED",
 
 static tethering_recv_buf recv_buf;
 
-static int connection_status = DISCONNECTED;
-static int tethering_sock = -1;
 // static bool app_state = false;
 static int sensor_device_status = DISABLED;
 static int mt_device_status = DISABLED;
@@ -126,6 +112,8 @@ static void *build_tethering_msg(Tethering__TetheringMsg* msg, int *payloadsize)
     msg_packed_size = tethering__tethering_msg__get_packed_size(msg);
     *payloadsize = msg_packed_size + MSG_LEN_SIZE;
 
+    TRACE("create tethering_msg. msg_packed_size %d, payloadsize %d\n", msg_packed_size, *payloadsize);
+
     buf = g_malloc(*payloadsize);
     if (!buf) {
         ERR("failed to allocate memory\n");
@@ -134,7 +122,10 @@ static void *build_tethering_msg(Tethering__TetheringMsg* msg, int *payloadsize)
 
     tethering__tethering_msg__pack(msg, buf + MSG_LEN_SIZE);
 
+    TRACE("msg_packed_size 1 %x\n", msg_packed_size);
     msg_packed_size = htonl(msg_packed_size);
+    TRACE("msg_packed_size 2 %x\n", msg_packed_size);
+
     memcpy(buf, &msg_packed_size, MSG_LEN_SIZE);
 
     return buf;
@@ -143,29 +134,45 @@ static void *build_tethering_msg(Tethering__TetheringMsg* msg, int *payloadsize)
 static bool send_msg_to_controller(Tethering__TetheringMsg *msg)
 {
     void *buf = NULL;
-    int payloadsize = 0, err = 0;
+    int payload_size = 0, sent_size = 0, total_sent_size = 0;
     int sockfd = 0;
     bool ret = true;
 
-    buf = build_tethering_msg(msg, &payloadsize);
+    buf = build_tethering_msg(msg, &payload_size);
     if (!buf) {
         return false;
     }
 
-    sockfd = tethering_sock;
-    err = qemu_sendto(sockfd, buf, payloadsize, 0, NULL, 0);
-    if (err < 0) {
-        ERR("failed to send a message. err: %d\n", err);
-        ret = false;
+    if (!tethering_client) {
+        g_free(buf);
+        return false;
     }
 
-    if (buf) {
-        g_free(buf);
-    }
+    sockfd = tethering_client->fd;
+    do {
+        sent_size =
+            qemu_sendto(sockfd, buf + sent_size, (payload_size - sent_size),
+                        0, NULL, 0);
+        if (sent_size < 0) {
+            perror("failed to send a packet");
+            ERR("failed to send a message. sent_size: %d\n", sent_size);
+            g_free(buf);
+            ret = false;
+            break;
+        }
+
+        TRACE("sent size: %d\n", sent_size);
+
+        total_sent_size += sent_size;
+    } while (total_sent_size != payload_size);
+
+    INFO("sent packets: %d, payload_size %d\n", total_sent_size, payload_size);
+    g_free(buf);
 
     return ret;
 }
 
+#if 1
 static bool send_handshake_req_msg(void)
 {
     Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
@@ -185,6 +192,7 @@ static bool send_handshake_req_msg(void)
 
     return true;
 }
+#endif
 
 #if 0
 static bool send_emul_state_msg(void)
@@ -405,11 +413,9 @@ static void set_sensor_data(Tethering__SensorData *data)
         TRACE("invalid sensor data\n");
         break;
     }
-
-    // set ecs_sensor
 }
 
-static bool build_mulitouch_msg(Tethering__MultiTouchMsg *multitouch)
+static bool build_multitouch_msg(Tethering__MultiTouchMsg *multitouch)
 {
     bool ret = false;
     Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
@@ -419,6 +425,8 @@ static bool build_mulitouch_msg(Tethering__MultiTouchMsg *multitouch)
     msg.type = TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG;
     msg.touchmsg = multitouch;
 
+    INFO("touch message size: %d\n", tethering__tethering_msg__get_packed_size(&msg));
+
     ret = send_msg_to_controller(&msg);
 
     TRACE("leave: %s, ret: %d\n", __func__, ret);
@@ -426,7 +434,7 @@ static bool build_mulitouch_msg(Tethering__MultiTouchMsg *multitouch)
     return ret;
 }
 
-static bool send_mulitouch_start_ans_msg(Tethering__MessageResult result)
+static bool send_multitouch_start_ans_msg(Tethering__MessageResult result)
 {
     bool ret = false;
 
@@ -440,7 +448,7 @@ static bool send_mulitouch_start_ans_msg(Tethering__MessageResult result)
     mt.type = TETHERING__MULTI_TOUCH_MSG__TYPE__START_ANS;
     mt.startans = &start_ans;
 
-    ret = build_mulitouch_msg(&mt);
+    ret = build_multitouch_msg(&mt);
 
     TRACE("leave: %s, ret: %d\n", __func__, ret);
 
@@ -463,7 +471,7 @@ static bool send_set_multitouch_max_count(void)
     mt.maxcount = &touch_cnt;
 
     INFO("send multi-touch max count: %d\n", touch_cnt.max);
-    ret = build_mulitouch_msg(&mt);
+    ret = build_multitouch_msg(&mt);
 
     TRACE("leave: %s, ret: %d\n", __func__, ret);
 
@@ -495,7 +503,7 @@ static void set_multitouch_data(Tethering__MultiTouchData *data)
         break;
     }
 
-    INFO("set touch_data. index: %d, x: %d, y: %d\n", index, x, y);
+    INFO("set touch_data. index: %d, x: %lf, y: %lf\n", index, x, y);
     // set ecs_multitouch
     send_tethering_touch_data(x, y, index, state);
 }
@@ -517,7 +525,7 @@ static bool send_set_multitouch_resolution(void)
 
     INFO("send multi-touch resolution: %dx%d\n",
         resolution.width, resolution.height);
-    ret = build_mulitouch_msg(&mt);
+    ret = build_multitouch_msg(&mt);
 
     TRACE("leave: %s, ret: %d\n", __func__, ret);
 
@@ -640,7 +648,7 @@ static bool msgproc_tethering_mt_msg(Tethering__MultiTouchMsg *msg)
         send_set_multitouch_max_count();
         send_set_multitouch_resolution();
 
-        ret = send_mulitouch_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
+        ret = send_multitouch_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
         break;
     case TETHERING__MULTI_TOUCH_MSG__TYPE__TERMINATE:
         TRACE("TOUCH_MSG_TYPE_TERMINATE\n");
@@ -756,26 +764,35 @@ static void reset_tethering_recv_buf(void *opaque)
 }
 
 // tethering client socket
-static void tethering_io_handler(void *opaque)
+static void tethering_io_handler(int sockfd)
 {
     int ret = 0;
     int payloadsize = 0, read_size = 0;
     int to_read_bytes = 0;
 
 #ifndef CONFIG_WIN32
-    ret = ioctl(tethering_sock, FIONREAD, &to_read_bytes);
+    ret = ioctl(sockfd, FIONREAD, &to_read_bytes);
     if (ret < 0) {
-        ERR("invalid ioctl opertion\n");
+        perror("invalid ioctl opertion\n");
+
+        disconnect_tethering_app();
+        return;
     }
+
 #else
     unsigned long to_read_bytes_long = 0;
-    ret = ioctlsocket(tethering_sock, FIONREAD, &to_read_bytes_long);
+    ret = ioctlsocket(sockfd, FIONREAD, &to_read_bytes_long);
     if (ret < 0) {
+        perror("invalid ioctl opertion\n");
+
+        disconnect_tethering_app();
+        return;
     }
+
     to_read_bytes = (int)to_read_bytes_long;
 #endif
-    TRACE("ioctl: ret: %d, FIONREAD: %d\n", ret, to_read_bytes);
 
+    TRACE("ioctl: ret: %d, FIONREAD: %d\n", ret, to_read_bytes);
     if (to_read_bytes == 0) {
         INFO("there is no read data\n");
         disconnect_tethering_app();
@@ -783,7 +800,7 @@ static void tethering_io_handler(void *opaque)
     }
 
     if (recv_buf.len == 0) {
-        ret = qemu_recv(tethering_sock, &payloadsize, sizeof(payloadsize), 0);
+        ret = qemu_recv(sockfd, &payloadsize, sizeof(payloadsize), 0);
         if (ret < sizeof(payloadsize)) {
             return;
         }
@@ -808,7 +825,7 @@ static void tethering_io_handler(void *opaque)
     to_read_bytes = min(to_read_bytes, (recv_buf.len - recv_buf.stack_size));
 
     read_size =
-        qemu_recv(tethering_sock, (char *)(recv_buf.data + recv_buf.stack_size),
+        qemu_recv(sockfd, (char *)(recv_buf.data + recv_buf.stack_size),
                     to_read_bytes, 0);
     if (read_size == 0) {
         ERR("failed to read data\n");
@@ -820,50 +837,15 @@ static void tethering_io_handler(void *opaque)
 
     if (recv_buf.len == recv_buf.stack_size) {
         char *snd_buf = NULL;
+        int snd_buf_size = recv_buf.stack_size;
 
-        snd_buf = g_malloc(recv_buf.stack_size);
-        memcpy(snd_buf, recv_buf.data, recv_buf.stack_size);
-
-        handle_tethering_msg_from_controller(snd_buf,
-                                            recv_buf.stack_size);
+        snd_buf = g_malloc(snd_buf_size);
+        memcpy(snd_buf, recv_buf.data, snd_buf_size);
         reset_tethering_recv_buf(&recv_buf);
+
+        handle_tethering_msg_from_controller(snd_buf, snd_buf_size);
+        g_free(snd_buf);
     }
-}
-
-static int register_tethering_io_handler(int fd)
-{
-    int ret = 0, err = 0;
-
-    TRACE("enter: %s\n", __func__);
-
-    /* register callbackfn for read */
-    err = qemu_set_fd_handler(fd, tethering_io_handler, NULL, NULL);
-    if (err) {
-        ERR("failed to set event handler. fd: %d, err: %d\n", fd, err);
-        ret = -1;
-    }
-
-    TRACE("leave: %s\n", __func__);
-
-    return ret;
-}
-
-static int destroy_tethering_io_handler(int fd)
-{
-    int ret = 0, err = 0;
-
-    TRACE("enter: %s\n", __func__);
-
-    err = qemu_set_fd_handler(fd, NULL, NULL, NULL);
-
-    if (err) {
-        ERR("failed to set event handler. fd: %d, err: %d\n", fd, err);
-        ret = -1;
-    }
-
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
-
-    return ret;
 }
 
 static int start_tethering_socket(const char *ipaddress, int port)
@@ -928,6 +910,8 @@ static int start_tethering_socket(const char *ipaddress, int port)
         sock = -1;
     }
 
+    // qemu_set_block(sock);
+
     return sock;
 }
 
@@ -938,7 +922,9 @@ static void end_tethering_socket(int sockfd)
         return;
     }
 
-    INFO("tethering socket is closed: %d\n", sockfd);
+    tethering_client->fd = -1;
+
+    INFO("close tethering socket\n");
     set_tethering_connection_status(DISCONNECTED);
     set_tethering_sensor_status(DISABLED);
     set_tethering_multitouch_status(DISABLED);
@@ -960,15 +946,25 @@ static bool get_tethering_app_state(void)
 // ecs <-> tethering
 int get_tethering_connection_status(void)
 {
-    return connection_status;
+    if (!tethering_client) {
+        return -1;
+    }
+
+    return tethering_client->status;
 }
 
 static void set_tethering_connection_status(int status)
 {
-    connection_status = status;
+
+    if (!tethering_client) {
+        return;
+    }
+
     if (status) {
         INFO("connection status: %s\n", connection_status_str[status - 1]);
     }
+
+    tethering_client->status = status;
 
     send_tethering_connection_status_ecp();
 }
@@ -1000,12 +996,14 @@ int disconnect_tethering_app(void)
     int sock = 0;
 
     INFO("disconnect app from ecp\n");
+    if (!tethering_client) {
+        return -1;
+    }
 
-    sock = tethering_sock;
+    sock = tethering_client->fd;
     if (sock < 0) {
         ERR("tethering socket is terminated or not ready\n");
     } else {
-        destroy_tethering_io_handler(sock);
 #if 0
         if (get_tethering_app_state()) {
             send_emul_state_msg();
@@ -1013,6 +1011,9 @@ int disconnect_tethering_app(void)
 #endif
         end_tethering_socket(sock);
     }
+
+    g_free(tethering_client->ipaddress);
+    g_free(tethering_client);
 
     return 0;
 }
@@ -1022,27 +1023,98 @@ static void tethering_notify_exit(Notifier *notifier, void *data) {
 }
 static Notifier tethering_exit = { .notify = tethering_notify_exit };
 
+static void *initialize_tethering_socket(void *opaque);
+
 int connect_tethering_app(const char *ipaddress, int port)
 {
-    int sock = 0, ret = 0;
+    TetheringState *client = NULL;
 
-    TRACE("connect ecp to app\n");
-
-    sock = start_tethering_socket(ipaddress, port);
-    if (sock < 0) {
-        ERR("failed to start tethering_socket\n");
-        tethering_sock = -1;
+    client = g_malloc0(sizeof(TetheringState));
+    if (!client) {
         return -1;
     }
 
-    INFO("tethering_sock: %d\n", sock);
-    tethering_sock = sock;
+    client->port = port;
+
+    if (ipaddress) {
+        int ipaddr_len = 0;
+
+        ipaddr_len = strlen(ipaddress);
+
+        client->ipaddress = g_malloc0(ipaddr_len + 1);
+        if (!client->ipaddress) {
+            g_free(client);
+            return -1;
+        }
+
+        g_strlcpy(client->ipaddress, ipaddress, ipaddr_len);
+    } else {
+        client->ipaddress = NULL;
+    }
+
+    tethering_client = client;
+
+    qemu_thread_create(&tethering_client->thread, "tethering-io-thread",
+            initialize_tethering_socket, client, QEMU_THREAD_DETACHED);
+
+    return 0;
+}
+
+static int tethering_loop(TetheringState *client)
+{
+    int sockfd = client->fd;
+    int ret = 0;
+    fd_set readfds;
+    struct timeval timeout;
+
+    FD_ZERO(&readfds);
+    FD_SET(sockfd, &readfds);
+
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+
+    ret = select(sockfd + 1, &readfds, NULL, NULL, &timeout);
+    TRACE("select timeout! result: %d\n", ret);
+
+    if (ret > 0) {
+        TRACE("ready for read operation!!\n");
+        tethering_io_handler(sockfd);
+    }
+
+    return ret;
+}
+
+static void *initialize_tethering_socket(void *opaque)
+{
+    TetheringState *socket = (TetheringState *)opaque;
+    TRACE("callback function for tethering_thread\n");
+
+    if (!socket) {
+        ERR("TetheringState is NULL\n");
+        return NULL;
+    }
+
+    socket->fd = start_tethering_socket(socket->ipaddress, socket->port);
+    if (socket->fd < 0) {
+        ERR("failed to start tethering_socket\n");
+        return NULL;
+    }
+
+    INFO("tethering_sock: %d\n", socket->fd);
 
     reset_tethering_recv_buf(&recv_buf);
-    ret = register_tethering_io_handler(sock);
     send_handshake_req_msg();
 
     emulator_add_exit_notifier(&tethering_exit);
 
-    return ret;
+    while (1) {
+        if (socket->status == DISCONNECTED) {
+            INFO("disconnected socket. destroy this thread\n");
+            break;
+        }
+
+        tethering_loop(socket);
+    }
+
+    return socket;
 }
