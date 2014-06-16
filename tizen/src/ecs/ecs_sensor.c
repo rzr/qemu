@@ -75,6 +75,7 @@ static int get_parse_val (const char* buf, char* tmp)
     memset(tmp, 0, sizeof(TEMP_BUF_SIZE));
 
     index = parse_val(buf, 0x0a, tmp);
+    tmp[index - 1] = 0;
 
     return index;
 }
