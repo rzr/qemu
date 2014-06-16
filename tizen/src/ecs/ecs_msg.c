@@ -28,7 +28,6 @@
  */
 
 #include <stdbool.h>
-#include <pthread.h>
 #include <glib.h>
 
 #include "hw/qdev.h"
@@ -72,9 +71,11 @@
 #include "emul_state.h"
 
 #include "debug_ch.h"
-MULTI_DEBUG_CHANNEL(qemu, ecs);
+MULTI_DEBUG_CHANNEL(qemu, ecs-msg);
 
 // utility functions
+static int guest_connection = 0;
+extern QemuMutex mutex_guest_connection;
 
 /*static function define*/
 static void handle_sdcard(char* dataBuf, size_t dataLen);
@@ -165,13 +166,18 @@ static void send_status_injector_ntf(const char* cmd, int cmdlen, int act, char*
     type_group group = GROUP_STATUS;
     type_action action = act;
 
-    if (cmd == NULL || on == NULL || cmdlen > 10)
+    if (cmd == NULL || cmdlen > 10)
         return;
 
-    datalen = strlen(on);
-    length  = (unsigned short)datalen;
+    if (on == NULL) {
+        msglen = 14;
+    } else {
+        datalen = strlen(on);
+        length  = (unsigned short)datalen;
 
-    msglen = datalen + 15;
+        msglen = datalen + 15;
+    }
+
     char* status_msg = (char*) malloc(msglen);
     if(!status_msg)
         return;
@@ -182,7 +188,10 @@ static void send_status_injector_ntf(const char* cmd, int cmdlen, int act, char*
     memcpy(status_msg + 10, &length, sizeof(unsigned short));
     memcpy(status_msg + 12, &group, sizeof(unsigned char));
     memcpy(status_msg + 13, &action, sizeof(unsigned char));
-    memcpy(status_msg + 14, on, datalen);
+
+    if (on != NULL) {
+        memcpy(status_msg + 14, on, datalen);
+    }
 
     send_injector_ntf(status_msg, msglen);
 
@@ -259,6 +268,7 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     char data[10];
     bool ret = false;
     int sndlen = 0;
+    int value = 0;
     char* sndbuf;
     memset(cmd, 0, 10);
     strncpy(cmd, msg->category, sizeof(cmd) -1);
@@ -299,20 +309,27 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
             }
             TRACE("status : %s", data);
             send_status_injector_ntf(MSG_TYPE_SENSOR, 6, action, data);
-            ret = true;
-            goto injector_req_success;
+            msgproc_injector_ans(ccli, cmd, true);
+            return true;
         } else {
             if (msg->data.data && datalen > 0) {
                 set_injector_data((char*) msg->data.data);
             }
         }
+    } else if (!strncmp(cmd, MSG_TYPE_GUEST, 5)) {
+        qemu_mutex_lock(&mutex_guest_connection);
+        value = guest_connection;
+        qemu_mutex_unlock(&mutex_guest_connection);
+        send_status_injector_ntf(MSG_TYPE_GUEST, 5, value, NULL);
+        return true;
     }
 
 injector_send:
     sndlen = datalen + 14;
     sndbuf = (char*) g_malloc(sndlen + 1);
     if (!sndbuf) {
-        goto injector_req_fail;
+        msgproc_injector_ans(ccli, cmd, ret);
+        return false;
     }
 
     memset(sndbuf, 0, sndlen + 1);
@@ -338,16 +355,13 @@ injector_send:
 
     g_free(sndbuf);
 
-    if (!ret)
-        goto injector_req_fail;
-
-injector_req_success:
     msgproc_injector_ans(ccli, cmd, ret);
+
+    if (!ret) {
+        return false;
+    }
+
     return true;
-
-injector_req_fail:
-    msgproc_injector_ans(ccli, cmd, ret);
-    return false;
 }
 
 void ecs_suspend_lock_state(int state)
@@ -689,16 +703,21 @@ bool ntf_to_injector(const char* data, const int len) {
     return true;
 }
 
-static bool injector_req_handle(const char* cat)
+static bool injector_req_handle(const char* cat, type_action action)
 {
     /*SD CARD msg process*/
     if (!strncmp(cat, MSG_TYPE_SDCARD, strlen(MSG_TYPE_SDCARD))) {
        return false;
 
-    }else
-    if (!strncmp(cat, "suspend", 7)) {
+    } else if (!strncmp(cat, "suspend", 7)) {
         ecs_suspend_lock_state(ecs_get_suspend_state());
         return true;
+    } else if (!strncmp(cat, MSG_TYPE_GUEST, 5)) {
+        INFO("emuld connection is %d\n", action);
+        qemu_mutex_lock(&mutex_guest_connection);
+        guest_connection = action;
+        qemu_mutex_unlock(&mutex_guest_connection);
+        return false;
     }
 
     return false;
@@ -719,7 +738,7 @@ bool send_injector_ntf(const char* data, const int len)
     read_val_char(data + catsize + 2, &group);
     read_val_char(data + catsize + 2 + 1, &action);
 
-    if (injector_req_handle(cat)) {
+    if (injector_req_handle(cat, action)) {
         return true;
     }
 
