@@ -133,6 +133,60 @@ static void reset_default_opts(void)
     }
 }
 
+static char *substitute_variables(char *str)
+{
+    int i = 0;
+    int start_index = -1;
+    int end_index = -1;
+
+    for (i = 0; str[i]; ++i) {
+        if(str[i] == '$' && str[i + 1] && str[i + 1] == '{') {
+            start_index = i++;
+        }
+        else if(str[i] == '}') {
+            end_index = i;
+        }
+    }
+
+    if (start_index != -1 && end_index != -1) {
+        char name[TOKEN_LIMIT];
+        char *value = NULL;
+        char *arg = NULL;
+        int length;
+
+        g_strlcpy(name, str + start_index + 2, end_index - start_index - 1);
+
+        // search stored variables
+        value = get_variable(name);
+
+        // if there is no name in stored variables,
+        // try to search environment variables
+        if(!value) {
+            value = getenv(name);
+        }
+
+        if(!value) {
+            fprintf(stderr, "[%s] is not set."
+                    " Please input value using commandline argument"
+                    " \"--%s\" or profile default file or envirionment"
+                    " variable.\n", name, name);
+            value = (char *)"";
+        }
+
+        length = start_index + strlen(value) + (strlen(str) - end_index);
+        arg = g_malloc(length);
+
+        g_strlcpy(arg, str, start_index + 1);
+        g_strlcat(arg, value, length);
+        g_strlcat(arg, str + end_index + 1, length);
+
+        return arg;
+    }
+    else {
+        return g_strdup(str);
+    }
+}
+
 bool load_profile_default(const char * const profile)
 {
     int classification = 0;
@@ -189,7 +243,7 @@ bool load_profile_default(const char * const profile)
             }
 
             // detect label
-            if (!g_strcmp0(token, "[[DEFAULT_VARIABLES]]")) {
+            if (!g_strcmp0(token, "[[DEFAULT_VALUE]]")) {
                 classification = 0;
                 continue;
             }
@@ -210,7 +264,8 @@ bool load_profile_default(const char * const profile)
                 {
                     gchar **splitted = g_strsplit(token, "=", 2);
                     if (splitted[0] && splitted[1]) {
-                        set_variable(g_strdup(splitted[0]), g_strdup(splitted[1]),
+                        char *value = substitute_variables(splitted[1]);
+                        set_variable(g_strdup(splitted[0]), value,
                                 false);
                     }
                     g_strfreev(splitted);
@@ -230,7 +285,8 @@ bool load_profile_default(const char * const profile)
 }
 
 static bool assemble_args(int *argc, char **argv,
-                struct emulator_opts *default_opts) {
+                struct emulator_opts *default_opts)
+{
     int i = 0;
 
     for (i = 0; i < default_opts->num; ++i) {
@@ -238,7 +294,6 @@ static bool assemble_args(int *argc, char **argv,
         char *str;
         int start_index = -1;
         int end_index = -1;
-        void *arg;
 
         str = default_opts->options[i];
 
@@ -266,55 +321,8 @@ static bool assemble_args(int *argc, char **argv,
             g_strstrip(str);
         }
 
-        // fill variables
-        start_index = -1;
-        end_index = -1;
-
-        for (j = 0; str[j]; ++j) {
-            if(str[j] == '$' && str[j + 1] && str[j + 1] == '{') {
-                start_index = j++;
-            }
-            else if(str[j] == '}') {
-                end_index = j;
-            }
-        }
-
-        if (start_index != -1 && end_index != -1) {
-            char name[TOKEN_LIMIT];
-            char *value = NULL;
-            int length;
-
-            g_strlcpy(name, str + start_index + 2, end_index - start_index - 1);
-
-            // search stored variables
-            value = get_variable(name);
-
-            // if there is no name in stored variables,
-            // try to search environment variables
-            if(!value) {
-                value = getenv(name);
-            }
-
-            if(!value) {
-                fprintf(stderr, "[%s] is not set."
-                    " Please input value using commandline argument"
-                    " \"--%s\" or profile default file or envirionment"
-                    " variable.\n", name, name);
-                value = (char *)"";
-            }
-
-            length = start_index + strlen(value) + (strlen(str) - end_index);
-            arg = g_malloc(length);
-
-            g_strlcpy(arg, str, start_index + 1);
-            g_strlcat(arg, value, length);
-            g_strlcat(arg, str + end_index + 1, length);
-
-            argv[(*argc)++] = arg;
-        }
-        else {
-            argv[(*argc)++] = g_strdup(str);
-        }
+        // substitute variables
+        argv[(*argc)++] = substitute_variables(str);
     }
 
     return true;
