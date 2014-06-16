@@ -40,7 +40,6 @@ typedef struct MaruScreenShot {
 } MaruScreenShot;
 
 void maru_display_init(DisplayState *ds);
-void maru_display_fini(void);
 void maru_display_resize(void);
 void maru_display_update(void);
 void maru_display_invalidate(bool on);

@@ -529,18 +529,25 @@ static void mloop_evcb_recv(struct mloop_evsock *ev)
     }
 }
 
+static void mloop_ev_stop(void)
+{
+    qemu_set_fd_handler(mloop.sockno, NULL, NULL, NULL);
+    mloop_evsock_remove(&mloop);
+}
+
+static void mloop_ev_notify_exit(Notifier *notifier, void *data) {
+    mloop_ev_stop();
+}
+static Notifier mloop_ev_exit = { .notify = mloop_ev_notify_exit };
+
 void mloop_ev_init(void)
 {
     int ret = mloop_evsock_create(&mloop);
     if (ret == 0) {
         qemu_set_fd_handler(mloop.sockno, (IOHandler *)mloop_evcb_recv, NULL, &mloop);
     }
-}
 
-void mloop_ev_stop(void)
-{
-    qemu_set_fd_handler(mloop.sockno, NULL, NULL, NULL);
-    mloop_evsock_remove(&mloop);
+    emulator_add_exit_notifier(&mloop_ev_exit);
 }
 
 void mloop_evcmd_raise_intr(void *irq)

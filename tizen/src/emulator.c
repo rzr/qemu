@@ -41,14 +41,12 @@
 #include "emulator_options.h"
 #include "check_gl.h"
 #include "maru_err_table.h"
-#include "maru_display.h"
 #include "mloop_event.h"
 #include "osutil.h"
 #include "sdb.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
 #include "ecs/ecs.h"
-#include "tethering/app_tethering.h"
 
 #ifdef CONFIG_SDL
 #include <SDL.h>
@@ -107,15 +105,14 @@ const char *get_log_path(void)
     return log_path;
 }
 
+void emulator_add_exit_notifier(Notifier *notify)
+{
+    qemu_add_exit_notifier(notify);
+}
+
 void exit_emulator(void)
 {
     INFO("exit emulator!\n");
-
-    mloop_ev_stop();
-    shutdown_skin_server();
-    shutdown_guest_server();
-    stop_ecs();
-    disconnect_tethering_app();
 
 #if defined(CONFIG_LINUX) || defined(CONFIG_DARWIN)
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
@@ -123,8 +120,6 @@ void exit_emulator(void)
         perror("emulator.c: ");
     }
 #endif
-
-    maru_display_fini();
 }
 
 static void construct_main_window(int skin_argc, char *skin_argv[],

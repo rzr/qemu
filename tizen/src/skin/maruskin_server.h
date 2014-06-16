@@ -31,7 +31,6 @@
 #define MARUSKIN_SERVER_H_
 
 int start_skin_server(int argc, char** argv, int qemu_argc, char** qemu_argv);
-void shutdown_skin_server(void);
 
 void notify_draw_frame(void);
 void notify_draw_blank_guide(void);

@@ -165,7 +165,6 @@ typedef struct nfc_msg_info {
 }nfc_msg_info;
 
 int start_ecs(void);
-int stop_ecs(void);
 
 ECS_Client *find_client(unsigned char id, unsigned char type);
 bool handle_protobuf_msg(ECS_Client* cli, char* data, const int len);

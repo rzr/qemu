@@ -35,7 +35,6 @@ extern "C" {
 #endif
 
 void mloop_ev_init(void);
-void mloop_ev_stop(void);
 
 void mloop_evcmd_usbkbd(int on);
 void mloop_evcmd_usbdisk(char *img);

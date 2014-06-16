@@ -28,6 +28,7 @@
  */
 
 
+#include "emulator.h"
 #include "maru_common.h"
 #include "maru_display.h"
 #include "debug_ch.h"
@@ -41,6 +42,24 @@
 MULTI_DEBUG_CHANNEL(tizen, display);
 
 MaruScreenShot* screenshot = NULL;
+
+static void maru_display_fini(void)
+{
+    INFO("fini qemu display\n");
+
+    g_free(screenshot);
+
+#ifndef CONFIG_USE_SHM
+    maru_sdl_quit();
+#else
+    maru_shm_quit();
+#endif
+}
+
+static void maru_display_notify_exit(Notifier *notifier, void *data) {
+    maru_display_fini();
+}
+static Notifier maru_display_exit = { .notify = maru_display_notify_exit };
 
 //TODO: interface
 void maru_display_init(DisplayState *ds)
@@ -64,19 +83,8 @@ void maru_display_init(DisplayState *ds)
     screenshot->pixels = NULL;
     screenshot->request = false;
     screenshot->ready = false;
-}
 
-void maru_display_fini(void)
-{
-    INFO("fini qemu display\n");
-
-    g_free(screenshot);
-
-#ifndef CONFIG_USE_SHM
-    maru_sdl_quit();
-#else
-    maru_shm_quit();
-#endif
+    emulator_add_exit_notifier(&maru_display_exit);
 }
 
 void maru_display_resize(void)

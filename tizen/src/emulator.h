@@ -40,6 +40,7 @@
 #include "maru_common.h"
 #include "qapi/qmp/qlist.h"
 #include "qemu/option.h"
+#include "sysemu/sysemu.h"
 
 #define MAXLEN  512
 #define MAXPACKETLEN 60
@@ -48,12 +49,14 @@
 extern gchar bin_path[];
 extern gchar log_path[];
 
-void exit_emulator(void);
 char *get_bin_path(void);
 const gchar * prepare_maru(const gchar * const kernel_cmdline);
 void start_skin(void);
 
 const gchar * get_log_path(void);
 int maru_device_check(QemuOpts *opts);
+
+void exit_emulator(void);
+void emulator_add_exit_notifier(Notifier *notify);
 
 #endif /* __EMULATOR_H__ */

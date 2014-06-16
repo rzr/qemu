@@ -29,6 +29,7 @@
 
 
 #include <pthread.h>
+#include "emulator.h"
 #include "maru_common.h"
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
@@ -173,35 +174,7 @@ static void* do_heart_beat(void* args);
 static int start_heart_beat(void);
 static void stop_heart_beat(void);
 
-
-int start_skin_server(int argc, char** argv,
-    int qemu_argc, char** qemu_argv)
-{
-    skin_argc = argc;
-    skin_argv = argv;
-
-    parse_skinconfig_prop();
-
-    /* arguments have higher priority than '.skinconfig.properties' */
-    parse_skin_args();
-
-    INFO("ignore_heartbeat : %d\n", ignore_heartbeat);
-
-    qmu_argc = qemu_argc;
-    qmu_argv = qemu_argv;
-
-    qemu_mutex_init(&mutex_send_data);
-    qemu_mutex_init(&mutex_recv_heartbeat_count);
-    qemu_mutex_init(&mutex_draw_display);
-
-    QemuThread qemu_thread;
-    qemu_thread_create(&qemu_thread, "skin-server", run_skin_server,
-        NULL, QEMU_THREAD_DETACHED);
-
-    return 1;
-}
-
-void shutdown_skin_server(void)
+static void shutdown_skin_server(void)
 {
     INFO("shutdown_skin_server\n");
 
@@ -265,6 +238,37 @@ void shutdown_skin_server(void)
     qemu_mutex_destroy(&mutex_send_data);
     qemu_mutex_destroy(&mutex_recv_heartbeat_count);
     qemu_mutex_destroy(&mutex_draw_display);
+}
+
+static void skin_server_notify_exit(Notifier *notifier, void *data) {
+    shutdown_skin_server();
+}
+static Notifier skin_server_exit = { .notify = skin_server_notify_exit };
+
+int start_skin_server(int argc, char** argv,
+    int qemu_argc, char** qemu_argv)
+{
+    skin_argc = argc;
+    skin_argv = argv;
+
+    parse_skinconfig_prop();
+
+    /* arguments have higher priority than '.skinconfig.properties' */
+    parse_skin_args();
+
+    INFO("ignore_heartbeat : %d\n", ignore_heartbeat);
+
+    qmu_argc = qemu_argc;
+    qmu_argv = qemu_argv;
+
+    QemuThread qemu_thread;
+
+    qemu_thread_create(&qemu_thread, "skin-server", run_skin_server,
+        NULL, QEMU_THREAD_DETACHED);
+
+    emulator_add_exit_notifier(&skin_server_exit);
+
+    return 1;
 }
 
 void notify_draw_frame(void)

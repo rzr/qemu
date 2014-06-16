@@ -38,6 +38,7 @@
 #include "qemu/sockets.h"
 #include "ui/console.h"
 
+#include "emulator.h"
 #include "emul_state.h"
 #include "app_tethering.h"
 #include "../ecs/ecs_tethering.h"
@@ -994,29 +995,6 @@ static void set_tethering_multitouch_status(int status)
     send_tethering_touch_status_ecp();
 }
 
-int connect_tethering_app(const char *ipaddress, int port)
-{
-    int sock = 0, ret = 0;
-
-    TRACE("connect ecp to app\n");
-
-    sock = start_tethering_socket(ipaddress, port);
-    if (sock < 0) {
-        ERR("failed to start tethering_socket\n");
-        tethering_sock = -1;
-        return -1;
-    }
-
-    INFO("tethering_sock: %d\n", sock);
-    tethering_sock = sock;
-
-    reset_tethering_recv_buf(&recv_buf);
-    ret = register_tethering_io_handler(sock);
-    send_handshake_req_msg();
-
-    return ret;
-}
-
 int disconnect_tethering_app(void)
 {
     int sock = 0;
@@ -1037,4 +1015,34 @@ int disconnect_tethering_app(void)
     }
 
     return 0;
+}
+
+static void tethering_notify_exit(Notifier *notifier, void *data) {
+    disconnect_tethering_app();
+}
+static Notifier tethering_exit = { .notify = tethering_notify_exit };
+
+int connect_tethering_app(const char *ipaddress, int port)
+{
+    int sock = 0, ret = 0;
+
+    TRACE("connect ecp to app\n");
+
+    sock = start_tethering_socket(ipaddress, port);
+    if (sock < 0) {
+        ERR("failed to start tethering_socket\n");
+        tethering_sock = -1;
+        return -1;
+    }
+
+    INFO("tethering_sock: %d\n", sock);
+    tethering_sock = sock;
+
+    reset_tethering_recv_buf(&recv_buf);
+    ret = register_tethering_io_handler(sock);
+    send_handshake_req_msg();
+
+    emulator_add_exit_notifier(&tethering_exit);
+
+    return ret;
 }

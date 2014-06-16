@@ -46,6 +46,7 @@
 #include "config.h"
 #include "qapi/qmp/qint.h"
 
+#include "emulator.h"
 #include "sdb.h"
 #include "ecs.h"
 #include "guest_server.h"
@@ -722,7 +723,7 @@ static void* ecs_initialize(void* args) {
     return NULL;
 }
 
-int stop_ecs(void) {
+static int stop_ecs(void) {
     INFO("ecs is closing.\n");
     if (NULL != current_ecs) {
         current_ecs->ecs_running = 0;
@@ -734,6 +735,11 @@ int stop_ecs(void) {
     return 0;
 }
 
+static void ecs_notify_exit(Notifier *notifier, void *data) {
+    stop_ecs();
+}
+static Notifier ecs_exit = { .notify = ecs_notify_exit };
+
 int start_ecs(void) {
     pthread_t thread_id;
 
@@ -741,6 +747,9 @@ int start_ecs(void) {
         ERR("pthread creation failed.\n");
         return -1;
     }
+
+    emulator_add_exit_notifier(&ecs_exit);
+
     return 0;
 }
 

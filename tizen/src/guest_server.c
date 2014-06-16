@@ -611,17 +611,24 @@ static void* run_guest_server(void* args)
     return NULL;
 }
 
+static void shutdown_guest_server(void)
+{
+    INFO("shutdown_guest_server.\n");
+
+    close_server();
+}
+
+static void guest_server_notify_exit(Notifier *notifier, void *data) {
+    shutdown_guest_server();
+}
+static Notifier guest_server_exit = { .notify = guest_server_notify_exit };
+
 void start_guest_server(int server_port)
 {
     QemuThread thread_id;
     svr_port = server_port;
     qemu_thread_create(&thread_id, "guest_server", run_guest_server, NULL, QEMU_THREAD_DETACHED);
     INFO("created guest server thread\n");
-}
 
-void shutdown_guest_server(void)
-{
-    INFO("shutdown_guest_server.\n");
-
-    close_server();
+    emulator_add_exit_notifier(&guest_server_exit);
 }

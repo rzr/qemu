@@ -35,7 +35,6 @@
 #include <pthread.h>
 
 void start_guest_server( int server_port );
-void shutdown_guest_server( void );
 
 #define STATE_RUNNING 0
 #define STATE_SUSPEND 1
