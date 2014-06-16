@@ -170,6 +170,9 @@ void *qemu_memalign(size_t alignment, size_t size)
     return ptr;
 }
 
+#ifdef CONFIG_MARU
+void *preallocated_ram_ptr = NULL;
+#endif
 void *qemu_anon_ram_alloc(size_t size)
 {
     void *ptr;
@@ -177,6 +180,11 @@ void *qemu_anon_ram_alloc(size_t size)
     /* FIXME: this is not exactly optimal solution since VirtualAlloc
        has 64Kb granularity, but at least it guarantees us that the
        memory is page aligned. */
+#ifdef CONFIG_MARU
+    if (preallocated_ram_ptr) {
+        return preallocated_ram_ptr;
+    }
+#endif
     ptr = VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_READWRITE);
     trace_qemu_anon_ram_alloc(size, ptr);
     return ptr;
