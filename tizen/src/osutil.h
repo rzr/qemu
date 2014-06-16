@@ -62,6 +62,7 @@ extern const char *pac_tempfile;
 
 void check_vm_lock_os(void);
 void make_vm_lock_os(void);
+void make_vm_unlock_os(void);
 
 void set_bin_path_os(gchar *);
 
