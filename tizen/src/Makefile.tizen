@@ -31,7 +31,7 @@ GL_CFLAGS := -Wall -g -O2 -fno-strict-aliasing
 endif
 
 # maru loader
-obj-y += emulator.o emulator_options.o emul_state.o maru_err_table.o
+obj-y += emulator.o emulator_legacy.o emulator_options.o emul_state.o maru_err_table.o
 
 # osutil
 obj-y += osutil.o

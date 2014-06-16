@@ -170,8 +170,7 @@ void print_system_info_os(void)
 
     /* uname */
     INFO("* Host machine uname :\n");
-    char uname_cmd[MAXLEN] = "uname -a >> ";
-    strcat(uname_cmd, log_path);
+    char uname_cmd[MAXLEN] = "uname -a";
     if(system(uname_cmd) < 0) {
         INFO("system function command '%s' \
             returns error !", uname_cmd);
@@ -220,8 +219,7 @@ void print_system_info_os(void)
 
     /* java version */
     INFO("* Java version :\n");
-    char lspci_cmd[MAXLEN] = "java -version 2>> ";
-    strcat(lspci_cmd, log_path);
+    char lspci_cmd[MAXLEN] = "java -version";
 
     fflush(stdout);
     if(system(lspci_cmd) < 0) {
