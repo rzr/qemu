@@ -312,6 +312,18 @@ static void vigs_sw_surface_solid_fill(struct vigs_surface *sfc,
     }
 }
 
+static void vigs_sw_surface_ga_copy(struct vigs_surface *dst,
+                                    uint32_t dst_stride,
+                                    struct vigs_surface *src,
+                                    uint8_t *src_pixels,
+                                    uint32_t src_stride,
+                                    const struct vigsp_copy *entry)
+{
+    /*
+     * TODO: Implement.
+     */
+}
+
 static void vigs_sw_surface_destroy(struct vigs_surface *sfc)
 {
     struct vigs_sw_surface *sw_sfc = (struct vigs_sw_surface*)sfc;
@@ -359,6 +371,7 @@ static struct vigs_surface *vigs_sw_backend_create_surface(struct vigs_backend *
     sw_sfc->base.draw_pixels = &vigs_sw_surface_draw_pixels;
     sw_sfc->base.copy = &vigs_sw_surface_copy;
     sw_sfc->base.solid_fill = &vigs_sw_surface_solid_fill;
+    sw_sfc->base.ga_copy = &vigs_sw_surface_ga_copy;
     sw_sfc->base.destroy = &vigs_sw_surface_destroy;
 
     return &sw_sfc->base;

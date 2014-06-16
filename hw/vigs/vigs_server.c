@@ -78,10 +78,7 @@ static void vigs_server_unuse_surface(struct vigs_server *server,
      * If it was attached to a plane then detach it.
      */
     for (i = 0; i < VIGS_MAX_PLANES; ++i) {
-        if (server->planes[i].sfc == sfc) {
-            server->planes[i].sfc = NULL;
-            server->planes[i].is_dirty = true;
-        }
+        vigs_plane_detach_surface(&server->planes[i], sfc);
     }
 }
 
@@ -307,7 +304,10 @@ static void vigs_server_dispatch_solid_fill(void *user_data,
 
 static void vigs_server_dispatch_set_plane(void *user_data,
                                            vigsp_u32 plane,
-                                           vigsp_surface_id sfc_id,
+                                           vigsp_u32 width,
+                                           vigsp_u32 height,
+                                           vigsp_plane_format format,
+                                           vigsp_surface_id surface_ids[4],
                                            const struct vigsp_rect *src_rect,
                                            int dst_x,
                                            int dst_y,
@@ -315,20 +315,12 @@ static void vigs_server_dispatch_set_plane(void *user_data,
                                            int z_pos)
 {
     struct vigs_server *server = user_data;
-    struct vigs_surface *sfc = NULL;
+    struct vigs_surface *surfaces[4] = { NULL, NULL, NULL, NULL };
+    int i, num_buffers = vigs_format_num_buffers(format);
 
     if (!server->initialized) {
         VIGS_LOG_ERROR("not initialized");
         return;
-    }
-
-    if (sfc_id) {
-        sfc = g_hash_table_lookup(server->surfaces, GUINT_TO_POINTER(sfc_id));
-
-        if (!sfc) {
-            VIGS_LOG_ERROR("surface %u not found", sfc_id);
-            return;
-        }
     }
 
     if (plane >= VIGS_MAX_PLANES) {
@@ -336,13 +328,70 @@ static void vigs_server_dispatch_set_plane(void *user_data,
         return;
     }
 
-    server->planes[plane].sfc = sfc;
+    for (i = 0; i < num_buffers; ++i) {
+        if (surface_ids[i]) {
+            surfaces[i] = g_hash_table_lookup(server->surfaces, GUINT_TO_POINTER(surface_ids[i]));
+
+            if (!surfaces[i]) {
+                VIGS_LOG_ERROR("surface %u not found", surface_ids[i]);
+                return;
+            }
+        }
+    }
+
+    server->planes[plane].width = width;
+    server->planes[plane].height = height;
+    server->planes[plane].format = format;
+    memcpy(server->planes[plane].surfaces, surfaces, sizeof(surfaces));
     server->planes[plane].src_rect = *src_rect;
     server->planes[plane].dst_x = dst_x;
     server->planes[plane].dst_y = dst_y;
     server->planes[plane].dst_size = *dst_size;
     server->planes[plane].z_pos = z_pos;
     server->planes[plane].is_dirty = true;
+}
+
+static void vigs_server_dispatch_ga_copy(void *user_data,
+                                         vigsp_surface_id src_id,
+                                         bool src_scanout,
+                                         vigsp_offset src_offset,
+                                         vigsp_u32 src_stride,
+                                         vigsp_surface_id dst_id,
+                                         vigsp_u32 dst_stride,
+                                         const struct vigsp_copy *entry)
+{
+    struct vigs_server *server = user_data;
+    struct vigs_surface *src;
+    struct vigs_surface *dst;
+
+    if (!server->initialized) {
+        VIGS_LOG_ERROR("not initialized");
+        return;
+    }
+
+    src = g_hash_table_lookup(server->surfaces, GUINT_TO_POINTER(src_id));
+
+    if (!src) {
+        VIGS_LOG_ERROR("src surface %u not found", src_id);
+        return;
+    }
+
+    if (src_id == dst_id) {
+        dst = src;
+    } else {
+        dst = g_hash_table_lookup(server->surfaces, GUINT_TO_POINTER(dst_id));
+
+        if (!dst) {
+            VIGS_LOG_ERROR("dst surface %u not found", dst_id);
+            return;
+        }
+    }
+
+    dst->ga_copy(dst, dst_stride,
+                 src, (src_scanout ? (server->vram_ptr + src_offset) : NULL),
+                 src_stride, entry);
+
+    dst->is_dirty = true;
 }
 
 static void vigs_server_dispatch_batch_end(void *user_data,
@@ -367,6 +416,7 @@ static struct vigs_comm_batch_ops vigs_server_dispatch_batch_ops =
     .copy = &vigs_server_dispatch_copy,
     .solid_fill = &vigs_server_dispatch_solid_fill,
     .set_plane = &vigs_server_dispatch_set_plane,
+    .ga_copy = &vigs_server_dispatch_ga_copy,
     .end = &vigs_server_dispatch_batch_end
 };
 
@@ -500,23 +550,12 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
     }
 
     for (i = 0; i < VIGS_MAX_PLANES; ++i) {
-        /*
-         * If plane was moved/resized or turned on/off
-         * then we're dirty.
-         */
-        if (server->planes[i].is_dirty) {
-            planes_dirty = true;
+        if (!planes_dirty) {
+            planes_dirty = vigs_plane_dirty(&server->planes[i]);
         }
 
-        if (server->planes[i].sfc) {
-            planes_on = true;
-
-            /*
-             * If plane's surface is dirty then we're dirty.
-             */
-            if (server->planes[i].sfc->is_dirty) {
-                planes_dirty = true;
-            }
+        if (!planes_on) {
+            planes_on = vigs_plane_enabled(&server->planes[i]);
         }
     }
 
@@ -551,14 +590,7 @@ static void vigs_server_update_display_work(struct work_queue_item *wq_item)
         root_sfc->is_dirty = false;
 
         for (i = 0; i < VIGS_MAX_PLANES; ++i) {
-            if (server->planes[i].is_dirty) {
-                server->planes[i].is_dirty = false;
-            }
-
-            if (server->planes[i].sfc &&
-                server->planes[i].sfc->is_dirty) {
-                server->planes[i].sfc->is_dirty = false;
-            }
+            vigs_plane_reset_dirty(&server->planes[i]);
         }
     } else {
         /*

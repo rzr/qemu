@@ -195,9 +195,15 @@ static void vigs_comm_dispatch_set_plane(struct vigs_comm_batch_ops *ops,
                                          void *user_data,
                                          struct vigsp_cmd_set_plane_request *request)
 {
-    VIGS_LOG_TRACE("plane = %u, sfc_id = %u, src_rect = {%u, %u, %u, %u}, dst_x = %d, dst_y = %d, dst_size = {%u, %u}, z_pos = %d",
+    VIGS_LOG_TRACE("plane = %u, width = %u, height = %u, format = %u, surfaces = {%u, %u, %u, %u}, src_rect = {%u, %u, %u, %u}, dst_x = %d, dst_y = %d, dst_size = {%u, %u}, z_pos = %d",
                    request->plane,
-                   request->sfc_id,
+                   request->width,
+                   request->height,
+                   request->format,
+                   request->surfaces[0],
+                   request->surfaces[1],
+                   request->surfaces[2],
+                   request->surfaces[3],
                    request->src_rect.pos.x,
                    request->src_rect.pos.y,
                    request->src_rect.size.w,
@@ -208,9 +214,32 @@ static void vigs_comm_dispatch_set_plane(struct vigs_comm_batch_ops *ops,
                    request->dst_size.h,
                    request->z_pos);
 
-    ops->set_plane(user_data, request->plane, request->sfc_id,
+    ops->set_plane(user_data, request->plane, request->width, request->height,
+                   request->format, request->surfaces,
                    &request->src_rect, request->dst_x, request->dst_y,
                    &request->dst_size, request->z_pos);
+}
+
+static void vigs_comm_dispatch_ga_copy(struct vigs_comm_batch_ops *ops,
+                                       void *user_data,
+                                       struct vigsp_cmd_ga_copy_request *request)
+{
+    VIGS_LOG_TRACE("src = %u, src_scanout = %d, src_offset = %u, src_stride = %u, dst = %u, dst_stride = %u",
+                   request->src_id,
+                   request->src_scanout,
+                   request->src_offset,
+                   request->src_stride,
+                   request->dst_id,
+                   request->dst_stride);
+
+    ops->ga_copy(user_data,
+                 request->src_id,
+                 request->src_scanout,
+                 request->src_offset,
+                 request->src_stride,
+                 request->dst_id,
+                 request->dst_stride,
+                 &request->entry);
 }
 
 /*
@@ -236,11 +265,13 @@ static const vigs_dispatch_func vigs_dispatch_table[] =
     VIGS_DISPATCH_ENTRY(vigsp_cmd_solid_fill,
                         vigs_comm_dispatch_solid_fill),
     VIGS_DISPATCH_ENTRY(vigsp_cmd_set_plane,
-                        vigs_comm_dispatch_set_plane)
+                        vigs_comm_dispatch_set_plane),
+    VIGS_DISPATCH_ENTRY(vigsp_cmd_ga_copy,
+                        vigs_comm_dispatch_ga_copy)
 };
 
 #define VIGS_MIN_BATCH_CMD_ID vigsp_cmd_create_surface
-#define VIGS_MAX_BATCH_CMD_ID vigsp_cmd_set_plane
+#define VIGS_MAX_BATCH_CMD_ID vigsp_cmd_ga_copy
 
 struct vigs_comm *vigs_comm_create(uint8_t *ram_ptr)
 {

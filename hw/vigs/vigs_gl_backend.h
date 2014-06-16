@@ -121,6 +121,9 @@ struct vigs_gl_backend
     void (GLAPIENTRY* VertexAttribPointer)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer);
     void (GLAPIENTRY* Uniform4fv)(GLint location, GLsizei count, const GLfloat* value);
     void (GLAPIENTRY* UniformMatrix4fv)(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
+    void (GLAPIENTRY* Uniform1i)(GLint location, GLint v0);
+    void (GLAPIENTRY* Uniform2f)(GLint location, GLfloat v0, GLfloat v1);
+    void (GLAPIENTRY* ActiveTexture)(GLenum texture);
 
     /*
      * @}
@@ -178,6 +181,18 @@ struct vigs_gl_backend
     GLint color_prog_proj_loc;
     GLint color_prog_vertCoord_loc;
     GLint color_prog_color_loc;
+
+    GLuint nv21_prog_vs_id;
+    GLuint nv21_prog_fs_id;
+    GLuint nv21_prog_id;
+    GLint nv21_prog_proj_loc;
+    GLint nv21_prog_vertCoord_loc;
+    GLint nv21_prog_texCoord_loc;
+    GLint nv21_prog_size_loc;
+    GLint nv21_prog_ytexSize_loc;
+    GLint nv21_prog_ctexSize_loc;
+    GLint nv21_prog_ytex_loc;
+    GLint nv21_prog_ctex_loc;
 
     GLuint vbo;
     uint32_t vbo_size;
