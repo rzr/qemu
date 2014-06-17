@@ -73,10 +73,10 @@ char tizen_target_img_path[PATH_MAX];
 int enable_yagl = 0;
 int enable_spice = 0;
 
-static int _skin_argc;
-static char **_skin_argv;
-static int _qemu_argc;
-static char **_qemu_argv;
+int _skin_argc;
+char **_skin_argv;
+int _qemu_argc;
+char **_qemu_argv;
 
 const char *get_log_path(void)
 {

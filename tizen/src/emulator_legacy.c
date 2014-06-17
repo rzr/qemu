@@ -83,10 +83,10 @@ extern char tizen_target_img_path[PATH_MAX];
 extern int enable_yagl;
 extern int enable_spice;
 
-static int _skin_argc;
-static char **_skin_argv;
-static int _qemu_argc;
-static char **_qemu_argv;
+extern int _skin_argc;
+extern char **_skin_argv;
+extern int _qemu_argc;
+extern char **_qemu_argv;
 
 static void set_bin_path(gchar * exec_argv)
 {
