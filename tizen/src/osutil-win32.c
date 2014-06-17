@@ -54,6 +54,8 @@ MULTI_DEBUG_CHANNEL (emulator, osutil);
 static qemu_timeval tv = { 0, 0 };
 static time_t ti;
 static char buf_time[64];
+HANDLE g_hMapFile;
+char *g_pBuf;
 
 extern char tizen_target_img_path[];
 
@@ -99,8 +101,6 @@ void check_vm_lock_os(void)
 
 void make_vm_lock_os(void)
 {
-    HANDLE hMapFile;
-    char *pBuf;
     char *port_in_use;
     char *shared_memory;
     int base_port;
@@ -108,29 +108,40 @@ void make_vm_lock_os(void)
     base_port = get_emul_vm_base_port();
     shared_memory = g_strdup_printf("%s", tizen_target_img_path);
     port_in_use =  g_strdup_printf("%d", base_port);
-    hMapFile = CreateFileMapping(
+    g_hMapFile = CreateFileMapping(
                  INVALID_HANDLE_VALUE, /* use paging file */
                  NULL,                 /* default security */
                  PAGE_READWRITE,       /* read/write access */
                  0,                /* maximum object size (high-order DWORD) */
                  50,               /* maximum object size (low-order DWORD) */
                  port_in_use);         /* name of mapping object */
-    if (hMapFile == NULL) {
+    if (g_hMapFile == NULL) {
         ERR("Could not create file mapping object (%d).\n", GetLastError());
         return;
     }
-    pBuf = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 50);
 
-    if (pBuf == NULL) {
+    g_pBuf = MapViewOfFile(g_hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 50);
+    if (g_pBuf == NULL) {
         ERR("Could not map view of file (%d).\n", GetLastError());
-        CloseHandle(hMapFile);
+        CloseHandle(g_hMapFile);
         return;
     }
 
-    CopyMemory((PVOID)pBuf, shared_memory, strlen(shared_memory));
+    CopyMemory((PVOID)g_pBuf, shared_memory, strlen(shared_memory));
     free(port_in_use);
     free(shared_memory);
 }
+
+void make_vm_unlock_os(void)
+{
+    if (g_pBuf != NULL) {
+        UnmapViewOfFile(g_pBuf);
+    }
+    if(hMapFile != NULL) {
+        CloseHandle(g_hMapFile);
+    }
+}
+
 
 void set_bin_path_os(gchar * exec_argv)
 {

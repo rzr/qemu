@@ -150,6 +150,15 @@ void make_vm_lock_os(void)
     }
 }
 
+void make_vm_unlock_os(void)
+{
+    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
+        ERR("shmctl failed\n");
+        perror("osutil-linux: ");
+    }
+}
+
+
 void set_bin_path_os(gchar * exec_argv)
 {
     gchar link_path[PATH_MAX] = { 0, };
