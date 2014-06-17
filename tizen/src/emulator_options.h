@@ -32,7 +32,7 @@
 void set_variable(const char * const arg1, const char * const arg2, bool override);
 char *get_variable(const char * const name);
 void reset_variables(void);
-bool load_profile_default(const char * const profile);
+bool load_profile_default(const char * const conf, const char * const profile);
 bool assemble_profile_args(int *qemu_argc, char **qemu_argv,
         int *skin_argc, char **skin_argv);
 

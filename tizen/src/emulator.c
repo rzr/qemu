@@ -66,6 +66,7 @@ MULTI_DEBUG_CHANNEL(tizen, main);
 
 #define SUPPORT_LEGACY_ARGS
 
+#define ARGS_LIMIT  128
 #define LEN_MARU_KERNEL_CMDLINE 512
 char maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
 
@@ -93,12 +94,15 @@ const char *get_log_path(void)
 
     // if "log_path" is not exist, make it first
     if (!log_path) {
-        char *vm_path = get_variable("vm_path");
-        if (!vm_path) {
-            vm_path = g_strdup("");
+        char *vms_path = get_variable("vms_path");
+        char *vm_name = get_variable("vm_name");
+        if (!vms_path || !vm_name) {
+            log_path = NULL;
+        }
+        else {
+            log_path = g_strdup_printf("%s/%s/logs", vms_path, vm_name);
         }
 
-        log_path = g_strdup_printf("%s/logs", vm_path);
         set_variable("log_path", log_path, false);
     }
 
@@ -311,10 +315,12 @@ static int emulator_main(int argc, char *argv[], char **envp)
 #endif
 
     gchar *profile = NULL;
+    gchar *conf = NULL;
+
     int c = 0;
 
-    _qemu_argv = g_malloc(sizeof(char*) * 256);
-    _skin_argv = g_malloc(sizeof(char*) * 256);
+    _qemu_argv = g_malloc(sizeof(char*) * ARGS_LIMIT);
+    _skin_argv = g_malloc(sizeof(char*) * ARGS_LIMIT);
 
     // parse arguments
     // prevent the error message for undefined options
@@ -322,12 +328,13 @@ static int emulator_main(int argc, char *argv[], char **envp)
 
     while (c != -1) {
         static struct option long_options[] = {
+            {"conf",        required_argument,  0,  'c' },
             {"profile",     required_argument,  0,  'p' },
             {"additional",  required_argument,  0,  'a' },
             {0,             0,                  0,  0   }
         };
 
-        c = getopt_long(argc, argv, "p:v:", long_options, NULL);
+        c = getopt_long(argc, argv, "c:p:a:", long_options, NULL);
 
         if (c == -1)
             break;
@@ -335,6 +342,10 @@ static int emulator_main(int argc, char *argv[], char **envp)
         switch (c) {
         case '?':
             set_variable(argv[optind - 1], argv[optind], true);
+            break;
+        case 'c':
+            set_variable("conf", optarg, true);
+            conf = g_strdup(optarg);
             break;
         case 'p':
             set_variable("profile", optarg, true);
@@ -350,8 +361,10 @@ static int emulator_main(int argc, char *argv[], char **envp)
         }
     }
 
-    if (!profile) {
-        fprintf(stderr, "Usage: %s {-p|--profile} profile\n", argv[0]);
+    if (!profile && !conf) {
+        fprintf(stderr, "Usage: %s {-c|--conf} conf_file ...\n"
+                        "       %s {-p|--profile} profile ...\n",
+                        basename(argv[0]), basename(argv[0]));
 
         return -1;
     }
@@ -362,7 +375,7 @@ static int emulator_main(int argc, char *argv[], char **envp)
 
     set_bin_path(_qemu_argv[0]);
 
-    if (!load_profile_default(profile)) {
+    if (!load_profile_default(conf, profile)) {
         return -1;
     }
 

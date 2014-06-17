@@ -197,14 +197,19 @@ static char *substitute_variables(char *src)
     return str;
 }
 
-bool load_profile_default(const char * const profile)
+bool load_profile_default(const char * const conf, const char * const profile)
 {
     int classification = 0;
     char str[LINE_LIMIT];
     char *filename;
     FILE *file = NULL;
 
-    filename = g_strdup_printf("%s/%s.profile", get_bin_path(), profile);
+    // if "conf" is exist, ignore "profile"
+    if (conf) {
+        filename = g_strdup(conf);
+    } else {
+        filename = g_strdup_printf("%s/%s.conf", get_bin_path(), profile);
+    }
 
     file = fopen(filename, "r");
     if (!file) {
