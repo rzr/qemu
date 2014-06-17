@@ -56,7 +56,6 @@ void start_skin(void);
 const gchar * get_log_path(void);
 int maru_device_check(QemuOpts *opts);
 
-void exit_emulator(void);
 void emulator_add_exit_notifier(Notifier *notify);
 
 #endif /* __EMULATOR_H__ */

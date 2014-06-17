@@ -61,10 +61,11 @@ static qemu_timeval tv = { 0, 0 };
 static time_t ti;
 static char buf_time[64];
 
+static int g_shmid;
+static char *g_shared_memory;
+static int gproxytool = GSETTINGS;
+
 extern char tizen_target_img_path[];
-int g_shmid;
-char *g_shared_memory;
-int gproxytool = GSETTINGS;
 
 /* Getting proxy commands */
 static const char* gproxycmds[][2] = {
@@ -150,7 +151,7 @@ void make_vm_lock_os(void)
     }
 }
 
-void make_vm_unlock_os(void)
+void remove_vm_lock_os(void)
 {
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");

@@ -1,9 +1,9 @@
-/* 
+/*
  * Emulator
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -58,11 +58,11 @@
 #define GCONFTOOL 0
 #define GSETTINGS 1
 
-extern const char *pac_tempfile; 
+extern const char *pac_tempfile;
 
 void check_vm_lock_os(void);
 void make_vm_lock_os(void);
-void make_vm_unlock_os(void);
+void remove_vm_lock_os(void);
 
 void set_bin_path_os(gchar *);
 

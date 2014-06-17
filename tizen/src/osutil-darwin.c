@@ -56,10 +56,10 @@ MULTI_DEBUG_CHANNEL(qemu, osutil);
 static qemu_timeval tv = { 0, 0 };
 static time_t ti;
 static char buf_time[64];
+static int g_shmid;
+static CFDictionaryRef proxySettings;
 
-int g_shmid;
 extern char tizen_target_img_path[];
-CFDictionaryRef proxySettings;
 
 static char *cfstring_to_cstring(CFStringRef str) {
     if (str == NULL) {
@@ -116,7 +116,7 @@ void make_vm_lock_os(void)
 
 }
 
-void make_vm_unlock_os(void)
+void remove_vm_lock_os(void)
 {
     if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
         ERR("shmctl failed\n");

@@ -54,8 +54,8 @@ MULTI_DEBUG_CHANNEL (emulator, osutil);
 static qemu_timeval tv = { 0, 0 };
 static time_t ti;
 static char buf_time[64];
-HANDLE g_hMapFile;
-char *g_pBuf;
+static HANDLE g_hMapFile;
+static char *g_pBuf;
 
 extern char tizen_target_img_path[];
 
@@ -132,7 +132,7 @@ void make_vm_lock_os(void)
     free(shared_memory);
 }
 
-void make_vm_unlock_os(void)
+void remove_vm_lock_os(void)
 {
     if (g_pBuf != NULL) {
         UnmapViewOfFile(g_pBuf);

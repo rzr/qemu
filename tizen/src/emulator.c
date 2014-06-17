@@ -51,11 +51,6 @@
 #ifdef CONFIG_SDL
 #include <SDL.h>
 #endif
-#if defined(CONFIG_LINUX) || defined(CONFIG_DARWIN)
-#include <sys/ipc.h>
-#include <sys/shm.h>
-extern int g_shmid;
-#endif
 
 #ifdef CONFIG_DARWIN
 #include "ns_event.h"
@@ -114,18 +109,6 @@ void emulator_add_exit_notifier(Notifier *notify)
     qemu_add_exit_notifier(notify);
 }
 
-void exit_emulator(void)
-{
-    INFO("exit emulator!\n");
-
-#if defined(CONFIG_LINUX) || defined(CONFIG_DARWIN)
-    if (shmctl(g_shmid, IPC_RMID, 0) == -1) {
-        ERR("shmctl failed\n");
-        perror("emulator.c: ");
-    }
-#endif
-}
-
 static void construct_main_window(int skin_argc, char *skin_argv[],
                                 int qemu_argc, char *qemu_argv[])
 {
@@ -170,6 +153,29 @@ static void make_vm_lock(void)
     make_vm_lock_os();
 }
 
+static void remove_vm_lock(void)
+{
+    remove_vm_lock_os();
+}
+
+static void emulator_notify_exit(Notifier *notifier, void *data)
+{
+    remove_vm_lock();
+
+    int i;
+    for (i = 0; i < _qemu_argc; ++i) {
+        g_free(_qemu_argv[i]);
+    }
+    for (i = 0; i < _skin_argc; ++i) {
+        g_free(_skin_argv[i]);
+    }
+    reset_variables();
+
+    INFO("Exit emulator...\n");
+}
+
+static Notifier emulator_exit = { .notify = emulator_notify_exit };
+
 static void print_system_info(void)
 {
 #define DIV 1024
@@ -204,6 +210,23 @@ static void print_system_info(void)
 #endif
 
     print_system_info_os();
+}
+
+static void print_options_info(void)
+{
+    int i;
+
+    fprintf(stdout, "qemu args: =========================================\n");
+    for (i = 0; i < _qemu_argc; ++i) {
+        fprintf(stdout, "%s ", _qemu_argv[i]);
+    }
+    fprintf(stdout, "\n====================================================\n");
+
+    fprintf(stdout, "skin args: =========================================\n");
+    for (i = 0; i < _skin_argc; ++i) {
+        fprintf(stdout, "%s ", _skin_argv[i]);
+    }
+    fprintf(stdout, "\n====================================================\n");
 }
 
 #define PROXY_BUFFER_LEN  128
@@ -406,43 +429,19 @@ static int emulator_main(int argc, char *argv[], char **envp)
     }
 
 
-    INFO("Emulator start !!!\n");
+    INFO("Start emulator...\n");
     atexit(maru_atexit);
+    emulator_add_exit_notifier(&emulator_exit);
 
     print_system_info();
 
-    INFO("Prepare running...\n");
-    INFO("tizen_target_img_path: %s\n", tizen_target_img_path);
+    print_options_info();
 
-    int i;
-
-    fprintf(stdout, "qemu args: =========================================\n");
-    for (i = 0; i < _qemu_argc; ++i) {
-        fprintf(stdout, "%s ", _qemu_argv[i]);
-    }
-    fprintf(stdout, "\nqemu args: =========================================\n");
-
-    fprintf(stdout, "skin args: =========================================\n");
-    for (i = 0; i < _skin_argc; ++i) {
-        fprintf(stdout, "%s ", _skin_argv[i]);
-    }
-    fprintf(stdout, "\nskin args: =========================================\n");
-
-    INFO("socket initialize\n");
+    INFO("socket initialize...\n");
     socket_init();
 
-    INFO("qemu main start!\n");
+    INFO("qemu main start...\n");
     qemu_main(_qemu_argc, _qemu_argv, envp);
-
-    for (i = 0; i < _qemu_argc; ++i) {
-        g_free(_qemu_argv[i]);
-    }
-    for (i = 0; i < _skin_argc; ++i) {
-        g_free(_skin_argv[i]);
-    }
-    reset_variables();
-
-    exit_emulator();
 
     return 0;
 }

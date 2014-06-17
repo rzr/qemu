@@ -173,6 +173,20 @@ static void set_image_and_log_path(char *qemu_argv)
     strcat(log_path, LOGFILE);
 }
 
+static void remove_vm_lock(void)
+{
+    remove_vm_lock_os();
+}
+
+static void emulator_notify_exit(Notifier *notifier, void *data)
+{
+    remove_vm_lock();
+
+    INFO("Exit emulator...\n");
+}
+
+static Notifier emulator_exit = { .notify = emulator_notify_exit };
+
 static void redir_output(void)
 {
     FILE *fp;
@@ -287,6 +301,7 @@ int legacy_emulator_main(int argc, char * argv[], char **envp)
 
     INFO("Emulator start !!!\n");
     atexit(maru_atexit);
+    emulator_add_exit_notifier(&emulator_exit);
 
     extract_skin_info(_skin_argc, _skin_argv);
 
@@ -316,8 +331,6 @@ int legacy_emulator_main(int argc, char * argv[], char **envp)
 
     INFO("qemu main start!\n");
     qemu_main(_qemu_argc, _qemu_argv, envp);
-
-    exit_emulator();
 
     return 0;
 }
