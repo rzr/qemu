@@ -52,6 +52,10 @@
 #include <SDL.h>
 #endif
 
+#ifdef CONFIG_WIN32
+#include <libgen.h>
+#endif
+
 #ifdef CONFIG_DARWIN
 #include "ns_event.h"
 int thread_running = 1; /* Check if we need exit main */

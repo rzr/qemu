@@ -137,7 +137,7 @@ void remove_vm_lock_os(void)
     if (g_pBuf != NULL) {
         UnmapViewOfFile(g_pBuf);
     }
-    if(hMapFile != NULL) {
+    if (g_hMapFile != NULL) {
         CloseHandle(g_hMapFile);
     }
 }
