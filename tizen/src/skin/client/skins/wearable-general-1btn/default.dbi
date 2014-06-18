@@ -38,6 +38,9 @@
         <keywindowItem visible="true" />
         <hostKeyboardItem visible="false" />
         <shellItem visible="true" />
+        <controlPanelItem visible="true" />
+        <forceCloseItem visible="true" />
+        <closeItem visible="true" />
     </popupMenu>
     <option>
         <blankGuide visible="true" />

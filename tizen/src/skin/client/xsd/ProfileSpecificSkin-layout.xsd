@@ -103,6 +103,8 @@ xmlns:dbi="http://www.tizen.org/emulator/skin/dbi" elementFormDefault="qualified
 			<element name="ramdumpItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 			<element name="shellItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 			<element name="controlPanelItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
+			<element name="forceCloseItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
+			<element name="closeItem" type="dbi:menuItemType" minOccurs="0" maxOccurs="1"> </element>
 		</all>
 	</complexType>
 

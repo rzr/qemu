@@ -75,6 +75,8 @@
         <ramdumpItem visible="true" />
         <shellItem visible="true" />
         <controlPanelItem visible="true" />
+        <forceCloseItem visible="true" />
+        <closeItem visible="true" />
     </popupMenu>
     <option>
         <blankGuide visible="true" />

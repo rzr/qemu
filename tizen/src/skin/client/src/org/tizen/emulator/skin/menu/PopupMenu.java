@@ -263,8 +263,17 @@ public class PopupMenu {
 			}
 
 			/* Force close menu */
-			forceCloseItem = createForceCloseItem(
-					advancedSubMenu, FORCECLOSE_MENUITEM_NAME);
+			if (itemProperties == null ||
+					itemProperties.getForceCloseItem() == null) {
+				forceCloseItem = createForceCloseItem(advancedSubMenu, FORCECLOSE_MENUITEM_NAME);
+			} else {
+				MenuItemType closeMenuType = itemProperties.getForceCloseItem();
+				if (closeMenuType.isVisible() == true) {
+					forceCloseItem = createForceCloseItem(advancedSubMenu,
+							(closeMenuType.getItemName().isEmpty()) ?
+									FORCECLOSE_MENUITEM_NAME : closeMenuType.getItemName());
+				}
+			}
 
 			if (screenshotItem != null || hostKbdItem != null || diagnosisItem != null
 					|| aboutItem != null || forceCloseItem != null) {
@@ -311,7 +320,17 @@ public class PopupMenu {
 		}
 
 		/* Close menu */
-		closeItem = createCloseItem(menu, CLOSE_MENUITEM_NAME);
+		if (itemProperties == null ||
+				itemProperties.getCloseItem() == null) {
+			closeItem = createCloseItem(menu, CLOSE_MENUITEM_NAME);
+		} else {
+			MenuItemType closeMenuType = itemProperties.getCloseItem();
+			if (closeMenuType.isVisible() == true) {
+				closeItem = createCloseItem(menu,
+						(closeMenuType.getItemName().isEmpty()) ?
+								CLOSE_MENUITEM_NAME : closeMenuType.getItemName());
+			}
+		}
 	}
 
 	private MenuItem createMenuItem(Menu menu, int style,
