@@ -480,6 +480,10 @@ static int set_capability(char* sensor)
         return sensor_cap_light;
     } else if (!strncmp(sensor, SENSOR_NAME_PROXI, 5)) {
         return sensor_cap_proxi;
+    } else if (!strncmp(sensor, SENSOR_NAME_HAPTIC, 6)) {
+        return sensor_cap_haptic;
+    } else {
+        ERR("unknown sensor request: %s", sensor);
     }
 
     return 0;

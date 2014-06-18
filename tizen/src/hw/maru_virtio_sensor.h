@@ -70,11 +70,12 @@ enum sensor_types {
 };
 
 enum sensor_capabilities {
-    sensor_cap_accel = 0x01,
-    sensor_cap_geo   = 0x02,
-    sensor_cap_gyro  = 0x04,
-    sensor_cap_light = 0x08,
-    sensor_cap_proxi = 0x10
+    sensor_cap_accel  = 0x01,
+    sensor_cap_geo    = 0x02,
+    sensor_cap_gyro   = 0x04,
+    sensor_cap_light  = 0x08,
+    sensor_cap_proxi  = 0x10,
+    sensor_cap_haptic = 0x20
 };
 
 #define MESSAGE_TYPE_SENSOR "sensor"
@@ -89,11 +90,12 @@ enum sensor_capabilities {
 
 #define ATTRIBUTE_NAME_SENSORS "sensors"
 
-#define SENSOR_NAME_ACCEL "accel"
-#define SENSOR_NAME_GYRO  "gyro"
-#define SENSOR_NAME_GEO   "geo"
-#define SENSOR_NAME_LIGHT "light"
-#define SENSOR_NAME_PROXI "proxi"
+#define SENSOR_NAME_ACCEL  "accel"
+#define SENSOR_NAME_GYRO   "gyro"
+#define SENSOR_NAME_GEO    "geo"
+#define SENSOR_NAME_LIGHT  "light"
+#define SENSOR_NAME_PROXI  "proxi"
+#define SENSOR_NAME_HAPTIC "haptic"
 
 #define SENSOR_CAP_TOKEN "&"
 
