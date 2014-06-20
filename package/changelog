@@ -1,3 +1,9 @@
+* 2.0.1
+- sensor device data is modified.
+- haptic device is added.
+- ecs: guest emuld connection message handling
+- thread: changed pthread to qemu mutex
+== Jinhyung Choi <jinhyung2.choi@samsung.com> 2014-06-20
 * 2.0.0
 - Major package version up
 == Seokyeon Hwang <syeon.hwang@samsung.com> 2014-06-10
