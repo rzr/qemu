@@ -42,7 +42,7 @@
 #include "hw/hw.h"
 #include "hw/pci/pci.h"
 #include <GL/gl.h>
-#include "winsys.h"
+#include "vigs/winsys.h"
 #include "yagl_gles_driver.h"
 
 #define PCI_VENDOR_ID_YAGL 0x19B1

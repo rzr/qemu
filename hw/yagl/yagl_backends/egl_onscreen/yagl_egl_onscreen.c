@@ -38,7 +38,7 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_gles_driver.h"
-#include "winsys_gl.h"
+#include "vigs/winsys_gl.h"
 
 YAGL_DEFINE_TLS(struct yagl_egl_onscreen_ts*, egl_onscreen_ts);
 

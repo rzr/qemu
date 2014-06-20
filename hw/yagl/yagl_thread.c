@@ -35,7 +35,7 @@
 #include "yagl_stats.h"
 #include "yagl_transport.h"
 #include "yagl_object_map.h"
-#include "winsys.h"
+#include "vigs/winsys.h"
 #include "sysemu/kvm.h"
 #include "sysemu/hax.h"
 
