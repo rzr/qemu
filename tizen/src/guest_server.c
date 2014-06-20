@@ -45,6 +45,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "qemu/sockets.h"
 #include "emulator.h"
 #include "guest_server.h"
 #include "mloop_event.h"
@@ -77,7 +78,9 @@ typedef struct GS_Client {
 static QTAILQ_HEAD(GS_ClientHead, GS_Client)
 clients = QTAILQ_HEAD_INITIALIZER(clients);
 
-static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
+static QemuThread guest_thread_id;
+static QemuMutex mutex_clients;
+static int running = 0;
 
 static void remove_sdb_client(GS_Client* client)
 {
@@ -85,12 +88,12 @@ static void remove_sdb_client(GS_Client* client)
         return;
     }
 
-    pthread_mutex_lock(&mutex_clilist);
+    qemu_mutex_lock(&mutex_clients);
 
     QTAILQ_REMOVE(&clients, client, next);
     g_free(client);
 
-    pthread_mutex_unlock(&mutex_clilist);
+    qemu_mutex_unlock(&mutex_clients);
 }
 
 static void send_to_sdb_client(GS_Client* client, int state)
@@ -139,14 +142,14 @@ static void send_to_sdb_client(GS_Client* client, int state)
 
 void notify_all_sdb_clients(int state)
 {
-    pthread_mutex_lock(&mutex_clilist);
+    qemu_mutex_lock(&mutex_clients);
     GS_Client *client, *next;
 
     QTAILQ_FOREACH_SAFE(client, &clients, next, next)
     {
         send_to_sdb_client(client, state);
     }
-    pthread_mutex_unlock(&mutex_clilist);
+    qemu_mutex_unlock(&mutex_clients);
 
 }
 
@@ -184,11 +187,11 @@ static void add_sdb_client(struct sockaddr_in* addr, int port, const char* seria
     client->port = port;
     strcpy(client->serial, serial);
 
-    pthread_mutex_lock(&mutex_clilist);
+    qemu_mutex_lock(&mutex_clients);
 
     QTAILQ_INSERT_TAIL(&clients, client, next);
 
-    pthread_mutex_unlock(&mutex_clilist);
+    qemu_mutex_unlock(&mutex_clients);
 
     INFO("Added new sdb client. ip: %s, port: %d, serial: %s\n", inet_ntoa((client->addr).sin_addr), client->port, client->serial);
 
@@ -536,7 +539,7 @@ static void server_process(void)
 
 static void close_clients(void)
 {
-    pthread_mutex_lock(&mutex_clilist);
+    qemu_mutex_lock(&mutex_clients);
     GS_Client * client, *next;
 
     QTAILQ_FOREACH_SAFE(client, &clients, next, next)
@@ -549,7 +552,7 @@ static void close_clients(void)
         }
     }
 
-    pthread_mutex_unlock(&mutex_clilist);
+    qemu_mutex_unlock(&mutex_clients);
 }
 
 static void close_server(void)
@@ -565,6 +568,8 @@ static void close_server(void)
     }
 #endif
     server_sock = 0;
+
+    qemu_mutex_destroy(&mutex_clients);
 }
 
 static void* run_guest_server(void* args)
@@ -589,6 +594,8 @@ static void* run_guest_server(void* args)
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     server_addr.sin_port = htons(port);
 
+    qemu_set_nonblock(server_sock);
+
     setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     if (bind(server_sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
@@ -604,6 +611,8 @@ static void* run_guest_server(void* args)
 
     INFO("guest server start...port:%d\n", port);
 
+    qemu_mutex_init(&mutex_clients);
+
     server_process();
 
     close_server();
@@ -613,9 +622,14 @@ static void* run_guest_server(void* args)
 
 static void shutdown_guest_server(void)
 {
+    void *ret = NULL;
     INFO("shutdown_guest_server.\n");
 
-    close_server();
+    running = 0;
+
+    ret = qemu_thread_join(&guest_thread_id);
+    if (ret)
+        INFO("guest_thread_id join failed.\n");
 }
 
 static void guest_server_notify_exit(Notifier *notifier, void *data) {
@@ -625,9 +639,8 @@ static Notifier guest_server_exit = { .notify = guest_server_notify_exit };
 
 void start_guest_server(int server_port)
 {
-    QemuThread thread_id;
     svr_port = server_port;
-    qemu_thread_create(&thread_id, "guest_server", run_guest_server, NULL, QEMU_THREAD_DETACHED);
+    qemu_thread_create(&guest_thread_id, "guest_server", run_guest_server, NULL, QEMU_THREAD_JOINABLE);
     INFO("created guest server thread\n");
 
     emulator_add_exit_notifier(&guest_server_exit);
