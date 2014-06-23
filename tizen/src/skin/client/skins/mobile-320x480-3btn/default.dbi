@@ -244,5 +244,6 @@
     </hover>
     <popupMenu>
         <keywindowItem visible="false" />
+        <ramdumpItem visible="false" />
     </popupMenu>
 </EmulatorUI>

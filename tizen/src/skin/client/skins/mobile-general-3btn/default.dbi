@@ -72,7 +72,7 @@
         <scaleItem visible="true" />
         <keywindowItem visible="true" />
         <hostKeyboardItem visible="true" />
-        <ramdumpItem visible="true" />
+        <ramdumpItem visible="false" />
         <shellItem visible="true" />
         <controlPanelItem visible="true" />
         <forceCloseItem visible="true" />
