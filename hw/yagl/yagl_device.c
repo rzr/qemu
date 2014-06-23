@@ -41,7 +41,10 @@
 #include "exec/cpu-all.h"
 #include "hw/hw.h"
 #include "hw/pci/pci.h"
+#include "qemu/error-report.h"
 #include <GL/gl.h>
+#include "vigs/display.h"
+#include "vigs/work_queue.h"
 #include "vigs/winsys.h"
 #include "yagl_gles_driver.h"
 
@@ -56,15 +59,6 @@
 
 #define YAGL_MAX_USERS (YAGL_MEM_SIZE / YAGL_REGS_SIZE)
 
-#ifdef __linux__
-extern Display *vigs_display;
-#else
-extern void *vigs_display;
-#endif
-
-extern struct work_queue *vigs_render_queue;
-extern struct winsys_interface *vigs_wsi;
-
 struct yagl_user
 {
     bool activated;
@@ -76,6 +70,9 @@ typedef struct YaGLState
 {
     PCIDevice dev;
 
+    char *display;
+    char *render_queue;
+    char *wsi;
     MemoryRegion iomem;
     struct yagl_server_state *ss;
     struct yagl_user users[YAGL_MAX_USERS];
@@ -214,28 +211,6 @@ static void yagl_device_write(void *opaque, hwaddr offset,
     }
 }
 
-#ifdef __linux__
-static int x_error_handler(Display *dpy, XErrorEvent *e)
-{
-    return 0;
-}
-
-static Display *get_display(void)
-{
-    XSetErrorHandler(x_error_handler);
-    XInitThreads();
-
-    Display *display = XOpenDisplay(0);
-
-    if (!display) {
-        fprintf(stderr, "Cannot open X display\n");
-        exit(1);
-    }
-
-    return display;
-}
-#endif
-
 static const MemoryRegionOps yagl_device_ops =
 {
     .read = yagl_device_read,
@@ -246,9 +221,66 @@ static const MemoryRegionOps yagl_device_ops =
 static int yagl_device_init(PCIDevice *dev)
 {
     YaGLState *s = DO_UPCAST(YaGLState, dev, dev);
+    DisplayObject *dobj = NULL;
+    WorkQueueObject *wqobj = NULL;
+    WSIObject *wsiobj = NULL;
     struct yagl_egl_driver *egl_driver = NULL;
     struct yagl_egl_backend *egl_backend = NULL;
     struct yagl_gles_driver *gles_driver = NULL;
+
+    if (s->display) {
+        dobj = displayobject_find(s->display);
+
+        if (!dobj) {
+            error_report("display '%s' not found", s->display);
+            return -1;
+        }
+    } else {
+        bool ambiguous;
+
+        dobj = displayobject_create(&ambiguous);
+
+        if (ambiguous) {
+            error_report("ambiguous display, set 'display' property");
+            return -1;
+        }
+
+        if (!dobj) {
+            error_report("unable to create display");
+            return -1;
+        }
+    }
+
+    if (s->render_queue) {
+        wqobj = workqueueobject_find(s->render_queue);
+
+        if (!wqobj) {
+            error_report("work queue '%s' not found", s->render_queue);
+            return -1;
+        }
+    } else {
+        bool ambiguous;
+
+        wqobj = workqueueobject_create(&ambiguous);
+
+        if (ambiguous) {
+            error_report("ambiguous work queue, set 'render_queue' property");
+            return -1;
+        }
+
+        if (!dobj) {
+            error_report("unable to create work queue");
+            return -1;
+        }
+    }
+
+    if (s->wsi) {
+        wsiobj = wsiobject_find(s->wsi);
+        if (!wsiobj) {
+            error_report("winsys interface '%s' not found", s->wsi);
+            return -1;
+        }
+    }
 
     yagl_log_init();
 
@@ -262,17 +294,7 @@ static int yagl_device_init(PCIDevice *dev)
 
     yagl_handle_gen_init();
 
-    if (!vigs_render_queue) {
-        vigs_render_queue = work_queue_create("render_queue");
-    }
-
-#ifdef __linux__
-    if (!vigs_display) {
-        vigs_display = get_display();
-    }
-#endif
-
-    egl_driver = yagl_egl_driver_create(vigs_display);
+    egl_driver = yagl_egl_driver_create(dobj->dpy);
 
     if (!egl_driver) {
         goto fail;
@@ -285,9 +307,8 @@ static int yagl_device_init(PCIDevice *dev)
         goto fail;
     }
 
-    // FIXME: How can we gurantee that vigs is initialized before ?
-    if (vigs_wsi) {
-        egl_backend = yagl_egl_onscreen_create(vigs_wsi,
+    if (wsiobj && wsiobj->gl_wsi) {
+        egl_backend = yagl_egl_onscreen_create(wsiobj->gl_wsi,
                                                egl_driver,
                                                gles_driver);
         gles_driver = yagl_gles_onscreen_create(gles_driver);
@@ -305,7 +326,8 @@ static int yagl_device_init(PCIDevice *dev)
     egl_driver = NULL;
 
     s->ss = yagl_server_state_create(egl_backend, gles_driver,
-                                     vigs_render_queue, vigs_wsi);
+                                     wqobj->wq,
+                                     (wsiobj ? wsiobj->gl_wsi : NULL));
 
     /*
      * Owned/destroyed by server state.
@@ -376,6 +398,13 @@ static void yagl_device_exit(PCIDevice *dev)
     yagl_log_cleanup();
 }
 
+static Property yagl_properties[] = {
+    DEFINE_PROP_STRING("display", YaGLState, display),
+    DEFINE_PROP_STRING("render_queue", YaGLState, render_queue),
+    DEFINE_PROP_STRING("wsi", YaGLState, wsi),
+    DEFINE_PROP_END_OF_LIST(),
+};
+
 static void yagl_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -387,6 +416,7 @@ static void yagl_class_init(ObjectClass *klass, void *data)
     k->device_id = PCI_DEVICE_ID_YAGL;
     k->class_id = PCI_CLASS_OTHERS;
     dc->reset = yagl_device_reset;
+    dc->props = yagl_properties;
     dc->desc = "YaGL device";
 }
 

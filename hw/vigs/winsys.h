@@ -36,4 +36,17 @@ struct winsys_interface
                       uint32_t /*fence_seq*/);
 };
 
+#define TYPE_WSIOBJECT "wsi"
+
+typedef struct {
+    Object base;
+    struct winsys_interface *wsi;
+    struct winsys_interface *gl_wsi;
+} WSIObject;
+
+#define WSIOBJECT(obj) \
+   OBJECT_CHECK(WSIObject, obj, TYPE_WSIOBJECT)
+
+WSIObject *wsiobject_find(const char *id);
+
 #endif

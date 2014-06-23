@@ -146,11 +146,11 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef CONFIG_MARU
 int skin_disabled = 0;
-extern int enable_yagl;
+static int enable_yagl= 0;
 extern int enable_spice;
-const char *yagl_backend = NULL;
-int enable_vigs = 0;
-char *vigs_backend = NULL;
+static const char *yagl_backend = NULL;
+static int enable_vigs = 0;
+static char *vigs_backend = NULL;
 #endif
 
 static const char *data_dir[16];
@@ -4618,7 +4618,10 @@ int main(int argc, char **argv, char **envp)
         PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
         if (vigs_backend) {
             qdev_prop_set_string(&pci_dev->qdev, "backend", vigs_backend);
+        } else {
+            qdev_prop_set_string(&pci_dev->qdev, "backend", "gl");
         }
+        qdev_prop_set_string(&pci_dev->qdev, "wsi", "wsi0");
         qdev_init_nofail(&pci_dev->qdev);
     }
 #endif
@@ -4627,6 +4630,9 @@ int main(int argc, char **argv, char **envp)
     if (enable_yagl) {
         PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
         PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
+        if (enable_vigs) {
+            qdev_prop_set_string(&pci_dev->qdev, "wsi", "wsi0");
+        }
         qdev_init_nofail(&pci_dev->qdev);
     }
 #endif

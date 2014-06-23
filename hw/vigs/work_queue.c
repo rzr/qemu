@@ -1,4 +1,5 @@
 #include "work_queue.h"
+#include "qom/object_interfaces.h"
 
 static void *work_queue_run(void *arg)
 {
@@ -104,4 +105,116 @@ void work_queue_destroy(struct work_queue *wq)
     qemu_mutex_destroy(&wq->mutex);
 
     g_free(wq);
+}
+
+static void workqueueobject_instance_finalize(Object *obj)
+{
+    WorkQueueObject *wqobj = WORKQUEUEOBJECT(obj);
+
+    work_queue_destroy(wqobj->wq);
+
+    wqobj->wq = NULL;
+}
+
+static void workqueueobject_complete(UserCreatable *obj, Error **errp)
+{
+    WorkQueueObject *wqobj = WORKQUEUEOBJECT(obj);
+
+    wqobj->wq = work_queue_create("render_queue");
+}
+
+static void workqueueobject_class_init(ObjectClass *klass, void *class_data)
+{
+    UserCreatableClass *ucc = USER_CREATABLE_CLASS(klass);
+    ucc->complete = workqueueobject_complete;
+}
+
+static const TypeInfo workqueueobject_info = {
+    .name = TYPE_WORKQUEUEOBJECT,
+    .parent = TYPE_OBJECT,
+    .class_init = workqueueobject_class_init,
+    .instance_size = sizeof(WorkQueueObject),
+    .instance_finalize = workqueueobject_instance_finalize,
+    .interfaces = (InterfaceInfo[]) {
+        {TYPE_USER_CREATABLE},
+        {}
+    },
+};
+
+static void workqueueobject_register_types(void)
+{
+    type_register_static(&workqueueobject_info);
+}
+
+type_init(workqueueobject_register_types)
+
+struct query_object_arg
+{
+    WorkQueueObject *wqobj;
+    bool ambiguous;
+};
+
+static int query_object(Object *object, void *opaque)
+{
+    struct query_object_arg *arg = opaque;
+    WorkQueueObject *wqobj;
+
+    wqobj = (WorkQueueObject*)object_dynamic_cast(object, TYPE_WORKQUEUEOBJECT);
+
+    if (wqobj) {
+        if (arg->wqobj) {
+            arg->ambiguous = true;
+        }
+        arg->wqobj = wqobj;
+    }
+
+    return 0;
+}
+
+WorkQueueObject *workqueueobject_create(bool *ambiguous)
+{
+    Object *container = container_get(object_get_root(), "/objects");
+    struct query_object_arg arg = { NULL, false };
+
+    object_child_foreach(container, query_object, &arg);
+
+    *ambiguous = arg.ambiguous;
+
+    if (!arg.wqobj) {
+        Error *err = NULL;
+
+        arg.wqobj = WORKQUEUEOBJECT(object_new(TYPE_WORKQUEUEOBJECT));
+
+        user_creatable_complete(&arg.wqobj->base, &err);
+
+        if (err) {
+            error_free(err);
+            return NULL;
+        }
+
+        object_property_add_child(container, "wq0", &arg.wqobj->base, &err);
+
+        object_unref(&arg.wqobj->base);
+
+        if (err) {
+            error_free(err);
+            return NULL;
+        }
+    }
+
+    return arg.wqobj;
+}
+
+WorkQueueObject *workqueueobject_find(const char *id)
+{
+    Object *container = container_get(object_get_root(), "/objects");
+    Object *child;
+
+    child = object_property_get_link(container, id, NULL);
+
+    if (!child) {
+        return NULL;
+    }
+
+    return (WorkQueueObject*)object_dynamic_cast(child, TYPE_WORKQUEUEOBJECT);
 }

@@ -42,4 +42,18 @@ void work_queue_wait(struct work_queue *wq);
 
 void work_queue_destroy(struct work_queue *wq);
 
+#define TYPE_WORKQUEUEOBJECT "work_queue"
+
+typedef struct {
+    Object base;
+    struct work_queue *wq;
+} WorkQueueObject;
+
+#define WORKQUEUEOBJECT(obj) \
+   OBJECT_CHECK(WorkQueueObject, obj, TYPE_WORKQUEUEOBJECT)
+
+WorkQueueObject *workqueueobject_create(bool *ambiguous);
+
+WorkQueueObject *workqueueobject_find(const char *id);
+
 #endif
