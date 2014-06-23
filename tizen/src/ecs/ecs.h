@@ -64,6 +64,7 @@
 #define MSG_TYPE_NFC            "nfc"
 #define MSG_TYPE_SIMUL_NFC      "simul_nfc"
 #define MSG_TYPE_SDCARD         "sdcard"
+#define MSG_TYPE_GUEST          "guest"
 
 #define MSG_GROUP_STATUS        15
 

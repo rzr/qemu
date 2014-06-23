@@ -29,7 +29,6 @@
  */
 
 #include <stdbool.h>
-#include <pthread.h>
 #include <stdlib.h>
 
 #include "hw/qdev.h"
@@ -73,7 +72,10 @@ static int payloadsize;
 
 static int g_client_id = 1;
 
-static pthread_mutex_t mutex_clilist = PTHREAD_MUTEX_INITIALIZER;
+static QemuMutex mutex_clilist;
+QemuMutex mutex_guest_connection;
+
+static QemuThread ecs_thread_id;
 
 static int suspend_state = 1;
 
@@ -100,7 +102,7 @@ void ecs_client_close(ECS_Client* clii) {
     if (clii == NULL)
         return;
 
-    pthread_mutex_lock(&mutex_clilist);
+    qemu_mutex_lock(&mutex_clilist);
 
     if (clii->client_fd > 0) {
         INFO("ecs client closed with fd: %d\n", clii->client_fd);
@@ -116,12 +118,12 @@ void ecs_client_close(ECS_Client* clii) {
     g_free(clii);
     clii = NULL;
 
-    pthread_mutex_unlock(&mutex_clilist);
+    qemu_mutex_unlock(&mutex_clilist);
 }
 
 bool send_to_all_client(const char* data, const int len) {
     TRACE("data len: %d, data: %s\n", len, data);
-    pthread_mutex_lock(&mutex_clilist);
+    qemu_mutex_lock(&mutex_clilist);
 
     ECS_Client *clii,*next;
 
@@ -129,16 +131,16 @@ bool send_to_all_client(const char* data, const int len) {
     {
         send_to_client(clii->client_fd, data, len);
     }
-    pthread_mutex_unlock(&mutex_clilist);
+    qemu_mutex_unlock(&mutex_clilist);
 
     return true;
 }
 
 void send_to_single_client(ECS_Client *clii, const char* data, const int len)
 {
-    pthread_mutex_lock(&mutex_clilist);
+    qemu_mutex_lock(&mutex_clilist);
     send_to_client(clii->client_fd, data, len);
-    pthread_mutex_unlock(&mutex_clilist);
+    qemu_mutex_unlock(&mutex_clilist);
 }
 
 void send_to_client(int fd, const char* data, const int len)
@@ -232,6 +234,9 @@ static void ecs_close(ECS_State *cs) {
     g_free(cs);
     cs = NULL;
     current_ecs = NULL;
+
+    qemu_mutex_destroy(&mutex_clilist);
+    qemu_mutex_destroy(&mutex_guest_connection);
 }
 
 #ifndef _WIN32
@@ -415,13 +420,13 @@ static int ecs_add_client(ECS_State *cs, int fd) {
     FD_SET(fd, &cs->reads);
 #endif
 
-    pthread_mutex_lock(&mutex_clilist);
+    qemu_mutex_lock(&mutex_clilist);
 
     QTAILQ_INSERT_TAIL(&clients, clii, next);
 
     TRACE("Add an ecs client. fd: %d\n", fd);
 
-    pthread_mutex_unlock(&mutex_clilist);
+    qemu_mutex_unlock(&mutex_clilist);
 
 //    send_ecs_version_check(clii);
 
@@ -710,27 +715,36 @@ static void* ecs_initialize(void* args) {
     current_ecs = cs;
     cs->ecs_running = 1;
 
+    qemu_mutex_init(&mutex_clilist);
+    qemu_mutex_init(&mutex_guest_connection);
+
     TRACE("ecs_loop entered.\n");
     while (cs->ecs_running) {
         ret = ecs_loop(cs);
         if (0 > ret) {
-            ecs_close(cs);
             break;
         }
     }
     TRACE("ecs_loop exited.\n");
 
+    ecs_close(cs);
+
     return NULL;
 }
 
 static int stop_ecs(void) {
+    void *ret = NULL;
+
     INFO("ecs is closing.\n");
     if (NULL != current_ecs) {
         current_ecs->ecs_running = 0;
-    //    ecs_close(current_ecs);
     }
 
-    pthread_mutex_destroy(&mutex_clilist);
+    ret = qemu_thread_join(&ecs_thread_id);
+    if (ret) {
+        ERR("ecs is failed to join thread.\n");
+        return -1;
+    }
 
     return 0;
 }
@@ -741,12 +755,7 @@ static void ecs_notify_exit(Notifier *notifier, void *data) {
 static Notifier ecs_exit = { .notify = ecs_notify_exit };
 
 int start_ecs(void) {
-    pthread_t thread_id;
-
-    if (0 != pthread_create(&thread_id, NULL, ecs_initialize, NULL)) {
-        ERR("pthread creation failed.\n");
-        return -1;
-    }
+    qemu_thread_create(&ecs_thread_id, "ecs", ecs_initialize, NULL, QEMU_THREAD_JOINABLE);
 
     emulator_add_exit_notifier(&ecs_exit);
 
@@ -787,7 +796,7 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
         if (!msg)
             goto fail;
 
-        pthread_mutex_lock(&mutex_clilist);
+        qemu_mutex_lock(&mutex_clilist);
         if(cli->client_type == TYPE_NONE) {
             if (!strncmp(msg->category, MSG_TYPE_NFC, 3)) {
                 QTAILQ_REMOVE(&clients, cli, next);
@@ -810,11 +819,11 @@ bool handle_protobuf_msg(ECS_Client* cli, char* data, int len)
             }
             else {
                 ERR("unsupported category is found: %s\n", msg->category);
-                pthread_mutex_unlock(&mutex_clilist);
+                qemu_mutex_unlock(&mutex_clilist);
                 goto fail;
             }
         }
-        pthread_mutex_unlock(&mutex_clilist);
+        qemu_mutex_unlock(&mutex_clilist);
 
         msgproc_nfc_req(cli, msg);
     }
