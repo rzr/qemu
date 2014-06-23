@@ -36,7 +36,7 @@
 #include "qemu-common.h"
 #include "maru_camera_common.h"
 #include "maru_camera_darwin.h"
-#include "tizen/src/debug_ch.h"
+#include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru-camera);
 

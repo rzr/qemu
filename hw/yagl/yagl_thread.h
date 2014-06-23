@@ -33,7 +33,7 @@
 #include "yagl_types.h"
 #include "yagl_event.h"
 #include "yagl_tls.h"
-#include "vigs/work_queue.h"
+#include "hw/vigs/work_queue.h"
 #include "qemu/queue.h"
 #include "qemu/thread.h"
 

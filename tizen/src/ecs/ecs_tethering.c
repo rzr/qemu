@@ -31,9 +31,9 @@
 
 #include "ecs.h"
 #include "ecs_tethering.h"
-#include "../tethering/app_tethering.h"
-#include "../hw/maru_virtio_touchscreen.h"
-#include "../debug_ch.h"
+#include "tethering/app_tethering.h"
+#include "hw/maru_virtio_touchscreen.h"
+#include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
 

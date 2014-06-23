@@ -1,6 +1,3 @@
-# Makefile.tizen
-# for TIZEN-maru board
-
 obj-y += maru_arm_soc.o
 
 ifndef  CONFIG_DARWIN

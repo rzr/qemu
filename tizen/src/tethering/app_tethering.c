@@ -41,10 +41,11 @@
 #include "emulator.h"
 #include "emul_state.h"
 #include "app_tethering.h"
-#include "../ecs/ecs_tethering.h"
+#include "ecs/ecs_tethering.h"
 #include "genmsg/tethering.pb-c.h"
 
-#include "../debug_ch.h"
+#include "debug_ch.h"
+
 MULTI_DEBUG_CHANNEL(tizen, app_tethering);
 
 #define TETHERING_MSG_HANDSHAKE_KEY     100

@@ -142,6 +142,12 @@ endif
 
 GENERATED_HEADERS += hmp-commands.h qmp-commands-old.h
 
+# Makefile for TIZEN-maru
+ifdef CONFIG_MARU
+obj-y += tizen/src/
+endif
+##
+
 endif # CONFIG_SOFTMMU
 
 # Workaround for http://gcc.gnu.org/PR55489, see configure.
@@ -165,12 +171,6 @@ dummy := $(call unnest-vars,.., \
 
 # Now restore obj-y
 obj-y := $(obj-y-save)
-
-# Makefile for TIZEN-maru
-ifdef CONFIG_MARU
-include $(SRC_PATH)/tizen/src/Makefile.tizen
-endif
-##
 
 all-obj-y = $(obj-y) $(common-obj-y)
 all-obj-$(CONFIG_SOFTMMU) += $(block-obj-y)
@@ -213,16 +213,16 @@ endif
 
 check-gl: $(CHECK_GL_OBJS)
 	gcc -o $(CHECK_GL_TARGET) $(CHECK_GL_OBJS) $(CHECK_GL_LDFLAGS)
-check_gl.o: check_gl.c
-	gcc -c ../tizen/src/check_gl.c -I../hw/yagl/yagl_inc
-check_gl_core.o: check_gl_core.c
-	gcc -c ../tizen/src/check_gl_core.c -I../hw/yagl/yagl_inc
-check_gl_glx.o: check_gl_glx.c
-	gcc -c ../tizen/src/check_gl_glx.c -I../hw/yagl/yagl_inc
-check_gl_wgl.o: check_gl_wgl.c
-	gcc -c ../tizen/src/check_gl_wgl.c -I../hw/yagl/yagl_inc
-check_gl_cgl.o: check_gl_cgl.c
-	gcc -c ../tizen/src/check_gl_cgl.c -I../hw/yagl/yagl_inc
+check_gl.o:
+	gcc -c $(SRC_PATH)/tizen/src/util/check_gl.c -I$(SRC_PATH)/hw/yagl/yagl_inc
+check_gl_core.o:
+	gcc -c $(SRC_PATH)/tizen/src/util/check_gl_core.c -I$(SRC_PATH)/hw/yagl/yagl_inc
+check_gl_glx.o:
+	gcc -c $(SRC_PATH)/tizen/src/util/check_gl_glx.c -I$(SRC_PATH)/hw/yagl/yagl_inc
+check_gl_wgl.o:
+	gcc -c $(SRC_PATH)/tizen/src/util/check_gl_wgl.c -I$(SRC_PATH)/hw/yagl/yagl_inc
+check_gl_cgl.o:
+	gcc -c $(SRC_PATH)/tizen/src/util/check_gl_cgl.c -I$(SRC_PATH)/hw/yagl/yagl_inc
 
 gdbstub-xml.c: $(TARGET_XML_FILES) $(SRC_PATH)/scripts/feature_to_c.sh
 	$(call quiet-command,rm -f $@ && $(SHELL) $(SRC_PATH)/scripts/feature_to_c.sh $@ $(TARGET_XML_FILES),"  GEN   $(TARGET_DIR)$@")

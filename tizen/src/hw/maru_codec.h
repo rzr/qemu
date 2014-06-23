@@ -35,7 +35,7 @@
 #include "hw/pci/pci.h"
 #include "hw/pci/pci_ids.h"
 #include "qemu/thread.h"
-#include "tizen/src/debug_ch.h"
+#include "debug_ch.h"
 #include "maru_device_ids.h"
 
 #include <libavformat/avformat.h>

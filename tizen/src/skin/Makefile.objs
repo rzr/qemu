@@ -1,0 +1,3 @@
+obj-y += maruskin_client.o maruskin_server.o
+obj-y += maruskin_operation.o
+obj-y += maruskin_keymap.o

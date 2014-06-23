@@ -1,0 +1,2 @@
+obj-y += genmsg/tethering.pb-c.o # protobuf-c.o
+obj-y += app_tethering.o

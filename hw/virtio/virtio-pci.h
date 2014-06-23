@@ -32,18 +32,18 @@
 #endif
 
 #ifdef CONFIG_MARU
-#include "../tizen/src/mloop_event.h"
-#include "../tizen/src/hw/maru_device_ids.h"
-#include "../tizen/src/hw/maru_virtio_evdi.h"
-#include "../tizen/src/hw/maru_virtio_esm.h"
-#include "../tizen/src/hw/maru_virtio_hwkey.h"
-#include "../tizen/src/hw/maru_virtio_keyboard.h"
-#include "../tizen/src/hw/maru_virtio_touchscreen.h"
-#include "../tizen/src/hw/maru_virtio_sensor.h"
-#include "../tizen/src/hw/maru_virtio_jack.h"
-#include "../tizen/src/hw/maru_virtio_power.h"
-#include "../tizen/src/hw/maru_virtio_nfc.h"
-#include "../tizen/src/hw/maru_virtio_vmodem.h"
+#include "tizen/src/mloop_event.h"
+#include "tizen/src/hw/maru_device_ids.h"
+#include "tizen/src/hw/maru_virtio_evdi.h"
+#include "tizen/src/hw/maru_virtio_esm.h"
+#include "tizen/src/hw/maru_virtio_hwkey.h"
+#include "tizen/src/hw/maru_virtio_keyboard.h"
+#include "tizen/src/hw/maru_virtio_touchscreen.h"
+#include "tizen/src/hw/maru_virtio_sensor.h"
+#include "tizen/src/hw/maru_virtio_jack.h"
+#include "tizen/src/hw/maru_virtio_power.h"
+#include "tizen/src/hw/maru_virtio_nfc.h"
+#include "tizen/src/hw/maru_virtio_vmodem.h"
 #endif
 
 typedef struct VirtIOPCIProxy VirtIOPCIProxy;

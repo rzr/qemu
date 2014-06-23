@@ -1,0 +1,14 @@
+# osutil
+obj-y += osutil.o
+obj-$(CONFIG_LINUX) += osutil-linux.o
+obj-$(CONFIG_WIN32) += osutil-win32.o
+obj-$(CONFIG_DARWIN) += osutil-darwin.o
+
+#sdb
+obj-y += sdb.o
+
+# check gl
+obj-y += check_gl_core.o
+obj-$(CONFIG_LINUX) += check_gl_glx.o
+obj-$(CONFIG_WIN32) += check_gl_wgl.o
+obj-$(CONFIG_DARWIN) += check_gl_cgl.o

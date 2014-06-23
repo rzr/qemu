@@ -43,9 +43,8 @@
 #include "hw/pci/pci.h"
 #include "qemu/error-report.h"
 #include <GL/gl.h>
-#include "vigs/display.h"
-#include "vigs/work_queue.h"
-#include "vigs/winsys.h"
+#include "hw/vigs/display.h"
+#include "hw/vigs/winsys.h"
 #include "yagl_gles_driver.h"
 
 #define PCI_VENDOR_ID_YAGL 0x19B1

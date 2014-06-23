@@ -38,7 +38,7 @@
 #include "yagl_process.h"
 #include "yagl_thread.h"
 #include "yagl_object_map.h"
-#include "vigs/winsys_gl.h"
+#include "hw/vigs/winsys_gl.h"
 
 struct yagl_egl_onscreen_image
 {
