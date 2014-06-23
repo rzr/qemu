@@ -42,19 +42,35 @@ MULTI_DEBUG_CHANNEL(qemu, virtio-sensor);
 #define _MAX_BUF            1024
 #define __MAX_BUF_SENSOR    32
 
+static QemuMutex accel_mutex;
+static QemuMutex geo_mutex;
+static QemuMutex gyro_mutex;
+static QemuMutex light_mutex;
+static QemuMutex proxi_mutex;
+
 static char accel_xyz [__MAX_BUF_SENSOR] = {'0',',','9','8','0','6','6','5',',','0'};
+static int accel_enable = 0;
+static int accel_delay = 200000000;
 
 static char geo_raw [__MAX_BUF_SENSOR] = {'0',' ','-','9','0',' ','0',' ','3'};
 static char geo_tesla [__MAX_BUF_SENSOR] = {'1',' ','0',' ','-','1','0'};
+static int geo_enable = 0;
+static int geo_delay = 200000000;
 
 static int gyro_x_raw = 0;
 static int gyro_y_raw = 0;
 static int gyro_z_raw = 0;
+static int gyro_enable = 0;
+static int gyro_delay = 200000000;
 
 static int light_adc = 65535;
 static int light_level = 10;
+static int light_enable = 0;
+static int light_delay = 200000000;
 
 static int proxi_vo = 8;
+static int proxi_enable = 0;
+static int proxi_delay = 200000000;
 
 VirtIOSENSOR* vsensor;
 static int sensor_capability = 0;
@@ -136,37 +152,109 @@ static void __set_sensor_data (enum sensor_types type, char* data, int len)
         return;
     }
 
+    TRACE("set_sensor_data with type '%d' with data '%s'", type, data);
+
     switch (type) {
         case sensor_type_accel:
+            qemu_mutex_lock(&accel_mutex);
             strcpy(accel_xyz, data);
+            qemu_mutex_unlock(&accel_mutex);
+            break;
+        case sensor_type_accel_enable:
+            qemu_mutex_lock(&accel_mutex);
+            sscanf(data, "%d", &accel_enable);
+            qemu_mutex_unlock(&accel_mutex);
+            break;
+        case sensor_type_accel_delay:
+            qemu_mutex_lock(&accel_mutex);
+            sscanf(data, "%d", &accel_delay);
+            qemu_mutex_unlock(&accel_mutex);
+            break;
+        case sensor_type_gyro_enable:
+            qemu_mutex_lock(&gyro_mutex);
+            sscanf(data, "%d", &gyro_enable);
+            qemu_mutex_unlock(&gyro_mutex);
+            break;
+        case sensor_type_gyro_delay:
+            qemu_mutex_lock(&gyro_mutex);
+            sscanf(data, "%d", &gyro_delay);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_gyro_x:
+            qemu_mutex_lock(&gyro_mutex);
             sscanf(data, "%d", &gyro_x_raw);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_gyro_y:
+            qemu_mutex_lock(&gyro_mutex);
             sscanf(data, "%d", &gyro_y_raw);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_gyro_z:
+            qemu_mutex_lock(&gyro_mutex);
             sscanf(data, "%d", &gyro_z_raw);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_gyro:
+            qemu_mutex_lock(&gyro_mutex);
             sscanf(data, "%d %d %d", &gyro_x_raw, &gyro_y_raw, &gyro_z_raw);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_light_adc:
+            qemu_mutex_lock(&light_mutex);
             sscanf(data, "%d", &light_adc);
             light_level = (light_adc / 6554) % 10 + 1;
+            qemu_mutex_unlock(&light_mutex);
             break;
         case sensor_type_light_level:
+            qemu_mutex_lock(&light_mutex);
             sscanf(data, "%d", &light_level);
+            qemu_mutex_unlock(&light_mutex);
+            break;
+        case sensor_type_light_enable:
+            qemu_mutex_lock(&light_mutex);
+            sscanf(data, "%d", &light_enable);
+            qemu_mutex_unlock(&light_mutex);
+            break;
+        case sensor_type_light_delay:
+            qemu_mutex_lock(&light_mutex);
+            sscanf(data, "%d", &light_delay);
+            qemu_mutex_unlock(&light_mutex);
             break;
         case sensor_type_proxi:
+            qemu_mutex_lock(&proxi_mutex);
             sscanf(data, "%d", &proxi_vo);
+            qemu_mutex_unlock(&proxi_mutex);
+            break;
+        case sensor_type_proxi_enable:
+            qemu_mutex_lock(&proxi_mutex);
+            sscanf(data, "%d", &proxi_enable);
+            qemu_mutex_unlock(&proxi_mutex);
+            break;
+        case sensor_type_proxi_delay:
+            qemu_mutex_lock(&proxi_mutex);
+            sscanf(data, "%d", &proxi_delay);
+            qemu_mutex_unlock(&proxi_mutex);
             break;
         case sensor_type_mag:
+            qemu_mutex_lock(&geo_mutex);
             strcpy(geo_tesla, data);
+            qemu_mutex_unlock(&geo_mutex);
             break;
         case sensor_type_tilt:
+            qemu_mutex_lock(&geo_mutex);
             strcpy(geo_raw, data);
+            qemu_mutex_unlock(&geo_mutex);
+            break;
+        case sensor_type_geo_enable:
+            qemu_mutex_lock(&geo_mutex);
+            sscanf(data, "%d", &geo_enable);
+            qemu_mutex_unlock(&geo_mutex);
+            break;
+        case sensor_type_geo_delay:
+            qemu_mutex_lock(&geo_mutex);
+            sscanf(data, "%d", &geo_delay);
+            qemu_mutex_unlock(&geo_mutex);
             break;
         default:
             return;
@@ -184,35 +272,105 @@ static void __get_sensor_data(enum sensor_types type, char* msg_info)
             sprintf(msg_info, "%d", sensor_capability);
             break;
         case sensor_type_accel:
+            qemu_mutex_lock(&accel_mutex);
             strcpy(msg_info, accel_xyz);
+            qemu_mutex_unlock(&accel_mutex);
+            break;
+        case sensor_type_accel_enable:
+            qemu_mutex_lock(&accel_mutex);
+            sprintf(msg_info, "%d", accel_enable);
+            qemu_mutex_unlock(&accel_mutex);
+            break;
+        case sensor_type_accel_delay:
+            qemu_mutex_lock(&accel_mutex);
+            sprintf(msg_info, "%d", accel_delay);
+            qemu_mutex_unlock(&accel_mutex);
             break;
         case sensor_type_mag:
+            qemu_mutex_lock(&geo_mutex);
             strcpy(msg_info, geo_tesla);
+            qemu_mutex_unlock(&geo_mutex);
             break;
         case sensor_type_tilt:
+            qemu_mutex_lock(&geo_mutex);
             strcpy(msg_info, geo_raw);
+            qemu_mutex_unlock(&geo_mutex);
+            break;
+        case sensor_type_geo_enable:
+            qemu_mutex_lock(&geo_mutex);
+            sprintf(msg_info, "%d", geo_enable);
+            qemu_mutex_unlock(&geo_mutex);
+            break;
+        case sensor_type_geo_delay:
+            qemu_mutex_lock(&geo_mutex);
+            sprintf(msg_info, "%d", geo_delay);
+            qemu_mutex_unlock(&geo_mutex);
             break;
         case sensor_type_gyro:
-            sprintf(msg_info, "%d, %d, %d", gyro_x_raw, gyro_y_raw, gyro_z_raw);
+            qemu_mutex_lock(&gyro_mutex);
+            sprintf(msg_info, "%d,%d,%d", gyro_x_raw, gyro_y_raw, gyro_z_raw);
+            qemu_mutex_unlock(&gyro_mutex);
+            break;
+        case sensor_type_gyro_enable:
+            qemu_mutex_lock(&gyro_mutex);
+            sprintf(msg_info, "%d", gyro_enable);
+            qemu_mutex_unlock(&gyro_mutex);
+            break;
+        case sensor_type_gyro_delay:
+            qemu_mutex_lock(&gyro_mutex);
+            sprintf(msg_info, "%d", gyro_delay);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_gyro_x:
+            qemu_mutex_lock(&gyro_mutex);
             sprintf(msg_info, "%d", gyro_x_raw);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_gyro_y:
+            qemu_mutex_lock(&gyro_mutex);
             sprintf(msg_info, "%d", gyro_y_raw);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_gyro_z:
+            qemu_mutex_lock(&gyro_mutex);
             sprintf(msg_info, "%d", gyro_z_raw);
+            qemu_mutex_unlock(&gyro_mutex);
             break;
         case sensor_type_light:
         case sensor_type_light_adc:
+            qemu_mutex_lock(&light_mutex);
             sprintf(msg_info, "%d", light_adc);
+            qemu_mutex_unlock(&light_mutex);
             break;
         case sensor_type_light_level:
+            qemu_mutex_lock(&light_mutex);
             sprintf(msg_info, "%d", light_level);
+            qemu_mutex_unlock(&light_mutex);
+            break;
+        case sensor_type_light_enable:
+            qemu_mutex_lock(&light_mutex);
+            sprintf(msg_info, "%d", light_enable);
+            qemu_mutex_unlock(&light_mutex);
+            break;
+        case sensor_type_light_delay:
+            qemu_mutex_lock(&light_mutex);
+            sprintf(msg_info, "%d", light_delay);
+            qemu_mutex_unlock(&light_mutex);
             break;
         case sensor_type_proxi:
+            qemu_mutex_lock(&proxi_mutex);
             sprintf(msg_info, "%d", proxi_vo);
+            qemu_mutex_unlock(&proxi_mutex);
+            break;
+        case sensor_type_proxi_enable:
+            qemu_mutex_lock(&proxi_mutex);
+            sprintf(msg_info, "%d", proxi_enable);
+            qemu_mutex_unlock(&proxi_mutex);
+            break;
+        case sensor_type_proxi_delay:
+            qemu_mutex_lock(&proxi_mutex);
+            sprintf(msg_info, "%d", proxi_delay);
+            qemu_mutex_unlock(&proxi_mutex);
             break;
         default:
             return;
@@ -361,6 +519,12 @@ static void virtio_sensor_realize(DeviceState *dev, Error **errp)
         return;
     }
 
+    qemu_mutex_init(&accel_mutex);
+    qemu_mutex_init(&gyro_mutex);
+    qemu_mutex_init(&geo_mutex);
+    qemu_mutex_init(&light_mutex);
+    qemu_mutex_init(&proxi_mutex);
+
     vsensor->vq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_vq);
 
     INFO("initialized sensor type: %s\n", vsensor->sensors);
@@ -374,6 +538,12 @@ static void virtio_sensor_unrealize(DeviceState *dev, Error **errp)
 {
     VirtIODevice *vdev = VIRTIO_DEVICE(dev);
     INFO("destroy sensor device\n");
+
+    qemu_mutex_destroy(&accel_mutex);
+    qemu_mutex_destroy(&gyro_mutex);
+    qemu_mutex_destroy(&geo_mutex);
+    qemu_mutex_destroy(&light_mutex);
+    qemu_mutex_destroy(&proxi_mutex);
 
     virtio_cleanup(vdev);
 }

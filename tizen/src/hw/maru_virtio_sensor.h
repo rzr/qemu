@@ -45,15 +45,25 @@ enum request_cmd {
 enum sensor_types {
     sensor_type_list = 0,
     sensor_type_accel,
+    sensor_type_accel_enable,
+    sensor_type_accel_delay,
     sensor_type_geo,
+    sensor_type_geo_enable,
+    sensor_type_geo_delay,
     sensor_type_gyro,
+    sensor_type_gyro_enable,
+    sensor_type_gyro_delay,
     sensor_type_gyro_x,
     sensor_type_gyro_y,
     sensor_type_gyro_z,
     sensor_type_light,
+    sensor_type_light_enable,
+    sensor_type_light_delay,
     sensor_type_light_adc,
     sensor_type_light_level,
     sensor_type_proxi,
+    sensor_type_proxi_enable,
+    sensor_type_proxi_delay,
     sensor_type_mag,
     sensor_type_tilt,
     sensor_type_max
@@ -111,7 +121,7 @@ void req_sensor_data(enum sensor_types type, enum request_cmd req, char* data, i
     req_sensor_data(sensor_type_mag, request_get, NULL, 0);
 
 #define get_sensor_light()  \
-    req_sensor_data(sensor_type_light, request_get, NULL, 0);
+    req_sensor_data(sensor_type_light_adc, request_get, NULL, 0);
 
 #define get_sensor_proxi()  \
     req_sensor_data(sensor_type_proxi, request_get, NULL, 0);
