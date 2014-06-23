@@ -56,7 +56,14 @@
 
 #define YAGL_MAX_USERS (YAGL_MEM_SIZE / YAGL_REGS_SIZE)
 
-struct work_queue;
+#ifdef __linux__
+extern Display *vigs_display;
+#else
+extern void *vigs_display;
+#endif
+
+extern struct work_queue *vigs_render_queue;
+extern struct winsys_interface *vigs_wsi;
 
 struct yagl_user
 {
@@ -68,12 +75,6 @@ struct yagl_user
 typedef struct YaGLState
 {
     PCIDevice dev;
-
-    void *display;
-
-    struct work_queue *render_queue;
-
-    struct winsys_interface *wsi;
 
     MemoryRegion iomem;
     struct yagl_server_state *ss;
@@ -213,6 +214,28 @@ static void yagl_device_write(void *opaque, hwaddr offset,
     }
 }
 
+#ifdef __linux__
+static int x_error_handler(Display *dpy, XErrorEvent *e)
+{
+    return 0;
+}
+
+static Display *get_display(void)
+{
+    XSetErrorHandler(x_error_handler);
+    XInitThreads();
+
+    Display *display = XOpenDisplay(0);
+
+    if (!display) {
+        fprintf(stderr, "Cannot open X display\n");
+        exit(1);
+    }
+
+    return display;
+}
+#endif
+
 static const MemoryRegionOps yagl_device_ops =
 {
     .read = yagl_device_read,
@@ -239,7 +262,17 @@ static int yagl_device_init(PCIDevice *dev)
 
     yagl_handle_gen_init();
 
-    egl_driver = yagl_egl_driver_create(s->display);
+    if (!vigs_render_queue) {
+        vigs_render_queue = work_queue_create("render_queue");
+    }
+
+#ifdef __linux__
+    if (!vigs_display) {
+        vigs_display = get_display();
+    }
+#endif
+
+    egl_driver = yagl_egl_driver_create(vigs_display);
 
     if (!egl_driver) {
         goto fail;
@@ -252,8 +285,9 @@ static int yagl_device_init(PCIDevice *dev)
         goto fail;
     }
 
-    if (s->wsi) {
-        egl_backend = yagl_egl_onscreen_create(s->wsi,
+    // FIXME: How can we gurantee that vigs is initialized before ?
+    if (vigs_wsi) {
+        egl_backend = yagl_egl_onscreen_create(vigs_wsi,
                                                egl_driver,
                                                gles_driver);
         gles_driver = yagl_gles_onscreen_create(gles_driver);
@@ -271,7 +305,7 @@ static int yagl_device_init(PCIDevice *dev)
     egl_driver = NULL;
 
     s->ss = yagl_server_state_create(egl_backend, gles_driver,
-                                     s->render_queue, s->wsi);
+                                     vigs_render_queue, vigs_wsi);
 
     /*
      * Owned/destroyed by server state.
@@ -342,25 +376,6 @@ static void yagl_device_exit(PCIDevice *dev)
     yagl_log_cleanup();
 }
 
-static Property yagl_properties[] = {
-    {
-        .name   = "display",
-        .info   = &qdev_prop_ptr,
-        .offset = offsetof(YaGLState, display),
-    },
-    {
-        .name   = "render_queue",
-        .info   = &qdev_prop_ptr,
-        .offset = offsetof(YaGLState, render_queue),
-    },
-    {
-        .name   = "winsys_gl_interface",
-        .info   = &qdev_prop_ptr,
-        .offset = offsetof(YaGLState, wsi),
-    },
-    DEFINE_PROP_END_OF_LIST(),
-};
-
 static void yagl_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
@@ -372,7 +387,6 @@ static void yagl_class_init(ObjectClass *klass, void *data)
     k->device_id = PCI_DEVICE_ID_YAGL;
     k->class_id = PCI_CLASS_OTHERS;
     dc->reset = yagl_device_reset;
-    dc->props = yagl_properties;
     dc->desc = "YaGL device";
 }
 
