@@ -91,9 +91,10 @@ static void remove_sdb_client(GS_Client* client)
     qemu_mutex_lock(&mutex_clients);
 
     QTAILQ_REMOVE(&clients, client, next);
-    g_free(client);
 
     qemu_mutex_unlock(&mutex_clients);
+
+    g_free(client);
 }
 
 static void send_to_sdb_client(GS_Client* client, int state)
@@ -104,8 +105,7 @@ static void send_to_sdb_client(GS_Client* client, int state)
     char buf [32];
 
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1){
-          INFO("socket error!\n");
-          perror("socket creation is failed: ");
+          INFO("socket creation error! %d\n", errno);
           return;
     }
 
@@ -169,13 +169,16 @@ static void add_sdb_client(struct sockaddr_in* addr, int port, const char* seria
         return;
     }
 
+    qemu_mutex_lock(&mutex_clients);
     QTAILQ_FOREACH_SAFE(cli, &clients, next, next)
     {
         if (!strcmp(serial, cli->serial) && !strcmp(inet_ntoa(addr->sin_addr), inet_ntoa((cli->addr).sin_addr))) {
             INFO("Client cannot be duplicated.\n");
+            qemu_mutex_unlock(&mutex_clients);
             return;
         }
     }
+    qemu_mutex_unlock(&mutex_clients);
 
     client = g_malloc0(sizeof(GS_Client));
     if (NULL == client) {
@@ -503,12 +506,14 @@ static void server_process(void)
     int read_cnt = 0;
     struct sockaddr_in client_addr;
     socklen_t client_len;
-    char readbuf[RECV_BUF_SIZE];
+    char readbuf[RECV_BUF_SIZE + 1];
 
     client_len = sizeof(client_addr);
 
-    while (1) {
-        memset(&readbuf, 0, RECV_BUF_SIZE);
+    running = 1;
+
+    while (running) {
+        memset(&readbuf, 0, sizeof(readbuf));
 
         if (server_sock == 0) {
             INFO("server_sock is closed\n");
@@ -518,8 +523,7 @@ static void server_process(void)
                             (struct sockaddr*) &client_addr, &client_len);
 
         if (read_cnt < 0) {
-            INFO("fail to recvfrom in guest_server.\n");
-            perror("fail to recvfrom in guest_server.:");
+            INFO("fail to recvfrom in guest_server:%d\n", errno);
             break;
         } else {
 
@@ -576,13 +580,13 @@ static void* run_guest_server(void* args)
 {
     uint16_t port = svr_port;
     int opt = 1;
+    int ret = 0;
     struct sockaddr_in server_addr;
 
     INFO("start guest server thread.\n");
 
     if ((server_sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
-        INFO("create listen socket error\n");
-        perror("create listen socket error\n");
+        INFO("create listen socket error:%d\n", errno);
 
         close_server();
 
@@ -596,11 +600,15 @@ static void* run_guest_server(void* args)
 
     qemu_set_nonblock(server_sock);
 
-    setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    ret = qemu_setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    if (ret == -1) {
+        INFO("setsockopt SO_REUSEADDR is failed.: %d\n", errno);
+        close_server();
+        return NULL;
+    }
 
     if (bind(server_sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
-        INFO("guest server bind error: ");
-        perror("bind");
+        INFO("guest server bind error: %d", errno);
 
         close_server();
 
