@@ -261,6 +261,10 @@ int start_skin_server(int argc, char** argv,
     qmu_argc = qemu_argc;
     qmu_argv = qemu_argv;
 
+    qemu_mutex_init(&mutex_send_data);
+    qemu_mutex_init(&mutex_recv_heartbeat_count);
+    qemu_mutex_init(&mutex_draw_display);
+
     QemuThread qemu_thread;
 
     qemu_thread_create(&qemu_thread, "skin-server", run_skin_server,
