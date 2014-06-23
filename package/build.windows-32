@@ -74,7 +74,7 @@ install()
 
 	X86_BIN_DIR=$SRCDIR/package/emulator-qemu-x86.package.${TARGET_OS}/data/tools
 	COMMON_BIN_DIR=$SRCDIR/package/emulator-qemu-common.package.${TARGET_OS}/data/tools
-	MOBILE_3_0_SKIN_RESOURCE_DIR=$SRCDIR/package/mobile-3.0-emulator-qemu-skins.package.${TARGET_OS}/data/platforms/mobile-3.0/emulator-resources/skins/
+	MOBILE_3_0_SKIN_RESOURCE_DIR=$SRCDIR/package/mobile-3.0-emulator-qemu-skins.package.${TARGET_OS}/data/platforms/mobile-3.0/emulator-resources/skins
 	mkdir -p $X86_BIN_DIR
 	mkdir -p $COMMON_BIN_DIR
 	mkdir -p $MOBILE_3_0_SKIN_RESOURCE_DIR
