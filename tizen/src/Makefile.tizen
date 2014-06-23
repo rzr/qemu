@@ -90,6 +90,7 @@ obj-y += maru_virtio_nfc.o
 obj-y += maru_virtio_jack.o
 obj-y += maru_virtio_power.o
 obj-y += maru_virtio_esm.o
+obj-y += maru_virtio_vmodem.o
 #obj-y += maru_brill_codec.o
 obj-$(CONFIG_LIBAV) += maru_brill_codec.o
 

@@ -57,6 +57,7 @@
 #define PCI_DEVICE_ID_VIRTIO_POWER       0x1035
 #define PCI_DEVICE_ID_VIRTIO_JACK        0x1036
 #define PCI_DEVICE_ID_VIRTIO_NFC         0x1038
+#define PCI_DEVICE_ID_VIRTIO_VMODEM      0x103C
 #define PCI_DEVICE_ID_VIRTUAL_BRILL_CODEC  0x1040
 
 /* Virtio */
@@ -96,5 +97,6 @@
 #define VIRTIO_ID_NFC           38
 #define VIRTIO_ID_JACK          39
 #define VIRTIO_ID_POWER         40
+#define VIRTIO_ID_VMODEM        41
 
 #endif /* MARU_DEVICE_IDS_H_ */

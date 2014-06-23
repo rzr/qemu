@@ -43,6 +43,7 @@
 #include "../tizen/src/hw/maru_virtio_jack.h"
 #include "../tizen/src/hw/maru_virtio_power.h"
 #include "../tizen/src/hw/maru_virtio_nfc.h"
+#include "../tizen/src/hw/maru_virtio_vmodem.h"
 #endif
 
 typedef struct VirtIOPCIProxy VirtIOPCIProxy;
@@ -64,6 +65,7 @@ typedef struct VirtIOSENSORPCI VirtIOSENSORPCI;
 typedef struct VirtIONFCPCI VirtIONFCPCI;
 typedef struct VirtIOPOWERPCI VirtIOPOWERPCI;
 typedef struct VirtIOJACKPCI VirtIOJACKPCI;
+typedef struct VirtIOVModemPCI VirtIOVModemPCI;
 #endif
 
 /* virtio-pci-bus */
@@ -331,6 +333,17 @@ struct VirtIOJACKPCI {
 struct VirtIOPOWERPCI {
     VirtIOPCIProxy parent_obj;
     VirtIOPOWER vdev;
+};
+
+/*
+ * virtio-vmodem-pci: This extends VirtioPCIProxy.
+ */
+#define TYPE_VIRTIO_VMODEM_PCI "virtio-vmodem-pci"
+#define VIRTIO_VMODEM_PCI(obj) \
+        OBJECT_CHECK(VirtIOVModemPCI, (obj), TYPE_VIRTIO_VMODEM_PCI)
+struct VirtIOVModemPCI {
+    VirtIOPCIProxy parent_obj;
+    VirtIOVModem vdev;
 };
 
 #endif
