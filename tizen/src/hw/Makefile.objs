@@ -25,9 +25,9 @@ endif
 ifdef CONFIG_DARWIN
 obj-y += maru_camera_darwin_converter.o
 obj-y += maru_camera_darwin_pci.o
-QEMU_CFLAGS += -framework Foundation -framework SystemConfiguration
-QEMU_CFLAGS += -framework Cocoa -framework QTKit -framework CoreVideo
-QEMU_CFLAGS += -framework AppKit
+LIBS += -framework Foundation -framework SystemConfiguration
+LIBS += -framework Cocoa -framework QTKit -framework CoreVideo
+LIBS += -framework AppKit
 endif
 
 #obj-y += maru_codec.o
