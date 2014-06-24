@@ -164,7 +164,7 @@ void set_base_port(void)
         }
 
         base_port = port;
-        INFO( "sdb port is %d \n", base_port);
+        INFO( "sdb port is %d\n", base_port);
     }
 
     set_emul_vm_base_port(base_port);
@@ -174,17 +174,13 @@ void sdb_setup(void)
 {
     int   tries     = 10;
     int   success   = 0;
-    uint32_t  guest_ip;
     char buf[64] = {0,};
     int number;
 
     number = get_device_serial_number();
 
-    inet_strtoip("10.0.2.16", &guest_ip);
-
     for ( ; tries > 0; tries--, number += 10 ) {
-        // redir form [tcp:26101:10.0.2.16:26101]
-        sprintf(buf, "tcp:%d:10.0.2.16:26101", number);
+        sprintf(buf, "tcp:%d::26101", number);
         if(net_slirp_redir((char*)buf) < 0)
             continue;
 
@@ -199,7 +195,7 @@ void sdb_setup(void)
         exit(1);
     }
 
-    INFO( "Port(%d/tcp) listen for SDB \n", number);
+    INFO( "Port(%d/tcp) listen for SDB\n", number);
 }
 
 int sdb_loopback_client(int port, int type)

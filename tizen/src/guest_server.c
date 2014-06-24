@@ -614,7 +614,7 @@ static void* run_guest_server(void* args)
 
         return NULL;
     } else {
-        INFO("success to bind port[127.0.0.1:%d/udp] for guest_server in host \n", port);
+        INFO("success to bind port[127.0.0.1:%d/udp] for guest_server in host\n", port);
     }
 
     INFO("guest server start...port:%d\n", port);
