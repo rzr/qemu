@@ -75,7 +75,7 @@ void check_vm_lock_os(void)
             INFO("port %s is not used.\n", base_port);
             continue;
         } else {
-             pBuf = (char *)MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 50);
+            pBuf = (char *)MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 50);
             if (pBuf == NULL) {
                 ERR("Could not map view of file (%d).\n", GetLastError());
                 CloseHandle(hMapFile);
@@ -231,27 +231,26 @@ static int get_auto_proxy(BYTE *url, char *http_proxy, char *https_proxy, char *
     FILE *fp_pacfile;
     char *p = NULL;
 
-    INFO("pac address: %s\n", (char*)url);
-    download_url((char*)url);
+    INFO("pac address: %s\n", (char *)url);
+    download_url((char *)url);
 
     fp_pacfile = fopen(pactempfile, "r");
-    if(fp_pacfile != NULL) {
+    if (fp_pacfile != NULL) {
         while(fgets(line, MAXLEN, fp_pacfile) != NULL) {
-            if( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
+            if ( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
                 INFO("line found %s", line);
                 sscanf(line, "%*[^\"]\"%s %s", type, proxy);
             }
         }
 
-        if(g_str_has_prefix(type, DIRECT)) {
+        if (g_str_has_prefix(type, DIRECT)) {
             INFO("auto proxy is set to direct mode\n");
             fclose(fp_pacfile);
-        }
-        else if(g_str_has_prefix(type, PROXY)) {
+        } else if (g_str_has_prefix(type, PROXY)) {
             INFO("auto proxy is set to proxy mode\n");
             INFO("type: %s, proxy: %s\n", type, proxy);
             p = strtok(proxy, "\";");
-            if(p != NULL) {
+            if (p != NULL) {
                 INFO("auto proxy to set: %s\n",p);
                 strcpy(http_proxy, p);
                 strcpy(https_proxy, p);
@@ -259,14 +258,11 @@ static int get_auto_proxy(BYTE *url, char *http_proxy, char *https_proxy, char *
                 strcpy(socks_proxy, p);
             }
             fclose(fp_pacfile);
-        }
-        else
-        {
+        } else {
             ERR("pac file is not wrong! It could be the wrong pac address or pac file format\n");
             fclose(fp_pacfile);
         }
-    }
-    else {
+    } else {
         ERR("fail to get pacfile fp\n");
         return -1;
     }
@@ -284,7 +280,7 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
     BYTE *proxyenable, *proxyserver;
     char *p;
     char *real_proxy;
-    BYTE *url;
+    BYTE *url = NULL;
 
     DWORD dwLength = 0;
     nRet = RegOpenKeyEx(HKEY_CURRENT_USER,
@@ -292,58 +288,58 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
             0, KEY_QUERY_VALUE, &hKey);
     if (nRet != ERROR_SUCCESS) {
         ERR("Failed to open registry from %s\n",
-                "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
-        return 0;
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+        return;
     }
     //check auto proxy key exists
     lRet = RegQueryValueEx(hKey, "AutoConfigURL", 0, NULL, NULL, &dwLength);
     if (lRet != ERROR_SUCCESS && dwLength == 0) {
         ERR("Failed to query value from %s\n",
-                "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\AutoConfigURL");
-    }
-    else {
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\AutoConfigURL");
+    } else {
         //if exists
-        url = (char*)malloc(dwLength);
+        url = (BYTE *)malloc(dwLength);
         if (url == NULL) {
-            ERR( "Failed to allocate a buffer\n");
-        }
-        else {
+            ERR("Failed to allocate a buffer\n");
+        } else {
             memset(url, 0x00, dwLength);
             lRet = RegQueryValueEx(hKey, "AutoConfigURL", 0, NULL, url, &dwLength);
             if (lRet == ERROR_SUCCESS && dwLength != 0) {
                 get_auto_proxy(url, http_proxy, https_proxy, ftp_proxy, socks_proxy);
+                free(url);
                 RegCloseKey(hKey);
-                return 0;
+                return;
             }
         }
+        free(url);
     }
     //check manual proxy key exists
     lRet = RegQueryValueEx(hKey, "ProxyEnable", 0, NULL, NULL, &dwLength);
     if (lRet != ERROR_SUCCESS && dwLength == 0) {
-        ERR(stderr, "Failed to query value from %s\n",
-                "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ProxyEnable");
+        ERR("Failed to query value from %s\n",
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ProxyEnable");
         RegCloseKey(hKey);
-        return 0;
+        return;
     }
     proxyenable = (BYTE*)malloc(dwLength);
     if (proxyenable == NULL) {
-        ERR( "Failed to allocate a buffer\n");
+        ERR("Failed to allocate a buffer\n");
         RegCloseKey(hKey);
-        return 0;
+        return;
     }
 
     lRet = RegQueryValueEx(hKey, "ProxyEnable", 0, NULL, proxyenable, &dwLength);
     if (lRet != ERROR_SUCCESS) {
         free(proxyenable);
         ERR("Failed to query value from %s\n",
-                "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ProxyEnable");
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ProxyEnable");
         RegCloseKey(hKey);
-        return 0;
+        return;
     }
-    if (*(char*)proxyenable == 0) {
+    if (*(char *)proxyenable == 0) {
         free(proxyenable);
         RegCloseKey(hKey);
-        return 0;
+        return;
     }
 
     dwLength = 0;
@@ -352,60 +348,57 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
         ERR("Failed to query value from from %s\n",
                 "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
         RegCloseKey(hKey);
-        return 0;
+        return;
     }
 
     proxyserver = (BYTE*)malloc(dwLength);
     if (proxyserver == NULL) {
-        ERR( "Failed to allocate a buffer\n");
+        ERR("Failed to allocate a buffer\n");
         RegCloseKey(hKey);
-        return 0;
+        return;
     }
 
     memset(proxyserver, 0x00, dwLength);
     lRet = RegQueryValueEx(hKey, "ProxyServer", 0, NULL, proxyserver, &dwLength);
     if (lRet != ERROR_SUCCESS) {
         free(proxyserver);
-        ERR( "Failed to query value from from %s\n",
-                "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+        ERR("Failed to query value from from %s\n",
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
         RegCloseKey(hKey);
-        return 0;
+        return;
     }
 
-    if((char*)proxyserver != NULL) {
-        INFO("proxy value: %s\n", (char*)proxyserver);
-        real_proxy = malloc(MAXLEN);
+    INFO("proxy value: %s\n", (char *)proxyserver);
+    real_proxy = malloc(MAXLEN);
+    if (real_proxy == NULL) {
+        ERR("Failed to allocate a buffer\n");
+        free(proxyserver);
+        RegCloseKey(hKey);
+        return;
+    }
 
-        for(p = strtok((char*)proxyserver, ";"); p; p = strtok(NULL, ";")){
-            if(strstr(p, HTTP_PROTOCOL)) {
-                remove_string(p, real_proxy, HTTP_PROTOCOL);
-                strcpy(http_proxy, real_proxy);
-            }
-            else if(strstr(p, HTTPS_PROTOCOL)) {
-                remove_string(p, real_proxy, HTTPS_PROTOCOL);
-                strcpy(https_proxy, real_proxy);
-            }
-            else if(strstr(p, FTP_PROTOCOL)) {
-                remove_string(p, real_proxy, FTP_PROTOCOL);
-                strcpy(ftp_proxy, real_proxy);
-            }
-            else if(strstr(p, SOCKS_PROTOCOL)) {
-                remove_string(p, real_proxy, SOCKS_PROTOCOL);
-                strcpy(socks_proxy, real_proxy);
-            }
-            else {
-                INFO("all protocol uses the same proxy server: %s\n", p);
-                strcpy(http_proxy, p);
-                strcpy(https_proxy, p);
-                strcpy(ftp_proxy, p);
-                strcpy(socks_proxy, p);
-            }
+    for (p = strtok((char *)proxyserver, ";"); p; p = strtok(NULL, ";")) {
+        if (strstr(p, HTTP_PROTOCOL)) {
+            remove_string(p, real_proxy, HTTP_PROTOCOL);
+            strcpy(http_proxy, real_proxy);
+        } else if (strstr(p, HTTPS_PROTOCOL)) {
+            remove_string(p, real_proxy, HTTPS_PROTOCOL);
+            strcpy(https_proxy, real_proxy);
+        } else if (strstr(p, FTP_PROTOCOL)) {
+            remove_string(p, real_proxy, FTP_PROTOCOL);
+            strcpy(ftp_proxy, real_proxy);
+        } else if (strstr(p, SOCKS_PROTOCOL)) {
+            remove_string(p, real_proxy, SOCKS_PROTOCOL);
+            strcpy(socks_proxy, real_proxy);
+        } else {
+            INFO("all protocol uses the same proxy server: %s\n", p);
+            strcpy(http_proxy, p);
+            strcpy(https_proxy, p);
+            strcpy(ftp_proxy, p);
+            strcpy(socks_proxy, p);
         }
-        free(real_proxy);
     }
-    else {
-        INFO("proxy is null\n");
-        return 0;
-    }
+    free(real_proxy);
+    free(proxyserver);
     RegCloseKey(hKey);
 }
