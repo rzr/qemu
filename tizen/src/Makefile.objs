@@ -1,7 +1,6 @@
 # for TIZEN emulator, MARU board
 
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src
-LIBS += $(CURL_LIBS)
 
 # emulator base
 obj-y += emulator.o emulator_legacy.o emulator_options.o emul_state.o maru_err_table.o
