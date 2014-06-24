@@ -30,7 +30,7 @@
 
 #include "maru_device_ids.h"
 #include "maru_virtio_keyboard.h"
-#include "tizen/src/debug_ch.h"
+#include "debug_ch.h"
 
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-kbd);

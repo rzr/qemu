@@ -30,7 +30,7 @@
 #include "maru_arm.h"
 #include "i2c.h"
 #include "exec-memory.h"
-#include "../tizen/src/hw/maru_brightness.h"
+#include "hw/maru_brightness.h"
 #include "arch_init.h"
 
 #include "xen.h"

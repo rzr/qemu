@@ -31,24 +31,24 @@ qemu_distclean:
 	cd ../../ && $(MAKE) distclean
 
 check_hax:
-	@echo "build check hax"	
+	@echo "build check hax"
 ifdef CONFIG_WIN32
-	$(CC) -o check-hax.exe check_hax.c	
+	$(CC) -o check-hax.exe util/check_hax.c
 endif
 ifdef CONFIG_DARWIN
-	$(CC) -mmacosx-version-min=10.4 -o check-hax check_hax.c	
+	$(CC) -mmacosx-version-min=10.4 -o check-hax util/check_hax.c
 endif
 
 check_cam:
 	@echo "build check cam"
 ifdef CONFIG_LINUX
-	$(CC) -o check-cam check_cam.c -lv4l2 -lv4lconvert
+	$(CC) -o check-cam util/check_cam.c -lv4l2 -lv4lconvert
 endif
 ifdef CONFIG_WIN32
-	$(CC) -o check-cam.exe check_cam.c -lole32 -loleaut32 -luuid -lstrmiids
+	$(CC) -o check-cam.exe util/check_cam.c -I. -lole32 -loleaut32 -luuid -lstrmiids
 endif
 ifdef CONFIG_DARWIN
-	$(CC) -o check-cam check_cam.c
+	$(CC) -o check-cam util/check_cam.c
 endif
 
 skin_client:

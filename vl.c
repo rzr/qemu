@@ -134,7 +134,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #include "tizen/src/emulator.h"
 #include "tizen/src/maru_err_table.h"
 #include "tizen/src/emul_state.h"
-#include "tizen/src/maru_display.h"
+#include "tizen/src/display/maru_display.h"
 #include "tizen/src/skin/maruskin_operation.h"
 #include "tizen/src/ecs/ecs.h"
 #endif

@@ -42,7 +42,7 @@
 
 #include "emulator.h"
 #include "debug_ch.h"
-#include "osutil.h"
+#include "util/osutil.h"
 
 static char debugchfile[512] = {0, };
 #ifdef _WIN32

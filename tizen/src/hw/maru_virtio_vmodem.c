@@ -32,7 +32,7 @@
 #include "maru_virtio_vmodem.h"
 #include "maru_virtio_evdi.h"
 #include "debug_ch.h"
-#include "../ecs/ecs.h"
+#include "ecs/ecs.h"
 
 MULTI_DEBUG_CHANNEL(qemu, virtio-vmodem);
 

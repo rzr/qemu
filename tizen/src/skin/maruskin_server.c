@@ -33,9 +33,10 @@
 #include "maru_common.h"
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
-#include "maru_display.h"
+#include "display/maru_display.h"
 #include "maru_err_table.h"
 #include "ecs/ecs.h"
+#include "emul_state.h"
 
 #ifdef CONFIG_WIN32
 #include <windows.h>

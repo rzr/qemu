@@ -1,0 +1,40 @@
+# for TIZEN emulator, MARU board
+
+QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src
+LIBS += $(CURL_LIBS)
+
+# emulator base
+obj-y += emulator.o emulator_legacy.o emulator_options.o emul_state.o maru_err_table.o
+
+# utils
+obj-y += util/
+
+# mloop event
+obj-y += mloop_event.o
+
+# maru display
+obj-y += display/
+
+# ECS
+obj-y += ecs/
+
+# tethering
+obj-y += tethering/
+
+# maru skin
+obj-y += skin/
+
+# guest server
+obj-y += guest_server.o
+
+# debug channel
+obj-y += debug_ch.o
+
+# maru hardware
+obj-y += hw/
+
+# NSRunLoop and emul_state_darwin
+obj-$(CONFIG_DARWIN) += ns_event.o
+obj-$(CONFIG_DARWIN) += emul_state_darwin.o
+
+$(obj)/emulator.o $(obj)/emulator_legacy.o: QEMU_CFLAGS += $(SDL_CFLAGS)

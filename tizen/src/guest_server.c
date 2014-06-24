@@ -50,7 +50,7 @@
 #include "mloop_event.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
-#include "sdb.h"
+#include "util/sdb.h"
 #include "maru_common.h"
 #include "hw/maru_virtio_hwkey.h"
 #include "hw/maru_pm.h"

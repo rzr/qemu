@@ -46,7 +46,7 @@
 #include "qapi/qmp/qint.h"
 
 #include "emulator.h"
-#include "sdb.h"
+#include "util/sdb.h"
 #include "ecs.h"
 #include "guest_server.h"
 #include "emul_state.h"

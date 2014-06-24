@@ -39,7 +39,7 @@
 #include "maruskin_client.h"
 #include "maruskin_server.h"
 #include "emulator.h"
-#include "sdb.h"
+#include "util/sdb.h"
 #include "debug_ch.h"
 #include "emul_state.h"
 #include "maruskin_operation.h"

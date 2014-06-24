@@ -30,6 +30,10 @@
 #include <stdbool.h>
 #include <glib.h>
 
+#ifdef CONFIG_LINUX
+#include <sys/epoll.h>
+#endif
+
 #include "hw/qdev.h"
 #include "net/net.h"
 #include "net/slirp.h"
@@ -44,20 +48,15 @@
 #include "qemu/option.h"
 #include "sysemu/char.h"
 #include "qemu/main-loop.h"
-
-#ifdef CONFIG_LINUX
-#include <sys/epoll.h>
-#endif
-
 #include "qemu-common.h"
-#include "sdb.h"
+#include "util/sdb.h"
 #include "ecs-json-streamer.h"
 #include "qmp-commands.h"
 
 #include "ecs.h"
 #include "mloop_event.h"
 #ifndef CONFIG_USE_SHM
-#include "maru_finger.h"
+#include "display/maru_finger.h"
 #endif
 
 #include "hw/maru_virtio_evdi.h"

@@ -74,7 +74,7 @@ void check_gl_log(gl_log_level level, const char *format, ...)
 static const GLubyte *(GLAPIENTRY *get_string)(GLenum);
 static const GLubyte *(GLAPIENTRY *get_stringi)(GLenum, GLuint);
 static void (GLAPIENTRY *get_integerv)(GLenum, GLint*);
-static void (GLAPIENTRY *dummy)();
+static void (GLAPIENTRY *dummy)(void);
 
 static struct gl_context *check_gl_version(gl_version version)
 {

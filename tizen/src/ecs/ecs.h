@@ -40,7 +40,6 @@
 #include "ecs-json-streamer.h"
 #include "genmsg/ecs.pb-c.h"
 #include "genmsg/ecs_ids.pb-c.h"
-#include "../osutil.h"
 
 #define ECS_VERSION   "1.0"
 

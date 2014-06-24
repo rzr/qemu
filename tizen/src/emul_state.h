@@ -35,7 +35,7 @@
 
 
 #include "maru_common.h"
-#include "maru_finger.h"
+#include "display/maru_finger.h"
 
 enum {
     RESET = 0,

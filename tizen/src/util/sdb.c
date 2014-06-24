@@ -11,12 +11,13 @@
 */
 
 
-#include "emulator.h"
 #include "net/slirp.h"
 #include "qemu/sockets.h"
 #include "sdb.h"
-#include "include/block/nbd.h"
-#include "tizen/src/debug_ch.h"
+#include "block/nbd.h"
+
+#include "emulator.h"
+#include "debug_ch.h"
 #include "emul_state.h"
 
 MULTI_DEBUG_CHANNEL(qemu, sdb);

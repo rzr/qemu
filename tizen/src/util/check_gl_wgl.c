@@ -32,6 +32,7 @@
 #include <GL/gl.h>
 #include <GL/wglext.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #define WGL_GET_PROC(func, sym) \
     do { \

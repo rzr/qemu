@@ -1,5 +1,0 @@
-# Makefile.tizen
-# for TIZEN-maru-x86 board
-
-obj-y += maru_board.o
-obj-y += maru_pm.o
