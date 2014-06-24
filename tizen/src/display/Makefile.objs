@@ -1,5 +1,8 @@
 obj-y += maru_display.o
-obj-$(CONFIG_USE_SHM) += maru_shm.o
+ifdef CONFIG_USE_SHM
+obj-y += maru_shm.o
+else
 obj-y += maru_sdl.o maru_sdl_processing.o maru_finger.o
+endif
 
 $(obj)/maru_display.o $(obj)/maru_sdl.o $(obj)/maru_sdl_processing.o $(obj)/maru_finger.o: QEMU_CFLAGS += $(SDL_CFLAGS)
