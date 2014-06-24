@@ -37,6 +37,7 @@
         <scaleItem visible="false" />
         <keywindowItem visible="true" />
         <hostKeyboardItem visible="false" />
+        <ramdumpItem visible="false" />
         <shellItem visible="true" />
         <controlPanelItem visible="true" />
         <forceCloseItem visible="true" />
