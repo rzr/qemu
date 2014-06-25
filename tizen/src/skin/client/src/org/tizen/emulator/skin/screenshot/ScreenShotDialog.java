@@ -272,13 +272,34 @@ public class ScreenShotDialog {
 					origin.y += canvasGrabPosition.y - e.y;
 					scrollComposite.setOrigin(origin);
 				}
-				int curX = e.x - CANVAS_MARGIN;;
-				int curY = e.y - CANVAS_MARGIN;;
+				int MaxWidth = 0, MaxHeight = 0;
+				scaleSize = scale.getSelection() - 3;
+				int curX = (int)((e.x - CANVAS_MARGIN) * Math.pow(2, -scaleSize));
+				int curY = (int)((e.y - CANVAS_MARGIN) * Math.pow(2, -scaleSize));
+
+				/* checking Rotation */
+				switch (skin.getEmulatorSkinState().getCurrentRotationId()) {
+				case SkinRotations.LANDSCAPE_ID:
+				case SkinRotations.REVERSE_LANDSCAPE_ID:
+					MaxWidth = skin.getEmulatorSkinState().getCurrentResolutionHeight();
+					MaxHeight = skin.getEmulatorSkinState().getCurrentResolutionWidth();
+					break;
+				case SkinRotations.PORTRAIT_ID:
+				case SkinRotations.REVERSE_PORTRAIT_ID:
+				default:
+					MaxWidth = skin.getEmulatorSkinState().getCurrentResolutionWidth();
+					MaxHeight = skin.getEmulatorSkinState().getCurrentResolutionHeight();
+					break;
+				}
 
 				if (curX < 0)
 					curX = 0;
+				else if (curX > MaxWidth)
+					curX = MaxWidth;
 				if (curY < 0)
 					curY = 0;
+				else if (curY > MaxHeight)
+					curY = MaxHeight;
 
 				labelPoint.setText(" x : " + curX + ", y : " + curY + " ");
 				labelPoint.update();
