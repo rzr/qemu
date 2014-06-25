@@ -2056,7 +2056,11 @@ int pci_add_capability(PCIDevice *pdev, uint8_t cap_id,
 /* Unlink capability from the pci config space. */
 void pci_del_capability(PCIDevice *pdev, uint8_t cap_id, uint8_t size)
 {
-    uint8_t prev, offset = pci_find_capability_list(pdev, cap_id, &prev);
+    uint8_t prev, offset;
+    if (!(pdev->qdev.realized)) {
+        return;
+    }
+    offset = pci_find_capability_list(pdev, cap_id, &prev);
     if (!offset)
         return;
     pdev->config[prev] = pdev->config[offset + PCI_CAP_LIST_NEXT];
