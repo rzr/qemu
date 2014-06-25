@@ -523,21 +523,20 @@ static void server_process(void)
                             (struct sockaddr*) &client_addr, &client_len);
 
         if (read_cnt < 0) {
+            if (errno == EAGAIN)
+                continue;
             INFO("fail to recvfrom in guest_server:%d\n", errno);
             break;
-        } else {
-
-            if (read_cnt == 0) {
-                INFO("read_cnt is 0.\n");
-                break;
-            }
-
-            TRACE("================= recv =================\n");
-            TRACE("read_cnt:%d\n", read_cnt);
-            TRACE("readbuf:%s\n", readbuf);
-
-            command_handler(readbuf, &client_addr);
+        } else if (read_cnt == 0) {
+            INFO("read_cnt is 0.\n");
+            break;
         }
+
+        TRACE("================= recv =================\n");
+        TRACE("read_cnt:%d\n", read_cnt);
+        TRACE("readbuf:%s\n", readbuf);
+
+        command_handler(readbuf, &client_addr);
     }
 }
 
