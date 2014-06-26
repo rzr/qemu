@@ -214,17 +214,6 @@ static void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_inde
 
     qemu_mutex_lock(&s->context_mutex);
 
-#if 0
-    if (ioparam->api_index == CODEC_DEINIT) {
-        if (s->context[ioparam->ctx_index].occupied_thread) {
-            s->context[ioparam->ctx_index].requested_close = true;
-            INFO("make running thread to handle deinit\n");
-            qemu_mutex_unlock(&s->context_mutex);
-            return;
-        }
-    } else
-#endif
-
     if (ioparam->api_index != CODEC_INIT) {
         if (!s->context[ioparam->ctx_index].opened_context) {
             INFO("abandon api %d for context %d\n",
@@ -1904,7 +1893,6 @@ static void maru_brill_codec_write(void *opaque, hwaddr addr,
         if (s->context[ctx_index].occupied_thread) {
             s->context[ctx_index].requested_close = true;
             INFO("make running thread to handle deinit\n");
-            qemu_mutex_unlock(&s->context_mutex);
         } else {
             maru_brill_codec_release_context(s, ctx_index);
         }
