@@ -130,11 +130,11 @@ public class GeneralKeyWindow extends SkinWindow {
 				imageRegistry.getKeyWindowImage(
 						GeneralKeyWindowImageName.KEYWINDOW_PATCH_RB));
 
-		this.keyMapList = keyMapList; //TODO: null
+		this.keyMapList = keyMapList;
 		this.grabPosition = new Point(0, 0);
 
 		shell.setText(parent.getText());
-		shell.setImage(parent.getImage());
+		shell.setImage(parent.getImage()); /* icon */
 
 		/* load image for HW key button */
 		imageNormal = imageRegistry.getKeyWindowImage(
@@ -145,9 +145,11 @@ public class GeneralKeyWindow extends SkinWindow {
 				GeneralKeyWindowImageName.KEYBUTTON_PUSHED);
 
 		/* calculate the key window size */
+		int cntButton = Math.min(keyMapList.size(), BUTTON_DEFAULT_CNT);
+
 		widthBase = imageNormal.getImageData().width;
-		heightBase = (imageNormal.getImageData().height * BUTTON_DEFAULT_CNT) +
-				(BUTTON_VERTICAL_SPACING * (BUTTON_DEFAULT_CNT - 1));
+		heightBase = (imageNormal.getImageData().height * cntButton) +
+				(BUTTON_VERTICAL_SPACING * (cntButton - 1));
 
 		widthScrollbar = SCROLLBAR_SIZE_WIDTH + SCROLLBAR_HORIZONTAL_SPACING;
 		int heightHeaderPart = (PAIRTAG_CIRCLE_SIZE + PAIRTAG_MARGIN_BOTTOM);
@@ -155,7 +157,7 @@ public class GeneralKeyWindow extends SkinWindow {
 
 		/* make a frame image */
 		if (keyMapList != null) {
-			this.cntHiddenButton = keyMapList.size() - BUTTON_DEFAULT_CNT;
+			this.cntHiddenButton = keyMapList.size() - cntButton;
 		}
 
 		this.imageFrame = frameMaker.getPatchedImage(

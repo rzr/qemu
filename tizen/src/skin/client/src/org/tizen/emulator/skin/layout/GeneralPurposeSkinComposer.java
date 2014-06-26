@@ -441,7 +441,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 				/* display should be redrawn When host OS wakes up from suspend
 				 on Ubuntu */
-				if (SwtUtil.isLinuxPlatform() == true) {
+				if (SwtUtil.isLinuxPlatform() == true && shell.getRegion() != null) {
 					if (shell.getRegion().getBounds().x == e.x
 							&& shell.getRegion().getBounds().y == e.y
 							&& shell.getRegion().getBounds().width == e.width
