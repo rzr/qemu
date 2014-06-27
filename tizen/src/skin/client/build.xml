@@ -4,11 +4,20 @@
 		<os family="windows" />
 	</condition>
 	<condition property="isLinux">
-		<os family="unix" />
+		<and>
+			<os family="unix" />
+			<not><os family="mac" /></not>
+		</and>
 	</condition>
 	<condition property="isMac">
-		<os family="mac" />
+		<and>
+			<os family="mac" />
+			<!-- we don't support legacy mac -->
+			<and><os family="unix" /></and>
+		</and>
 	</condition>
+
+	<property name="doNotUseSHM" value="${doNotUseSHM}" />
 
 	<property environment="env" />
 	<property name="jar.file" value="emulator-skin.jar" />
@@ -20,6 +29,7 @@
 		<pathelement location="${env.TIZEN_SDK_DEV_PATH}/distrib/lib/${swt.file}" />
 		<pathelement location="lib/${swt.file}" />
 		<pathelement location="build/" />
+		<pathelement location="${classpath.dibs}/${swt.file}" />
 	</path>
 
 	<target name="clean">
@@ -50,7 +60,7 @@
 
 	<target name="prepare-compile" depends="make-properties">
 		<echo message="prepare for compile..." />
-        	<delete dir="build" />
+			<delete dir="build" />
 		<mkdir dir="build" />
 	</target>
 
@@ -80,7 +90,7 @@
 		<delete dir="build" />
 	</target>
 
-	<target name="create-native-linux" if="isLinux" unless="isMac">
+	<target name="create-native-linux" if="isLinux" unless="doNotUseSHM">
 		<echo message="create native shared library on linux..." />
 		<javah destdir="native_src">
 			<classpath refid="classpath" />
@@ -102,38 +112,6 @@
 			<arg line="-o" />
 			<arg line="libshared.so" />
 		</exec>
-
-		<!--
-		<exec dir="native_src" executable="./check-gtk.sh" outputproperty="gtkabi" failifexecutionfails="false" />
-		<echo message="gtkversion : ${gtkabi}" />
-
-		<javah classpath="build;lib/swt.jar" destdir="native_src">
-			<class name="org.tizen.emulator.skin.screenshot.ScreenShotDialog" />
-		</javah>
-		<echo message="build libclipboard.so" />
-		<exec executable="pkg-config" outputproperty="gtk" failifexecutionfails="false">
-			<arg line="- -cflags" />
-			<arg line="- -libs" />
-			<arg line="${gtkabi}" />
-		</exec>
-		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
-			<arg line="-c" />
-			<arg line="-fPIC" />
-			<arg line="clipboard.c" />
-			<arg line="-o" />
-			<arg line="clipboard.o" />
-			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
-			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}/linux" />
-			<arg line="${gtk}" />
-		</exec>
-		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
-			<arg line="clipboard.o" />
-			<arg line="-shared" />
-			<arg line="-o" />
-			<arg line="libclipboard.so" />
-		</exec>
-		-->
-
 		<delete>
 			<fileset dir="native_src" includes="**/*.h" />
 		</delete>
@@ -165,18 +143,4 @@
 	</target>
 
 	<target name="make-jar" depends="compile, create-native-linux, create-native-mac, create-jar" />
-
-	<!-- for dibs system... -->
-	<path id="classpath-dibs">
-		<fileset dir="${classpath.dibs}" includes="${swt.file}" />
-	</path>
-
-	<target name="compile-dibs" depends="prepare-compile">
-		<echo message="compiling..." />
-		<javac encoding="UTF-8" fork="true" srcdir="src:jaxb_src" destdir="build" debug="on" memorymaximumsize="128m">
-			<classpath refid="classpath-dibs" />
-		</javac>
-	</target>
-
-	<target name="make-jar-dibs" depends="compile-dibs, create-native-linux, create-native-mac, create-jar" />
 </project>
