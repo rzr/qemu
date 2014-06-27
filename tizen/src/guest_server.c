@@ -523,8 +523,14 @@ static void server_process(void)
                             (struct sockaddr*) &client_addr, &client_len);
 
         if (read_cnt < 0) {
-            if (errno == EAGAIN)
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+#ifdef _WIN32
+                Sleep(2);
+#else
+                usleep(2000);
+#endif
                 continue;
+            }
             INFO("fail to recvfrom in guest_server:%d\n", errno);
             break;
         } else if (read_cnt == 0) {
@@ -537,6 +543,7 @@ static void server_process(void)
         TRACE("readbuf:%s\n", readbuf);
 
         command_handler(readbuf, &client_addr);
+
     }
 }
 
