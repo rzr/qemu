@@ -207,13 +207,13 @@ static int marucam_initfn(PCIDevice *dev)
     uint8_t *pci_conf = s->dev.config;
 
     /* Check available webcam
-     * If there is not one, we don't init this device
+     * If there is not one, you can't use the camera.
      */
     if (!marucam_device_check(1)) {
         s->initialized = false;
         ERR("Failed to check the camera device, "
-            "stop the camera initialization. You can *not* use the camera\n");
-        return 1;
+            "You can *not* use the camera\n");
+        return 0;
     }
 
     pci_config_set_interrupt_pin(pci_conf, 0x03);
