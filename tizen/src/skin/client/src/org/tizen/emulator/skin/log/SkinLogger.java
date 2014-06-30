@@ -189,6 +189,10 @@ public class SkinLogger {
 			return skinLogger;
 		} else {
 			Logger logger = Logger.getLogger(name);
+			if (logger == null) {
+				logger = Logger.getAnonymousLogger();
+			}
+
 			logger.addHandler(fileHandler);
 			logger.setLevel(fileHandler.getLevel());
 			logger.setUseParentHandlers(false);
