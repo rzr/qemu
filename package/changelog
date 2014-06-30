@@ -1,3 +1,6 @@
+* 2.0.3
+- guest server: W/A non-blocking socket
+== Jinhyung Choi <jinhyung2.choi@samsung.com> 2014-06-30
 * 2.0.1
 - sensor device data is modified.
 - haptic device is added.
