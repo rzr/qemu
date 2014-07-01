@@ -39,7 +39,6 @@
 #include "emulator.h"
 #include "emul_state.h"
 #include "guest_debug.h"
-#include "guest_server.h"
 #include "hw/maru_virtio_touchscreen.h"
 #include "util/check_gl.h"
 #include "maru_err_table.h"

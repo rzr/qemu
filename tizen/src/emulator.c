@@ -37,7 +37,7 @@
 #include "build_info.h"
 #include "emulator.h"
 #include "emul_state.h"
-#include "guest_server.h"
+#include "sdb_noti_server.h"
 #include "emulator_options.h"
 #include "util/check_gl.h"
 #include "maru_err_table.h"
@@ -253,7 +253,7 @@ static void prepare_basic_features(gchar * const kernel_cmdline)
     qemu_add_opts(&qemu_ecs_opts);
     start_ecs();
 
-    start_guest_server(get_device_serial_number() + SDB_UDP_SENSOR_INDEX);
+    start_sdb_noti_server(get_device_serial_number() + SDB_UDP_SENSOR_INDEX);
 
     sdb_setup();
 
