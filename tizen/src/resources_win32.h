@@ -47,10 +47,16 @@
 #define UTIME_OMIT      ((1l << 30) - 2l)
 #endif
 
+#ifndef HAVE_STRUCT_TIMESPEC
+#define HAVE_STRUCT_TIMESPEC
+#ifndef _TIMESPEC_DEFINED
+#define _TIMESPEC_DEFINED
 struct timespec {
     time_t  tv_sec;
     long    tv_nsec;
 };
+#endif /* _TIMESPEC_DEFINED */
+#endif /* HAVE_STRUCT_TIMESPEC */
 
 typedef struct {
     WORD val[2];
