@@ -2,6 +2,8 @@ obj-y += maru_board.o maru_pm.o
 
 obj-y += maru_brill_codec.o
 obj-y += maru_brightness.o
+
+obj-y += maru_virtio_pci.o
 obj-y += maru_virtio_touchscreen.o
 obj-y += maru_virtio_esm.o
 obj-y += maru_virtio_evdi.o
