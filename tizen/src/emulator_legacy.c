@@ -44,7 +44,6 @@
 #include "util/check_gl.h"
 #include "maru_err_table.h"
 #include "display/maru_display.h"
-#include "mloop_event.h"
 #include "util/osutil.h"
 #include "util/sdb.h"
 #include "skin/maruskin_server.h"

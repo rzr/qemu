@@ -54,7 +54,6 @@
 #include "qmp-commands.h"
 
 #include "ecs.h"
-#include "mloop_event.h"
 #ifndef CONFIG_USE_SHM
 #include "display/maru_finger.h"
 #endif

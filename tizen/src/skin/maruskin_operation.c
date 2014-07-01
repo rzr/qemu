@@ -44,7 +44,6 @@
 #include "emulator.h"
 #include "debug_ch.h"
 #include "util/sdb.h"
-#include "mloop_event.h"
 #include "emul_state.h"
 #include "maruskin_keymap.h"
 #include "maruskin_server.h"
@@ -564,9 +563,9 @@ void do_interpolation_enable(bool on)
 
 void do_ram_dump(void)
 {
-    INFO("dump ram!\n");
-
-    mloop_evcmd_ramdump();
+    // RAM dump feature is disabled now.
+    // TODO: Physical ram dump will be supported by QMP logic soon.
+    INFO("dump ram is disabled\n");
 }
 
 

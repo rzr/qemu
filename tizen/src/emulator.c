@@ -41,7 +41,6 @@
 #include "emulator_options.h"
 #include "util/check_gl.h"
 #include "maru_err_table.h"
-#include "mloop_event.h"
 #include "util/osutil.h"
 #include "util/sdb.h"
 #include "skin/maruskin_server.h"
@@ -255,8 +254,6 @@ static void prepare_basic_features(gchar * const kernel_cmdline)
     start_ecs();
 
     start_guest_server(get_device_serial_number() + SDB_UDP_SENSOR_INDEX);
-
-    mloop_ev_init();
 
     sdb_setup();
 

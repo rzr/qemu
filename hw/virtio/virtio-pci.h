@@ -32,7 +32,6 @@
 #endif
 
 #ifdef CONFIG_MARU
-#include "tizen/src/mloop_event.h"
 #include "tizen/src/hw/maru_device_ids.h"
 #include "tizen/src/hw/maru_virtio_evdi.h"
 #include "tizen/src/hw/maru_virtio_esm.h"

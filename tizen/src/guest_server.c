@@ -48,7 +48,6 @@
 #include "qemu/sockets.h"
 #include "emulator.h"
 #include "guest_server.h"
-#include "mloop_event.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
 #include "util/sdb.h"

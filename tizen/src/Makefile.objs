@@ -9,7 +9,7 @@ obj-y += emulator.o emulator_legacy.o emulator_options.o emul_state.o maru_err_t
 obj-y += util/
 
 # mloop event
-obj-y += mloop_event.o
+#obj-y += mloop_event.o
 
 # maru display
 obj-y += display/
