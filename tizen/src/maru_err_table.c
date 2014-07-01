@@ -152,7 +152,13 @@ char *maru_convert_path(char *msg, const char *path)
     int path_len = 0;
     int res = -1;
 
-    res = (int)g_path_is_absolute(path);
+    if (!path) {
+        path = "NULL";
+        res = 1;
+    }
+    else {
+        res = (int)g_path_is_absolute(path);
+    }
     path_len = (strlen(path) + 1);
     if (msg) {
         msg_len = strlen(msg) + 1;
