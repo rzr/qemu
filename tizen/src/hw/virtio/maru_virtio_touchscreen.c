@@ -29,7 +29,7 @@
 
 #include <pthread.h>
 #include "maru_virtio_touchscreen.h"
-#include "maru_device_ids.h"
+#include "hw/maru_device_ids.h"
 #include "emul_state.h"
 #include "debug_ch.h"
 

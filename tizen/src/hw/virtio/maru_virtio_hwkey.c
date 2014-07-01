@@ -30,7 +30,7 @@
 #include <pthread.h>
 #include "emul_state.h"
 #include "maru_virtio_hwkey.h"
-#include "maru_device_ids.h"
+#include "hw/maru_device_ids.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, hwkey);

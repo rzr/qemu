@@ -33,7 +33,7 @@
 #include <SDL.h>
 #include "maru_finger.h"
 #include "emul_state.h"
-#include "hw/maru_virtio_touchscreen.h"
+#include "hw/virtio/maru_virtio_touchscreen.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(qemu, maru_finger);

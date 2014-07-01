@@ -28,7 +28,7 @@
  *
  */
 
-#include "maru_device_ids.h"
+#include "hw/maru_device_ids.h"
 #include "maru_virtio_keyboard.h"
 #include "debug_ch.h"
 

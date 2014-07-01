@@ -31,7 +31,7 @@
 #ifndef MARUSKIN_KEYMAP_H_
 #define MARUSKIN_KEYMAP_H_
 
-#include "hw/maru_virtio_keyboard.h"
+#include "hw/virtio/maru_virtio_keyboard.h"
 
 /* keep it consistent with emulator-skin(swt) virtual keycode */
 #define JAVA_KEYCODE_BIT (1 << 24)

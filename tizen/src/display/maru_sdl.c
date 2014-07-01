@@ -36,7 +36,7 @@
 #include "maru_display.h"
 #include "maru_sdl.h"
 #include "maru_sdl_processing.h"
-#include "hw/maru_brightness.h"
+#include "hw/pci/maru_brightness.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);

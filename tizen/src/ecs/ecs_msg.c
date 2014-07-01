@@ -58,12 +58,12 @@
 #include "display/maru_finger.h"
 #endif
 
-#include "hw/maru_virtio_evdi.h"
-#include "hw/maru_virtio_sensor.h"
-#include "hw/maru_virtio_jack.h"
-#include "hw/maru_virtio_power.h"
-#include "hw/maru_virtio_nfc.h"
-#include "hw/maru_virtio_vmodem.h"
+#include "hw/virtio/maru_virtio_evdi.h"
+#include "hw/virtio/maru_virtio_sensor.h"
+#include "hw/virtio/maru_virtio_jack.h"
+#include "hw/virtio/maru_virtio_power.h"
+#include "hw/virtio/maru_virtio_nfc.h"
+#include "hw/virtio/maru_virtio_vmodem.h"
 #include "skin/maruskin_operation.h"
 #include "skin/maruskin_server.h"
 #include "util/maru_device_hotplug.h"

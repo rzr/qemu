@@ -31,7 +31,7 @@
 
 #include "hw/pci/pci.h"
 
-#include "maru_device_ids.h"
+#include "hw/maru_device_ids.h"
 #include "debug_ch.h"
 
 #include "maru_virtio_jack.h"

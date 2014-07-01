@@ -36,9 +36,9 @@
 //#include "qemu-timer.h"
 
 #include "ecs.h"
-#include "hw/maru_virtio_sensor.h"
-#include "hw/maru_virtio_power.h"
-#include "hw/maru_virtio_jack.h"
+#include "hw/virtio/maru_virtio_sensor.h"
+#include "hw/virtio/maru_virtio_power.h"
+#include "hw/virtio/maru_virtio_jack.h"
 
 #define TEMP_BUF_SIZE   255
 #define MAX_VAL_LENGTH  40

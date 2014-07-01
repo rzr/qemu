@@ -1,0 +1,19 @@
+obj-y += maru_brill_codec.o
+obj-y += maru_brightness.o
+
+obj-y += maru_camera_common_pci.o
+ifdef CONFIG_LINUX
+obj-y += maru_camera_linux_pci.o
+LIBS += -lv4l2 -lv4lconvert
+endif
+ifdef CONFIG_WIN32
+obj-y += maru_camera_win32_pci.o
+LIBS += -lole32 -loleaut32 -luuid -lstrmiids
+endif
+ifdef CONFIG_DARWIN
+obj-y += maru_camera_darwin_converter.o
+obj-y += maru_camera_darwin_pci.o
+LIBS += -framework Foundation -framework SystemConfiguration
+LIBS += -framework Cocoa -framework QTKit -framework CoreVideo
+LIBS += -framework AppKit
+endif

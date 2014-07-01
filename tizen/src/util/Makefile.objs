@@ -8,6 +8,9 @@ obj-$(CONFIG_DARWIN) += osutil-darwin.o
 #sdb
 obj-y += sdb.o
 
+# sdb noti server
+obj-y += sdb_noti_server.o
+
 # check gl
 obj-y += check_gl_core.o
 obj-$(CONFIG_LINUX) += check_gl_glx.o

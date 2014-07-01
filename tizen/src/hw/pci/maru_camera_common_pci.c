@@ -40,7 +40,7 @@
 #include "exec/cpu-common.h"
 
 #include "maru_camera_common.h"
-#include "maru_device_ids.h"
+#include "hw/maru_device_ids.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru-camera);

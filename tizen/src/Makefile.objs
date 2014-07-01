@@ -23,9 +23,6 @@ obj-y += tethering/
 # maru skin
 obj-y += skin/
 
-# sdb noti server
-obj-y += sdb_noti_server.o
-
 # debug channel
 obj-y += debug_ch.o
 

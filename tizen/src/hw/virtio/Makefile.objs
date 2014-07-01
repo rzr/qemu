@@ -1,0 +1,11 @@
+obj-y += maru_virtio_pci.o
+obj-y += maru_virtio_touchscreen.o
+obj-y += maru_virtio_esm.o
+obj-y += maru_virtio_evdi.o
+obj-y += maru_virtio_hwkey.o
+obj-y += maru_virtio_jack.o
+obj-y += maru_virtio_keyboard.o
+obj-y += maru_virtio_nfc.o
+obj-y += maru_virtio_power.o
+obj-y += maru_virtio_sensor.o
+obj-y += maru_virtio_vmodem.o

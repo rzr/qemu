@@ -39,9 +39,9 @@
 #include "qapi/qmp/json-parser.h"
 
 #include "ecs.h"
-#include "hw/maru_virtio_evdi.h"
-#include "hw/maru_virtio_sensor.h"
-#include "hw/maru_virtio_nfc.h"
+#include "hw/virtio/maru_virtio_evdi.h"
+#include "hw/virtio/maru_virtio_sensor.h"
+#include "hw/virtio/maru_virtio_nfc.h"
 
 #include "debug_ch.h"
 MULTI_DEBUG_CHANNEL(qemu, ecs);

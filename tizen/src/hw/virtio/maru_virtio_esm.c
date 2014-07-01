@@ -26,7 +26,7 @@
  *
  */
 
-#include "maru_device_ids.h"
+#include "hw/maru_device_ids.h"
 #include "maru_virtio_esm.h"
 #include "skin/maruskin_server.h"
 #include "emul_state.h"

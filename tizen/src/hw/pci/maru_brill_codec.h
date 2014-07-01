@@ -41,7 +41,7 @@
 
 #include "util/osutil.h"
 #include "debug_ch.h"
-#include "maru_device_ids.h"
+#include "hw/maru_device_ids.h"
 
 #include "libavformat/avformat.h"
 #include "libavresample/avresample.h"

@@ -1,0 +1,1 @@
+obj-y += maru_usb_touchscreen.o

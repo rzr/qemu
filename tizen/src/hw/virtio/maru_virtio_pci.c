@@ -29,17 +29,17 @@
 
 #include "hw/virtio/virtio-pci.h"
 
-#include "tizen/src/hw/maru_device_ids.h"
-#include "tizen/src/hw/maru_virtio_evdi.h"
-#include "tizen/src/hw/maru_virtio_esm.h"
-#include "tizen/src/hw/maru_virtio_hwkey.h"
-#include "tizen/src/hw/maru_virtio_keyboard.h"
-#include "tizen/src/hw/maru_virtio_touchscreen.h"
-#include "tizen/src/hw/maru_virtio_sensor.h"
-#include "tizen/src/hw/maru_virtio_jack.h"
-#include "tizen/src/hw/maru_virtio_power.h"
-#include "tizen/src/hw/maru_virtio_nfc.h"
-#include "tizen/src/hw/maru_virtio_vmodem.h"
+#include "hw/maru_device_ids.h"
+#include "maru_virtio_evdi.h"
+#include "maru_virtio_esm.h"
+#include "maru_virtio_hwkey.h"
+#include "maru_virtio_keyboard.h"
+#include "maru_virtio_touchscreen.h"
+#include "maru_virtio_sensor.h"
+#include "maru_virtio_jack.h"
+#include "maru_virtio_power.h"
+#include "maru_virtio_nfc.h"
+#include "maru_virtio_vmodem.h"
 
 typedef struct VirtIOTouchscreenPCI VirtIOTouchscreenPCI;
 typedef struct VirtIOEVDIPCI VirtIOEVDIPCI;

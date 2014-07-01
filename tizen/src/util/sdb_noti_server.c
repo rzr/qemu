@@ -30,8 +30,8 @@
 
 #include "qemu/sockets.h"
 
-#include "hw/maru_virtio_hwkey.h"
 #include "hw/maru_pm.h"
+#include "hw/virtio/maru_virtio_hwkey.h"
 #include "skin/maruskin_server.h"
 #include "ecs/ecs.h"
 

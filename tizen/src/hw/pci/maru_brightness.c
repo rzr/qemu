@@ -34,7 +34,7 @@
 #include "hw/i386/pc.h"
 #include "ui/console.h"
 #include "hw/pci/pci.h"
-#include "maru_device_ids.h"
+#include "hw/maru_device_ids.h"
 #include "maru_brightness.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
