@@ -188,7 +188,7 @@ static char *substitute_variables(char *src)
             g_free(str);
             str = buf;
 
-            i = start_index + strlen(value);
+            i = start_index + strlen(value) - 1;
 
             start_index = end_index = -1;
         }
