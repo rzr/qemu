@@ -14,4 +14,7 @@ obj-$(CONFIG_LINUX) += check_gl_glx.o
 obj-$(CONFIG_WIN32) += check_gl_wgl.o
 obj-$(CONFIG_DARWIN) += check_gl_cgl.o
 
+# hotplug
+obj-y += maru_device_hotplug.o
+
 $(obj)/osutil.o: QEMU_CFLAGS += $(CURL_CFLAGS)
