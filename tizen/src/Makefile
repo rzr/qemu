@@ -2,6 +2,7 @@ EMUL_DIR=../emulator
 DIBS_X86_DIR=../x86
 DIBS_ARM_DIR=../arm
 DIBS_COMMON_DIR=../common
+DIBS_SWT_DIR=-Dclasspath.dibs=$(ROOTDIR)/tools/emulator/bin
 
 ifndef TIZEN_SDK_DEV_PATH
 TIZEN_SDK_DEV_PATH=${HOME}/tizen-sdk-dev
@@ -52,7 +53,12 @@ ifdef CONFIG_DARWIN
 endif
 
 skin_client:
-	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -buildfile skin/client/build.xml make-jar
+#	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -buildfile skin/client/build.xml make-jar
+ifdef CONFIG_USE_SHM
+	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotUseSHM=false -buildfile skin/client/build.xml make-jar
+else
+	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotUseSHM=true -buildfile skin/client/build.xml make-jar
+endif
 
 build_info:
 	@echo "Generate a build information file"
@@ -175,7 +181,14 @@ endif
 # for dibs system...
 all_dibs: qemu skin_client_dibs
 skin_client_dibs:
-	ant -buildfile skin/client/build.xml -Dclasspath.dibs=$(ROOTDIR)/tools/emulator/bin make-jar-dibs
+#	ant -buildfile skin/client/build.xml -Dclasspath.dibs=$(ROOTDIR)/tools/emulator/bin make-jar-dibs
+ifdef CONFIG_USE_SHM
+	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotUseSHM=false ${DIBS_SWT_DIR} -buildfile skin/client/build.xml make-jar
+else
+	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotNotUseSHM=true ${DIBS_SWT_DIR} -buildfile skin/client/build.xml make-jar
+endif
+
+
 install_dibs: all_dibs
 	mkdir -p $(DIBS_COMMON_DIR)/bin
 	mkdir -p $(DIBS_COMMON_DIR)/etc
