@@ -47,6 +47,7 @@
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
 #include "ecs/ecs.h"
+#include "util/maru_device_hotplug.h"
 
 #ifdef CONFIG_SDL
 #include <SDL.h>
@@ -247,6 +248,8 @@ static void prepare_basic_features(gchar * const kernel_cmdline)
 
     check_vm_lock();
     make_vm_lock();
+
+    maru_device_hotplug_init();
 
     qemu_add_opts(&qemu_ecs_opts);
     start_ecs();

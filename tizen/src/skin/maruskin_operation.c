@@ -50,6 +50,7 @@
 #include "maruskin_server.h"
 #include "display/maru_display.h"
 #include "hw/maru_pm.h"
+#include "util/maru_device_hotplug.h"
 #include "ecs/ecs.h"
 
 #ifdef CONFIG_HAX
@@ -258,7 +259,7 @@ void do_keyboard_key_event(int event_type,
 #endif
 
 #if defined(TARGET_I386)
-    if (!mloop_evcmd_get_hostkbd_status()) {
+    if (!is_host_keyboard_attached()) {
         TRACE("ignore keyboard input because usb keyboard is dettached.\n");
         return;
     }
@@ -546,7 +547,11 @@ void do_host_kbd_enable(bool on)
 #if defined(TARGET_ARM)
     mloop_evcmd_usbkbd(on);
 #elif defined(TARGET_I386)
-    mloop_evcmd_hostkbd(on);
+    if (on) {
+        do_hotplug(ATTACH_HOST_KEYBOARD, NULL, 0);
+    } else {
+        do_hotplug(DETACH_HOST_KEYBOARD, NULL, 0);
+    }
 #endif
 }
 

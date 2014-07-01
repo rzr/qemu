@@ -67,6 +67,7 @@
 #include "hw/maru_virtio_vmodem.h"
 #include "skin/maruskin_operation.h"
 #include "skin/maruskin_server.h"
+#include "util/maru_device_hotplug.h"
 #include "emulator.h"
 #include "emul_state.h"
 
@@ -509,7 +510,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         }
     } else if (!strncmp(cmd, "HKeyboard", 8)) {
         if (group == MSG_GROUP_STATUS) {
-            send_host_keyboard_ntf(mloop_evcmd_get_hostkbd_status());
+            send_host_keyboard_ntf(is_host_keyboard_attached());
         } else {
             if (data == NULL) {
                 ERR("HKeyboard data is NULL\n");
@@ -897,6 +898,7 @@ bool send_nfc_ntf(struct nfc_msg_info* msg)
     return true;
 }
 
+
 static void handle_sdcard(char* dataBuf, size_t dataLen)
 {
 
@@ -907,8 +909,7 @@ static void handle_sdcard(char* dataBuf, size_t dataLen)
 
         if (ret == '0' ) {
             /* umount sdcard */
-            //mloop_evcmd_usbdisk(NULL);
-            mloop_evcmd_sdcard(NULL);
+            do_hotplug(DETACH_SDCARD, NULL, 0);
         } else if (ret == '1') {
             /* mount sdcard */
             char sdcard_img_path[256];
@@ -930,8 +931,7 @@ static void handle_sdcard(char* dataBuf, size_t dataLen)
                     g_strlcat(sdcard_img_path, sdcard_img_name, sizeof(sdcard_img_path));
                     TRACE("sdcard path: [%s]\n", sdcard_img_path);
 
-                    //mloop_evcmd_usbdisk(sdcard_img_path);
-                    mloop_evcmd_sdcard(sdcard_img_path);
+                    do_hotplug(ATTACH_SDCARD, sdcard_img_path, strlen(sdcard_img_path) + 1);
 
                     /*if using strndup than free string*/
                     if(pLinechange != NULL && sdcard_img_name!= NULL){
