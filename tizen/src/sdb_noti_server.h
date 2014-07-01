@@ -1,13 +1,13 @@
 /*
+ * Emulator SDB Notification Server
  *
- *
- * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2014 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
- * JiHye Kim <jihye1128.kim@samsung.com>
- * GiWoong Kim <giwoong.kim@samsung.com>
- * YeongKyoon Lee <yeongkyoon.lee@samsung.com>
- * Hyunjun Son
+ *  Jinhyung choi   <jinhyung2.choi@samsung.com>
+ *  MunKyu Im       <munkyu.im@samsung.com>
+ *  Sangho Park     <sangho1206.park@samsung.com>
+ *  YeongKyoon Lee  <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,16 +28,13 @@
  *
  */
 
+#ifndef SDB_NOTI_SERVER_H_
+#define SDB_NOTI_SERVER_H_
 
-#ifndef GUEST_SERVER_H_
-#define GUEST_SERVER_H_
-
-#include <pthread.h>
-
-void start_guest_server( int server_port );
+void start_sdb_noti_server(int server_port);
 
 #define STATE_RUNNING 0
 #define STATE_SUSPEND 1
 void notify_all_sdb_clients(int state);
 
-#endif /* GUEST_SERVER_H_ */
+#endif

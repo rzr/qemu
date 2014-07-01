@@ -48,7 +48,6 @@
 #include "emulator.h"
 #include "util/sdb.h"
 #include "ecs.h"
-#include "guest_server.h"
 #include "emul_state.h"
 
 #include "genmsg/ecs.pb-c.h"
