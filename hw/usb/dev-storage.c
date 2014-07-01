@@ -18,10 +18,6 @@
 #include "sysemu/sysemu.h"
 #include "sysemu/blockdev.h"
 
-#ifdef CONFIG_MARU
-#include "../tizen/src/mloop_event.h"
-#endif
-
 //#define DEBUG_MSD
 
 #ifdef DEBUG_MSD
@@ -550,13 +546,6 @@ static void usb_msd_handle_data(USBDevice *dev, USBPacket *p)
     }
 }
 
-#ifdef CONFIG_MARU
-static void usb_msd_handle_destroy(USBDevice *dev)
-{
-    mloop_evcmd_set_usbdisk(NULL);
-}
-#endif
-
 static void usb_msd_password_cb(void *opaque, int err)
 {
     MSDState *s = opaque;
@@ -673,15 +662,13 @@ static USBDevice *usb_msd_init(USBBus *bus, const char *filename)
     QemuOpts *opts;
     DriveInfo *dinfo;
     USBDevice *dev;
-#ifndef CONFIG_MARU
     const char *p1;
     char fmt[32];
-#endif
 
     /* parse -usbdevice disk: syntax into drive opts */
     snprintf(id, sizeof(id), "usb%d", nr++);
     opts = qemu_opts_create(qemu_find_opts("drive"), id, 0, NULL);
-#ifndef CONFIG_MARU
+
     p1 = strchr(filename, ':');
     if (p1++) {
         const char *p2;
@@ -696,7 +683,6 @@ static USBDevice *usb_msd_init(USBBus *bus, const char *filename)
         }
         filename = p1;
     }
-#endif
     if (!*filename) {
         printf("block device specification needed\n");
         return NULL;
@@ -722,10 +708,6 @@ static USBDevice *usb_msd_init(USBBus *bus, const char *filename)
     }
     if (qdev_init(&dev->qdev) < 0)
         return NULL;
-
-#ifdef CONFIG_MARU
-    mloop_evcmd_set_usbdisk(dev);
-#endif
 
     return dev;
 }
@@ -766,9 +748,6 @@ static void usb_msd_class_initfn_common(ObjectClass *klass)
     uc->handle_reset   = usb_msd_handle_reset;
     uc->handle_control = usb_msd_handle_control;
     uc->handle_data    = usb_msd_handle_data;
-#ifdef CONFIG_MARU
-    uc->handle_destroy = usb_msd_handle_destroy;
-#endif
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
     dc->fw_name = "storage";
     dc->vmsd = &vmstate_usb_msd;
