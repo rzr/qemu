@@ -31,20 +31,6 @@
 #include "hw/virtio/vhost-scsi.h"
 #endif
 
-#ifdef CONFIG_MARU
-#include "tizen/src/hw/maru_device_ids.h"
-#include "tizen/src/hw/maru_virtio_evdi.h"
-#include "tizen/src/hw/maru_virtio_esm.h"
-#include "tizen/src/hw/maru_virtio_hwkey.h"
-#include "tizen/src/hw/maru_virtio_keyboard.h"
-#include "tizen/src/hw/maru_virtio_touchscreen.h"
-#include "tizen/src/hw/maru_virtio_sensor.h"
-#include "tizen/src/hw/maru_virtio_jack.h"
-#include "tizen/src/hw/maru_virtio_power.h"
-#include "tizen/src/hw/maru_virtio_nfc.h"
-#include "tizen/src/hw/maru_virtio_vmodem.h"
-#endif
-
 typedef struct VirtIOPCIProxy VirtIOPCIProxy;
 typedef struct VirtIOBlkPCI VirtIOBlkPCI;
 typedef struct VirtIOSCSIPCI VirtIOSCSIPCI;
@@ -53,19 +39,6 @@ typedef struct VirtIOSerialPCI VirtIOSerialPCI;
 typedef struct VirtIONetPCI VirtIONetPCI;
 typedef struct VHostSCSIPCI VHostSCSIPCI;
 typedef struct VirtIORngPCI VirtIORngPCI;
-
-#ifdef CONFIG_MARU
-typedef struct VirtIOTouchscreenPCI VirtIOTouchscreenPCI;
-typedef struct VirtIOEVDIPCI VirtIOEVDIPCI;
-typedef struct VirtIOESMPCI VirtIOESMPCI;
-typedef struct VirtIOHWKeyPCI VirtIOHWKeyPCI;
-typedef struct VirtIOKeyboardPCI VirtIOKeyboardPCI;
-typedef struct VirtIOSENSORPCI VirtIOSENSORPCI;
-typedef struct VirtIONFCPCI VirtIONFCPCI;
-typedef struct VirtIOPOWERPCI VirtIOPOWERPCI;
-typedef struct VirtIOJACKPCI VirtIOJACKPCI;
-typedef struct VirtIOVModemPCI VirtIOVModemPCI;
-#endif
 
 /* virtio-pci-bus */
 
@@ -225,127 +198,6 @@ struct VirtIORngPCI {
     VirtIOPCIProxy parent_obj;
     VirtIORNG vdev;
 };
-
-#ifdef CONFIG_MARU
-
-/*
- * virtio-touchscreen-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_TOUCHSCREEN_PCI "virtio-touchscreen-pci"
-#define VIRTIO_TOUCHSCREEN_PCI(obj) \
-        OBJECT_CHECK(VirtIOTouchscreenPCI, (obj), TYPE_VIRTIO_TOUCHSCREEN_PCI)
-
-struct VirtIOTouchscreenPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOTouchscreen vdev;
-};
-
-/*
- * virtio-keyboard-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_KEYBOARD_PCI "virtio-keyboard-pci"
-#define VIRTIO_KEYBOARD_PCI(obj) \
-        OBJECT_CHECK(VirtIOKeyboardPCI, (obj), TYPE_VIRTIO_KEYBOARD_PCI)
-
-struct VirtIOKeyboardPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOKeyboard vdev;
-};
-
-/*
- * virtio-evdi-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_EVDI_PCI "virtio-evdi-pci"
-#define VIRTIO_EVDI_PCI(obj) \
-        OBJECT_CHECK(VirtIOEVDIPCI, (obj), TYPE_VIRTIO_EVDI_PCI)
-
-struct VirtIOEVDIPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOEVDI vdev;
-};
-
-/*
- * virtio-esm-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_ESM_PCI "virtio-esm-pci"
-#define VIRTIO_ESM_PCI(obj) \
-        OBJECT_CHECK(VirtIOESMPCI, (obj), TYPE_VIRTIO_ESM_PCI)
-struct VirtIOESMPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOESM vdev;
-};
-
-/*
- * virtio-hwkey-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_HWKEY_PCI "virtio-hwkey-pci"
-#define VIRTIO_HWKEY_PCI(obj) \
-        OBJECT_CHECK(VirtIOHWKeyPCI, (obj), TYPE_VIRTIO_HWKEY_PCI)
-struct VirtIOHWKeyPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOHWKey vdev;
-};
-
-/*
- * virtio-sensor-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_SENSOR_PCI "virtio-sensor-pci"
-#define VIRTIO_SENSOR_PCI(obj) \
-        OBJECT_CHECK(VirtIOSENSORPCI, (obj), TYPE_VIRTIO_SENSOR_PCI)
-
-struct VirtIOSENSORPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOSENSOR vdev;
-};
-
-/*
- * virtio-nfc-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_NFC_PCI "virtio-nfc-pci"
-#define VIRTIO_NFC_PCI(obj) \
-        OBJECT_CHECK(VirtIONFCPCI, (obj), TYPE_VIRTIO_NFC_PCI)
-
-struct VirtIONFCPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIONFC vdev;
-};
-
-/*
- * virtio-jack-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_JACK_PCI "virtio-jack-pci"
-#define VIRTIO_JACK_PCI(obj) \
-        OBJECT_CHECK(VirtIOJACKPCI, (obj), TYPE_VIRTIO_JACK_PCI)
-
-struct VirtIOJACKPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOJACK vdev;
-};
-
-/*
- * virtio-power-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_POWER_PCI "virtio-power-pci"
-#define VIRTIO_POWER_PCI(obj) \
-        OBJECT_CHECK(VirtIOPOWERPCI, (obj), TYPE_VIRTIO_POWER_PCI)
-
-struct VirtIOPOWERPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOPOWER vdev;
-};
-
-/*
- * virtio-vmodem-pci: This extends VirtioPCIProxy.
- */
-#define TYPE_VIRTIO_VMODEM_PCI "virtio-vmodem-pci"
-#define VIRTIO_VMODEM_PCI(obj) \
-        OBJECT_CHECK(VirtIOVModemPCI, (obj), TYPE_VIRTIO_VMODEM_PCI)
-struct VirtIOVModemPCI {
-    VirtIOPCIProxy parent_obj;
-    VirtIOVModem vdev;
-};
-
-#endif
 
 /* Virtio ABI version, if we increment this, we break the guest driver. */
 #define VIRTIO_PCI_ABI_VERSION          0
