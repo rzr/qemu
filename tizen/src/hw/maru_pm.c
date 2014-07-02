@@ -31,7 +31,7 @@
 #include "sysemu/sysemu.h"
 
 #include "debug_ch.h"
-#include "util/sdb_noti_server.h"
+#include "util/sdb.h"
 
 /* define debug channel */
 MULTI_DEBUG_CHANNEL(tizen, maru_pm);
