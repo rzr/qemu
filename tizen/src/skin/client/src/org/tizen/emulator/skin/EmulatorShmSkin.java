@@ -408,7 +408,7 @@ public class EmulatorShmSkin extends EmulatorSkin {
 
 	@Override
 	public void setCoverImage(final Image image) {
-		Display.getDefault().syncExec(new Runnable() {
+		Display.getDefault().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				imageCover = image;
