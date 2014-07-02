@@ -1660,9 +1660,6 @@ static int win_chr_init(CharDriverState *chr, const char *filename)
     COMSTAT comstat;
     DWORD size;
     DWORD err;
-#ifdef CONFIG_MARU
-    int open_flags, ret;
-#endif
 
     s->hsend = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (!s->hsend) {
@@ -1674,21 +1671,9 @@ static int win_chr_init(CharDriverState *chr, const char *filename)
         fprintf(stderr, "Failed CreateEvent\n");
         goto fail;
     }
-#ifndef CONFIG_MARU
     s->hcom = CreateFile(filename,
                       GENERIC_READ|GENERIC_WRITE, 0, NULL,
                       OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
-#else
-    open_flags = O_BINARY | O_RDWR;
-    // TODO : FILE_FLAG_OVERLAPPED
-
-    ret = qemu_open(filename, open_flags, 0644);
-    if (ret < 0) {
-        fprintf(stderr, "win_chr_init failed(%d)\n", ret);
-        goto fail;
-    }
-    s->hcom = (HANDLE)_get_osfhandle(ret);
-#endif
     if (s->hcom == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "Failed CreateFile (%lu)\n", GetLastError());
         s->hcom = NULL;
@@ -3591,26 +3576,18 @@ QemuOptsList qemu_chardev_opts = {
 static CharDriverState *qmp_chardev_open_file(ChardevFile *file, Error **errp)
 {
     HANDLE out;
-#ifdef CONFIG_MARU
-    int open_flags, ret;
-#endif
 
     if (file->has_in) {
         error_setg(errp, "input file not supported");
         return NULL;
     }
 
-#ifndef CONFIG_MARU
+#ifdef CONFIG_MARU
+    out = CreateFile(file->out, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                     CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
     out = CreateFile(file->out, GENERIC_WRITE, FILE_SHARE_READ, NULL,
                      OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-#else
-    open_flags = O_BINARY | O_RDWR | O_CREAT | O_TRUNC;
-    ret = qemu_open(file->out, open_flags, 0644);
-    if (ret < 0) {
-        error_setg(errp, "qemu_chr_open_win_file_out failed(%d)", ret);
-        return NULL;
-    }
-    out = (HANDLE)_get_osfhandle(ret);
 #endif
     if (out == INVALID_HANDLE_VALUE) {
         error_setg(errp, "open %s failed", file->out);
