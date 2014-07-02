@@ -59,7 +59,7 @@ static int geo_delay = 200000000;
 
 static int gyro_x_raw = 0;
 static int gyro_y_raw = 0;
-static int gyro_z_raw = 0;
+static int gyro_z_raw = 1;
 static int gyro_enable = 0;
 static int gyro_delay = 200000000;
 
