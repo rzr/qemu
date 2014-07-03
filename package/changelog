@@ -1,6 +1,9 @@
+* 2.0.4
+- fix bug: qemu crash when entering lock mode
+== Tina Zhang <tina.zhang@intel.com> 2014-07-03
 * 2.0.3
-- guest server: W/A non-blocking socket
-== Jinhyung Choi <jinhyung2.choi@samsung.com> 2014-06-30
+- guest server: w/a non-blocking socket
+== jinhyung choi <jinhyung2.choi@samsung.com> 2014-06-30
 * 2.0.1
 - sensor device data is modified.
 - haptic device is added.
