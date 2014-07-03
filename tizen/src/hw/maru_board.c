@@ -76,27 +76,17 @@ static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
 static const int ide_iobase2[MAX_IDE_BUS] = { 0x3f6, 0x376 };
 static const int ide_irq[MAX_IDE_BUS] = { 14, 15 };
 
-static bool has_pci_info = true;
-
-MemoryRegion *global_ram_memory;
-
-MemoryRegion *get_ram_memory(void)
-{
-    return global_ram_memory;
-}
-
 /* maru specialized device init */
 static void maru_device_init(void)
 {
     // do nothing for now...
 }
 
-extern void pc_init_pci(QEMUMachineInitArgs *args);
+extern void maru_pc_init_pci(QEMUMachineInitArgs *args);
 static void maru_x86_board_init(QEMUMachineInitArgs *args)
 {
-    pc_init_pci(args);
+    maru_pc_init_pci(args);
 
-    has_pci_info = false;
     maru_device_init();
 }
 

@@ -54,13 +54,6 @@
 
 #define MAX_IDE_BUS 2
 
-#ifdef CONFIG_MARU
-void pc_init_pci(QEMUMachineInitArgs *args);
-
-extern MemoryRegion *global_ram_memory; 
-extern void *preallocated_ram_ptr;
-#endif
-
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
 static const int ide_iobase2[MAX_IDE_BUS] = { 0x3f6, 0x376 };
 static const int ide_irq[MAX_IDE_BUS] = { 14, 15 };
@@ -155,10 +148,6 @@ static void pc_init1(QEMUMachineInitArgs *args,
         smbios_set_type1_defaults("QEMU", "Standard PC (i440FX + PIIX, 1996)",
                                   args->machine->name);
     }
-#ifdef CONFIG_MARU
-    // for ramdump...
-    global_ram_memory = ram_memory;
-#endif
 
     /* allocate ram and load rom/bios */
     if (!xen_enabled()) {
@@ -268,14 +257,19 @@ static void pc_init1(QEMUMachineInitArgs *args,
     }
 }
 
-#ifdef CONFIG_MARU
-void pc_init_pci(QEMUMachineInitArgs *args)
-#else
 static void pc_init_pci(QEMUMachineInitArgs *args)
-#endif
 {
     pc_init1(args, 1, 1);
 }
+
+#ifdef CONFIG_MARU
+void maru_pc_init_pci(QEMUMachineInitArgs *args);
+
+void maru_pc_init_pci(QEMUMachineInitArgs *args)
+{
+    pc_init_pci(args);
+}
+#endif
 
 static void pc_compat_1_7(QEMUMachineInitArgs *args)
 {

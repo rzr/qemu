@@ -37,7 +37,7 @@
 #include "ocidl.h"
 #include "errors.h"      /* for VFW_E_XXXX */
 #include "mmsystem.h"    /* for MAKEFOURCC macro */
-#include "hw/maru_camera_win32_interface.h"
+#include "hw/pci/maru_camera_win32_interface.h"
 
 /*
  * COM Interface implementations
