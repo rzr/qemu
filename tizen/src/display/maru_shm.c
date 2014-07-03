@@ -34,7 +34,7 @@
 
 #include "maru_shm.h"
 #include "emul_state.h"
-#include "hw/maru_brightness.h"
+#include "hw/pci/maru_brightness.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
 #include "maru_err_table.h"
