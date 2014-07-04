@@ -278,6 +278,87 @@ static const char *g_fs_nv21_source_gl3 =
     "    FragColor = vec4(y + 1.59765625 * v, y - 0.390625 * u - 0.8125 * v, y + 2.015625 * u, 1.0);\n"
     "}\n";
 
+static const char *g_vs_yuv420_source_gl2 =
+    "#version 120\n\n"
+    "attribute vec4 vertCoord;\n"
+    "uniform mat4 proj;\n"
+    "attribute vec2 texCoord;\n"
+    "varying vec2 v_texCoord;\n"
+    "void main()\n"
+    "{\n"
+    "    v_texCoord = texCoord;\n"
+    "    gl_Position = proj * vertCoord;\n"
+    "}\n";
+
+static const char *g_vs_yuv420_source_gl3 =
+    "#version 140\n\n"
+    "in vec4 vertCoord;\n"
+    "uniform mat4 proj;\n"
+    "in vec2 texCoord;\n"
+    "out vec2 v_texCoord;\n"
+    "void main()\n"
+    "{\n"
+    "    v_texCoord = texCoord;\n"
+    "    gl_Position = proj * vertCoord;\n"
+    "}\n";
+
+static const char *g_fs_yuv420_source_gl2 =
+    "#version 120\n\n"
+    "uniform sampler2D ytex;\n"
+    "uniform sampler2D utex;\n"
+    "uniform sampler2D vtex;\n"
+    "uniform vec2 size;\n"
+    "uniform vec2 ytexSize;\n"
+    "uniform vec2 utexSize;\n"
+    "uniform vec2 vtexSize;\n"
+    "varying vec2 v_texCoord;\n"
+    "void main()\n"
+    "{\n"
+    "    float ypos = floor((1.0 - v_texCoord.y) * size.y) * size.x + floor(v_texCoord.x * size.x);\n"
+    "    float ytexPos = floor(ypos / 4);\n"
+    "    vec4 ytexColor = texture2D(ytex, vec2((mod(ytexPos, ytexSize.x) + 0.5) / ytexSize.x, 1.0 - (floor(ytexPos / ytexSize.x) + 0.5) / ytexSize.y));\n"
+    "    float y = ytexColor[3 - int(mod(ypos + 1, 4))];\n"
+    "    float uvpos = floor(floor((1.0 - v_texCoord.y) * size.y) / 2) * size.x + floor(v_texCoord.x * size.x);\n"
+    "    float uvtexPos = floor(uvpos / 8);\n"
+    "    vec4 utexColor = texture2D(utex, vec2((mod(uvtexPos, utexSize.x) + 0.5) / utexSize.x, 1.0 - (floor(uvtexPos / utexSize.x) + 0.5) / utexSize.y));\n"
+    "    vec4 vtexColor = texture2D(vtex, vec2((mod(uvtexPos, vtexSize.x) + 0.5) / vtexSize.x, 1.0 - (floor(uvtexPos / vtexSize.x) + 0.5) / vtexSize.y));\n"
+    "    int index = 3 - int(mod((uvpos / 2) + 1, 4));\n"
+    "    float u = utexColor[index];\n"
+    "    float v = vtexColor[index];\n"
+    "    u -= 0.5;\n"
+    "    v -= 0.5;\n"
+    "    gl_FragColor = vec4(y + 1.59765625 * v, y - 0.390625 * u - 0.8125 * v, y + 2.015625 * u, 1.0);\n"
+    "}\n";
+
+static const char *g_fs_yuv420_source_gl3 =
+    "#version 140\n\n"
+    "uniform sampler2D ytex;\n"
+    "uniform sampler2D utex;\n"
+    "uniform sampler2D vtex;\n"
+    "uniform vec2 size;\n"
+    "uniform vec2 ytexSize;\n"
+    "uniform vec2 utexSize;\n"
+    "uniform vec2 vtexSize;\n"
+    "in vec2 v_texCoord;\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "    float ypos = floor((1.0 - v_texCoord.y) * size.y) * size.x + floor(v_texCoord.x * size.x);\n"
+    "    float ytexPos = floor(ypos / 4);\n"
+    "    vec4 ytexColor = texture2D(ytex, vec2((mod(ytexPos, ytexSize.x) + 0.5) / ytexSize.x, 1.0 - (floor(ytexPos / ytexSize.x) + 0.5) / ytexSize.y));\n"
+    "    float y = ytexColor[3 - int(mod(ypos + 1, 4))];\n"
+    "    float uvpos = floor(floor((1.0 - v_texCoord.y) * size.y) / 2) * size.x + floor(v_texCoord.x * size.x);\n"
+    "    float uvtexPos = floor(uvpos / 8);\n"
+    "    vec4 utexColor = texture2D(utex, vec2((mod(uvtexPos, utexSize.x) + 0.5) / utexSize.x, 1.0 - (floor(uvtexPos / utexSize.x) + 0.5) / utexSize.y));\n"
+    "    vec4 vtexColor = texture2D(vtex, vec2((mod(uvtexPos, vtexSize.x) + 0.5) / vtexSize.x, 1.0 - (floor(uvtexPos / vtexSize.x) + 0.5) / vtexSize.y));\n"
+    "    int index = 3 - int(mod((uvpos / 2) + 1, 4));\n"
+    "    float u = utexColor[index];\n"
+    "    float v = vtexColor[index];\n"
+    "    u -= 0.5;\n"
+    "    v -= 0.5;\n"
+    "    FragColor = vec4(y + 1.59765625 * v, y - 0.390625 * u - 0.8125 * v, y + 2.015625 * u, 1.0);\n"
+    "}\n";
+
 static GLuint vigs_gl_backend_alloc_tmp_texture(void *user_data,
                                                 uint32_t width,
                                                 uint32_t height,
@@ -533,7 +614,7 @@ static void vigs_gl_draw_color_prog(struct vigs_gl_backend *backend,
     backend->DisableVertexAttribArray(backend->color_prog_vertCoord_loc);
 }
 
-static void vigs_gl_draw_nv12_prog(struct vigs_gl_backend *backend,
+static void vigs_gl_draw_nv21_prog(struct vigs_gl_backend *backend,
                                    uint32_t count)
 {
     uint32_t size = count * 16;
@@ -552,6 +633,27 @@ static void vigs_gl_draw_nv12_prog(struct vigs_gl_backend *backend,
 
     backend->DisableVertexAttribArray(backend->nv21_prog_texCoord_loc);
     backend->DisableVertexAttribArray(backend->nv21_prog_vertCoord_loc);
+}
+
+static void vigs_gl_draw_yuv420_prog(struct vigs_gl_backend *backend,
+                                     uint32_t count)
+{
+    uint32_t size = count * 16;
+
+    vigs_gl_draw_update_vert_tex_buffer(backend, size);
+
+    backend->EnableVertexAttribArray(backend->yuv420_prog_vertCoord_loc);
+    backend->EnableVertexAttribArray(backend->yuv420_prog_texCoord_loc);
+
+    backend->VertexAttribPointer(backend->yuv420_prog_vertCoord_loc,
+                                 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    backend->VertexAttribPointer(backend->yuv420_prog_texCoord_loc,
+                                 2, GL_FLOAT, GL_FALSE, 0, NULL + (size / 2));
+
+    backend->DrawArrays(GL_TRIANGLES, 0, count);
+
+    backend->DisableVertexAttribArray(backend->yuv420_prog_texCoord_loc);
+    backend->DisableVertexAttribArray(backend->yuv420_prog_vertCoord_loc);
 }
 
 static void vigs_gl_create_ortho(GLfloat left, GLfloat right,
@@ -1524,7 +1626,51 @@ static bool vigs_gl_backend_composite_planes(struct vigs_gl_backend *gl_backend,
 
             gl_backend->Uniform2f(gl_backend->nv21_prog_size_loc, src_w, src_h);
 
-            vigs_gl_draw_nv12_prog(gl_backend, 6);
+            vigs_gl_draw_nv21_prog(gl_backend, 6);
+
+            gl_backend->UseProgram(gl_backend->tex_prog_id);
+        } else if (plane->format == vigsp_plane_yuv420) {
+            struct vigs_gl_surface *gl_sfc;
+            struct vigs_winsys_gl_surface *ws_sfc;
+
+            gl_backend->UseProgram(gl_backend->yuv420_prog_id);
+
+            gl_backend->UniformMatrix4fv(gl_backend->yuv420_prog_proj_loc,
+                                         1, GL_FALSE, ortho);
+
+            gl_sfc = (struct vigs_gl_surface*)plane->surfaces[2];
+            ws_sfc = get_ws_sfc(gl_sfc);
+
+            gl_backend->ActiveTexture(GL_TEXTURE2);
+            gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
+
+            gl_backend->Uniform2f(gl_backend->yuv420_prog_vtexSize_loc,
+                                  ws_sfc->base.base.width,
+                                  ws_sfc->base.base.height);
+
+            gl_sfc = (struct vigs_gl_surface*)plane->surfaces[1];
+            ws_sfc = get_ws_sfc(gl_sfc);
+
+            gl_backend->ActiveTexture(GL_TEXTURE1);
+            gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
+
+            gl_backend->Uniform2f(gl_backend->yuv420_prog_utexSize_loc,
+                                  ws_sfc->base.base.width,
+                                  ws_sfc->base.base.height);
+
+            gl_sfc = (struct vigs_gl_surface*)plane->surfaces[0];
+            ws_sfc = get_ws_sfc(gl_sfc);
+
+            gl_backend->ActiveTexture(GL_TEXTURE0);
+            gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
+
+            gl_backend->Uniform2f(gl_backend->yuv420_prog_ytexSize_loc,
+                                  ws_sfc->base.base.width,
+                                  ws_sfc->base.base.height);
+
+            gl_backend->Uniform2f(gl_backend->yuv420_prog_size_loc, src_w, src_h);
+
+            vigs_gl_draw_yuv420_prog(gl_backend, 6);
 
             gl_backend->UseProgram(gl_backend->tex_prog_id);
         } else {
@@ -1899,6 +2045,41 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     gl_backend->nv21_prog_ytex_loc = gl_backend->GetUniformLocation(gl_backend->nv21_prog_id, "ytex");
     gl_backend->nv21_prog_ctex_loc = gl_backend->GetUniformLocation(gl_backend->nv21_prog_id, "ctex");
 
+    gl_backend->yuv420_prog_vs_id = vigs_gl_create_shader(gl_backend,
+        (gl_backend->is_gl_2 ? g_vs_yuv420_source_gl2 : g_vs_yuv420_source_gl3),
+        GL_VERTEX_SHADER);
+
+    if (!gl_backend->yuv420_prog_vs_id) {
+        goto fail;
+    }
+
+    gl_backend->yuv420_prog_fs_id = vigs_gl_create_shader(gl_backend,
+        (gl_backend->is_gl_2 ? g_fs_yuv420_source_gl2 : g_fs_yuv420_source_gl3),
+        GL_FRAGMENT_SHADER);
+
+    if (!gl_backend->yuv420_prog_fs_id) {
+        goto fail;
+    }
+
+    gl_backend->yuv420_prog_id = vigs_gl_create_program(gl_backend,
+                                                        gl_backend->yuv420_prog_vs_id,
+                                                        gl_backend->yuv420_prog_fs_id);
+
+    if (!gl_backend->yuv420_prog_id) {
+        goto fail;
+    }
+
+    gl_backend->yuv420_prog_proj_loc = gl_backend->GetUniformLocation(gl_backend->yuv420_prog_id, "proj");
+    gl_backend->yuv420_prog_vertCoord_loc = gl_backend->GetAttribLocation(gl_backend->yuv420_prog_id, "vertCoord");
+    gl_backend->yuv420_prog_texCoord_loc = gl_backend->GetAttribLocation(gl_backend->yuv420_prog_id, "texCoord");
+    gl_backend->yuv420_prog_size_loc = gl_backend->GetUniformLocation(gl_backend->yuv420_prog_id, "size");
+    gl_backend->yuv420_prog_ytexSize_loc = gl_backend->GetUniformLocation(gl_backend->yuv420_prog_id, "ytexSize");
+    gl_backend->yuv420_prog_utexSize_loc = gl_backend->GetUniformLocation(gl_backend->yuv420_prog_id, "utexSize");
+    gl_backend->yuv420_prog_vtexSize_loc = gl_backend->GetUniformLocation(gl_backend->yuv420_prog_id, "vtexSize");
+    gl_backend->yuv420_prog_ytex_loc = gl_backend->GetUniformLocation(gl_backend->yuv420_prog_id, "ytex");
+    gl_backend->yuv420_prog_utex_loc = gl_backend->GetUniformLocation(gl_backend->yuv420_prog_id, "utex");
+    gl_backend->yuv420_prog_vtex_loc = gl_backend->GetUniformLocation(gl_backend->yuv420_prog_id, "vtex");
+
     gl_backend->GenBuffers(1, &gl_backend->vbo);
 
     if (!gl_backend->vbo) {
@@ -1911,6 +2092,11 @@ bool vigs_gl_backend_init(struct vigs_gl_backend *gl_backend)
     gl_backend->UseProgram(gl_backend->nv21_prog_id);
     gl_backend->Uniform1i(gl_backend->nv21_prog_ytex_loc, 0);
     gl_backend->Uniform1i(gl_backend->nv21_prog_ctex_loc, 1);
+
+    gl_backend->UseProgram(gl_backend->yuv420_prog_id);
+    gl_backend->Uniform1i(gl_backend->yuv420_prog_ytex_loc, 0);
+    gl_backend->Uniform1i(gl_backend->yuv420_prog_utex_loc, 1);
+    gl_backend->Uniform1i(gl_backend->yuv420_prog_vtex_loc, 2);
 
     gl_backend->UseProgram(gl_backend->tex_prog_id);
     gl_backend->cur_prog_id = gl_backend->tex_prog_id;
@@ -1952,6 +2138,13 @@ void vigs_gl_backend_cleanup(struct vigs_gl_backend *gl_backend)
     if (gl_backend->make_current(gl_backend, true)) {
         gl_backend->DeleteBuffers(1, &gl_backend->pbo);
         gl_backend->DeleteBuffers(1, &gl_backend->vbo);
+        gl_backend->DetachShader(gl_backend->yuv420_prog_id,
+                                 gl_backend->yuv420_prog_vs_id);
+        gl_backend->DetachShader(gl_backend->yuv420_prog_id,
+                                 gl_backend->yuv420_prog_fs_id);
+        gl_backend->DeleteShader(gl_backend->yuv420_prog_vs_id);
+        gl_backend->DeleteShader(gl_backend->yuv420_prog_fs_id);
+        gl_backend->DeleteProgram(gl_backend->yuv420_prog_id);
         gl_backend->DetachShader(gl_backend->nv21_prog_id,
                                  gl_backend->nv21_prog_vs_id);
         gl_backend->DetachShader(gl_backend->nv21_prog_id,

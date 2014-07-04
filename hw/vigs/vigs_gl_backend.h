@@ -194,6 +194,20 @@ struct vigs_gl_backend
     GLint nv21_prog_ytex_loc;
     GLint nv21_prog_ctex_loc;
 
+    GLuint yuv420_prog_vs_id;
+    GLuint yuv420_prog_fs_id;
+    GLuint yuv420_prog_id;
+    GLint yuv420_prog_proj_loc;
+    GLint yuv420_prog_vertCoord_loc;
+    GLint yuv420_prog_texCoord_loc;
+    GLint yuv420_prog_size_loc;
+    GLint yuv420_prog_ytexSize_loc;
+    GLint yuv420_prog_utexSize_loc;
+    GLint yuv420_prog_vtexSize_loc;
+    GLint yuv420_prog_ytex_loc;
+    GLint yuv420_prog_utex_loc;
+    GLint yuv420_prog_vtex_loc;
+
     GLuint vbo;
     uint32_t vbo_size;
 

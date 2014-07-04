@@ -51,6 +51,7 @@ int vigs_format_num_buffers(vigsp_plane_format format)
     case vigsp_plane_nv21: return 2;
     case vigsp_plane_nv42: return 2;
     case vigsp_plane_nv61: return 2;
+    case vigsp_plane_yuv420: return 3;
     default:
         assert(false);
         VIGS_LOG_CRITICAL("unknown format: %d", format);
