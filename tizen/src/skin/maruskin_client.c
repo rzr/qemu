@@ -46,7 +46,7 @@
 
 #ifdef CONFIG_WIN32
 #include <windows.h>
-#include "maru_err_table.h"
+#include "util/maru_err_table.h"
 #endif
 
 MULTI_DEBUG_CHANNEL(qemu, skin_client);

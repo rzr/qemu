@@ -35,7 +35,7 @@
 #include "sysemu/kvm.h"
 
 #ifdef CONFIG_MARU
-#include "../../tizen/src/maru_err_table.h"
+#include "tizen/src/util/maru_err_table.h"
 #endif
 
 #define BIOS_FILENAME "bios.bin"

@@ -46,6 +46,10 @@
 #include "trace.h"
 #include "sysemu/arch_init.h"
 
+#ifdef CONFIG_MARU
+#include "tizen/src/util/maru_err_table.h"
+#endif
+
 static QTAILQ_HEAD(drivelist, DriveInfo) drives = QTAILQ_HEAD_INITIALIZER(drives);
 
 static const char *const if_name[IF_COUNT] = {
@@ -288,11 +292,6 @@ static int parse_block_error_action(const char *buf, bool is_read, Error **errp)
     }
 }
 
-#ifdef CONFIG_MARU
-extern int start_simple_client(char* msg);
-extern char* maru_convert_path(char* msg, const char *path);
-#endif
-
 static bool check_throttle_config(ThrottleConfig *cfg, Error **errp)
 {
     if (throttle_conflicting(cfg)) {
@@ -513,14 +512,13 @@ static DriveInfo *blockdev_init(const char *file, QDict *bs_opts,
 
     if (ret < 0) {
 #ifdef CONFIG_MARU
-        const char _msg[] = "Failed to load disk file from the following path. Check if the file is corrupted or missing.\n\n";
-        char* err_msg = NULL;
+        char *path = get_canonical_path(file);
+        char *msg = g_strdup_printf("Failed to load disk file from the following path. Check if the file is corrupted or missing.\n\n%s", path);
 
-        err_msg = maru_convert_path((char*)_msg, file);
-        if (err_msg) {
-            start_simple_client(err_msg);
-            g_free(err_msg);
-        }
+        start_simple_client(msg);
+
+        g_free(path);
+        g_free(msg);
 #endif
 
         error_setg(errp, "could not open disk image %s: %s",

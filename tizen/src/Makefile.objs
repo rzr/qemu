@@ -3,13 +3,10 @@
 QEMU_CFLAGS += -I$(SRC_PATH)/tizen/src
 
 # emulator base
-obj-y += emulator.o emulator_legacy.o emulator_options.o emul_state.o maru_err_table.o
+obj-y += emulator.o emulator_legacy.o emulator_options.o emul_state.o
 
 # utils
 obj-y += util/
-
-# mloop event
-#obj-y += mloop_event.o
 
 # maru display
 obj-y += display/

@@ -21,8 +21,7 @@
 #include "virtio-9p-coth.h"
 
 #ifdef CONFIG_MARU
-#include "../tizen/src/maru_err_table.h"
-// extern char* maru_convert_path(char* msg, const char *path);
+#include "tizen/src/util/maru_err_table.h"
 #endif
 
 static uint32_t virtio_9p_get_features(VirtIODevice *vdev, uint32_t features)
@@ -108,13 +107,11 @@ static void virtio_9p_device_realize(DeviceState *dev, Error **errp)
         error_setg(errp, "Virtio-9p Failed to initialize fs-driver with id:%s"
                    " and export path:%s", s->fsconf.fsdev_id, s->ctx.fs_root);
 #ifdef CONFIG_MARU
-        const char _msg[] = "Failed to find the file sharing path. Check if the path is correct or not.\n\n";
-        char* err_msg = NULL;
-        err_msg = maru_convert_path((char*)_msg, s->ctx.fs_root);
-		maru_register_exit_msg(MARU_EXIT_UNKNOWN, err_msg);
-        if (err_msg) {
-            g_free(err_msg);
-        }
+        char *path = get_canonical_path(s->ctx.fs_root);
+        maru_register_exit_msg(MARU_EXIT_UNKNOWN, "Failed to find the file sharing path."
+                    " Check if the path is correct or not.\n\n%s", path);
+
+        g_free(path);
 #endif
         goto out;
     }

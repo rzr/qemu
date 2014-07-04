@@ -34,7 +34,7 @@
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
 #include "display/maru_display.h"
-#include "maru_err_table.h"
+#include "util/maru_err_table.h"
 #include "ecs/ecs.h"
 #include "emul_state.h"
 
