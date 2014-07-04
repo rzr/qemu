@@ -82,7 +82,9 @@ public class CustomProgressBar extends Canvas {
 		parent.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				setVisible(false);
+				if (isDisposed() == false) {
+					setVisible(false);
+				}
 			}
 		});
 	}
@@ -145,7 +147,9 @@ public class CustomProgressBar extends Canvas {
 			parent.getDisplay().syncExec(new Runnable() {
 				@Override
 				public void run() {
-					setVisible(true);
+					if (isDisposed() == false) {
+						setVisible(true);
+					}
 				}
 			});
 		}

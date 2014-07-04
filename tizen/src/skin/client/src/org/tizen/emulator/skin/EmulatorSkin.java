@@ -1803,7 +1803,6 @@ public class EmulatorSkin {
 							"emulator-" + portSdb, "-e", sdbPath,"shell"); */
 				} else { /* Linux */
 					procSdb.command("/usr/bin/gnome-terminal",
-							"--disable-factory",
 							"--title=" + SkinUtil.makeEmulatorName(config),
 							"-x", sdbPath, "-s", "emulator-" + portSdb, "shell");
 				}
