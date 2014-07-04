@@ -20,4 +20,7 @@ obj-y += maru_device_hotplug.o
 # error table
 obj-y += maru_err_table.o
 
+# debug channel
+obj-y += new_debug_ch.o
+
 $(obj)/osutil.o: QEMU_CFLAGS += $(CURL_CFLAGS)

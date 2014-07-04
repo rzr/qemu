@@ -20,9 +20,6 @@ obj-y += tethering/
 # maru skin
 obj-y += skin/
 
-# debug channel
-obj-y += debug_ch.o
-
 # maru hardware
 obj-y += hw/
 
