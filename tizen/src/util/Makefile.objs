@@ -17,4 +17,7 @@ obj-$(CONFIG_DARWIN) += check_gl_cgl.o
 # hotplug
 obj-y += maru_device_hotplug.o
 
+# error table
+obj-y += maru_err_table.o
+
 $(obj)/osutil.o: QEMU_CFLAGS += $(CURL_CFLAGS)

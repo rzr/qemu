@@ -39,7 +39,7 @@
 #include "emul_state.h"
 #include "emulator_options.h"
 #include "util/check_gl.h"
-#include "maru_err_table.h"
+#include "util/maru_err_table.h"
 #include "util/osutil.h"
 #include "util/sdb.h"
 #include "skin/maruskin_server.h"

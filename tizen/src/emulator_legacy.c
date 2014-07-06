@@ -41,7 +41,7 @@
 #include "guest_debug.h"
 #include "hw/virtio/maru_virtio_touchscreen.h"
 #include "util/check_gl.h"
-#include "maru_err_table.h"
+#include "util/maru_err_table.h"
 #include "display/maru_display.h"
 #include "util/osutil.h"
 #include "util/sdb.h"

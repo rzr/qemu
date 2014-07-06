@@ -50,20 +50,20 @@ MULTI_DEBUG_CHANNEL(qemu, backtrace);
 static char _maru_string_table[][JAVA_MAX_COMMAND_LENGTH] = {
     /* 0 */ "",
     /* 1 */ "Failed to allocate memory in qemu.",
-    /* 2 */ "Failed to load a kernel file the following path.\
-Check if the file is corrupted or missing.\n\n",
-    /* 3 */ "Failed to load a bios file in bios path that mentioned on document.\
-Check if the file is corrupted or missing.\n\n",
+    /* 2 */ "Failed to load a kernel file the following path."
+            " Check if the file is corrupted or missing.\n\n",
+    /* 3 */ "Failed to load a bios file in bios path that mentioned on document."
+            " Check if the file is corrupted or missing.\n\n",
     /* 4 */ "Skin process cannot be initialized. Skin server is not ready.",
-    /* 5 */ "Emulator has stopped working.\n\
-A problem caused the program to stop working correctly.",
+    /* 5 */ "Emulator has stopped working.\n"
+            "A problem caused the program to stop working correctly.",
     /* add here.. */
     ""
 };
 
 
 static int maru_exit_status = MARU_EXIT_NORMAL;
-static char maru_exit_msg[JAVA_MAX_COMMAND_LENGTH] = { 0, };
+static char *maru_exit_msg;
 
 #ifdef CONFIG_WIN32
 static LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter;
@@ -74,54 +74,61 @@ static pthread_spinlock_t siglock;
 void maru_sighandler(int sig);
 #endif
 
-
-void maru_register_exit_msg(int maru_exit_index, char const *const additional_msg)
+char *get_canonical_path(char const *const path)
 {
-    int len = 0;
+    if ((int)g_path_is_absolute(path)) {
+        return (char *)path;
+    }
+
+    char *canonical_path;
+
+#ifndef _WIN32
+    char *current_dir = g_get_current_dir();
+    canonical_path = g_strdup_printf("%s/%s", current_dir, path);
+    g_free(current_dir);
+#else
+    canonical_path = g_malloc(MAX_PATH);
+    GetFullPathName(path, MAX_PATH, canonical_path, NULL);
+#endif
+
+    return canonical_path;
+}
+
+void maru_register_exit_msg(int maru_exit_index, char const *format, ...)
+{
+    va_list args;
 
     if (maru_exit_index >= MARU_EXIT_NORMAL) {
-        fprintf(stderr, "Invalid error message index = %d\n", maru_exit_index);
+        fprintf(stderr, "Invalid error message index = %d\n",
+            maru_exit_index);
         return;
     }
     if (maru_exit_status != MARU_EXIT_NORMAL) {
-        fprintf(stderr, "The error message is already registered = %d\n", maru_exit_status);
+        fprintf(stderr, "The error message is already registered = %d\n",
+            maru_exit_status);
         return;
     }
 
     maru_exit_status = maru_exit_index;
 
-    if (maru_exit_status != MARU_EXIT_UNKNOWN) {
-        if (maru_exit_status == MARU_EXIT_HB_TIME_EXPIRED) {
-            fprintf(stderr, "Skin client could not connect to Skin server.\
-The time of internal heartbeat has expired.\n");
-        }
+    if (maru_exit_status == MARU_EXIT_HB_TIME_EXPIRED) {
+        fprintf(stderr, "Skin client could not connect to Skin server."
+                " The time of internal heartbeat has expired.\n");
+    }
 
-        if (additional_msg != NULL) {
-            len = strlen(_maru_string_table[maru_exit_status])
-                    + strlen(additional_msg) + 1;
-            if (len > JAVA_MAX_COMMAND_LENGTH) {
-                len = JAVA_MAX_COMMAND_LENGTH;
-            }
+    if (!format) {
+        format = "";
+    }
 
-            snprintf(maru_exit_msg, len, "%s%s",
-                    _maru_string_table[maru_exit_status], additional_msg);
-        } else {
-            len = strlen(_maru_string_table[maru_exit_status]) + 1;
-            if (len > JAVA_MAX_COMMAND_LENGTH) {
-                len = JAVA_MAX_COMMAND_LENGTH;
-            }
+    va_start(args, format);
+    char *additional = g_strdup_vprintf(format, args);
+    va_end(args);
+    maru_exit_msg = g_strdup_printf("%s%s", _maru_string_table[maru_exit_status],
+                        additional);
+    g_free(additional);
 
-            snprintf(maru_exit_msg, len,
-                    "%s", _maru_string_table[maru_exit_status]);
-        }
-    } else if (additional_msg != NULL) { /* MARU_EXIT_UNKNOWN */
-        len = strlen(additional_msg);
-        if (len >= JAVA_MAX_COMMAND_LENGTH) {
-            len = JAVA_MAX_COMMAND_LENGTH - 1;
-        }
-
-        pstrcpy(maru_exit_msg, len + 1, additional_msg);
-        maru_exit_msg[len] = '\0';
+    if (strlen(maru_exit_msg) >= JAVA_MAX_COMMAND_LENGTH) {
+        maru_exit_msg[JAVA_MAX_COMMAND_LENGTH - 1] = '\0';
     }
 
     fprintf(stdout, "The error message is registered = %d : %s\n",
@@ -131,91 +138,14 @@ The time of internal heartbeat has expired.\n");
 void maru_atexit(void)
 {
 
-    if (maru_exit_status != MARU_EXIT_NORMAL || strlen(maru_exit_msg) != 0) {
+    if (maru_exit_status != MARU_EXIT_NORMAL || maru_exit_msg) {
         start_simple_client(maru_exit_msg);
     }
+    g_free(maru_exit_msg);
+
     INFO("normal exit called\n");
     // dump backtrace log no matter what
     maru_dump_backtrace(NULL, 0);
-}
-
-char *maru_convert_path(char *msg, const char *path)
-{
-    char *current_path = NULL;
-    char *err_msg = NULL;
-#ifdef _WIN32
-    char *dos_err_msg = NULL;
-#endif
-    int total_len = 0;
-    int msg_len = 0;
-    int cur_path_len = 0;
-    int path_len = 0;
-    int res = -1;
-
-    if (!path) {
-        path = "NULL";
-        res = 1;
-    }
-    else {
-        res = (int)g_path_is_absolute(path);
-    }
-    path_len = (strlen(path) + 1);
-    if (msg) {
-        msg_len = strlen(msg) + 1;
-    }
-
-    if (!res) {
-        current_path = (char *)g_get_current_dir();
-        cur_path_len = strlen(current_path) + strlen("/") + 1;
-        total_len += cur_path_len;
-    }
-    total_len += (path_len + msg_len);
-
-    err_msg = g_malloc0(total_len * sizeof(char));
-    if (!err_msg) {
-        fprintf(stderr, "failed to allocate a buffer for an error massage\n");
-        g_free(current_path);
-        return NULL;
-    }
-
-    if (msg) {
-        snprintf(err_msg, msg_len, "%s", msg);
-        total_len = msg_len - 1;
-    } else {
-        total_len = 0;
-    }
-
-    if (!res) {
-        snprintf(err_msg + total_len, cur_path_len, "%s%s", current_path, "/");
-        total_len += (cur_path_len - 1);
-    }
-    snprintf(err_msg + total_len, path_len, "%s", path);
-
-#ifdef _WIN32
-    {
-        int i;
-
-        dos_err_msg = g_strdup(err_msg);
-        if (!dos_err_msg) {
-            fprintf(stderr,
-                "failed to duplicate an error message from %p\n", err_msg);
-            g_free(current_path);
-            g_free(err_msg);
-            return NULL;
-        }
-
-        for (i = (total_len - 1); dos_err_msg[i]; i++) {
-            if (dos_err_msg[i] == '/') {
-                dos_err_msg[i] = '\\';
-            }
-        }
-        pstrcpy(err_msg, strlen(dos_err_msg) + 1, dos_err_msg);
-        g_free(dos_err_msg);
-    }
-#endif
-    g_free(current_path);
-
-    return err_msg;
 }
 
 /* Print 'backtrace' */

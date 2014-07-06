@@ -32,8 +32,7 @@
 #ifndef __EMUL_ERR_TABLE_H__
 #define __EMUL_ERR_TABLE_H__
 
-#include "skin/maruskin_client.h"
-
+#include "tizen/src/skin/maruskin_client.h"
 
 /* TODO: define macro for fair of definition */
 /* This enum must match the table definition */
@@ -49,9 +48,10 @@ enum {
 };
 
 
-void maru_register_exit_msg(int maru_exit_status, char const *const additional_msg);
+char *get_canonical_path(char const *const path);
+void maru_register_exit_msg(int maru_exit_status, char const *format, ...);
 void maru_atexit(void);
-char *maru_convert_path(char *msg, const char *path);
+
 void maru_dump_backtrace(void *ptr, int depth);
 
 void maru_register_exception_handler(void);

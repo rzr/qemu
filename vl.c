@@ -132,7 +132,7 @@ int qemu_main(int argc, char **argv, char **envp);
 #ifdef CONFIG_MARU
 #include "tizen/src/maru_common.h"
 #include "tizen/src/emulator.h"
-#include "tizen/src/maru_err_table.h"
+#include "tizen/src/util/maru_err_table.h"
 #include "tizen/src/emul_state.h"
 #include "tizen/src/display/maru_display.h"
 #include "tizen/src/skin/maruskin_operation.h"

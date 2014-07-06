@@ -60,7 +60,7 @@
 #include "acpi-build.h"
 
 #ifdef CONFIG_MARU
-#include "../../tizen/src/maru_err_table.h"
+#include "tizen/src/util/maru_err_table.h"
 #endif
 /* debug PC/ISA interrupts */
 //#define DEBUG_IRQ
@@ -734,13 +734,10 @@ static void load_linux(FWCfgState *fw_cfg,
                 kernel_filename, strerror(errno));
 
 #ifdef CONFIG_MARU
-        char *error_msg = NULL;
+        char *path = get_canonical_path(kernel_filename);
+        maru_register_exit_msg(MARU_EXIT_KERNEL_FILE_EXCEPTION, path);
 
-        error_msg = maru_convert_path(error_msg, kernel_filename);
-        maru_register_exit_msg(MARU_EXIT_KERNEL_FILE_EXCEPTION, error_msg);
-        if (error_msg) {
-            g_free(error_msg);
-        }
+        g_free(path);
 #endif
         exit(1);
     }
