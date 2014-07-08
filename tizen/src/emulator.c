@@ -43,7 +43,7 @@
 #include "util/osutil.h"
 #include "util/sdb.h"
 #include "skin/maruskin_server.h"
-#include "debug_ch.h"
+#include "util/new_debug_ch.h"
 #include "ecs/ecs.h"
 #include "util/maru_device_hotplug.h"
 
@@ -60,7 +60,7 @@
 int thread_running = 1; /* Check if we need exit main */
 #endif
 
-MULTI_DEBUG_CHANNEL(tizen, main);
+DECLARE_DEBUG_CHANNEL(main);
 
 #define SUPPORT_LEGACY_ARGS
 
@@ -115,7 +115,7 @@ void emulator_add_exit_notifier(Notifier *notify)
 static void construct_main_window(int skin_argc, char *skin_argv[],
                                 int qemu_argc, char *qemu_argv[])
 {
-    INFO("construct main window\n");
+    LOG_INFO("construct main window\n");
 
     start_skin_server(skin_argc, skin_argv, qemu_argc, qemu_argv);
 
@@ -174,7 +174,7 @@ static void emulator_notify_exit(Notifier *notifier, void *data)
     }
     reset_variables();
 
-    INFO("Exit emulator...\n");
+    LOG_INFO("Exit emulator...\n");
 }
 
 static Notifier emulator_exit = { .notify = emulator_notify_exit };
@@ -183,16 +183,16 @@ static void print_system_info(void)
 {
 #define DIV 1024
 
-    INFO("* Board name : %s\n", build_version);
-    INFO("* Package %s\n", pkginfo_version);
-    INFO("* Package %s\n", pkginfo_maintainer);
-    INFO("* Git Head : %s\n", pkginfo_githead);
-    INFO("* %s\n", latest_gittag);
-    INFO("* User name : %s\n", g_get_real_name());
-    INFO("* Host name : %s\n", g_get_host_name());
+    LOG_INFO("* Board name : %s\n", build_version);
+    LOG_INFO("* Package %s\n", pkginfo_version);
+    LOG_INFO("* Package %s\n", pkginfo_maintainer);
+    LOG_INFO("* Git Head : %s\n", pkginfo_githead);
+    LOG_INFO("* %s\n", latest_gittag);
+    LOG_INFO("* User name : %s\n", g_get_real_name());
+    LOG_INFO("* Host name : %s\n", g_get_host_name());
 
     /* time stamp */
-    INFO("* Build date : %s\n", build_date);
+    LOG_INFO("* Build date : %s\n", build_date);
 
     qemu_timeval tval = { 0, };
     if (qemu_gettimeofday(&tval) == 0) {
@@ -201,12 +201,12 @@ static void print_system_info(void)
         time_t ti = tval.tv_sec;
         struct tm *tm_time = localtime(&ti);
         strftime(timeinfo, sizeof(timeinfo), "%Y-%m-%d %H:%M:%S", tm_time);
-        INFO("* Current time : %s\n", timeinfo);
+        LOG_INFO("* Current time : %s\n", timeinfo);
     }
 
 #ifdef CONFIG_SDL
     /* Gets the version of the dynamically linked SDL library */
-    INFO("* Host sdl version : (%d, %d, %d)\n",
+    LOG_INFO("* Host sdl version : (%d, %d, %d)\n",
             SDL_Linked_Version()->major,
             SDL_Linked_Version()->minor,
             SDL_Linked_Version()->patch);
@@ -281,7 +281,7 @@ static void prepare_opengl_acceleration(gchar * const kernel_cmdline)
 
         if (capability_check_gl != 0) {
             enable_yagl = 0;
-            INFO("<WARNING> GL acceleration was disabled due to the fail of GL check!\n");
+            LOG_INFO("<WARNING> GL acceleration was disabled due to the fail of GL check!\n");
         }
     }
 
@@ -295,28 +295,28 @@ static void prepare_opengl_acceleration(gchar * const kernel_cmdline)
 
 const gchar *prepare_maru(const gchar * const kernel_cmdline)
 {
-    INFO("Prepare maru specified feature\n");
+    LOG_INFO("Prepare maru specified feature\n");
 
     g_strlcpy(maru_kernel_cmdline, kernel_cmdline, LEN_MARU_KERNEL_CMDLINE);
 
     /* Prepare basic features */
-    INFO("Prepare_basic_features\n");
+    LOG_INFO("Prepare_basic_features\n");
     prepare_basic_features(maru_kernel_cmdline);
 
     /* Prepare GL acceleration */
 #ifdef CONFIG_YAGL
-    INFO("Prepare_opengl_acceleration\n");
+    LOG_INFO("Prepare_opengl_acceleration\n");
     prepare_opengl_acceleration(maru_kernel_cmdline);
 #endif
 
-    INFO("kernel command : %s\n", maru_kernel_cmdline);
+    LOG_INFO("kernel command : %s\n", maru_kernel_cmdline);
 
     return maru_kernel_cmdline;
 }
 
 void start_skin(void)
 {
-    INFO("Start skin\n");
+    LOG_INFO("Start skin\n");
 
     construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
 }
@@ -432,7 +432,7 @@ static int emulator_main(int argc, char *argv[], char **envp)
     }
 
 
-    INFO("Start emulator...\n");
+    LOG_INFO("Start emulator...\n");
     atexit(maru_atexit);
     emulator_add_exit_notifier(&emulator_exit);
 
@@ -440,10 +440,10 @@ static int emulator_main(int argc, char *argv[], char **envp)
 
     print_options_info();
 
-    INFO("socket initialize...\n");
+    LOG_INFO("socket initialize...\n");
     socket_init();
 
-    INFO("qemu main start...\n");
+    LOG_INFO("qemu main start...\n");
     qemu_main(_qemu_argc, _qemu_argv, envp);
 
     return 0;
