@@ -1,4 +1,4 @@
-Version: 2.0.4
+Version: 2.0.5
 Maintainer: Yeong-Kyoon Lee<yeongkyoon.lee@samsung.com>
 Source: emulator
 
@@ -7,12 +7,14 @@ OS: ubuntu-32
 Build-host-os: ubuntu-32
 Build-dependency: emulator-lib [ ubuntu-32 ]
 Description: Common binaries for Tizen Emulator
+C-Prerequisites : libsdl1.2debian
 
 Package: emulator-qemu-common
 OS: ubuntu-64
 Build-host-os: ubuntu-64
 Build-dependency: emulator-lib [ ubuntu-64 ]
 Description: Common binaries for Tizen Emulator
+C-Prerequisites : libsdl1.2debian
 
 Package: emulator-qemu-common
 OS: windows-32, windows-64
