@@ -37,7 +37,7 @@
 #ifndef __EMULATOR_H__
 #define __EMULATOR_H__
 
-#include "maru_common.h"
+#include "emulator_common.h"
 #include "qapi/qmp/qlist.h"
 #include "qemu/option.h"
 #include "sysemu/sysemu.h"
@@ -54,7 +54,6 @@ const gchar * prepare_maru(const gchar * const kernel_cmdline);
 void start_skin(void);
 
 const gchar * get_log_path(void);
-int maru_device_check(QemuOpts *opts);
 
 void emulator_add_exit_notifier(Notifier *notify);
 

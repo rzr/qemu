@@ -34,22 +34,22 @@ qemu_distclean:
 check_hax:
 	@echo "build check hax"
 ifdef CONFIG_WIN32
-	$(CC) -o check-hax.exe util/check_hax.c
+	$(CC) -o util/check-hax.exe util/check_hax.c
 endif
 ifdef CONFIG_DARWIN
-	$(CC) -mmacosx-version-min=10.4 -o check-hax util/check_hax.c
+	$(CC) -mmacosx-version-min=10.4 -o util/check-hax util/check_hax.c
 endif
 
 check_cam:
 	@echo "build check cam"
 ifdef CONFIG_LINUX
-	$(CC) -o check-cam util/check_cam.c -lv4l2 -lv4lconvert
+	$(CC) -o util/check-cam util/check_cam.c -lv4l2 -lv4lconvert
 endif
 ifdef CONFIG_WIN32
-	$(CC) -o check-cam.exe util/check_cam.c -I. -lole32 -loleaut32 -luuid -lstrmiids
+	$(CC) -o util/check-cam.exe util/check_cam.c -I. -lole32 -loleaut32 -luuid -lstrmiids
 endif
 ifdef CONFIG_DARWIN
-	$(CC) -o check-cam util/check_cam.c
+	$(CC) -o util/check-cam util/check_cam.c
 endif
 
 skin_client:
@@ -73,9 +73,9 @@ build_info:
 
 clean: qemu_clean
 ifndef CONFIG_LINUX
-	rm -f check-hax$(EXECUTABLE_EXTENSION) check-cam$(EXECUTABLE_EXTENSION)
+	rm -f util/check-hax$(EXECUTABLE_EXTENSION) util/check-cam$(EXECUTABLE_EXTENSION)
 else
-	rm -f check-cam
+	rm -f util/check-cam
 endif
 distclean: clean qemu_distclean
 
@@ -115,7 +115,7 @@ endif
 
 # check capabilities of OpenGL and Webcam
 	cp -pP ../../i386-softmmu/check-gl$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
-	cp -pP check-cam$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+	cp -pP util/check-cam$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
 
 # Enable HW Virtualization on Linux
 ifdef CONFIG_LINUX
@@ -125,12 +125,12 @@ endif
 
 # check HW Virtualization on Windows and MAC OS X.
 ifndef CONFIG_LINUX
-	cp -pP check-hax$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+	cp -pP util/check-hax$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
 endif
 
 # give a title name for sdb terminal.
 ifdef CONFIG_DARWIN
-	cp -pP sdbscript $(EMUL_DIR)/bin
+	cp -pP scripts/sdbscript $(EMUL_DIR)/bin
 endif
 
 # use shared memory for display framebuffer
@@ -227,7 +227,7 @@ endif
 
 # check capabilities of OpenGL and Webcam
 	cp -pP ../../i386-softmmu/check-gl$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
-	cp -pP check-cam$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+	cp -pP util/check-cam$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
 
 
 # Enable HW Virtualization on Linux
@@ -239,12 +239,12 @@ endif
 
 # check HW Virtualization on Windows and MAC OS X.
 ifndef CONFIG_LINUX
-	cp -pP check-hax$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+	cp -pP util/check-hax$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
 endif
 
 # give a title name for sdb terminal.
 ifdef CONFIG_DARWIN
-	cp -pP sdbscript $(DIBS_COMMON_DIR)/bin
+	cp -pP scripts/sdbscript $(DIBS_COMMON_DIR)/bin
 endif
 
 # use shared memory for display framebuffer

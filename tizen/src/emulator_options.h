@@ -29,6 +29,8 @@
 #ifndef __EMULATOR_OPTIONS_H__
 #define __EMULATOR_OPTIONS_H__
 
+#include "emulator_common.h"
+
 void set_variable(const char * const arg1, const char * const arg2, bool override);
 char *get_variable(const char * const name);
 void reset_variables(void);

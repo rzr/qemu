@@ -31,12 +31,12 @@
  */
 
 /**
- * @file maru_common.h
+ * @file emulator_common.h
  * @brief - header file that covers maru common features
  */
 
-#ifndef __MARU_COMMON_H__
-#define __MARU_COMMON_H__
+#ifndef __EMULATOR_COMMON_H__
+#define __EMULATOR_COMMON_H__
 
 #include <stddef.h>
 #include <stdint.h>
@@ -74,8 +74,4 @@
 #define JAVA_EXEFILE_PATH "java"
 #endif
 
-
-// W/A for preserve larger continuous heap for RAM.
-extern void *preallocated_ptr;
-
-#endif /* __MARU_COMMON_H__ */
+#endif /* __EMULATOR_COMMON_H__ */

@@ -68,7 +68,7 @@ extern int daemon(int, int);
 #endif
 
 #ifdef CONFIG_MARU
-#include "../../tizen/src/maru_common.h"
+#include "../../tizen/src/emulator_common.h"
 #endif
 
 int qemu_get_thread_id(void)

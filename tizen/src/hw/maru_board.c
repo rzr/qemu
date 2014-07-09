@@ -38,36 +38,10 @@
  * add some TIZEN-speciaized device...
  */
 
-#include <glib.h>
-
-#include "hw/hw.h"
-#include "hw/i386/pc.h"
-#include "hw/i386/apic.h"
-#include "hw/pci/pci.h"
-#include "hw/pci/pci_ids.h"
-#include "hw/usb.h"
-#include "net/net.h"
 #include "hw/boards.h"
-#include "hw/ide.h"
-#include "sysemu/kvm.h"
-#include "hw/kvm/clock.h"
-#include "sysemu/sysemu.h"
-#include "hw/sysbus.h"
-#include "hw/cpu/icc_bus.h"
-#include "sysemu/arch_init.h"
-#include "sysemu/blockdev.h"
-#include "hw/i2c/smbus.h"
-#include "hw/xen/xen.h"
-#include "exec/memory.h"
-#include "exec/address-spaces.h"
-#include "hw/acpi/acpi.h"
-#include "cpu.h"
-#ifdef CONFIG_XEN
-#  include <xen/hvm/hvm_info_table.h>
-#endif
+#include "hw/i386/pc.h"
 
-#include "maru_common.h"
-#include "guest_debug.h"
+#include "emulator_common.h"
 #include "maru_pm.h"
 
 #define MAX_IDE_BUS 2

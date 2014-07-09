@@ -34,7 +34,6 @@
 #define __EMUL_STATE_H__
 
 
-#include "maru_common.h"
 #include "display/maru_finger.h"
 
 enum {

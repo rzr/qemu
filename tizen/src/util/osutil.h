@@ -33,8 +33,7 @@
 #define __OSUTIL_H__
 
 #include "qemu-common.h"
-#include "maru_common.h"
-#include "emul_state.h"
+#include "emulator_common.h"
 
 #define HTTP_PROTOCOL "http="
 #define HTTP_PREFIX "http://"

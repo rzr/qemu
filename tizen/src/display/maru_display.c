@@ -29,7 +29,7 @@
 
 
 #include "emulator.h"
-#include "maru_common.h"
+#include "emulator_common.h"
 #include "maru_display.h"
 #include "debug_ch.h"
 

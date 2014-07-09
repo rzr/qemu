@@ -35,6 +35,7 @@
 #include "block/nbd.h"
 
 #include "emulator.h"
+#include "emulator_common.h"
 #include "debug_ch.h"
 #include "emul_state.h"
 

@@ -35,7 +35,6 @@
 
 #include "qemu-common.h"
 
-#include "maru_common.h"
 #include "maruskin_client.h"
 #include "maruskin_server.h"
 #include "emulator.h"

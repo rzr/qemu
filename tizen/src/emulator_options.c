@@ -29,7 +29,6 @@
 #include <string.h>
 #include "qemu/queue.h"
 
-#include "maru_common.h"
 #include "emulator_options.h"
 #include "emulator.h"
 

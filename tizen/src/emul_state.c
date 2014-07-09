@@ -29,7 +29,6 @@
  *
  */
 
-#include "maru_common.h"
 #include "emul_state.h"
 #include "skin/maruskin_server.h"
 #include "debug_ch.h"
