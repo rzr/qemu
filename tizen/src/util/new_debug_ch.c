@@ -1,69 +1,53 @@
 /*
- * Management of the debugging channels
+ * New debug channel
  *
+ * Copyright (C) 2014 Samsung Electronics Co., Ltd. All rights reserved.
+ *
+ * Contact:
+ * SeokYeon Hwang <syeon.hwang@samsung.com>
+ * Munkyu Im <munkyu.im@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ *
+ * Contributors:
+ * - S-Core Co., Ltd
+ *
+ * refer to debug_ch.c
  * Copyright 2000 Alexandre Julliard
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
- */
-
-/**
- * @file    debug_ch.c
- * @brief   Management of the debugging channels
- *
- * @author
- * @date
- * @attention
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <assert.h>
-#include <unistd.h>
+
 #include "qemu-common.h"
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <errno.h>
-#endif
 
 #include "emulator.h"
-#include "debug_ch.h"
+#include "util/new_debug_ch.h"
 #include "util/osutil.h"
 
 static char debugchfile[512] = {0, };
-#ifdef _WIN32
-static HANDLE handle;
-#endif
+static int fd = STDOUT_FILENO;
 
-static inline int interlocked_xchg_add(int *dest, int incr)
-{
-    int ret_val;
-    __asm__ __volatile__("lock; xaddl %0,(%1)"
-            : "=r" (ret_val) : "r" (dest), "0" (incr) : "memory");
-
-    return ret_val;
-}
-
-static const char * const debug_classes[] = {"fixme", "err", "warn", "trace", "info"};
+static const char * const debug_classes[] =
+        {"SEVERE", "WARNING", "INFO", "CONFIG", "FINE", "TRACE"};
 
 #define MAX_DEBUG_OPTIONS 256
 
-//static unsigned char default_flags = (1 << __DBCL_ERR) | (1 << __DBCL_FIXME) | (1 << __DBCL_INFO);
-static unsigned char default_flags = (1 << __DBCL_ERR)  | (1 << __DBCL_INFO);
+static unsigned char default_flags =
+        (1 << __DBCL_SEVERE) | (1 << __DBCL_WARNING) | (1 << __DBCL_INFO);
 static int nb_debug_options = -1;
 static struct _debug_channel debug_options[MAX_DEBUG_OPTIONS];
 
@@ -87,15 +71,6 @@ unsigned char _dbg_get_channel_flags(struct _debug_channel *channel)
     if (nb_debug_options) {
         struct _debug_channel *opt;
 
-        /* first check for multi channel */
-        opt = bsearch(channel->multiname,
-                debug_options,
-                nb_debug_options,
-                sizeof(debug_options[0]), cmp_name);
-        if (opt) {
-            return opt->flags;
-        }
-
         opt = bsearch(channel->name,
                 debug_options,
                 nb_debug_options,
@@ -111,40 +86,6 @@ unsigned char _dbg_get_channel_flags(struct _debug_channel *channel)
     }
 
     return default_flags;
-}
-
-/* set the flags to use for a given channel; return 0 if the channel is not available to set */
-int _dbg_set_channel_flags(struct _debug_channel *channel,
-        unsigned char set, unsigned char clear)
-{
-    if (nb_debug_options == -1) {
-        debug_init();
-    }
-
-    if (nb_debug_options) {
-        struct _debug_channel *opt;
-
-        /* first set for multi channel */
-        opt = bsearch(channel->multiname,
-                debug_options,
-                nb_debug_options,
-                sizeof(debug_options[0]), cmp_name);
-        if (opt) {
-            opt->flags = (opt->flags & ~clear) | set;
-            return 1;
-        }
-
-        opt = bsearch(channel->name,
-                debug_options,
-                nb_debug_options,
-                sizeof(debug_options[0]), cmp_name);
-        if (opt) {
-            opt->flags = (opt->flags & ~clear) | set;
-            return 1;
-        }
-    }
-
-    return 0;
 }
 
 /* add a new debug option at the end of the option list */
@@ -285,13 +226,6 @@ static void debug_init(void)
         return;  /* already initialized */
     }
 
-    nb_debug_options = 0;
-
-#if 0
-    strcpy(debugchfile, get_etc_path());
-    strcat(debugchfile, "/DEBUGCH");
-#endif
-
     if (0 == strlen(bin_path)) {
         strcpy(debugchfile, "DEBUGCH");
     } else {
@@ -336,107 +270,17 @@ static void debug_init(void)
     if (tmp != NULL) {
         free(tmp);
     }
-}
 
-/* allocate some tmp string space */
-/* FIXME: this is not 100% thread-safe */
-char *get_dbg_temp_buffer(size_t size)
-{
-    static char *list[32];
-    static int pos;
-    char *ret;
-    int idx;
-
-    idx = interlocked_xchg_add(&pos, 1) % (sizeof(list) / sizeof(list[0]));
-
-    if ((ret = realloc(list[idx], size))) {
-        list[idx] = ret;
+    // If "log_path" is not set, we use "stdout".
+    if (log_path[0] != '\0') {
+        fd = qemu_open(log_path, O_RDWR | O_CREAT | O_TRUNC, 0666);
+        if (fd < 0) {
+            fprintf(stderr, "Can't open logfile: %s\n", log_path);
+            exit(1);
+            return;
+        }
     }
-
-    return ret;
-}
-
-/* release unused part of the buffer */
-void release_dbg_temp_buffer(char *buffer, size_t size)
-{
-    /* don't bother doing anything */
-    (void)(buffer);
-    (void)(size);
-}
-
-static int dbg_vprintf(const char *format, va_list args)
-{
-    char tmp[MSGSIZE_MAX] = { 0, };
-    char txt[MSGSIZE_MAX] = { 0, };
-
-    FILE *fp;
-    // lock
-
-    int ret = vsnprintf(tmp, MSGSIZE_MAX, format, args);
-
-    tmp[MSGSIZE_MAX - 2] = '\n';
-    tmp[MSGSIZE_MAX - 1] = 0;
-
-    sprintf(txt, "%s", tmp);
-
-    // unlock
-    if ((fp = fopen(log_path, "a+")) == NULL) {
-        fprintf(stdout, "Emulator can't open.\n"
-                "Please check if "
-                "this binary file is running on the right path.\n");
-        exit(1);
-    }
-
-    fputs(txt, fp);
-    fclose(fp);
-
-    return ret;
-}
-
-int dbg_printf(const char *format, ...)
-{
-    int ret;
-    va_list valist;
-
-    va_start(valist, format);
-    ret = dbg_vprintf(format, valist);
-    va_end(valist);
-
-    return ret;
-}
-
-int dbg_printf_nonewline(const char *format, ...)
-{
-    int ret;
-    va_list valist;
-
-    va_start(valist, format);
-    ret = dbg_vprintf(format, valist);
-    va_end(valist);
-
-    return ret;
-}
-
-/* printf with temp buffer allocation */
-const char *dbg_sprintf(const char *format, ...)
-{
-    static const int max_size = 200;
-    char *ret;
-    int len;
-    va_list valist;
-
-    va_start(valist, format);
-    ret = get_dbg_temp_buffer(max_size);
-    len = vsnprintf(ret, max_size, format, valist);
-
-    if (len == -1 || len >= max_size) {
-        ret[max_size-1] = 0;
-    } else {
-        release_dbg_temp_buffer(ret, len + 1);
-    }
-    va_end(valist);
-
-    return ret;
+    nb_debug_options = 0;
 }
 
 int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
@@ -446,58 +290,20 @@ int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
     int ret_write = 0;
     char buf_msg[2048];
     va_list valist;
-    int open_flags;
-    int fd;
 
     if (!(_dbg_get_channel_flags(channel) & (1 << cls))) {
         return -1;
     }
 
-    ret += snprintf(buf_msg, sizeof(buf_msg),"%s [%s:%s",
-        get_timeofday(), debug_classes[cls], channel->name);
-
-    if (*channel->multiname) {
-        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, ":%s] ", channel->multiname);
-    } else {
-        ret += snprintf(buf_msg + ret, sizeof(buf_msg) - ret, "] ");
-    }
+    ret = snprintf(buf_msg, sizeof(buf_msg), "%s [%s:%s] ",
+            get_timeofday(), debug_classes[cls], channel->name);
 
     va_start(valist, format);
     ret += vsnprintf(buf_msg + ret, sizeof(buf_msg) - ret, format, valist);
     va_end(valist);
 
-    // If "log_path" is not set, we use "stdout".
-    if (log_path[0] == '\0') {
-        fprintf(stdout, "%s", buf_msg);
-        return ret;
-    }
-
-    open_flags = O_RDWR | O_APPEND | O_BINARY | O_CREAT;
-
-    fd = qemu_open(log_path, open_flags, 0666);
-    if (fd < 0) {
-        fprintf(stderr, "Can't open logfile: %s\n", log_path);
-        /* commented out for prevent shutdown when log directory is removed on runtime. */
-        //exit(1);
-        return -1;
-    }
-
     ret_write = qemu_write_full(fd, buf_msg, ret);
-    if (ret_write != ret) {
-        // TODO: error handling...
-    }
-    close(fd);
 
-    return ret;
+    return ret_write;
+
 }
-
-void assert_fail(char *exp, const char *file, int line)
-{
-    fprintf(stderr, "[%s][%d] Assert(%s) failed \n"
-            , file, line, exp);
-    fprintf(stdout, "[%s][%d] Assert(%s) failed \n"
-            , file, line, exp);
-    exit(0);
-}
-
-/* end of debug_ch.c */

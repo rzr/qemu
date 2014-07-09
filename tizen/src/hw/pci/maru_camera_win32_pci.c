@@ -489,7 +489,7 @@ static STDMETHODIMP HWCMemInputPin_GetAllocator(IMemInputPin *iface,
             return hr;
         }
     }
-    ASSERT(This->m_pAllocator != NULL);
+    assert(This->m_pAllocator != NULL);
     *ppAllocator = This->m_pAllocator;
     IMemAllocator_AddRef(This->m_pAllocator);
 
