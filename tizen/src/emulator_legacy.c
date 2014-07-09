@@ -38,7 +38,6 @@
 #include "build_info.h"
 #include "emulator.h"
 #include "emul_state.h"
-#include "guest_debug.h"
 #include "hw/virtio/maru_virtio_touchscreen.h"
 #include "util/check_gl.h"
 #include "util/maru_err_table.h"

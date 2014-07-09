@@ -31,8 +31,6 @@
 #ifndef SDB_SERVER_H_
 #define SDB_SERVER_H_
 
-#include "maru_common.h"
-
 #include <errno.h>
 
 #ifdef _WIN32

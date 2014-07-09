@@ -35,9 +35,9 @@
  */
 
 #include <png.h>
-#include "maru_common.h"
 #include "osutil.h"
 #include "emulator.h"
+#include "emul_state.h"
 #include "debug_ch.h"
 #include "maru_err_table.h"
 #include "sdb.h"

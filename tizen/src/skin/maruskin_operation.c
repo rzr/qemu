@@ -35,7 +35,6 @@
 #include "sysemu/sysemu.h"
 #include "hw/sysbus.h"
 
-#include "maru_common.h"
 #include "maruskin_operation.h"
 #include "hw/pci/maru_brightness.h"
 #include "hw/virtio/maru_virtio_hwkey.h"

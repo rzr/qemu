@@ -34,7 +34,6 @@
 #include "sysemu/blockdev.h"
 #include "qemu/event_notifier.h"
 
-#include "maru_common.h"
 #include "emulator.h"
 #include "maru_device_hotplug.h"
 

@@ -30,7 +30,6 @@
 
 #include <pthread.h>
 #include "emulator.h"
-#include "maru_common.h"
 #include "maruskin_server.h"
 #include "maruskin_operation.h"
 #include "display/maru_display.h"

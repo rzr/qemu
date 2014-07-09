@@ -29,7 +29,7 @@
  */
 
 #include "qemu-common.h"
-#include "maru_common.h"
+#include "emulator_common.h"
 #include "maru_err_table.h"
 #include "debug_ch.h"
 
