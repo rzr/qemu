@@ -106,6 +106,12 @@ install: all
 
 	cp -pP ../../qemu-img$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
 
+ifndef CONFIG_WIN32
+	cp -pP scripts/emulator.sh $(EMUL_DIR)/bin
+else
+	cp -pP scripts/emulator.bat $(EMUL_DIR)/bin
+endif
+
 # resources and jar for skin
 	cp -pP skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 	cp -pPR skin/client/skins $(EMUL_DIR)
@@ -217,6 +223,12 @@ install_dibs: all_dibs
 	done
 
 	cp -pP ../../qemu-img$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+
+ifndef CONFIG_WIN32
+	cp -pP scripts/emulator.sh $(EMUL_DIR)/bin
+else
+	cp -pP scripts/emulator.bat $(EMUL_DIR)/bin
+endif
 
 # resources and jar for skin
 	cp -pP skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
