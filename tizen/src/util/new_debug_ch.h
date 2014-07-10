@@ -35,6 +35,7 @@
 
 #include <sys/types.h>
 
+#define MAX_NAME_LEN    15
 // #define NO_DEBUG
 
 #ifdef __cplusplus
@@ -56,11 +57,10 @@ enum _debug_class
 struct _debug_channel
 {
     unsigned char flags;
-    char name[15];
+    char name[MAX_NAME_LEN];
 };
 
 #ifndef NO_DEBUG
-#define MSGSIZE_MAX 2048
 #define __GET_DEBUGGING_SEVERE(dbch)    ((dbch)->flags & (1 << __DBCL_SEVERE))
 #define __GET_DEBUGGING_WARNING(dbch)   ((dbch)->flags & (1 << __DBCL_WARNING))
 #define __GET_DEBUGGING_INFO(dbch)      ((dbch)->flags & (1 << __DBCL_INFO))

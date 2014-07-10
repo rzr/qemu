@@ -52,8 +52,6 @@
 #include "ecs/ecs.h"
 
 #ifdef CONFIG_HAX
-#include "guest_debug.h"
-
 #include "target-i386/hax-i386.h"
 #endif
 

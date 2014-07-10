@@ -127,7 +127,7 @@ void make_vm_lock_os(void)
 
     base_port = get_emul_vm_base_port();
 
-    g_shmid = shmget((key_t)base_port, MAXLEN, 0666|IPC_CREAT);
+    g_shmid = shmget((key_t)base_port, getpagesize(), 0666|IPC_CREAT);
     if (g_shmid == -1) {
         ERR("shmget failed\n");
         perror("osutil-linux: ");
@@ -223,7 +223,7 @@ void print_system_info_os(void)
 
     /* get linux distribution information */
     INFO("* Linux distribution infomation :\n");
-    const gchar lsb_release_cmd[MAXLEN] = "lsb_release -d -r -c";
+    char const *const lsb_release_cmd = "lsb_release -d -r -c";
     gchar *buffer = NULL;
     gint buffer_size = strlen(lsb_release_cmd) + 1;
 
@@ -239,7 +239,7 @@ void print_system_info_os(void)
 
     /* pci device description */
     INFO("* Host PCI devices :\n");
-    const gchar lspci_cmd[MAXLEN] = "lspci";
+    char const *const lspci_cmd = "lspci";
     buffer_size = strlen(lspci_cmd) + 1;
 
     buffer = g_malloc(buffer_size);
@@ -269,25 +269,25 @@ char *get_timeofday(void)
 
 static void process_string(char *buf)
 {
-    char tmp_buf[MAXLEN];
+    char tmp_buf[DEFAULTBUFLEN];
 
     /* remove single quotes of strings gotten by gsettings */
     if (gproxytool == GSETTINGS) {
         remove_string(buf, tmp_buf, "\'");
-        memset(buf, 0, MAXLEN);
+        memset(buf, 0, DEFAULTBUFLEN);
         strncpy(buf, tmp_buf, strlen(tmp_buf)-1);
     }
 }
 
 static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
-    char type[MAXLEN];
-    char proxy[MAXLEN];
-    char line[MAXLEN];
+    char type[DEFAULTBUFLEN];
+    char proxy[DEFAULTBUFLEN];
+    char line[DEFAULTBUFLEN];
     FILE *fp_pacfile;
     char *p = NULL;
     FILE *output;
-    char buf[MAXLEN];
+    char buf[DEFAULTBUFLEN];
 
     output = popen(gproxycmds[GNOME_PROXY_AUTOCONFIG_URL][gproxytool], "r");
     if (fscanf(output, "%s", buf) > 0) {
@@ -299,7 +299,7 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
     pclose(output);
     fp_pacfile = fopen(pac_tempfile, "r");
     if (fp_pacfile != NULL) {
-        while (fgets(line, MAXLEN, fp_pacfile) != NULL) {
+        while (fgets(line, DEFAULTBUFLEN, fp_pacfile) != NULL) {
             if ((strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
                 INFO("line found %s", line);
                 sscanf(line, "%*[^\"]\"%s %s", type, proxy);
@@ -340,18 +340,18 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
 
 static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
-    char buf[MAXLEN] = {0,};
+    char buf[DEFAULTBUFLEN] = {0,};
     char buf_port[MAXPORTLEN] = {0,};
-    char buf_proxy[MAXLEN] = {0,};
+    char buf_proxy[DEFAULTBUFLEN] = {0,};
     char *buf_proxy_bak;
     char *proxy;
     FILE *output;
-    int MAXPROXYLEN = MAXLEN + MAXPORTLEN;
+    int MAXPROXYLEN = DEFAULTBUFLEN + MAXPORTLEN;
 
     output = popen(gproxycmds[GNOME_PROXY_HTTP_HOST][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
         process_string(buf);
-        snprintf(buf_proxy, MAXLEN, "%s", buf);
+        snprintf(buf_proxy, DEFAULTBUFLEN, "%s", buf);
     }
     pclose(output);
 
@@ -361,7 +361,7 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
         buf_proxy_bak = getenv("http_proxy");
         INFO("http_proxy from env: %s\n", buf_proxy_bak);
         if(buf_proxy_bak != NULL) {
-            proxy = malloc(MAXLEN);
+            proxy = malloc(DEFAULTBUFLEN);
             remove_string(buf_proxy_bak, proxy, HTTP_PREFIX);
             strncpy(http_proxy, proxy, strlen(proxy)-1);
             INFO("final http_proxy value: %s\n", http_proxy);
@@ -376,17 +376,17 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
     }
     else {
         snprintf(http_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf_port);
-        memset(buf_proxy, 0, MAXLEN);
+        memset(buf_proxy, 0, DEFAULTBUFLEN);
         INFO("http_proxy: %s\n", http_proxy);
     }
     pclose(output);
 
-    memset(buf, 0, MAXLEN);
+    memset(buf, 0, DEFAULTBUFLEN);
 
     output = popen(gproxycmds[GNOME_PROXY_HTTPS_HOST][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
         process_string(buf);
-        snprintf(buf_proxy, MAXLEN, "%s", buf);
+        snprintf(buf_proxy, DEFAULTBUFLEN, "%s", buf);
     }
     pclose(output);
 
@@ -395,14 +395,14 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
         snprintf(https_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     }
     pclose(output);
-    memset(buf, 0, MAXLEN);
-    memset(buf_proxy, 0, MAXLEN);
+    memset(buf, 0, DEFAULTBUFLEN);
+    memset(buf_proxy, 0, DEFAULTBUFLEN);
     INFO("https_proxy : %s\n", https_proxy);
 
     output = popen(gproxycmds[GNOME_PROXY_FTP_HOST][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
         process_string(buf);
-        snprintf(buf_proxy, MAXLEN, "%s", buf);
+        snprintf(buf_proxy, DEFAULTBUFLEN, "%s", buf);
     }
     pclose(output);
 
@@ -411,14 +411,14 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
         snprintf(ftp_proxy, MAXPROXYLEN, "%s:%s", buf_proxy, buf);
     }
     pclose(output);
-    memset(buf, 0, MAXLEN);
-    memset(buf_proxy, 0, MAXLEN);
+    memset(buf, 0, DEFAULTBUFLEN);
+    memset(buf_proxy, 0, DEFAULTBUFLEN);
     INFO("ftp_proxy : %s\n", ftp_proxy);
 
     output = popen(gproxycmds[GNOME_PROXY_SOCKS_HOST][gproxytool], "r");
     if(fscanf(output, "%s", buf) > 0) {
         process_string(buf);
-        snprintf(buf_proxy, MAXLEN, "%s", buf);
+        snprintf(buf_proxy, DEFAULTBUFLEN, "%s", buf);
     }
     pclose(output);
 
@@ -433,7 +433,7 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
 
 void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
-    char buf[MAXLEN];
+    char buf[DEFAULTBUFLEN];
     FILE *output;
     int ret;
 

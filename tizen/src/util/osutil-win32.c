@@ -35,9 +35,10 @@
  */
 
 #include <png.h>
-#include "maru_common.h"
+#include "emulator_common.h"
 #include "osutil.h"
 #include "emulator.h"
+#include "emul_state.h"
 #include "debug_ch.h"
 #include "maru_err_table.h"
 #include "sdb.h"
@@ -225,9 +226,9 @@ char *get_timeofday(void)
 
 static int get_auto_proxy(BYTE *url, char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
-    char type[MAXLEN];
-    char proxy[MAXLEN];
-    char line[MAXLEN];
+    char type[DEFAULTBUFLEN];
+    char proxy[DEFAULTBUFLEN];
+    char line[DEFAULTBUFLEN];
     FILE *fp_pacfile;
     char *p = NULL;
 
@@ -236,7 +237,7 @@ static int get_auto_proxy(BYTE *url, char *http_proxy, char *https_proxy, char *
 
     fp_pacfile = fopen(pactempfile, "r");
     if (fp_pacfile != NULL) {
-        while(fgets(line, MAXLEN, fp_pacfile) != NULL) {
+        while(fgets(line, DEFAULTBUFLEN, fp_pacfile) != NULL) {
             if ( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
                 INFO("line found %s", line);
                 sscanf(line, "%*[^\"]\"%s %s", type, proxy);
@@ -369,7 +370,7 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
     }
 
     INFO("proxy value: %s\n", (char *)proxyserver);
-    real_proxy = malloc(MAXLEN);
+    real_proxy = malloc(DEFAULTBUFLEN);
     if (real_proxy == NULL) {
         ERR("Failed to allocate a buffer\n");
         free(proxyserver);

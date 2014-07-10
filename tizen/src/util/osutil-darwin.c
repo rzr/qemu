@@ -34,9 +34,10 @@
   @brief    Collection of utilities for darwin
  */
 
-#include "maru_common.h"
+#include "emulator_common.h"
 #include "osutil.h"
 #include "emulator.h"
+#include "emul_state.h"
 #include "debug_ch.h"
 #include "maru_err_table.h"
 #include "sdb.h"
@@ -46,6 +47,7 @@
 #endif
 
 #include <string.h>
+#include <unistd.h>
 #include <sys/shm.h>
 #include <sys/sysctl.h>
 #include <SystemConfiguration/SystemConfiguration.h>
@@ -93,7 +95,7 @@ void make_vm_lock_os(void)
     char *shared_memory;
     int base_port;
     base_port = get_emul_vm_base_port();
-    g_shmid = shmget((key_t)base_port, MAXLEN, 0666|IPC_CREAT);
+    g_shmid = shmget((key_t)base_port, getpagesize(), 0666|IPC_CREAT);
     if (g_shmid == -1) {
         ERR("shmget failed\n");
         perror("osutil-darwin: ");
@@ -178,7 +180,7 @@ void print_system_info_os(void)
 
     /* uname */
     INFO("* Host machine uname :\n");
-    char uname_cmd[MAXLEN] = "uname -a";
+    char const *const uname_cmd = "uname -a";
     if(system(uname_cmd) < 0) {
         INFO("system function command '%s' \
             returns error !", uname_cmd);
@@ -227,7 +229,7 @@ void print_system_info_os(void)
 
     /* java version */
     INFO("* Java version :\n");
-    char lspci_cmd[MAXLEN] = "java -version";
+    char const *const lspci_cmd = "java -version";
 
     fflush(stdout);
     if(system(lspci_cmd) < 0) {
@@ -251,16 +253,16 @@ char *get_timeofday(void)
 
 static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
-    char type[MAXLEN];
-    char proxy[MAXLEN];
-    char line[MAXLEN];
+    char type[DEFAULTBUFLEN];
+    char proxy[DEFAULTBUFLEN];
+    char line[DEFAULTBUFLEN];
     FILE *fp_pacfile;
     char *p = NULL;
 
     CFStringRef pacURL = (CFStringRef)CFDictionaryGetValue(proxySettings,
                     kSCPropNetProxiesProxyAutoConfigURLString);
     if (pacURL) {
-        char url[MAXLEN] = {};
+        char url[DEFAULTBUFLEN] = {};
         CFStringGetCString(pacURL, url, sizeof url, kCFStringEncodingASCII);
                 INFO("pac address: %s\n", (char*)url);
         download_url(url);
@@ -268,7 +270,7 @@ static int get_auto_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, 
 
     fp_pacfile = fopen(pac_tempfile, "r");
     if(fp_pacfile != NULL) {
-        while(fgets(line, MAXLEN, fp_pacfile) != NULL) {
+        while(fgets(line, DEFAULTBUFLEN, fp_pacfile) != NULL) {
             if( (strstr(line, "return") != NULL) && (strstr(line, "if") == NULL)) {
                 INFO("line found %s", line);
                 sscanf(line, "%*[^\"]\"%s %s", type, proxy);
@@ -326,7 +328,7 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
         proxyPort = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPPort);
         port = cfnumber_to_int(proxyPort);
         // Save hostname & port
-        snprintf(http_proxy, MAXLEN, "%s:%d", hostname, port);
+        snprintf(http_proxy, DEFAULTBUFLEN, "%s:%d", hostname, port);
 
         free(hostname);
     } else {
@@ -342,7 +344,7 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
         proxyPort = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesHTTPSPort);
         port = cfnumber_to_int(proxyPort);
         // Save hostname & port
-        snprintf(https_proxy, MAXLEN, "%s:%d", hostname, port);
+        snprintf(https_proxy, DEFAULTBUFLEN, "%s:%d", hostname, port);
 
         free(hostname);
     } else {
@@ -358,7 +360,7 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
         proxyPort = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesFTPPort);
         port = cfnumber_to_int(proxyPort);
         // Save hostname & port
-        snprintf(ftp_proxy, MAXLEN, "%s:%d", hostname, port);
+        snprintf(ftp_proxy, DEFAULTBUFLEN, "%s:%d", hostname, port);
 
         free(hostname);
     } else {
@@ -374,7 +376,7 @@ static void get_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char
         proxyPort = CFDictionaryGetValue(proxySettings, kSCPropNetProxiesSOCKSPort);
         port = cfnumber_to_int(proxyPort);
         // Save hostname & port
-        snprintf(socks_proxy, MAXLEN, "%s:%d", hostname, port);
+        snprintf(socks_proxy, DEFAULTBUFLEN, "%s:%d", hostname, port);
 
         free(hostname);
     } else {
