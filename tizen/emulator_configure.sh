@@ -230,6 +230,7 @@ echo ""
 echo "##### QEMU configuring for emulator"
 echo "##### QEMU configure append:" $CONFIGURE_APPEND
 ./configure \
+ --extra-cflags=-Werror \
  --extra-cflags=-mmacosx-version-min=10.4 \
  --audio-drv-list=coreaudio \
  --enable-shm \
