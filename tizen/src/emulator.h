@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2011, 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: 
+ * Contact:
  * SeokYeon Hwang <syeon.hwang@samsung.com>
  * MunKyu Im <munkyu.im@samsung.com>
  * GiWoong Kim <giwoong.kim@samsung.com>
@@ -41,10 +41,6 @@
 #include "qapi/qmp/qlist.h"
 #include "qemu/option.h"
 #include "sysemu/sysemu.h"
-
-#define MAXLEN  512
-#define MAXPACKETLEN 60
-//#define SHMKEY 26099
 
 extern gchar bin_path[];
 extern gchar log_path[];

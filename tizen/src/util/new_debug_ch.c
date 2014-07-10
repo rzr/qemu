@@ -30,15 +30,14 @@
  *
  */
 
-#include <stdio.h>
-
 #include "qemu-common.h"
 
 #include "emulator.h"
 #include "util/new_debug_ch.h"
 #include "util/osutil.h"
 
-static char debugchfile[512] = {0, };
+#define MAX_FILE_LEN    512
+static char debugchfile[MAX_FILE_LEN] = {0, };
 static int fd = STDOUT_FILENO;
 
 static const char * const debug_classes[] =
@@ -58,7 +57,7 @@ static int cmp_name(const void *p1, const void *p2)
     const char *name = p1;
     const struct _debug_channel *chan = p2;
 
-    return strcmp(name, chan->name);
+    return g_strcmp0(name, chan->name);
 }
 
 /* get the flags to use for a given channel, possibly setting them too in case of lazy init */
@@ -104,7 +103,7 @@ static void add_option(const char *name, unsigned char set, unsigned char clear)
 
     while (min <= max) {
         pos = (min + max) / 2;
-        res = strcmp(name, debug_options[pos].name);
+        res = g_strcmp0(name, debug_options[pos].name);
         if (!res) {
             debug_options[pos].flags = (debug_options[pos].flags & ~clear) | set;
             return;
@@ -127,7 +126,7 @@ static void add_option(const char *name, unsigned char set, unsigned char clear)
                 (nb_debug_options - pos) * sizeof(debug_options[0]));
     }
 
-    strcpy(debug_options[pos].name, name);
+    g_strlcpy(debug_options[pos].name, name, MAX_NAME_LEN);
     debug_options[pos].flags = (default_flags & ~clear) | set;
     nb_debug_options++;
 }
@@ -138,7 +137,7 @@ static void parse_options(const char *str)
     char *opt, *next, *options;
     unsigned int i;
 
-    if (!(options = strdup(str))) {
+    if (!(options = g_strdup(str))) {
         return;
     }
 
@@ -227,10 +226,10 @@ static void debug_init(void)
     }
 
     if (0 == strlen(bin_path)) {
-        strcpy(debugchfile, "DEBUGCH");
+        g_strlcpy(debugchfile, "DEBUGCH", MAX_FILE_LEN);
     } else {
-        strcat(debugchfile, bin_path);
-        strcat(debugchfile, "DEBUGCH");
+        g_strlcat(debugchfile, bin_path, MAX_FILE_LEN);
+        g_strlcat(debugchfile, "DEBUGCH", MAX_FILE_LEN);
     }
 
     fp = fopen(debugchfile, "r");
@@ -261,7 +260,7 @@ static void debug_init(void)
     }
 
     if (debug != NULL) {
-        if (!strcmp(debug, "help")) {
+        if (!g_strcmp0(debug, "help")) {
             debug_usage();
         }
         parse_options(debug);
@@ -295,11 +294,11 @@ int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
         return -1;
     }
 
-    ret = snprintf(buf_msg, sizeof(buf_msg), "%s [%s:%s] ",
+    ret = g_snprintf(buf_msg, sizeof(buf_msg), "%s [%s:%s] ",
             get_timeofday(), debug_classes[cls], channel->name);
 
     va_start(valist, format);
-    ret += vsnprintf(buf_msg + ret, sizeof(buf_msg) - ret, format, valist);
+    ret += g_vsnprintf(buf_msg + ret, sizeof(buf_msg) - ret, format, valist);
     va_end(valist);
 
     ret_write = qemu_write_full(fd, buf_msg, ret);

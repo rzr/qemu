@@ -36,8 +36,8 @@
 #include "emul_state.h"
 #include "hw/pci/maru_brightness.h"
 #include "skin/maruskin_server.h"
+#include "util/maru_err_table.h"
 #include "debug_ch.h"
-#include "maru_err_table.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_shm);
 

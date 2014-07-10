@@ -475,7 +475,7 @@ int parse_debug_env(const char *name, int max, int initial);
 const char *qemu_ether_ntoa(const MACAddr *mac);
 
 #if defined(CONFIG_MARU) && defined(CONFIG_WIN32)
-#include "../tizen/src/maru_common.h"
+#include "../tizen/src/emulator_common.h"
 
 int is_wow64(void);
 bool get_java_path(char **java_path);

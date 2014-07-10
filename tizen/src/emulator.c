@@ -56,6 +56,7 @@
 #endif
 
 #ifdef CONFIG_DARWIN
+#include <libgen.h>
 #include "ns_event.h"
 int thread_running = 1; /* Check if we need exit main */
 #endif
@@ -181,8 +182,6 @@ static Notifier emulator_exit = { .notify = emulator_notify_exit };
 
 static void print_system_info(void)
 {
-#define DIV 1024
-
     LOG_INFO("* Board name : %s\n", build_version);
     LOG_INFO("* Package %s\n", pkginfo_version);
     LOG_INFO("* Package %s\n", pkginfo_maintainer);
