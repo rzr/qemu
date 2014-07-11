@@ -225,9 +225,9 @@ install_dibs: all_dibs
 	cp -pP ../../qemu-img$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
 
 ifndef CONFIG_WIN32
-	cp -pP scripts/emulator.sh $(EMUL_DIR)/bin
+	cp -pP scripts/emulator.sh $(DIBS_COMMON_DIR)/bin
 else
-	cp -pP scripts/emulator.bat $(EMUL_DIR)/bin
+	cp -pP scripts/emulator.bat $(DIBS_COMMON_DIR)/bin
 endif
 
 # resources and jar for skin
