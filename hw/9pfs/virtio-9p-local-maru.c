@@ -1634,13 +1634,13 @@ err_out:
 }
 
 #ifndef CONFIG_WIN32
+#ifdef FS_IOC_GETVERSION
 static int local_ioc_getversion(FsContext *ctx, V9fsPath *path,
                                 mode_t st_mode, uint64_t *st_gen)
 {
     TRACE("[%d][ Enter >> %s]\n", __LINE__, __func__);
     int err;
 
-#ifdef FS_IOC_GETVERSION
     V9fsFidOpenState fid_open;
 
     /*
@@ -1656,11 +1656,9 @@ static int local_ioc_getversion(FsContext *ctx, V9fsPath *path,
     }
     err = ioctl(fid_open.fd, FS_IOC_GETVERSION, st_gen);
     local_close(ctx, &fid_open);
-#else
-    err = -ENOTTY;
-#endif
     return err;
 }
+#endif
 #endif
 
 static int local_init(FsContext *ctx)

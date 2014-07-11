@@ -82,7 +82,7 @@ static int hax_stop_tbloop(CPUArchState *env)
     {
     case HAX_EMULATE_STATE_MMIO:
         if (cpu->hax_vcpu->resync) {
-            hax_prepare_emulation(env);     
+            hax_prepare_emulation(env);
             cpu->hax_vcpu->resync = 0;
             return 0;
         }
@@ -458,7 +458,7 @@ int hax_pre_init(uint64_t ram_size)
     hax = &hax_global;
     memset(hax, 0, sizeof(struct hax_state));
     hax->mem_quota = ram_size;
-    dprint("ram_size %lx\n", ram_size);
+    dprint("ram_size %llx\n", ram_size);
 
     return 0;
 }
@@ -646,11 +646,10 @@ static int hax_vcpu_hax_exec(CPUArchState *env)
 
     if (hax_vcpu_emulation_mode(env))
     {
-        dprint("Trying to vcpu execute at eip:%lx\n", env->eip);
+        dprint("Trying to vcpu execute at eip:%x\n", env->eip);
         return  HAX_EMUL_EXITLOOP;
     }
 
-    
     //hax_cpu_synchronize_state(env);
 
     do {
