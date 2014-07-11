@@ -52,7 +52,7 @@ inline size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
     return written;
 }
 
-inline void download_url(char *url)
+void download_url(char *url)
 {
     CURL *curl;
     FILE *fp;
