@@ -1,3 +1,6 @@
+* 2.0.5
+- add preRequisites in each qemu-common for ubuntu
+== hakhyun kim <haken.kim@samsung.com> 2014-07-10
 * 2.0.4
 - fix bug: qemu crash when entering lock mode
 == Tina Zhang <tina.zhang@intel.com> 2014-07-03
