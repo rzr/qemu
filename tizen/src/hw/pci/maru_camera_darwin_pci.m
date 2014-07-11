@@ -183,11 +183,11 @@ static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
 }
 
 - (MaruCameraDriver *)init;
-- (int)startCapture:(int)width:(int)height;
+- (int)startCapture:(int)width :(int)height;
 - (void)stopCapture;
 - (int)readFrame:(void *)video_buf;
-- (int)setCaptureFormat:(int)width:(int)height:(int)pix_format;
-- (int)getCaptureFormat:(int)width:(int)height:(int)pix_format;
+- (int)setCaptureFormat:(int)width :(int)height :(int)pix_format;
+- (int)getCaptureFormat:(int)width :(int)height :(int)pix_format;
 - (BOOL)deviceStatus;
 
 @end
@@ -251,7 +251,7 @@ static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
     }
 }
 
-- (int)startCapture:(int)width:(int)height
+- (int)startCapture:(int)width :(int)height
 {
     int ret = -1;
 
@@ -327,7 +327,7 @@ static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
     return -1;
 }
 
-- (int)setCaptureFormat:(int)width:(int)height:(int)pix_format
+- (int)setCaptureFormat:(int)width :(int)height :(int)pix_format
 {
     int ret = -1;
     NSDictionary *attributes;
@@ -361,7 +361,7 @@ static uint32_t get_sizeimage(uint32_t pixfmt, uint32_t width, uint32_t height)
     return ret;
 }
 
-- (int)getCaptureFormat:(int)width:(int)height:(int)pix_format
+- (int)getCaptureFormat:(int)width :(int)height :(int)pix_format
 {
     return 0;
 }
@@ -614,7 +614,7 @@ void marucam_device_start_preview(MaruCamState *state)
         param->errCode = EINVAL;
         return;
     }
-    
+
     INFO("Starting preview ...\n");
     [mcd->driver startCapture: width: height];
 
