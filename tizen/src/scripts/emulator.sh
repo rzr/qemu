@@ -19,9 +19,23 @@ EMULATOR_INSTALLED_PATH=$(readlink -f $EMULATOR_INSTALLED_PATH)
 EMULATOR_BIN_PATH=$EMULATOR_INSTALLED_PATH/bin
 LIBRARY_PATH=$EMULATOR_BIN_PATH:$EMULATOR_INSTALLED_PATH/remote/lib:
 
-# run emulator
+# check "--with-gdb"
+WITH_GDB="no"
 if [ "$1" = "--with-gdb" ]; then
 	shift
+	WITH_GDB="yes"
+fi
+
+# use default conf file if no options provided
+if [ -z $1 ]; then
+	if [ -e $HOME/.emulator_default.conf ]; then
+		set -- "--conf" "$HOME/.emulator_default.conf"
+		echo "No options provided. Use default conf file [$HOME/.emulator_default.conf]."
+	fi
+fi
+
+# run emulator
+if [ "$WITH_GDB" = "yes" ]; then
 	LD_LIBRARY_PATH=$LIBRARY_PATH gdb --args $EMULATOR_BIN_PATH/emulator-x86 $@
 else
 	LD_LIBRARY_PATH=$LIBRARY_PATH $EMULATOR_BIN_PATH/emulator-x86 $@

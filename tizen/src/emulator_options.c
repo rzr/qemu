@@ -175,6 +175,7 @@ static char *substitute_variables(char *src)
                         " \"--%s\" or profile default file or envirionment"
                         " variable.\n", name, name);
                 value = (char *)"";
+                set_variable(name, value, false);
             }
 
             length = start_index + strlen(value) + (strlen(str) - end_index);
