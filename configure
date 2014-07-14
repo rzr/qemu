@@ -968,7 +968,9 @@ for opt do
   ;;
   --enable-uname-release=*) uname_release="$optarg"
   ;;
-  --enable-werror) werror="yes"
+  --enable-werror)
+      werror="yes" ;
+      force_werror="yes" ;
   ;;
   --disable-werror) werror="no"
   ;;
@@ -3871,10 +3873,12 @@ int main(void) {
     return 0;
 }
 EOF
-if compile_prog "-Werror" "" ; then
+if test "$force_werror" != "yes"; then
+  if compile_prog "-Werror" "" ; then
     pragma_diagnostic_available=yes
-else
+  else
     werror=no
+  fi
 fi
 
 ########################################
