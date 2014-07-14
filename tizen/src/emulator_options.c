@@ -30,7 +30,7 @@
 #include "qemu/queue.h"
 
 #include "emulator_options.h"
-#include "emulator.h"
+#include "emul_state.h"
 
 #define LINE_LIMIT 1024
 #define TOKEN_LIMIT 128

@@ -67,7 +67,6 @@
 #include "skin/maruskin_operation.h"
 #include "skin/maruskin_server.h"
 #include "util/maru_device_hotplug.h"
-#include "emulator.h"
 #include "emul_state.h"
 
 #include "debug_ch.h"
@@ -994,7 +993,7 @@ static char* get_emulator_sdcard_path(void)
  */
 char *get_tizen_sdk_data_path(void)
 {
-    char *emul_bin_path = NULL;
+    char const *emul_bin_path = NULL;
     char *sdk_info_file_path = NULL;
     char *tizen_sdk_data_path = NULL;
 #ifndef CONFIG_WIN32

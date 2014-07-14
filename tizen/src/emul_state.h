@@ -36,6 +36,8 @@
 
 #include "display/maru_finger.h"
 
+#define SUPPORT_LEGACY_ARGS
+
 enum {
     RESET = 0,
     BOOT_COMPLETED = 1,
@@ -104,6 +106,14 @@ typedef struct EmulatorConfigState {
     /* add here */
 } EmulatorConfigState;
 
+/* misc */
+extern gchar bin_path[];
+#ifdef SUPPORT_LEGACY_ARGS
+extern gchar log_path[];
+#endif
+
+char const *get_bin_path(void);
+char const *get_log_path(void);
 
 /* setter */
 void set_emul_skin_enable(bool enable);

@@ -32,7 +32,7 @@
 
 #include "qemu-common.h"
 
-#include "emulator.h"
+#include "emul_state.h"
 #include "util/new_debug_ch.h"
 #include "util/osutil.h"
 

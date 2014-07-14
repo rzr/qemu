@@ -64,7 +64,7 @@ void check_vm_lock_os(void);
 void make_vm_lock_os(void);
 void remove_vm_lock_os(void);
 
-void set_bin_path_os(gchar *);
+void set_bin_path_os(char const *const);
 
 void print_system_info_os(void);
 

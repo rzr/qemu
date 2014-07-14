@@ -30,8 +30,9 @@
  */
 
 #include "emul_state.h"
+#include "emulator_options.h"
 #include "skin/maruskin_server.h"
-#include "debug_ch.h"
+#include "util/new_debug_ch.h"
 
 #if defined(CONFIG_LINUX)
 #include <X11/XKBlib.h>
@@ -39,11 +40,50 @@
 #include <windows.h>
 #endif
 
-MULTI_DEBUG_CHANNEL(qemu, emul_state);
-
+DECLARE_DEBUG_CHANNEL(emul_state);
 
 static EmulatorConfigInfo _emul_info = {0,};
 static EmulatorConfigState _emul_state;
+
+/* misc */
+char bin_path[PATH_MAX] = { 0, };
+#ifdef SUPPORT_LEGACY_ARGS
+// for compatibility
+char log_path[PATH_MAX] = { 0, };
+#endif
+
+
+const char *get_bin_path(void)
+{
+    return bin_path;
+}
+
+const char *get_log_path(void)
+{
+#ifdef SUPPORT_LEGACY_ARGS
+    if (log_path[0]) {
+        return log_path;
+    }
+#endif
+    char *log_path = get_variable("log_path");
+
+    // if "log_path" is not exist, make it first
+    if (!log_path) {
+        char *vms_path = get_variable("vms_path");
+        char *vm_name = get_variable("vm_name");
+        if (!vms_path || !vm_name) {
+            log_path = NULL;
+        }
+        else {
+            log_path = g_strdup_printf("%s/%s/logs", vms_path, vm_name);
+        }
+
+        set_variable("log_path", log_path, false);
+    }
+
+    return log_path;
+}
+
 
 /* start_skin_client or not ? */
 void set_emul_skin_enable(bool enable)
@@ -62,7 +102,7 @@ void set_emul_resolution(int width, int height)
     _emul_info.resolution_w = width;
     _emul_info.resolution_h = height;
 
-    INFO("emulator graphic resolution : %dx%d\n",
+    LOG_INFO("emulator graphic resolution : %dx%d\n",
         _emul_info.resolution_w, _emul_info.resolution_h);
 }
 
@@ -82,7 +122,7 @@ void set_emul_sdl_bpp(int bpp)
     _emul_info.sdl_bpp = bpp;
 
     if (_emul_info.sdl_bpp != 32) {
-        INFO("sdl bpp : %d\n", _emul_info.sdl_bpp);
+        LOG_INFO("sdl bpp : %d\n", _emul_info.sdl_bpp);
     }
 }
 
@@ -97,7 +137,7 @@ void set_emul_input_mouse_enable(bool on)
     _emul_info.input_mouse_enable = on;
 
     if (_emul_info.input_mouse_enable == true) {
-        INFO("set_emul_input_mouse_enable\n");
+        LOG_INFO("set_emul_input_mouse_enable\n");
     }
 }
 
@@ -112,7 +152,7 @@ void set_emul_input_touch_enable(bool on)
     _emul_info.input_touch_enable = on;
 
     if (_emul_info.input_touch_enable == true) {
-        INFO("set_emul_input_touch_enable\n");
+        LOG_INFO("set_emul_input_touch_enable\n");
     }
 }
 
@@ -129,7 +169,7 @@ void set_emul_max_touch_point(int cnt)
     }
     _emul_info.max_touch_point = cnt;
 
-    INFO("set max touch point : %d\n", cnt);
+    LOG_INFO("set max touch point : %d\n", cnt);
 }
 
 int get_emul_max_touch_point(void)
@@ -177,10 +217,10 @@ int get_emulator_condition(void)
 void set_emulator_condition(int state)
 {
     if (state == BOOT_COMPLETED) {
-        INFO("boot completed!\n");
+        LOG_INFO("boot completed!\n");
         // TODO:
     } else if (state == RESET) {
-        INFO("reset emulator!\n");
+        LOG_INFO("reset emulator!\n");
 
         notify_emul_reset();
     }
@@ -192,12 +232,12 @@ void set_emulator_condition(int state)
 void set_emul_win_scale(double scale_factor)
 {
     if (scale_factor < 0.0 || scale_factor > 2.0) {
-        INFO("scale_factor is out of range : %f\n", scale_factor);
+        LOG_INFO("scale_factor is out of range : %f\n", scale_factor);
         scale_factor = 1.0;
     }
 
     _emul_state.scale_factor = scale_factor;
-    INFO("emulator window scale_factor : %f\n", _emul_state.scale_factor);
+    LOG_INFO("emulator window scale_factor : %f\n", _emul_state.scale_factor);
 }
 
 double get_emul_win_scale(void)
@@ -210,12 +250,12 @@ void set_emul_rotation(short rotation_type)
 {
     if (rotation_type < ROTATION_PORTRAIT ||
             rotation_type > ROTATION_REVERSE_LANDSCAPE) {
-        INFO("rotation type is out of range : %d\n", rotation_type);
+        LOG_INFO("rotation type is out of range : %d\n", rotation_type);
         rotation_type = ROTATION_PORTRAIT;
     }
 
     _emul_state.rotation_type = rotation_type;
-    INFO("emulator rotation type : %d\n", _emul_state.rotation_type);
+    LOG_INFO("emulator rotation type : %d\n", _emul_state.rotation_type);
 }
 
 short get_emul_rotation(void)

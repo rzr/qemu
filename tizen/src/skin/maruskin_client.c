@@ -138,13 +138,13 @@ static void *run_skin_client(void *arg)
         strcpy(JAVA_EXEFILE_PATH, "java");
     }
 
-    char* bin_dir = get_bin_path();
+    char const* bin_dir = get_bin_path();
     int bin_len = strlen(bin_dir);
     char bin_dir_win[bin_len];
     strcpy(bin_dir_win, bin_dir);
     bin_dir_win[strlen(bin_dir_win) -1] = '\0';
 #else
-    char* bin_dir = get_bin_path();
+    char const* bin_dir = get_bin_path();
 #endif
     INFO("bin directory : %s\n", bin_dir);
 
@@ -367,13 +367,13 @@ int start_simple_client(char* msg)
         strcpy(JAVA_EXEFILE_PATH, "java");
     }
 
-    char* bin_dir = get_bin_path();
+    char const* bin_dir = get_bin_path();
     int bin_dir_len = strlen(bin_dir);
     char bin_dir_win[bin_dir_len];
     strcpy(bin_dir_win, bin_dir);
     bin_dir_win[strlen(bin_dir_win) -1] = '\0';
 #else
-    char* bin_dir = get_bin_path();
+    char const* bin_dir = get_bin_path();
 #endif
     INFO("bin directory : %s\n", bin_dir);
 

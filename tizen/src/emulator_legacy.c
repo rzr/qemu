@@ -69,9 +69,6 @@ MULTI_DEBUG_CHANNEL(qemu, main);
 #define MIDBUF  128
 #define LEN_MARU_KERNEL_CMDLINE 512
 
-// for compatibility
-gchar log_path[PATH_MAX] = { 0, };
-
 extern gchar maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
 
 extern char tizen_target_path[PATH_MAX];

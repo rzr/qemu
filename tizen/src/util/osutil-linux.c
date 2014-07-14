@@ -160,7 +160,7 @@ void remove_vm_lock_os(void)
 }
 
 
-void set_bin_path_os(gchar * exec_argv)
+void set_bin_path_os(char const *const exec_argv)
 {
     gchar link_path[PATH_MAX] = { 0, };
     char *file_name = NULL;

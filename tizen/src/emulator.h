@@ -42,14 +42,8 @@
 #include "qemu/option.h"
 #include "sysemu/sysemu.h"
 
-extern gchar bin_path[];
-extern gchar log_path[];
-
-char *get_bin_path(void);
-const gchar * prepare_maru(const gchar * const kernel_cmdline);
+const char *prepare_maru(const gchar * const kernel_cmdline);
 void start_skin(void);
-
-const gchar * get_log_path(void);
 
 void emulator_add_exit_notifier(Notifier *notify);
 

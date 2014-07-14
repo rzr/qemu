@@ -30,6 +30,7 @@
 
 #include <stdlib.h>
 #include <getopt.h>
+#include <libgen.h>
 
 #include "qemu/config-file.h"
 #include "qemu/sockets.h"
@@ -51,25 +52,16 @@
 #include <SDL.h>
 #endif
 
-#ifdef CONFIG_WIN32
-#include <libgen.h>
-#endif
-
 #ifdef CONFIG_DARWIN
-#include <libgen.h>
 #include "ns_event.h"
 int thread_running = 1; /* Check if we need exit main */
 #endif
 
 DECLARE_DEBUG_CHANNEL(main);
 
-#define SUPPORT_LEGACY_ARGS
-
 #define ARGS_LIMIT  128
 #define LEN_MARU_KERNEL_CMDLINE 512
 char maru_kernel_cmdline[LEN_MARU_KERNEL_CMDLINE];
-
-char bin_path[PATH_MAX] = { 0, };
 
 char tizen_target_path[PATH_MAX];
 char tizen_target_img_path[PATH_MAX];
@@ -81,32 +73,6 @@ int _skin_argc;
 char **_skin_argv;
 int _qemu_argc;
 char **_qemu_argv;
-
-const char *get_log_path(void)
-{
-#ifdef SUPPORT_LEGACY_ARGS
-    if (log_path[0]) {
-        return log_path;
-    }
-#endif
-    char *log_path = get_variable("log_path");
-
-    // if "log_path" is not exist, make it first
-    if (!log_path) {
-        char *vms_path = get_variable("vms_path");
-        char *vm_name = get_variable("vm_name");
-        if (!vms_path || !vm_name) {
-            log_path = NULL;
-        }
-        else {
-            log_path = g_strdup_printf("%s/%s/logs", vms_path, vm_name);
-        }
-
-        set_variable("log_path", log_path, false);
-    }
-
-    return log_path;
-}
 
 void emulator_add_exit_notifier(Notifier *notify)
 {
@@ -137,14 +103,9 @@ static void get_host_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy,
     get_host_proxy_os(http_proxy, https_proxy, ftp_proxy, socks_proxy);
 }
 
-static void set_bin_path(gchar * exec_argv)
+static void set_bin_path(char const *const exec_argv)
 {
     set_bin_path_os(exec_argv);
-}
-
-gchar * get_bin_path(void)
-{
-    return bin_path;
 }
 
 static void check_vm_lock(void)
@@ -292,7 +253,7 @@ static void prepare_opengl_acceleration(gchar * const kernel_cmdline)
 }
 #endif
 
-const gchar *prepare_maru(const gchar * const kernel_cmdline)
+const char *prepare_maru(const gchar * const kernel_cmdline)
 {
     LOG_INFO("Prepare maru specified feature\n");
 
