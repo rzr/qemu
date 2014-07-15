@@ -115,7 +115,7 @@ int inet_strtoip(const char*  str, uint32_t  *ip)
 int check_port_bind_listen(uint32_t port)
 {
     struct sockaddr_in addr;
-    int s, opt = 1;
+    int s = 0;
     int ret = -1;
     socklen_t addrlen = sizeof(addr);
     memset(&addr, 0, addrlen);
@@ -131,6 +131,7 @@ int check_port_bind_listen(uint32_t port)
     }
 
 #ifndef _WIN32
+    int opt = 1;
     ret = setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
                     (char *)&opt, sizeof(int));
     if (ret < 0) {

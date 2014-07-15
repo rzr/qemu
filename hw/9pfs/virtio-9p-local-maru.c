@@ -334,9 +334,14 @@ update_map_file:
     if (credp->fc_gid != -1) {
         gid = credp->fc_gid;
     }
+// FIXME
+#ifndef CONFIG_WIN32
     if (credp->fc_mode != -1) {
         mode = credp->fc_mode;
     }
+#else
+    mode = credp->fc_mode;
+#endif
     if (credp->fc_rdev != -1) {
         rdev = credp->fc_rdev;
     }

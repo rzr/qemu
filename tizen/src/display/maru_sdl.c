@@ -39,6 +39,10 @@
 #include "hw/pci/maru_brightness.h"
 #include "debug_ch.h"
 
+#ifndef CONFIG_WIN32
+#include <SDL_syswm.h>
+#endif
+
 MULTI_DEBUG_CHANNEL(tizen, maru_sdl);
 
 static QEMUBH *sdl_init_bh;

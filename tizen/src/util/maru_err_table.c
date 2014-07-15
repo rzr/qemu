@@ -262,7 +262,7 @@ void maru_dump_backtrace(void *ptr, int depth)
 }
 
 #ifdef CONFIG_WIN32
-static LONG maru_unhandled_exception_filter(PEXCEPTION_POINTERS pExceptionInfo){
+static WINAPI LONG maru_unhandled_exception_filter(LPEXCEPTION_POINTERS pExceptionInfo){
     char module_buf[1024];
     DWORD dwException = pExceptionInfo->ExceptionRecord->ExceptionCode;
     ERR("%d\n ", (int)dwException);
