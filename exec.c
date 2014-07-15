@@ -1297,7 +1297,7 @@ ram_addr_t qemu_ram_alloc_from_ptr(ram_addr_t size, void *host,
              */
             if (hax_enabled()) {
                 int ret;
-                ret = hax_populate_ram((uint64_t)new_block->host, size);
+                ret = hax_populate_ram((uint64_t)(intptr_t)new_block->host, size);
                 if (ret < 0) {
                     fprintf(stderr, "Hax failed to populate ram\n");
                     exit(-1);

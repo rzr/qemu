@@ -84,7 +84,7 @@ int hax_set_phys_mem(MemoryRegionSection *section)
 
     info.pa_start = start_addr;
     info.size = size;
-    info.va = (uint64_t)(memory_region_get_ram_ptr(mr) + section->offset_within_region);
+    info.va = (int64_t)(intptr_t)(memory_region_get_ram_ptr(mr) + section->offset_within_region);
     info.flags = memory_region_is_rom(mr) ? 1 : 0;
 
     ret = ioctl(hax_global.vm->fd, HAX_VM_IOCTL_SET_RAM, pinfo);
@@ -248,8 +248,8 @@ int hax_host_setup_vcpu_channel(struct hax_vcpu_state *vcpu)
         return ret;
     }
 
-    vcpu->tunnel = (struct hax_tunnel *)(info.va);
-    vcpu->iobuf = (unsigned char *)(info.io_va);
+    vcpu->tunnel = (struct hax_tunnel *)(intptr_t)(info.va);
+    vcpu->iobuf = (unsigned char *)(intptr_t)(info.io_va);
     return 0;
 }
 

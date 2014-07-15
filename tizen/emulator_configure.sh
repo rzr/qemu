@@ -216,8 +216,6 @@ exec ./configure \
  --enable-werror \
  --extra-cflags=-Wno-error=format \
  --extra-cflags=-Wno-error=format-extra-args \
- --extra-cflags=-Wno-error=pointer-to-int-cast \
- --extra-cflags=-Wno-error=int-to-pointer-cast \
  --extra-ldflags=-Wl,--large-address-aware \
  --cc=gcc \
  --disable-coroutine-pool \
