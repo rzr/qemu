@@ -22,9 +22,9 @@ typedef struct _Tethering__SensorData Tethering__SensorData;
 typedef struct _Tethering__SensorMsg Tethering__SensorMsg;
 typedef struct _Tethering__Resolution Tethering__Resolution;
 typedef struct _Tethering__DisplayMsg Tethering__DisplayMsg;
-typedef struct _Tethering__MultiTouchMaxCount Tethering__MultiTouchMaxCount;
-typedef struct _Tethering__MultiTouchData Tethering__MultiTouchData;
-typedef struct _Tethering__MultiTouchMsg Tethering__MultiTouchMsg;
+typedef struct _Tethering__TouchMaxCount Tethering__TouchMaxCount;
+typedef struct _Tethering__TouchData Tethering__TouchData;
+typedef struct _Tethering__TouchMsg Tethering__TouchMsg;
 typedef struct _Tethering__TetheringMsg Tethering__TetheringMsg;
 
 
@@ -43,15 +43,15 @@ typedef enum _Tethering__SensorMsg__Type {
   TETHERING__SENSOR_MSG__TYPE__SENSOR_STATUS = 5,
   TETHERING__SENSOR_MSG__TYPE__SENSOR_DATA = 6
 } Tethering__SensorMsg__Type;
-typedef enum _Tethering__MultiTouchMsg__Type {
-  TETHERING__MULTI_TOUCH_MSG__TYPE__START_REQ = 2,
-  TETHERING__MULTI_TOUCH_MSG__TYPE__START_ANS = 3,
-  TETHERING__MULTI_TOUCH_MSG__TYPE__TERMINATE = 4,
-  TETHERING__MULTI_TOUCH_MSG__TYPE__MAX_COUNT = 5,
-  TETHERING__MULTI_TOUCH_MSG__TYPE__TOUCH_DATA = 6,
-  TETHERING__MULTI_TOUCH_MSG__TYPE__RESOLUTION = 7,
-  TETHERING__MULTI_TOUCH_MSG__TYPE__DISPLAY = 8
-} Tethering__MultiTouchMsg__Type;
+typedef enum _Tethering__TouchMsg__Type {
+  TETHERING__TOUCH_MSG__TYPE__START_REQ = 2,
+  TETHERING__TOUCH_MSG__TYPE__START_ANS = 3,
+  TETHERING__TOUCH_MSG__TYPE__TERMINATE = 4,
+  TETHERING__TOUCH_MSG__TYPE__MAX_COUNT = 5,
+  TETHERING__TOUCH_MSG__TYPE__TOUCH_DATA = 6,
+  TETHERING__TOUCH_MSG__TYPE__RESOLUTION = 7,
+  TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG = 8
+} Tethering__TouchMsg__Type;
 typedef enum _Tethering__TetheringMsg__Type {
   TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_REQ = 2,
   TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_ANS = 3,
@@ -242,7 +242,6 @@ struct  _Tethering__Resolution
 struct  _Tethering__DisplayMsg
 {
   ProtobufCMessage base;
-  protobuf_c_boolean onoff;
   protobuf_c_boolean has_framerate;
   int32_t framerate;
   protobuf_c_boolean has_imagedata;
@@ -250,21 +249,21 @@ struct  _Tethering__DisplayMsg
 };
 #define TETHERING__DISPLAY_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&tethering__display_msg__descriptor) \
-    , 0, 0,0, 0,{0,NULL} }
+    , 0,0, 0,{0,NULL} }
 
 
-struct  _Tethering__MultiTouchMaxCount
+struct  _Tethering__TouchMaxCount
 {
   ProtobufCMessage base;
   protobuf_c_boolean has_max;
   int32_t max;
 };
-#define TETHERING__MULTI_TOUCH_MAX_COUNT__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&tethering__multi_touch_max_count__descriptor) \
+#define TETHERING__TOUCH_MAX_COUNT__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__touch_max_count__descriptor) \
     , 0,10 }
 
 
-struct  _Tethering__MultiTouchData
+struct  _Tethering__TouchData
 {
   ProtobufCMessage base;
   protobuf_c_boolean has_index;
@@ -276,25 +275,25 @@ struct  _Tethering__MultiTouchData
   protobuf_c_boolean has_state;
   Tethering__TouchState state;
 };
-#define TETHERING__MULTI_TOUCH_DATA__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&tethering__multi_touch_data__descriptor) \
+#define TETHERING__TOUCH_DATA__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__touch_data__descriptor) \
     , 0,0, 0,0, 0,0, 0,0 }
 
 
-struct  _Tethering__MultiTouchMsg
+struct  _Tethering__TouchMsg
 {
   ProtobufCMessage base;
-  Tethering__MultiTouchMsg__Type type;
+  Tethering__TouchMsg__Type type;
   Tethering__StartReq *startreq;
   Tethering__StartAns *startans;
   Tethering__EventTerminate *terminate;
-  Tethering__MultiTouchMaxCount *maxcount;
-  Tethering__MultiTouchData *touchdata;
+  Tethering__TouchMaxCount *maxcount;
+  Tethering__TouchData *touchdata;
   Tethering__Resolution *resolution;
   Tethering__DisplayMsg *display;
 };
-#define TETHERING__MULTI_TOUCH_MSG__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&tethering__multi_touch_msg__descriptor) \
+#define TETHERING__TOUCH_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__touch_msg__descriptor) \
     , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 
 
@@ -308,7 +307,7 @@ struct  _Tethering__TetheringMsg
   Tethering__AppState *appstate;
   Tethering__EventMsg *eventmsg;
   Tethering__SensorMsg *sensormsg;
-  Tethering__MultiTouchMsg *touchmsg;
+  Tethering__TouchMsg *touchmsg;
 };
 #define TETHERING__TETHERING_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&tethering__tethering_msg__descriptor) \
@@ -581,62 +580,62 @@ Tethering__DisplayMsg *
 void   tethering__display_msg__free_unpacked
                      (Tethering__DisplayMsg *message,
                       ProtobufCAllocator *allocator);
-/* Tethering__MultiTouchMaxCount methods */
-void   tethering__multi_touch_max_count__init
-                     (Tethering__MultiTouchMaxCount         *message);
-size_t tethering__multi_touch_max_count__get_packed_size
-                     (const Tethering__MultiTouchMaxCount   *message);
-size_t tethering__multi_touch_max_count__pack
-                     (const Tethering__MultiTouchMaxCount   *message,
+/* Tethering__TouchMaxCount methods */
+void   tethering__touch_max_count__init
+                     (Tethering__TouchMaxCount         *message);
+size_t tethering__touch_max_count__get_packed_size
+                     (const Tethering__TouchMaxCount   *message);
+size_t tethering__touch_max_count__pack
+                     (const Tethering__TouchMaxCount   *message,
                       uint8_t             *out);
-size_t tethering__multi_touch_max_count__pack_to_buffer
-                     (const Tethering__MultiTouchMaxCount   *message,
+size_t tethering__touch_max_count__pack_to_buffer
+                     (const Tethering__TouchMaxCount   *message,
                       ProtobufCBuffer     *buffer);
-Tethering__MultiTouchMaxCount *
-       tethering__multi_touch_max_count__unpack
+Tethering__TouchMaxCount *
+       tethering__touch_max_count__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   tethering__multi_touch_max_count__free_unpacked
-                     (Tethering__MultiTouchMaxCount *message,
+void   tethering__touch_max_count__free_unpacked
+                     (Tethering__TouchMaxCount *message,
                       ProtobufCAllocator *allocator);
-/* Tethering__MultiTouchData methods */
-void   tethering__multi_touch_data__init
-                     (Tethering__MultiTouchData         *message);
-size_t tethering__multi_touch_data__get_packed_size
-                     (const Tethering__MultiTouchData   *message);
-size_t tethering__multi_touch_data__pack
-                     (const Tethering__MultiTouchData   *message,
+/* Tethering__TouchData methods */
+void   tethering__touch_data__init
+                     (Tethering__TouchData         *message);
+size_t tethering__touch_data__get_packed_size
+                     (const Tethering__TouchData   *message);
+size_t tethering__touch_data__pack
+                     (const Tethering__TouchData   *message,
                       uint8_t             *out);
-size_t tethering__multi_touch_data__pack_to_buffer
-                     (const Tethering__MultiTouchData   *message,
+size_t tethering__touch_data__pack_to_buffer
+                     (const Tethering__TouchData   *message,
                       ProtobufCBuffer     *buffer);
-Tethering__MultiTouchData *
-       tethering__multi_touch_data__unpack
+Tethering__TouchData *
+       tethering__touch_data__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   tethering__multi_touch_data__free_unpacked
-                     (Tethering__MultiTouchData *message,
+void   tethering__touch_data__free_unpacked
+                     (Tethering__TouchData *message,
                       ProtobufCAllocator *allocator);
-/* Tethering__MultiTouchMsg methods */
-void   tethering__multi_touch_msg__init
-                     (Tethering__MultiTouchMsg         *message);
-size_t tethering__multi_touch_msg__get_packed_size
-                     (const Tethering__MultiTouchMsg   *message);
-size_t tethering__multi_touch_msg__pack
-                     (const Tethering__MultiTouchMsg   *message,
+/* Tethering__TouchMsg methods */
+void   tethering__touch_msg__init
+                     (Tethering__TouchMsg         *message);
+size_t tethering__touch_msg__get_packed_size
+                     (const Tethering__TouchMsg   *message);
+size_t tethering__touch_msg__pack
+                     (const Tethering__TouchMsg   *message,
                       uint8_t             *out);
-size_t tethering__multi_touch_msg__pack_to_buffer
-                     (const Tethering__MultiTouchMsg   *message,
+size_t tethering__touch_msg__pack_to_buffer
+                     (const Tethering__TouchMsg   *message,
                       ProtobufCBuffer     *buffer);
-Tethering__MultiTouchMsg *
-       tethering__multi_touch_msg__unpack
+Tethering__TouchMsg *
+       tethering__touch_msg__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   tethering__multi_touch_msg__free_unpacked
-                     (Tethering__MultiTouchMsg *message,
+void   tethering__touch_msg__free_unpacked
+                     (Tethering__TouchMsg *message,
                       ProtobufCAllocator *allocator);
 /* Tethering__TetheringMsg methods */
 void   tethering__tethering_msg__init
@@ -701,14 +700,14 @@ typedef void (*Tethering__Resolution_Closure)
 typedef void (*Tethering__DisplayMsg_Closure)
                  (const Tethering__DisplayMsg *message,
                   void *closure_data);
-typedef void (*Tethering__MultiTouchMaxCount_Closure)
-                 (const Tethering__MultiTouchMaxCount *message,
+typedef void (*Tethering__TouchMaxCount_Closure)
+                 (const Tethering__TouchMaxCount *message,
                   void *closure_data);
-typedef void (*Tethering__MultiTouchData_Closure)
-                 (const Tethering__MultiTouchData *message,
+typedef void (*Tethering__TouchData_Closure)
+                 (const Tethering__TouchData *message,
                   void *closure_data);
-typedef void (*Tethering__MultiTouchMsg_Closure)
-                 (const Tethering__MultiTouchMsg *message,
+typedef void (*Tethering__TouchMsg_Closure)
+                 (const Tethering__TouchMsg *message,
                   void *closure_data);
 typedef void (*Tethering__TetheringMsg_Closure)
                  (const Tethering__TetheringMsg *message,
@@ -741,10 +740,10 @@ extern const ProtobufCMessageDescriptor tethering__sensor_msg__descriptor;
 extern const ProtobufCEnumDescriptor    tethering__sensor_msg__type__descriptor;
 extern const ProtobufCMessageDescriptor tethering__resolution__descriptor;
 extern const ProtobufCMessageDescriptor tethering__display_msg__descriptor;
-extern const ProtobufCMessageDescriptor tethering__multi_touch_max_count__descriptor;
-extern const ProtobufCMessageDescriptor tethering__multi_touch_data__descriptor;
-extern const ProtobufCMessageDescriptor tethering__multi_touch_msg__descriptor;
-extern const ProtobufCEnumDescriptor    tethering__multi_touch_msg__type__descriptor;
+extern const ProtobufCMessageDescriptor tethering__touch_max_count__descriptor;
+extern const ProtobufCMessageDescriptor tethering__touch_data__descriptor;
+extern const ProtobufCMessageDescriptor tethering__touch_msg__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__touch_msg__type__descriptor;
 extern const ProtobufCMessageDescriptor tethering__tethering_msg__descriptor;
 extern const ProtobufCEnumDescriptor    tethering__tethering_msg__type__descriptor;
 

@@ -2,8 +2,9 @@ package tethering;
 
 option java_package = "device.tethering.genmsg";
 
-// define value
+// protoc-c --c_out=../genmsg tethering.proto
 
+// define value
 enum MessageResult {
 	SUCCESS = 1;
 	FAILURE = 2;
@@ -26,7 +27,7 @@ enum State {
 	DISABLED = 2;
 }
 
-enum SensorType{
+enum SensorType {
 	ACCEL = 1;
 	MAGNETIC = 2;
 	GYROSCOPE = 3;
@@ -40,7 +41,6 @@ enum TouchState {
 }
 
 // define messages
-
 message HandShakeReq {
 	required int32 key = 1;
 }
@@ -123,25 +123,42 @@ message Resolution {
 	required int32 height = 2;
 }
 
+/*
 message DisplayMsg {
-	// required Resolution resolution = 1;
-	required bool onOff = 2;
-	optional int32 frameRate = 3;
-	optional bytes imageData = 4;
+	enum Type {
+		START_REQ = 2;
+		START_ANS = 3;
+		TERMINATE = 4;
+		FRAME_RATE = 5;
+		IMAGE_DATA = 6;
+	}
+
+	required Type type = 1;
+	optional StartReq startReq= 2;
+	optional StartAns startAns= 3;
+	optional EventTerminate terminate = 4;
+	optional int32 frameRate = 5;
+	optional bytes imageData = 6;
+}
+*/
+
+message DisplayMsg {
+	optional int32 frameRate = 1;
+	optional bytes imageData = 2;
 }
 
-message MultiTouchMaxCount {
+message TouchMaxCount {
 	optional int32 max = 1 [default = 10];
 }
 
-message MultiTouchData {
+message TouchData {
 	optional int32 index = 1 [default = 0];
 	optional float xPoint = 2 [default = 0.0];
 	optional float yPoint = 3 [default = 0.0];
 	optional TouchState state = 4;
 }
 
-message MultiTouchMsg {
+message TouchMsg {
 	enum Type {
 		START_REQ = 2;
 		START_ANS = 3;
@@ -149,14 +166,14 @@ message MultiTouchMsg {
 		MAX_COUNT = 5;
 		TOUCH_DATA = 6;
 		RESOLUTION = 7;
-		DISPLAY = 8;
+		DISPLAY_MSG = 8;
 	}
 	required Type type = 1;
 	optional StartReq startReq = 2;
 	optional StartAns startAns = 3;
 	optional EventTerminate terminate = 4;
-	optional MultiTouchMaxCount maxCount = 5;
-	optional MultiTouchData touchData = 6;
+	optional TouchMaxCount maxCount = 5;
+	optional TouchData touchData = 6;
 	optional Resolution resolution = 7;
 	optional DisplayMsg display = 8;
 }
@@ -178,5 +195,5 @@ message TetheringMsg {
 	optional AppState appState = 5;
 	optional EventMsg eventMsg = 6;
 	optional SensorMsg sensorMsg = 7;
-	optional MultiTouchMsg touchMsg = 8;
+	optional TouchMsg touchMsg = 8;
 }
