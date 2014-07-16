@@ -79,6 +79,7 @@ void emulator_add_exit_notifier(Notifier *notify)
     qemu_add_exit_notifier(notify);
 }
 
+#ifdef CONFIG_SDL
 static void construct_main_window(int skin_argc, char *skin_argv[],
                                 int qemu_argc, char *qemu_argv[])
 {
@@ -97,6 +98,7 @@ static void construct_main_window(int skin_argc, char *skin_argv[],
         }
     }
 }
+#endif
 
 static void get_host_proxy(char *http_proxy, char *https_proxy, char *ftp_proxy, char *socks_proxy)
 {
@@ -274,12 +276,14 @@ const char *prepare_maru(const gchar * const kernel_cmdline)
     return maru_kernel_cmdline;
 }
 
+#ifdef CONFIG_SDL
 void start_skin(void)
 {
     LOG_INFO("Start skin\n");
 
     construct_main_window(_skin_argc, _skin_argv, _qemu_argc, _qemu_argv);
 }
+#endif
 
 int qemu_main(int argc, char **argv, char **envp);
 int legacy_emulator_main(int argc, char **argv, char **envp);
@@ -448,4 +452,3 @@ int main(int argc, char *argv[])
     return emulator_main(argc, argv, NULL);
 }
 #endif
-

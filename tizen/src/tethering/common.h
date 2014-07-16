@@ -28,6 +28,8 @@
  *
  */
 
+#include "qemu/queue.h"
+
 typedef struct input_device_list {
     int type;
     void *opaque;

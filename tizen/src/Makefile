@@ -53,11 +53,12 @@ ifdef CONFIG_DARWIN
 endif
 
 skin_client:
-#	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -buildfile skin/client/build.xml make-jar
 ifdef CONFIG_USE_SHM
 	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotUseSHM=false -buildfile skin/client/build.xml make-jar
 else
+ifdef CONFIG_SDL
 	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotUseSHM=true -buildfile skin/client/build.xml make-jar
+endif
 endif
 
 build_info:
@@ -113,10 +114,15 @@ else
 endif
 
 # resources and jar for skin
+ifdef CONFIG_SDL
 	cp -pP skin/client/emulator-skin.jar $(EMUL_DIR)/bin
 	cp -pPR skin/client/skins $(EMUL_DIR)
-ifndef CONFIG_USE_SHM
 	cp -pP skin/client/resource/images/blank-guide.png $(EMUL_DIR)/images
+else
+ifdef CONFIG_USE_SHM
+	cp -pP skin/client/emulator-skin.jar $(EMUL_DIR)/bin
+	cp -pPR skin/client/skins $(EMUL_DIR)
+endif
 endif
 
 # check capabilities of OpenGL and Webcam
@@ -187,11 +193,12 @@ endif
 # for dibs system...
 all_dibs: qemu skin_client_dibs
 skin_client_dibs:
-#	ant -buildfile skin/client/build.xml -Dclasspath.dibs=$(ROOTDIR)/tools/emulator/bin make-jar-dibs
 ifdef CONFIG_USE_SHM
 	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotUseSHM=false ${DIBS_SWT_DIR} -buildfile skin/client/build.xml make-jar
 else
+ifdef CONFIG_SDL
 	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotNotUseSHM=true ${DIBS_SWT_DIR} -buildfile skin/client/build.xml make-jar
+endif
 endif
 
 
@@ -231,10 +238,13 @@ else
 endif
 
 # resources and jar for skin
+ifdef CONFIG_SDL
 	cp -pP skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
-	#cp -pPR skin/client/skins $(DIBS_COMMON_DIR)
-ifndef CONFIG_USE_SHM
 	cp -pP skin/client/resource/images/blank-guide.png $(DIBS_COMMON_DIR)/images
+else
+ifdef CONFIG_USE_SHM
+	cp -pP skin/client/emulator-skin.jar $(DIBS_COMMON_DIR)/bin
+endif
 endif
 
 # check capabilities of OpenGL and Webcam

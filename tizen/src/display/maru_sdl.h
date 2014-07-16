@@ -32,7 +32,6 @@
 #ifndef MARU_SDL_H_
 #define MARU_SDL_H_
 
-#include <SDL.h>
 #include "ui/console.h"
 
 extern DisplayChangeListenerOps maru_dcl_ops;

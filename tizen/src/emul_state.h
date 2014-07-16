@@ -107,9 +107,9 @@ typedef struct EmulatorConfigState {
 } EmulatorConfigState;
 
 /* misc */
-extern gchar bin_path[];
+extern char bin_path[];
 #ifdef SUPPORT_LEGACY_ARGS
-extern gchar log_path[];
+extern char log_path[];
 #endif
 
 char const *get_bin_path(void);

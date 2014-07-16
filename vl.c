@@ -4540,6 +4540,32 @@ int main(int argc, char **argv, char **envp)
     if (qemu_opts_foreach(qemu_find_opts("device"), device_init_func, NULL, 1) != 0)
         exit(1);
 
+#ifdef CONFIG_VIGS
+    // To support legacy VIGS options
+    if (enable_vigs) {
+        PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
+        if (vigs_backend) {
+            qdev_prop_set_string(&pci_dev->qdev, "backend", vigs_backend);
+        } else {
+            qdev_prop_set_string(&pci_dev->qdev, "backend", "gl");
+        }
+        qdev_prop_set_string(&pci_dev->qdev, "wsi", "wsi0");
+        qdev_init_nofail(&pci_dev->qdev);
+    }
+#endif
+#ifdef CONFIG_YAGL
+    // To support legacy YaGL options
+    if (enable_yagl) {
+        PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
+        PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
+        if (enable_vigs) {
+            qdev_prop_set_string(&pci_dev->qdev, "wsi", "wsi0");
+        }
+        qdev_init_nofail(&pci_dev->qdev);
+    }
+#endif
+
     net_check_clients();
 
     ds = init_displaystate();
@@ -4555,6 +4581,7 @@ int main(int argc, char **argv, char **envp)
         break;
 #endif
 #if defined(CONFIG_MARU)
+#if defined(CONFIG_SDL)
     case DT_MARU:
         maru_display_init(ds);
         if (skin_disabled == 1) {
@@ -4565,6 +4592,7 @@ int main(int argc, char **argv, char **envp)
         }
         start_skin();
         break;
+#endif
 #endif
 #if defined(CONFIG_SDL)
     case DT_SDL:
@@ -4608,31 +4636,6 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_SPICE
     if (using_spice) {
         qemu_spice_display_init();
-    }
-#endif
-#ifdef CONFIG_VIGS
-    // To support legacy VIGS options
-    if (enable_vigs) {
-        PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
-        PCIDevice *pci_dev = pci_create(pci_bus, -1, "vigs");
-        if (vigs_backend) {
-            qdev_prop_set_string(&pci_dev->qdev, "backend", vigs_backend);
-        } else {
-            qdev_prop_set_string(&pci_dev->qdev, "backend", "gl");
-        }
-        qdev_prop_set_string(&pci_dev->qdev, "wsi", "wsi0");
-        qdev_init_nofail(&pci_dev->qdev);
-    }
-#endif
-#ifdef CONFIG_YAGL
-    // To support legacy YaGL options
-    if (enable_yagl) {
-        PCIBus *pci_bus = (PCIBus *) object_resolve_path_type("", TYPE_PCI_BUS, NULL);
-        PCIDevice *pci_dev = pci_create(pci_bus, -1, "yagl");
-        if (enable_vigs) {
-            qdev_prop_set_string(&pci_dev->qdev, "wsi", "wsi0");
-        }
-        qdev_init_nofail(&pci_dev->qdev);
     }
 #endif
 

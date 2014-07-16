@@ -120,7 +120,7 @@ void do_mouse_event(int button_type, int event_type,
         "host=(%d, %d), x=%d, y=%d, z=%d\n",
         button_type, event_type, origin_x, origin_y, x, y, z);
 
-#ifndef CONFIG_USE_SHM
+#if !defined(CONFIG_USE_SHM) && defined(CONFIG_SDL)
     /* multi-touch */
     if (get_emul_multi_touch_state()->multitouch_enable == 1) {
         maru_finger_processing_1(event_type, origin_x, origin_y, x, y);
@@ -193,7 +193,7 @@ void do_keyboard_key_event(int event_type,
         "state_mask=%d, key_location=%d\n",
         event_type, keycode, state_mask, key_location);
 
-#ifndef CONFIG_USE_SHM
+#if !defined(CONFIG_USE_SHM) && defined(CONFIG_SDL)
     if (get_emul_max_touch_point() > 1) {
         /* multi-touch checking */
         int state_mask_temp = state_mask & ~JAVA_KEYCODE_NO_FOCUS;

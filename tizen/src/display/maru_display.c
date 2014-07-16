@@ -34,7 +34,9 @@
 #include "debug_ch.h"
 
 #ifndef CONFIG_USE_SHM
+#ifdef CONFIG_SDL
 #include "maru_sdl.h"
+#endif
 #else
 #include "maru_shm.h"
 #endif
@@ -50,7 +52,9 @@ static void maru_display_fini(void)
     g_free(screenshot);
 
 #ifndef CONFIG_USE_SHM
+#ifdef CONFIG_SDL
     maru_sdl_quit();
+#endif
 #else
     maru_shm_quit();
 #endif
@@ -67,7 +71,9 @@ void maru_display_init(DisplayState *ds)
     INFO("init qemu display\n");
 
 #ifndef CONFIG_USE_SHM
+#ifdef CONFIG_SDL
     maru_sdl_pre_init();
+#endif
 #else
     /* do nothing */
 #endif
@@ -76,7 +82,10 @@ void maru_display_init(DisplayState *ds)
     DisplayChangeListener *dcl;
 
     dcl = g_malloc0(sizeof(DisplayChangeListener));
+#if defined(CONFIG_USE_SHM) || defined(CONFIG_SDL)
+    //FIXME
     dcl->ops = &maru_dcl_ops;
+#endif
     register_displaychangelistener(dcl);
 
     screenshot = g_malloc0(sizeof(MaruScreenShot));
@@ -90,7 +99,9 @@ void maru_display_init(DisplayState *ds)
 void maru_display_resize(void)
 {
 #ifndef CONFIG_USE_SHM
+#ifdef CONFIG_SDL
     maru_sdl_resize();
+#endif
 #else
     maru_shm_resize();
 #endif
@@ -99,7 +110,9 @@ void maru_display_resize(void)
 void maru_display_update(void)
 {
 #ifndef CONFIG_USE_SHM
+#ifdef CONFIG_SDL
     maru_sdl_update();
+#endif
 #else
     /* do nothing */
 #endif
@@ -108,7 +121,9 @@ void maru_display_update(void)
 void maru_display_invalidate(bool on)
 {
 #ifndef CONFIG_USE_SHM
+#ifdef CONFIG_SDL
     maru_sdl_invalidate(on);
+#endif
 #else
     /* do nothing */
 #endif
@@ -117,7 +132,9 @@ void maru_display_invalidate(bool on)
 void maru_display_interpolation(bool on)
 {
 #ifndef CONFIG_USE_SHM
+#ifdef CONFIG_SDL
     maru_sdl_interpolation(on);
+#endif
 #else
     /* do nothing */
 #endif
@@ -128,8 +145,10 @@ void maru_ds_surface_init(uint64 swt_handle,
     bool blank_guide)
 {
 #ifndef CONFIG_USE_SHM
+#ifdef CONFIG_SDL
     maru_sdl_init(swt_handle,
         display_width, display_height, blank_guide);
+#endif
 #else
     maru_shm_init(swt_handle,
         display_width, display_height, blank_guide);

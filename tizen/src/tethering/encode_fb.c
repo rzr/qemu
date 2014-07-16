@@ -33,6 +33,7 @@
 #include <webp/encode.h>
 #endif
 
+#include "emulator_common.h"
 #include "emul_state.h"
 #include "skin/maruskin_operation.h"
 #include "encode_fb.h"

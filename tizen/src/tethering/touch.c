@@ -28,6 +28,7 @@
  *
  */
 
+#include "emulator_common.h"
 #include "emul_state.h"
 #include "common.h"
 #include "touch.h"
