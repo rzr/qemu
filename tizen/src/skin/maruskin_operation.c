@@ -39,6 +39,7 @@
 #include "hw/pci/maru_brightness.h"
 #include "hw/virtio/maru_virtio_hwkey.h"
 #include "hw/virtio/maru_virtio_touchscreen.h"
+#include "hw/virtio/maru_virtio_sensor.h"
 #include "display/maru_display.h"
 #include "emulator.h"
 #include "debug_ch.h"
@@ -311,59 +312,65 @@ void do_scale_event(double scale_factor)
 void do_rotation_event(int rotation_type)
 {
     INFO("do_rotation_event rotation_type : %d\n", rotation_type);
-
 #if 1
+    char *rotation = NULL;
+
+    static char rot_0 [] = {'2','3','6','2',',','-','1','4','0',',','-','8','4','7','0',',','9','9','9','9','6','1',',','4', 0};
+    static char rot_90 [] = {'-','9','9','4',',','-','4','2','0','8',',','-','7','0','3','2','1','1',',','9','1','8','2','7','9',',','4', 0};
+    static char rot_180 [] = {'1','6','2','2',',','5','6','5','8',',','9','9','9','9','4','5',',','8','6','2','6',',','4', 0};
+    static char rot_270 [] = {'1','4','1','6','8',',','1','6','0','4','6',',','7','0','9','8','6','0',',','7','0','4','0','1','6',',','4', 0};
+
+    switch (rotation_type) {
+        case ROTATION_PORTRAIT:
+            rotation = rot_0;
+            break;
+        case ROTATION_LANDSCAPE:
+            rotation = rot_90;
+            break;
+        case ROTATION_REVERSE_PORTRAIT:
+            rotation = rot_180;
+            break;
+        case ROTATION_REVERSE_LANDSCAPE:
+            rotation = rot_270;
+            break;
+        default:
+            ERR("Unknown rotation type: %d \n", rotation_type);
+            break;
+    }
+
+    if (rotation != NULL) {
+        set_sensor_rotation_vector(rotation, strlen(rotation));
+    }
+#endif
+
     int x = 0, y = 0, z = 0;
 
     switch (rotation_type) {
         case ROTATION_PORTRAIT:
-            x = 0;
-            y = accel_min_max(9.80665);
-            z = 0;
+            x = 100;
+            y = accel_min_max(980665);
+            z = 100;
             break;
         case ROTATION_LANDSCAPE:
-            x = accel_min_max(9.80665);
-            y = 0;
-            z = 0;
+            x = accel_min_max(980665);
+            y = 100;
+            z = 100;
             break;
         case ROTATION_REVERSE_PORTRAIT:
-            x = 0;
-            y = accel_min_max(-9.80665);
-            z = 0;
+            x = 100;
+            y = accel_min_max(-980665);
+            z = 100;
             break;
         case ROTATION_REVERSE_LANDSCAPE:
-            x = accel_min_max(-9.80665);
-            y = 0;
-            z = 0;
+            x = accel_min_max(-980665);
+            y = 100;
+            z = 100;
             break;
         default:
             break;
     }
 
     req_set_sensor_accel(x, y, z);
-#else
-    char send_buf[32] = { 0 };
-
-    switch ( rotation_type ) {
-        case ROTATION_PORTRAIT:
-            sprintf( send_buf, "1\n3\n0\n9.80665\n0\n" );
-            break;
-        case ROTATION_LANDSCAPE:
-            sprintf( send_buf, "1\n3\n9.80665\n0\n0\n" );
-            break;
-        case ROTATION_REVERSE_PORTRAIT:
-            sprintf( send_buf, "1\n3\n0\n-9.80665\n0\n" );
-            break;
-        case ROTATION_REVERSE_LANDSCAPE:
-            sprintf(send_buf, "1\n3\n-9.80665\n0\n0\n");
-            break;
-
-        default:
-            break;
-    }
-
-    send_to_emuld( "sensor\n\n\n\n", 10, send_buf, 32 );
-#endif
 }
 
 void save_screenshot(DisplaySurface *surface)
