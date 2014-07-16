@@ -126,10 +126,9 @@ tizen/src/skin/client/emulator-skin.jar
 tizen/src/skin/client/lib
 tizen/src/skin/client/native_src/*.so
 tizen/src/skin/client/native_src/*.dynlib
-tizen/src/check-cam
 fsdev/virtfs-proxy-helper
 .cproject
 .project
-tizen/src/check-hax
-tizen/src/check-cam
+tizen/src/util/check-hax
+tizen/src/util/check-cam
 
