@@ -183,7 +183,7 @@ else
 fi
 
 # append common flags
-CONFIGURE_APPEND="--enable-maru --enable-libav --enable-curl --disable-gtk $CONFIGURE_APPEND"
+CONFIGURE_APPEND="--enable-maru --enable-libav --enable-curl --enable-png --disable-gtk $CONFIGURE_APPEND"
 
 if [ -z ${PKG_CONFIG_PATH} ] ; then	# avoid pkg-config bug on Windows
 export PKG_CONFIG_PATH=${TIZEN_SDK_DEV_PATH}/distrib/lib/pkgconfig
@@ -204,7 +204,6 @@ exec ./configure \
  --disable-pie \
  --enable-virtfs \
  --disable-xen \
- --enable-png \
  $CONFIGURE_APPEND \
 ;;
 MINGW*)
@@ -222,7 +221,6 @@ exec ./configure \
  --audio-drv-list=winwave \
  --enable-hax \
  --disable-vnc \
- --enable-png \
  $CONFIGURE_APPEND \
 ;;
 Darwin*)

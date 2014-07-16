@@ -31,7 +31,9 @@
 
 #include "ecs.h"
 #include "ecs_tethering.h"
-#include "tethering/app_tethering.h"
+#include "tethering/common.h"
+#include "tethering/sensor.h"
+#include "tethering/touch.h"
 #include "hw/virtio/maru_virtio_touchscreen.h"
 #include "debug_ch.h"
 
@@ -119,7 +121,7 @@ static void send_tethering_status_ntf(type_group group, type_action action)
         status = get_tethering_sensor_status();
         break;
     case ECS_TETHERING_MSG_ACTION_TOUCH_STATUS:
-        status = get_tethering_multitouch_status();
+        status = get_tethering_touch_status();
         break;
     default:
         break;

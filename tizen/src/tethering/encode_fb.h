@@ -1,7 +1,7 @@
 /*
  * emulator controller client
  *
- * Copyright (c) 2013 Samsung Electronics Co., Ltd All Rights Reserved
+ * Copyright (c) 2014 Samsung Electronics Co., Ltd All Rights Reserved
  *
  * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
@@ -28,29 +28,11 @@
  *
  */
 
-enum connection_status {
-    CONNECTED = 1,
-    DISCONNECTED,
-    CONNECTING,
-    CONNREFUSED,
+#include <time.h>
+
+struct encode_mem {
+    uint8_t *buffer;
+    uint32_t length;
 };
 
-enum device_status {
-    ENABLED = 1,
-    DISABLED,
-};
-
-enum touch_status {
-    RELEASED = 0,
-    PRESSED,
-};
-
-int connect_tethering_app(const char *ipaddress, int port);
-
-int disconnect_tethering_app(void);
-
-int get_tethering_connection_status(void);
-
-int get_tethering_sensor_status(void);
-
-int get_tethering_multitouch_status(void);
+void *encode_framebuffer(int encoder);

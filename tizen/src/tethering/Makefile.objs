@@ -1,2 +1,5 @@
 obj-y += genmsg/tethering.pb-c.o # protobuf-c.o
-obj-y += app_tethering.o
+obj-y += common.o
+obj-y += sensor.o
+obj-y += touch.o
+obj-y += encode_fb.o
