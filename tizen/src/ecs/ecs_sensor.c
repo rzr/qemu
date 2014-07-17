@@ -43,10 +43,7 @@
 #define TEMP_BUF_SIZE   255
 #define MAX_VAL_LENGTH  40
 
-#define ACCEL_ADJUST    100000
 #define ACCEL_MAX       1961330
-
-#define GYRO_ADJUST     17.50
 
 static int parse_val(const char *buff, unsigned char data, char *parsbuf)
 {
@@ -82,7 +79,7 @@ static int get_parse_val (const char* buf, char* tmp)
 
 int accel_min_max(double value)
 {
-    int result = (int)(value * ACCEL_ADJUST);
+    int result = (int)value;
 
     if (result > ACCEL_MAX)
         result = ACCEL_MAX;
@@ -177,15 +174,15 @@ static void _req_set_sensor_gyro(int len, const char* data)
 
     // x
     len += get_parse_val(data + len, tmp);
-    x = (int)(atoi(tmp) / GYRO_ADJUST);
+    x = (int)atoi(tmp);
 
     // y
     len += get_parse_val(data + len, tmp);
-    y = (int)(atoi(tmp) / GYRO_ADJUST);
+    y = (int)atoi(tmp);
 
     // z
     len += get_parse_val(data + len, tmp);
-    z = (int)(atoi(tmp) / GYRO_ADJUST);
+    z = (int)atoi(tmp);
 
     memset(tmp, 0, TEMP_BUF_SIZE);
 

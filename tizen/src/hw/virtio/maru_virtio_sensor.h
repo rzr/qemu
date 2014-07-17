@@ -64,18 +64,22 @@ enum sensor_types {
     sensor_type_proxi,
     sensor_type_proxi_enable,
     sensor_type_proxi_delay,
+    sensor_type_rotation_vector,
+    sensor_type_rotation_vector_enable,
+    sensor_type_rotation_vector_delay,
     sensor_type_mag,
     sensor_type_tilt,
     sensor_type_max
 };
 
 enum sensor_capabilities {
-    sensor_cap_accel  = 0x01,
-    sensor_cap_geo    = 0x02,
-    sensor_cap_gyro   = 0x04,
-    sensor_cap_light  = 0x08,
-    sensor_cap_proxi  = 0x10,
-    sensor_cap_haptic = 0x20
+    sensor_cap_accel            = 0x01,
+    sensor_cap_geo              = 0x02,
+    sensor_cap_gyro             = 0x04,
+    sensor_cap_light            = 0x08,
+    sensor_cap_proxi            = 0x10,
+    sensor_cap_rotation_vector  = 0x20,
+    sensor_cap_haptic           = 0x40
 };
 
 #define MESSAGE_TYPE_SENSOR "sensor"
@@ -87,6 +91,7 @@ enum sensor_capabilities {
 #define ACTION_MAG          112
 #define ACTION_LIGHT        113
 #define ACTION_PROXI        114
+#define ACTION_ROTATION     115
 
 #define ATTRIBUTE_NAME_SENSORS "sensors"
 
@@ -95,6 +100,7 @@ enum sensor_capabilities {
 #define SENSOR_NAME_GEO    "geo"
 #define SENSOR_NAME_LIGHT  "light"
 #define SENSOR_NAME_PROXI  "proxi"
+#define SENSOR_NAME_ROT    "rot"
 #define SENSOR_NAME_HAPTIC "haptic"
 
 #define SENSOR_CAP_TOKEN "&"
@@ -128,6 +134,9 @@ void req_sensor_data(enum sensor_types type, enum request_cmd req, char* data, i
 #define get_sensor_proxi()  \
     req_sensor_data(sensor_type_proxi, request_get, NULL, 0);
 
+#define get_sensor_rotation()  \
+    req_sensor_data(sensor_type_rotation_vector, request_get, NULL, 0);
+
 #define set_sensor_accel(data, len) \
     req_sensor_data(sensor_type_accel, request_set, data, len);
 
@@ -145,6 +154,9 @@ void req_sensor_data(enum sensor_types type, enum request_cmd req, char* data, i
 
 #define set_sensor_mag(data, len)   \
     req_sensor_data(sensor_type_mag, request_set, data, len);
+
+#define set_sensor_rotation_vector(data, len)  \
+    req_sensor_data(sensor_type_rotation_vector, request_set, data, len);
 
 #ifdef __cplusplus
 }

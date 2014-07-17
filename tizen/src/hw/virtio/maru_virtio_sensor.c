@@ -27,8 +27,6 @@
  *
  */
 
-#include <pthread.h>
-
 #include "hw/pci/pci.h"
 
 #include "hw/maru_device_ids.h"
@@ -40,15 +38,16 @@ MULTI_DEBUG_CHANNEL(qemu, virtio-sensor);
 
 #define SENSOR_DEVICE_NAME  "sensor"
 #define _MAX_BUF            1024
-#define __MAX_BUF_SENSOR    32
+#define __MAX_BUF_SENSOR    128
 
 static QemuMutex accel_mutex;
 static QemuMutex geo_mutex;
 static QemuMutex gyro_mutex;
 static QemuMutex light_mutex;
 static QemuMutex proxi_mutex;
+static QemuMutex rot_mutex;
 
-static char accel_xyz [__MAX_BUF_SENSOR] = {'0',',','9','8','0','6','6','5',',','0'};
+static char accel_xyz [__MAX_BUF_SENSOR] = {'1','0','0',',','9','8','0','6','6','5',',','1','0','0'};
 static int accel_enable = 0;
 static int accel_delay = 200000000;
 
@@ -71,6 +70,10 @@ static int light_delay = 200000000;
 static int proxi_vo = 8;
 static int proxi_enable = 0;
 static int proxi_delay = 200000000;
+
+static char rot_quad [__MAX_BUF_SENSOR] = {'2','3','6','2',',','-','1','4','0',',','-','8','4','7','0',',','9','9','9','9','6','1',',','4', 0};
+static int rot_enable = 0;
+static int rot_delay = 200000000;
 
 VirtIOSENSOR* vsensor;
 static int sensor_capability = 0;
@@ -96,11 +99,14 @@ static type_action get_action(enum sensor_types type)
     case sensor_type_mag:
         action = ACTION_MAG;
         break;
-    case sensor_type_light:
+    case sensor_type_light_adc:
         action = ACTION_LIGHT;
         break;
     case sensor_type_proxi:
         action = ACTION_PROXI;
+        break;
+    case sensor_type_rotation_vector:
+        action = ACTION_ROTATION;
         break;
     default:
         break;
@@ -235,6 +241,21 @@ static void __set_sensor_data (enum sensor_types type, char* data, int len)
             qemu_mutex_lock(&proxi_mutex);
             sscanf(data, "%d", &proxi_delay);
             qemu_mutex_unlock(&proxi_mutex);
+            break;
+        case sensor_type_rotation_vector:
+            qemu_mutex_lock(&rot_mutex);
+            strcpy(rot_quad, data);
+            qemu_mutex_unlock(&rot_mutex);
+            break;
+        case sensor_type_rotation_vector_enable:
+            qemu_mutex_lock(&rot_mutex);
+            sscanf(data, "%d", &rot_enable);
+            qemu_mutex_unlock(&rot_mutex);
+            break;
+        case sensor_type_rotation_vector_delay:
+            qemu_mutex_lock(&rot_mutex);
+            sscanf(data, "%d", &rot_delay);
+            qemu_mutex_unlock(&rot_mutex);
             break;
         case sensor_type_mag:
             qemu_mutex_lock(&geo_mutex);
@@ -372,6 +393,21 @@ static void __get_sensor_data(enum sensor_types type, char* msg_info)
             sprintf(msg_info, "%d", proxi_delay);
             qemu_mutex_unlock(&proxi_mutex);
             break;
+        case sensor_type_rotation_vector:
+            qemu_mutex_lock(&rot_mutex);
+            strcpy(msg_info, rot_quad);
+            qemu_mutex_unlock(&rot_mutex);
+            break;
+        case sensor_type_rotation_vector_enable:
+            qemu_mutex_lock(&rot_mutex);
+            sprintf(msg_info, "%d", rot_enable);
+            qemu_mutex_unlock(&rot_mutex);
+            break;
+        case sensor_type_rotation_vector_delay:
+            qemu_mutex_lock(&rot_mutex);
+            sprintf(msg_info, "%d", rot_delay);
+            qemu_mutex_unlock(&rot_mutex);
+            break;
         default:
             return;
     }
@@ -480,6 +516,8 @@ static int set_capability(char* sensor)
         return sensor_cap_light;
     } else if (!strncmp(sensor, SENSOR_NAME_PROXI, 5)) {
         return sensor_cap_proxi;
+    } else if (!strncmp(sensor, SENSOR_NAME_ROT, 3)) {
+        return sensor_cap_rotation_vector;
     } else if (!strncmp(sensor, SENSOR_NAME_HAPTIC, 6)) {
         return sensor_cap_haptic;
     } else {
@@ -528,6 +566,7 @@ static void virtio_sensor_realize(DeviceState *dev, Error **errp)
     qemu_mutex_init(&geo_mutex);
     qemu_mutex_init(&light_mutex);
     qemu_mutex_init(&proxi_mutex);
+    qemu_mutex_init(&rot_mutex);
 
     vsensor->vq = virtio_add_queue(&vsensor->vdev, 64, virtio_sensor_vq);
 
@@ -548,6 +587,7 @@ static void virtio_sensor_unrealize(DeviceState *dev, Error **errp)
     qemu_mutex_destroy(&geo_mutex);
     qemu_mutex_destroy(&light_mutex);
     qemu_mutex_destroy(&proxi_mutex);
+    qemu_mutex_destroy(&rot_mutex);
 
     virtio_cleanup(vdev);
 }
