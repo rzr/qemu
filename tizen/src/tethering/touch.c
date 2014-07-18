@@ -33,16 +33,15 @@
 #include "touch.h"
 #include "genmsg/tethering.pb-c.h"
 #include "ecs/ecs_tethering.h"
-#include "debug_ch.h"
+#include "util/new_debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(tizen, app_tethering);
+DECLARE_DEBUG_CHANNEL(app_tethering);
 
 typedef struct touch_state {
     bool is_touch_event;
     bool is_touch_supported;
 
     // int touch_max_point;
-
     // display_state *display;
 } touch_event;
 
@@ -98,15 +97,15 @@ static bool build_touch_msg(Tethering__TouchMsg *touch)
     bool ret = false;
     Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
 
-    TRACE("enter: %s\n", __func__);
+    LOG_TRACE("enter: %s\n", __func__);
 
     msg.type = TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG;
     msg.touchmsg = touch;
 
-    TRACE("touch message size: %d\n", tethering__tethering_msg__get_packed_size(&msg));
+    LOG_TRACE("touch message size: %d\n", tethering__tethering_msg__get_packed_size(&msg));
     ret = send_msg_to_controller(&msg);
 
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
+    LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
 
     return ret;
 }
@@ -118,7 +117,7 @@ static bool send_touch_start_ans_msg(Tethering__MessageResult result)
     Tethering__TouchMsg mt = TETHERING__TOUCH_MSG__INIT;
     Tethering__StartAns start_ans = TETHERING__START_ANS__INIT;
 
-    TRACE("enter: %s\n", __func__);
+    LOG_TRACE("enter: %s\n", __func__);
 
     start_ans.result = result;
 
@@ -127,7 +126,7 @@ static bool send_touch_start_ans_msg(Tethering__MessageResult result)
 
     ret = build_touch_msg(&mt);
 
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
+    LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
 
     return ret;
 }
@@ -140,17 +139,17 @@ static bool send_set_touch_max_count(void)
     Tethering__TouchMaxCount touch_cnt =
         TETHERING__TOUCH_MAX_COUNT__INIT;
 
-    TRACE("enter: %s\n", __func__);
+    LOG_TRACE("enter: %s\n", __func__);
 
     touch_cnt.max = get_emul_max_touch_point();
 
     mt.type = TETHERING__TOUCH_MSG__TYPE__MAX_COUNT;
     mt.maxcount = &touch_cnt;
 
-    TRACE("send touch max count: %d\n", touch_cnt.max);
+    LOG_TRACE("send touch max count: %d\n", touch_cnt.max);
     ret = build_touch_msg(&mt);
 
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
+    LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
 
     return ret;
 }
@@ -162,25 +161,25 @@ static void set_touch_data(Tethering__TouchData *data)
 
     switch(data->state) {
     case TETHERING__TOUCH_STATE__PRESSED:
-        TRACE("touch pressed\n");
+        LOG_TRACE("touch pressed\n");
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
         state = PRESSED;
         break;
     case TETHERING__TOUCH_STATE__RELEASED:
-        TRACE("touch released\n");
+        LOG_TRACE("touch released\n");
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
         state = RELEASED;
         break;
     default:
-        TRACE("invalid touch data\n");
+        LOG_TRACE("invalid touch data\n");
         break;
     }
 
-    TRACE("set touch_data. index: %d, x: %lf, y: %lf\n", index, x, y);
+    LOG_TRACE("set touch_data. index: %d, x: %lf, y: %lf\n", index, x, y);
     send_tethering_touch_data(x, y, index, state);
 }
 
@@ -191,7 +190,7 @@ static bool send_set_touch_resolution(void)
     Tethering__TouchMsg mt = TETHERING__TOUCH_MSG__INIT;
     Tethering__Resolution resolution = TETHERING__RESOLUTION__INIT;
 
-    TRACE("enter: %s\n", __func__);
+    LOG_TRACE("enter: %s\n", __func__);
 
     resolution.width = get_emul_resolution_width();
     resolution.height = get_emul_resolution_height();
@@ -199,11 +198,11 @@ static bool send_set_touch_resolution(void)
     mt.type = TETHERING__TOUCH_MSG__TYPE__RESOLUTION;
     mt.resolution = &resolution;
 
-    TRACE("send touch resolution: %dx%d\n",
+    LOG_TRACE("send touch resolution: %dx%d\n",
         resolution.width, resolution.height);
     ret = build_touch_msg(&mt);
 
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
+    LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
 
     return ret;
 }
@@ -213,7 +212,7 @@ static void set_touch_event_status(bool status)
 {
     is_touch_event = status;
 
-    INFO("set touch_event status: %d\n", status);
+    LOG_TRACE("set touch_event status: %d\n", status);
 }
 
 static void set_hwkey_data(Tethering__HWKeyMsg *msg)
@@ -246,10 +245,10 @@ static void set_hwkey_data(Tethering__HWKeyMsg *msg)
         break;
 
     default:
-        INFO("undefined type: %d\n", msg->type);
+        LOG_WARNING("undefined type: %d\n", msg->type);
     }
 
-    INFO("convert hwkey msg to keycode: %d\n", keycode);
+    LOG_TRACE("convert hwkey msg to keycode: %d\n", keycode);
     send_tethering_hwkey_data(keycode);
 }
 #endif
@@ -264,7 +263,7 @@ bool msgproc_tethering_touch_msg(void *message)
 
     switch(msg->type) {
     case TETHERING__TOUCH_MSG__TYPE__START_REQ:
-        TRACE("TOUCH_MSG_TYPE_START\n");
+        LOG_TRACE("TOUCH_MSG_TYPE_START\n");
         // state = init_touch_state();
 
         // it means that app starts to send touch values.
@@ -276,7 +275,7 @@ bool msgproc_tethering_touch_msg(void *message)
         ret = send_touch_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
         break;
     case TETHERING__TOUCH_MSG__TYPE__TERMINATE:
-        TRACE("TOUCH_MSG_TYPE_TERMINATE\n");
+        LOG_TRACE("TOUCH_MSG_TYPE_TERMINATE\n");
 
         // it means that app stops to send touch values.
         // set_touch_event_status(false);
@@ -296,7 +295,7 @@ bool msgproc_tethering_touch_msg(void *message)
         break;
 #endif
     default:
-        TRACE("invalid touch_msg\n");
+        LOG_TRACE("invalid touch_msg\n");
         ret = false;
         break;
     }
@@ -323,15 +322,15 @@ static bool send_display_image_data(void)
     Tethering__TouchMsg touch = TETHERING__TOUCH_MSG__INIT;
     Tethering__DisplayMsg display = TETHERING__DISPLAY_MSG__INIT;
 
-    TRACE("enter: %s\n", __func__);
+    LOG_TRACE("enter: %s\n", __func__);
 
     image = (struct encode_mem *)encode_framebuffer(ENCODE_WEBP);
     if (!image) {
-        ERR("failed to encode framebuffer\n");
+        LOG_SEVERE("failed to encode framebuffer\n");
         return false;
     }
 
-    TRACE("image data size %d\n", image->length);
+    LOG_TRACE("image data size %d\n", image->length);
     display.has_imagedata = true;
     display.imagedata.len = image->length;
     display.imagedata.data = image->buffer;
@@ -353,11 +352,11 @@ static bool send_display_image_data(void)
 
     // ret = build_display_msg(&display);
     ret = build_touch_msg(&touch);
-    INFO("send display message: %d\n", ret);
+    LOG_TRACE("send display message: %d\n", ret);
 
     g_free(image->buffer);
     g_free(image);
 
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
+    LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
     return ret;
 }
