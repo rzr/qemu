@@ -523,7 +523,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         }
     } else if (!strncmp(cmd, "TGesture", strlen("TGesture"))) {
         /* release multi-touch */
-#ifndef CONFIG_USE_SHM
+#if !defined(CONFIG_USE_SHM) && defined(CONFIG_SDL)
         if (get_multi_touch_enable() != 0) {
             clear_finger_slot(false);
         }

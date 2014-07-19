@@ -3,6 +3,7 @@ QEMU_CFLAGS += -I$(SRC_PATH)/hw/vigs/vigs_inc
 
 obj-y += vigs_log.o
 obj-y += vigs_device.o
+libs_softmmu += $(GLX_LIBS)
 obj-y += vigs_comm.o
 obj-y += vigs_server.o
 obj-y += vigs_backend.o

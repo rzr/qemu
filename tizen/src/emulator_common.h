@@ -38,6 +38,7 @@
 #ifndef __EMULATOR_COMMON_H__
 #define __EMULATOR_COMMON_H__
 
+#include <string.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>

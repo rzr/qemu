@@ -35,12 +35,12 @@
 #define EISCONN WSAEISCONN
 #endif
 
-#include "qemu-common.h"
 #include "qemu/main-loop.h"
 #include "qemu/sockets.h"
 #include "ui/console.h"
 #endif
 
+#include "emulator_common.h"
 #include "emul_state.h"
 
 #include "sensor.h"

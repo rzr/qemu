@@ -9,7 +9,7 @@
 #include "qapi-types.h"
 #include "qapi/error.h"
 
-#if defined(CONFIG_MARU) && !defined(CONFIG_USE_SHM)
+#if defined(CONFIG_MARU) && defined(CONFIG_SDL)
 #define SDL_THREAD
 #endif
 

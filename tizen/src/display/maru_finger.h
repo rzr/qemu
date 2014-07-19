@@ -31,8 +31,8 @@
 #ifndef __MARU_FINGER_H__
 #define __MARU_FINGER_H__
 
-#include "qemu-common.h"
-
+#include <stdint.h>
+#include <stdbool.h>
 
 /* definitions relating to multi-touch */
 #define MAX_FINGER_CNT 10

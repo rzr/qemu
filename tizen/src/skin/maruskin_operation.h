@@ -30,8 +30,7 @@
 #ifndef MARUSKIN_OPERATION_H_
 #define MARUSKIN_OPERATION_H_
 
-#include "qemu-common.h"
-
+#include "stdint.h"
 
 extern int ret_hax_init;
 
@@ -45,7 +44,7 @@ typedef struct DetailInfo {
     int data_length;
 } DetailInfo;
 
-void start_display(uint64 handle_id,
+void start_display(uint64_t handle_id,
     unsigned int display_width, unsigned int display_height,
     double scale_factor, short rotation_type, bool blank_guide);
 
