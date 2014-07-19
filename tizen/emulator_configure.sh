@@ -215,6 +215,7 @@ exec ./configure \
  --enable-werror \
  --extra-cflags=-Wno-error=format \
  --extra-cflags=-Wno-error=format-extra-args \
+ --extra-cflags=-Wno-error=redundant-decls \
  --extra-ldflags=-Wl,--large-address-aware \
  --cc=gcc \
  --disable-coroutine-pool \
