@@ -48,9 +48,9 @@
 #include "ecs/ecs_tethering.h"
 #include "genmsg/tethering.pb-c.h"
 
-#include "debug_ch.h"
+#include "util/new_debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(tizen, app_tethering);
+DECLARE_DEBUG_CHANNEL(app_tethering);
 
 typedef struct sensor_state {
     bool is_sensor_event;
@@ -105,14 +105,14 @@ static bool build_sensor_msg(Tethering__SensorMsg *sensor)
     bool ret = false;
     Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
 
-    TRACE("enter: %s\n", __func__);
+    LOG_TRACE("enter: %s\n", __func__);
 
     msg.type = TETHERING__TETHERING_MSG__TYPE__SENSOR_MSG;
     msg.sensormsg = sensor;
 
     ret = send_msg_to_controller(&msg);
 
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
+    LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
 
     return ret;
 }
@@ -123,17 +123,17 @@ static bool send_sensor_start_ans_msg(Tethering__MessageResult result)
     Tethering__SensorMsg event = TETHERING__SENSOR_MSG__INIT;
     Tethering__StartAns start_ans = TETHERING__START_ANS__INIT;
 
-    TRACE("enter: %s\n", __func__);
+    LOG_TRACE("enter: %s\n", __func__);
 
     start_ans.result = result;
 
     event.type = TETHERING__SENSOR_MSG__TYPE__START_ANS;
     event.startans = &start_ans;
 
-    TRACE("send sensor_start_ans message\n");
+    LOG_TRACE("send sensor_start_ans message\n");
     ret = build_sensor_msg(&event);
 
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
+    LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
 
     return ret;
 }
@@ -147,7 +147,7 @@ static bool send_set_sensor_status_msg(Tethering__SensorType sensor_type,
     Tethering__SetSensorStatus sensor_status =
                             TETHERING__SET_SENSOR_STATUS__INIT;
 
-    TRACE("enter: %s\n", __func__);
+    LOG_TRACE("enter: %s\n", __func__);
 
     sensor_status.type = sensor_type;
     sensor_status.state = status;
@@ -155,10 +155,10 @@ static bool send_set_sensor_status_msg(Tethering__SensorType sensor_type,
     sensor.type = TETHERING__SENSOR_MSG__TYPE__SENSOR_STATUS;
     sensor.setstatus = &sensor_status;
 
-    TRACE("send sensor_set_event_status message\n");
+    LOG_TRACE("send sensor_set_event_status message\n");
     ret = build_sensor_msg(&sensor);
 
-    TRACE("leave: %s, ret: %d\n", __func__, ret);
+    LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
 
     return ret;
 }
@@ -181,7 +181,7 @@ static void set_sensor_data(Tethering__SensorData *data)
                 level_accel, 3, data->x, data->y, data->z);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        TRACE("sensor_accel x: %s, y: %s, z: %s\n",
+        LOG_TRACE("sensor_accel x: %s, y: %s, z: %s\n",
             data->x, data->y, data->z);
     }
         break;
@@ -193,7 +193,7 @@ static void set_sensor_data(Tethering__SensorData *data)
                 level_magnetic, 3, data->x, data->y, data->z);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        TRACE("sensor_mag x: %s, y: %s, z: %s\n",
+        LOG_TRACE("sensor_mag x: %s, y: %s, z: %s\n",
             data->x, data->y, data->z);
     }
         break;
@@ -205,7 +205,7 @@ static void set_sensor_data(Tethering__SensorData *data)
                 level_gyro, 3, data->x, data->y, data->z);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        TRACE("sensor_gyro x: %s, y: %s, z: %s\n",
+        LOG_TRACE("sensor_gyro x: %s, y: %s, z: %s\n",
             data->x, data->y, data->z);
     }
         break;
@@ -217,7 +217,7 @@ static void set_sensor_data(Tethering__SensorData *data)
         sprintf(tmp, "%d\n%d\n%.1f\n", level_proxi, 1, x);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        TRACE("sensor_proxi x: %.1f, %s\n", x, tmp);
+        LOG_TRACE("sensor_proxi x: %.1f, %s\n", x, tmp);
     }
         break;
     case TETHERING__SENSOR_TYPE__LIGHT:
@@ -227,11 +227,11 @@ static void set_sensor_data(Tethering__SensorData *data)
         sprintf(tmp, "%d\n%d\n%s%s\n", level_light, 2, data->x, data->y);
         send_tethering_sensor_data(tmp, strlen(tmp));
 
-        TRACE("sensor_light x: %s\n", data->x);
+        LOG_TRACE("sensor_light x: %s\n", data->x);
     }
         break;
     default:
-        TRACE("invalid sensor data\n");
+        LOG_TRACE("invalid sensor data\n");
         break;
     }
 }
@@ -243,7 +243,7 @@ bool msgproc_tethering_sensor_msg(void *message)
 
     switch(msg->type) {
     case TETHERING__SENSOR_MSG__TYPE__START_REQ:
-        TRACE("SENSOR_MSG_TYPE_START_REQ\n");
+        LOG_TRACE("SENSOR_MSG_TYPE_START_REQ\n");
 
         // TODO
         // init_sensor_state();
@@ -260,20 +260,20 @@ bool msgproc_tethering_sensor_msg(void *message)
         send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__LIGHT,
                                 TETHERING__STATE__ENABLED);
 
-        TRACE("SENSOR_MSG_TYPE_START_ANS\n");
+        LOG_TRACE("SENSOR_MSG_TYPE_START_ANS\n");
         send_sensor_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
 
         break;
     case TETHERING__SENSOR_MSG__TYPE__TERMINATE:
-        TRACE("SENSOR_MSG_TYPE_TERMINATE\n");
+        LOG_TRACE("SENSOR_MSG_TYPE_TERMINATE\n");
         break;
 
     case TETHERING__SENSOR_MSG__TYPE__SENSOR_DATA:
-        TRACE("SENSOR_MSG_TYPE_SENSOR_DATA\n");
+        LOG_TRACE("SENSOR_MSG_TYPE_SENSOR_DATA\n");
         set_sensor_data(msg->data);
         break;
     default:
-        TRACE("invalid sensor_msg type");
+        LOG_TRACE("invalid sensor_msg type");
         ret = false;
         break;
     }
