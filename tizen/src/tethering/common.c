@@ -31,6 +31,7 @@
 #include <sys/ioctl.h>
 #else
 #define EISCONN WSAEISCONN
+#define EALREADY WSAEALREADY
 #endif
 
 #include "qemu-common.h"
@@ -391,8 +392,9 @@ static bool msgproc_tethering_event_msg(Tethering__EventMsg *msg)
         break;
     case TETHERING__EVENT_MSG__TYPE__TERMINATE:
         break;
+
     default:
-        LOG_TRACE("invalid event_msg type\n");
+        LOG_WARNING("invalid event_msg type\n");
         ret = false;
         break;
     }
@@ -559,7 +561,7 @@ static void tethering_io_handler(void *opaque)
 
 #if 0
         if (payloadsize > to_read_bytes) {
-            LOG_TRACE("invalid payload size: %d\n", payloadsize);
+            LOG_INFO("invalid payload size: %d\n", payloadsize);
             return;
         }
 #endif
@@ -608,7 +610,6 @@ static int start_tethering_socket(const char *ipaddress, int port)
     int sock = -1;
     int ret = 0;
 
-
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port); // i.e. 1234
 
@@ -637,18 +638,56 @@ static int start_tethering_socket(const char *ipaddress, int port)
     qemu_set_nonblock(sock);
 
     set_tethering_connection_status(CONNECTING);
-    do {
-        if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-            perror("connect failure");
-            ret = -socket_error();
-        } else {
+
+    while (1) {
+       ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+
+       if (ret == 0) {
             LOG_INFO("tethering socket is connected.\n");
-            ret = 0;
-            // set_tethering_app_state(true);
             break;
+        } else {
+            int connection_errno = socket_error();
+
+            if (connection_errno == EINPROGRESS) {
+                fd_set writefds;
+                struct timeval timeout;
+
+                LOG_INFO("connection is progressing\n");
+
+                FD_ZERO(&writefds);
+                FD_SET(sock, &writefds);
+
+                timeout.tv_sec = 1;
+                timeout.tv_usec = 0;
+
+                if (select(sock + 1, NULL, &writefds, NULL, &timeout) > 0) {
+                    int opt;
+                    socklen_t opt_size = sizeof(opt);
+
+                    qemu_getsockopt(sock, SOL_SOCKET, SO_ERROR, &opt, &opt_size);
+                    if (opt) {
+                        LOG_SEVERE("error in connection %d - %s\n", opt, strerror(opt));
+                    } else {
+                        LOG_INFO("timeout or error is %d - %s\n", opt, strerror(opt));
+                    }
+                } else {
+                    LOG_INFO("error connection %d - %s\n", errno, strerror(errno));
+                }
+                continue;
+            } else if (connection_errno == EALREADY) {
+                ret = 0;
+                LOG_INFO("a previous connection has not yet been completed\n");
+                continue;
+            } else if (connection_errno == EISCONN) {
+                ret = 0;
+                LOG_INFO("connection is already connected\n");
+                break;
+            } else {
+                perror("connect failure");
+                ret = -connection_errno;
+            }
         }
-        LOG_TRACE("ret: %d\n", ret);
-    } while (ret == -EINPROGRESS);
+    }
 
     if (ret < 0 && ret != -EISCONN) {
         if (ret == -ECONNREFUSED) {
@@ -667,6 +706,8 @@ static void end_tethering_socket(int sockfd)
 {
     int status = TETHERING__STATE__DISABLED;
 
+    LOG_TRACE("enter: %s\n", __func__);
+
     if (closesocket(sockfd) < 0) {
         perror("closesocket failure");
         return;
@@ -678,6 +719,8 @@ static void end_tethering_socket(int sockfd)
     set_tethering_connection_status(DISCONNECTED);
     set_tethering_sensor_status(status);
     set_tethering_touch_status(status);
+
+    LOG_TRACE("leave: %s\n", __func__);
 }
 
 #if 0
