@@ -1,3 +1,10 @@
+* 2.0.6
+- fix compilation errors on Windows.
+- add "-Wno-error=redundant-decls" option on Windows.
+- add display feature at tethering.
+- add rotation vector at sensor device.
+- fix audio encoder at codec device.
+== Kitae Kim <kt920.kim@samsung.com> 2014-07-22
 * 2.0.5
 - add preRequisites in each qemu-common for ubuntu
 == hakhyun kim <haken.kim@samsung.com> 2014-07-10
