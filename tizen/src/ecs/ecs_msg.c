@@ -75,7 +75,9 @@ MULTI_DEBUG_CHANNEL(qemu, ecs-msg);
 // utility functions
 static int guest_connection = 0;
 extern QemuMutex mutex_guest_connection;
+extern QemuMutex mutex_location_data;
 
+static char location_data[MAX_INJECTOR_REQ_DATA];
 /*static function define*/
 static void handle_sdcard(char* dataBuf, size_t dataLen);
 static char* get_emulator_sdcard_path(void);
@@ -264,7 +266,7 @@ static void msgproc_device_ans(ECS_Client* ccli, const char* category, bool succ
 bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
 {
     char cmd[10];
-    char data[10];
+    char data[MAX_INJECTOR_REQ_DATA];
     bool ret = false;
     int sndlen = 0;
     int value = 0;
@@ -283,11 +285,11 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
     }
     //TRACE(">> count= %d", ++ijcount);
 
-    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d\n", cmd, length,
-            action, group);
+    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d, data= %s\n", cmd, length,
+            action, group, msg->data.data);
 
     /*SD CARD msg process*/
-    if (!strncmp(cmd, MSG_TYPE_SDCARD, strlen(MSG_TYPE_SDCARD))) {
+    if (!strcmp(cmd, MSG_TYPE_SDCARD)) {
         if (msg->has_data) {
             TRACE("msg(%zu) : %s\n", msg->data.len, msg->data.data);
             handle_sdcard((char*) msg->data.data, msg->data.len);
@@ -296,13 +298,17 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
             ERR("has no msg\n");
         }
 
-    } else if (!strncmp(cmd, MSG_TYPE_SENSOR, sizeof(MSG_TYPE_SENSOR))) {
+    } else if (!strcmp(cmd, MSG_TYPE_SENSOR)) {
         if (group == MSG_GROUP_STATUS) {
-            memset(data, 0, 10);
+            memset(data, 0, MAX_INJECTOR_REQ_DATA);
             if (action == MSG_ACT_BATTERY_LEVEL) {
                 sprintf(data, "%d", get_power_capacity());
             } else if (action == MSG_ACT_BATTERY_CHARGER) {
                 sprintf(data, "%d", get_jack_charger());
+            } else if (action == MSG_ACT_LOCATION) {
+                qemu_mutex_lock(&mutex_location_data);
+                sprintf(data, "%s", location_data);
+                qemu_mutex_unlock(&mutex_location_data);
             } else {
                 goto injector_send;
             }
@@ -315,12 +321,18 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
                 set_injector_data((char*) msg->data.data);
             }
         }
-    } else if (!strncmp(cmd, MSG_TYPE_GUEST, 5)) {
+    } else if (!strcmp(cmd, MSG_TYPE_GUEST)) {
         qemu_mutex_lock(&mutex_guest_connection);
         value = guest_connection;
         qemu_mutex_unlock(&mutex_guest_connection);
         send_status_injector_ntf(MSG_TYPE_GUEST, 5, value, NULL);
         return true;
+    } else if (!strcmp(cmd, MSG_TYPE_LOCATION)) {
+        if (msg->data.data && datalen > 0) {
+            qemu_mutex_lock(&mutex_location_data);
+            snprintf(location_data, msg->data.len + 1, "%s", (char*)msg->data.data);
+            qemu_mutex_unlock(&mutex_location_data);
+        }
     }
 
 injector_send:
@@ -474,7 +486,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
     TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d\n", cmd, length,
             action, group);
 
-    if (!strncmp(cmd, MSG_TYPE_SENSOR, 6)) {
+    if (!strcmp(cmd, MSG_TYPE_SENSOR)) {
         if (group == MSG_GROUP_STATUS) {
             if (action == MSG_ACT_ACCEL) {
                 get_sensor_accel();
@@ -495,7 +507,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
             }
         }
         msgproc_device_ans(ccli, cmd, true, NULL);
-    } else if (!strncmp(cmd, "Network", 7)) {
+    } else if (!strcmp(cmd, "Network")) {
         if (data != NULL) {
             TRACE(">>> Network msg: '%s'\n", data);
             if(net_slirp_redir(data) < 0) {
@@ -506,7 +518,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         } else {
             ERR("Network redirection data is null.\n");
         }
-    } else if (!strncmp(cmd, "HKeyboard", 8)) {
+    } else if (!strcmp(cmd, "HKeyboard")) {
         if (group == MSG_GROUP_STATUS) {
             send_host_keyboard_ntf(is_host_keyboard_attached());
         } else {
@@ -515,13 +527,13 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
                 return false;
             }
 
-            if (!strncmp(data, "1", 1)) {
+            if (!strcmp(data, "1")) {
                 is_on = 1;
             }
             do_host_kbd_enable(is_on);
             notify_host_kbd_state(is_on);
         }
-    } else if (!strncmp(cmd, "TGesture", strlen("TGesture"))) {
+    } else if (!strcmp(cmd, "TGesture")) {
         /* release multi-touch */
 #if !defined(CONFIG_USE_SHM) && defined(CONFIG_SDL)
         if (get_multi_touch_enable() != 0) {
@@ -563,12 +575,12 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
 
             do_mouse_event(1/* LEFT */, event_type, 0, 0, xx, yy, zz);
         }
-    } else if (!strncmp(cmd, "info", 4)) {
+    } else if (!strcmp(cmd, "info")) {
         // check to emulator target image path
         TRACE("receive info message %s\n", tizen_target_img_path);
         send_target_image_information(ccli);
 
-    } else if (!strncmp(cmd, "input", strlen("input"))) {
+    } else if (!strcmp(cmd, "input")) {
         // cli input
         TRACE("receive input message [%s]\n", data);
 
@@ -598,10 +610,10 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         }
         msgproc_device_ans(ccli, cmd, true, NULL);
 
-    } else if (!strncmp(cmd, "vmname", strlen("vmname"))) {
+    } else if (!strcmp(cmd, "vmname")) {
         char* vmname = get_emul_vm_name();
         msgproc_device_ans(ccli, cmd, true, vmname);
-    } else if (!strncmp(cmd, "nfc", strlen("nfc"))) {
+    } else if (!strcmp(cmd, "nfc")) {
         if (group == MSG_GROUP_STATUS) {
             //TODO:
             INFO("get nfc data: do nothing\n");
@@ -712,13 +724,13 @@ bool ntf_to_injector(const char* data, const int len) {
 static bool injector_req_handle(const char* cat, type_action action)
 {
     /*SD CARD msg process*/
-    if (!strncmp(cat, MSG_TYPE_SDCARD, strlen(MSG_TYPE_SDCARD))) {
+    if (!strcmp(cat, MSG_TYPE_SDCARD)) {
        return false;
 
-    } else if (!strncmp(cat, "suspend", 7)) {
+    } else if (!strcmp(cat, "suspend")) {
         ecs_suspend_lock_state(ecs_get_suspend_state());
         return true;
-    } else if (!strncmp(cat, MSG_TYPE_GUEST, 5)) {
+    } else if (!strcmp(cat, MSG_TYPE_GUEST)) {
         INFO("emuld connection is %d\n", action);
         qemu_mutex_lock(&mutex_guest_connection);
         guest_connection = action;
