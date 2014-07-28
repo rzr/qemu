@@ -39,6 +39,8 @@
 #include "hw/pci/maru_brightness.h"
 #include "debug_ch.h"
 
+#include "tethering/touch.h"
+
 #include <SDL.h>
 #ifndef CONFIG_WIN32
 #include <SDL_syswm.h>
@@ -87,7 +89,6 @@ static bool sdl_thread_exit;
 
 static void qemu_update(void);
 
-
 static void qemu_ds_sdl_update(DisplayChangeListener *dcl,
                                int x, int y, int w, int h)
 {
@@ -101,6 +102,8 @@ static void qemu_ds_sdl_update(DisplayChangeListener *dcl,
 #else
     qemu_update();
 #endif
+
+    set_display_dirty(true);
 }
 
 static void qemu_ds_sdl_switch(DisplayChangeListener *dcl,
@@ -611,4 +614,27 @@ void maru_sdl_update(void)
 void maru_sdl_invalidate(bool on)
 {
     sdl_invalidate = on;
+}
+
+bool maru_extract_framebuffer(void *buffer)
+{
+    uint32_t buffer_size = 0;
+
+    if (!buffer) {
+        ERR("given buffer is null\n");
+        return false;
+    }
+
+    if (!surface_qemu) {
+        ERR("surface_qemu is null\n");
+        return false;
+    }
+
+    maru_do_pixman_dpy_surface(dpy_surface->image);
+
+    buffer_size = surface_stride(dpy_surface) * surface_height(dpy_surface);
+    INFO("extract framebuffer %d\n", buffer_size);
+
+    memcpy(buffer, surface_data(dpy_surface), buffer_size);
+    return true;
 }
