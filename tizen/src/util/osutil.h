@@ -73,7 +73,26 @@ void get_host_proxy_os(char *, char *, char *, char *);
 void download_url(char *);
 size_t write_data(void *, size_t, size_t, FILE *);
 void remove_string(char *, char *, const char *);
-char *get_timeofday(void);
+
+static inline int get_timeofday(char *buf, size_t size)
+{
+    qemu_timeval tv;
+    time_t ti;
+    struct tm *ptm = NULL;
+    int ret;
+
+    qemu_gettimeofday(&tv);
+    ti = tv.tv_sec;
+
+#ifndef CONFIG_WIN32
+    localtime_r(&ti, ptm);
+#else
+    ptm = localtime(&ti);
+#endif
+    ret = strftime(buf, size, "%H:%M:%S", ptm);
+
+    return ret + g_snprintf(buf + ret, size - ret, ".%06ld", tv.tv_usec);
+}
 
 int get_number_of_processors(void);
 

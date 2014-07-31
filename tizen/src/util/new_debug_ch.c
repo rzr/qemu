@@ -297,8 +297,9 @@ int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
         return -1;
     }
 
-    ret = g_snprintf(buf_msg, sizeof(buf_msg), "%s [%s:%s] ",
-            get_timeofday(), debug_classes[cls], channel->name);
+    ret += get_timeofday(buf_msg, sizeof(buf_msg));
+    ret += g_snprintf(buf_msg + ret, sizeof(buf_msg) - ret, "(%5d) [%s:%s] ",
+                qemu_get_thread_id(), debug_classes[cls], channel->name);
 
     va_start(valist, format);
     ret += g_vsnprintf(buf_msg + ret, sizeof(buf_msg) - ret, format, valist);

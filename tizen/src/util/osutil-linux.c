@@ -56,11 +56,6 @@
 
 MULTI_DEBUG_CHANNEL(emulator, osutil);
 
-
-static qemu_timeval tv = { 0, 0 };
-static time_t ti;
-static char buf_time[64];
-
 static int g_shmid;
 static char *g_shared_memory;
 static int gproxytool = GSETTINGS;
@@ -252,19 +247,6 @@ void print_system_info_os(void)
                 returns error !", buffer);
     }
     g_free(buffer);
-}
-
-char *get_timeofday(void)
-{
-    qemu_gettimeofday(&tv);
-    ti = tv.tv_sec;
-
-    struct tm tm;
-    localtime_r(&ti, &tm);
-    strftime(buf_time, sizeof(buf_time),
-             "%H:%M:%S", &tm);
-
-    return buf_time;
 }
 
 static void process_string(char *buf)
