@@ -287,3 +287,9 @@ void maru_shm_resize(void)
 {
     shm_skip_update = 0;
 }
+
+bool maru_extract_framebuffer(void* buffer)
+{
+    INFO("not support on Mac OS X\n");
+    return false;
+}

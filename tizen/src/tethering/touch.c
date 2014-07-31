@@ -32,6 +32,7 @@
 #include "emul_state.h"
 #include "common.h"
 #include "touch.h"
+#include "encode_fb.h"
 #include "genmsg/tethering.pb-c.h"
 #include "ecs/ecs_tethering.h"
 #include "util/new_debug_ch.h"
@@ -49,18 +50,8 @@ typedef struct touch_state {
 // static bool is_touch_event;
 static int touch_device_status;
 
-#ifndef DISPLAY_FEATURE
-#include "encode_fb.h"
-
-enum {
-    ENCODE_WEBP = 0,
-    ENCODE_PNG,
-};
-
 // static void set_touch_event_status(bool status);
 static bool send_display_image_data(void);
-#endif
-
 
 #if 0
 touch_state *init_touch_state(void)
@@ -254,6 +245,14 @@ static void set_hwkey_data(Tethering__HWKeyMsg *msg)
 }
 #endif
 
+static bool is_display_dirty = false;
+
+void set_display_dirty(bool dirty)
+{
+    LOG_TRACE("qemu display update: %d\n", is_display_dirty);
+    is_display_dirty = dirty;
+}
+
 // bool msgproc_tethering_touch_msg(Tethering__TouchMsg *msg)
 bool msgproc_tethering_touch_msg(void *message)
 {
@@ -287,7 +286,10 @@ bool msgproc_tethering_touch_msg(void *message)
         break;
 
     case TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG:
-        send_display_image_data();
+        if (is_display_dirty) {
+            send_display_image_data();
+            is_display_dirty = false;
+        }
         break;
 
 #if 0
@@ -315,6 +317,19 @@ void set_tethering_touch_status(int status)
     send_tethering_touch_status_ecp();
 }
 
+static void dump_display_image_data(struct encode_mem *image)
+{
+#ifdef IMAGE_DUMP
+    FILE *fp = NULL;
+
+    fp = fopen("display_image_dump.png", "wb");
+    if (fp != NULL) {
+        fwrite(image->buffer, 1, image->length, fp);
+        fclose(fp);
+    }
+#endif
+}
+
 static bool send_display_image_data(void)
 {
     bool ret = false;
@@ -325,33 +340,22 @@ static bool send_display_image_data(void)
 
     LOG_TRACE("enter: %s\n", __func__);
 
-    image = (struct encode_mem *)encode_framebuffer(ENCODE_WEBP);
+    image = (struct encode_mem *)encode_framebuffer(ENCODE_PNG);
     if (!image) {
         LOG_SEVERE("failed to encode framebuffer\n");
         return false;
     }
+
+    dump_display_image_data(image);
 
     LOG_TRACE("image data size %d\n", image->length);
     display.has_imagedata = true;
     display.imagedata.len = image->length;
     display.imagedata.data = image->buffer;
 
-#ifdef IMAGE_DUMP
-    {
-        FILE *fp = NULL;
-
-        fp = fopen("test2.png", "wb");
-        if (fp != NULL) {
-            fwrite(image->buffer, 1, image->length, fp);
-            fclose(fp);
-        }
-    }
-#endif
-
     touch.type = TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG;
     touch.display = &display;
 
-    // ret = build_display_msg(&display);
     ret = build_touch_msg(&touch);
     LOG_TRACE("send display message: %d\n", ret);
 

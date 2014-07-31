@@ -28,8 +28,6 @@
  *
  */
 
-#include <time.h>
-
 struct encode_mem {
     uint8_t *buffer;
     uint32_t length;

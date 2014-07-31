@@ -5,6 +5,7 @@
  *
  * Contact:
  *  Kitae Kim <kt920.kim@samsung.com>
+ *  SangHo Park <sangho1206.park@samsung.com>
  *  YeongKyoon Lee <yeongkyoon.lee@samsung.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -28,15 +29,28 @@
  */
 
 #include <png.h>
+
+#include "emulator_common.h"
+#include "emul_state.h"
+
+#ifdef CONFIG_SDL
+#include "display/maru_sdl.h"
+#endif
+#ifdef CONFIG_USE_SHM
+#include "display/maru_shm.h"
+#endif
+
+#include "skin/maruskin_operation.h"
+#include "encode_fb.h"
+
+#if defined(CONFIG_LINUX) && defined(ENCODE_DEBUG)
+#include <time.h>
+#endif
 #ifdef CONFIG_WEBP
 #include <webp/types.h>
 #include <webp/encode.h>
 #endif
 
-#include "emulator_common.h"
-#include "emul_state.h"
-#include "skin/maruskin_operation.h"
-#include "encode_fb.h"
 #include "util/new_debug_ch.h"
 
 DECLARE_DEBUG_CHANNEL(app_tethering);
@@ -110,18 +124,12 @@ static void *encode_png(void)
      */
     int bit_depth = 8;
     struct encode_mem *container = NULL;
+    uint8_t *surface = NULL;
+    uint32_t surface_size = 0;
 
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
     png_bytepp row_pointers = NULL;
-
-    Framebuffer *surface = NULL;
-
-    surface = request_screenshot();
-    if (!surface) {
-        LOG_SEVERE("failed to get framebuffer\n");
-        return NULL;
-    }
 
     width = get_emul_resolution_width();
     height = get_emul_resolution_height();
@@ -130,11 +138,24 @@ static void *encode_png(void)
     LOG_TRACE("width %d, height %d, stride %d, raw image %d\n",
         width, height, image_stride, (image_stride * height));
 
+    surface_size = width * height * 4;
+
+    surface = g_malloc0(surface_size);
+    if (!surface) {
+        LOG_SEVERE("failed to allocate framebuffer\n");
+        return NULL;
+    }
+
+    if (!maru_extract_framebuffer(surface)) {
+        LOG_SEVERE("failed to extract framebuffer\n");
+        g_free(surface);
+        return NULL;
+    }
+
     LOG_TRACE("png_create_write_struct\n");
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png_ptr) {
         LOG_SEVERE("png_create_write_struct failure\n");
-        g_free(surface->data);
         g_free(surface);
         return NULL;
     }
@@ -143,7 +164,6 @@ static void *encode_png(void)
     info_ptr = png_create_info_struct(png_ptr);
     if (!png_ptr) {
         LOG_SEVERE("png_create_info_struct failure\n");
-        g_free(surface->data);
         g_free(surface);
         png_destroy_write_struct(&png_ptr, &info_ptr);
         return NULL;
@@ -152,7 +172,6 @@ static void *encode_png(void)
     LOG_TRACE("try png_jmpbuf\n");
     if (setjmp(png_jmpbuf(png_ptr))) {
         LOG_SEVERE("png_jmpbuf failure\n");
-        g_free(surface->data);
         g_free(surface);
         png_destroy_write_struct(&png_ptr, &info_ptr);
         png_destroy_info_struct(png_ptr, &info_ptr);
@@ -163,7 +182,6 @@ static void *encode_png(void)
     container = g_malloc(sizeof(struct encode_mem));
     if (!container) {
         LOG_SEVERE("failed to allocate encode_mem\n");
-        g_free(surface->data);
         g_free(surface);
         png_destroy_write_struct(&png_ptr, &info_ptr);
         png_destroy_info_struct(png_ptr, &info_ptr);
@@ -190,7 +208,6 @@ static void *encode_png(void)
     row_pointers = png_malloc(png_ptr, sizeof(png_bytep) * height);
     if (row_pointers == NULL) {
         LOG_SEVERE("failed to allocate png memory\n");
-        g_free(surface->data);
         g_free(surface);
         png_destroy_write_struct(&png_ptr, &info_ptr);
         png_destroy_info_struct(png_ptr, &info_ptr);
@@ -198,7 +215,7 @@ static void *encode_png(void)
     }
 
     for (row_index = 0; row_index < height; row_index++) {
-        row_pointers[row_index] = surface->data + (row_index * image_stride);
+        row_pointers[row_index] = surface + (row_index * image_stride);
     }
 
     LOG_TRACE("png_write_image\n");
@@ -207,7 +224,6 @@ static void *encode_png(void)
     LOG_TRACE("png_write_end\n");
     png_write_end(png_ptr, info_ptr);
 
-    g_free(surface->data);
     g_free(surface);
 
     LOG_TRACE("png image size %d\n", container->length);
@@ -221,11 +237,11 @@ static void *encode_png(void)
 static void *encode_webp(void)
 {
     int width = 0, height = 0, image_stride = 0;
-    // float quality = 0;
     size_t ret = 0;
 
     struct encode_mem *container = NULL;
-    Framebuffer *surface = NULL;
+    uint8_t *surface = NULL;
+    uint32_t surface_size = 0;
 
     container = g_malloc(sizeof(struct encode_mem));
     if (!container) {
@@ -236,13 +252,6 @@ static void *encode_webp(void)
     container->buffer = NULL;
     container->length = 0;
 
-    surface = request_screenshot();
-    if (!surface) {
-        LOG_SEVERE("failed to get framebuffer\n");
-        g_free(container);
-        return NULL;
-    }
-
     width = get_emul_resolution_width();
     height = get_emul_resolution_height();
 
@@ -250,13 +259,36 @@ static void *encode_webp(void)
     LOG_TRACE("width %d, height %d, stride %d, raw image %d\n",
         width, height, image_stride, (image_stride * height));
 
-    ret = WebPEncodeLosslessBGRA((const uint8_t *)surface->data, width,
+    surface_size = width * height * 4;
+
+    surface = g_malloc0(surface_size);
+    if (!surface) {
+        LOG_SEVERE("failed to allocate framebuffer\n");
+        return NULL;
+    }
+
+    if (!maru_extract_framebuffer(surface)) {
+        LOG_SEVERE("failed to extract framebuffer\n");
+        g_free(surface);
+        return NULL;
+    }
+
+    container = g_malloc(sizeof(struct encode_mem));
+    if (!container) {
+        LOG_SEVERE("failed to allocate encode_mem\n");
+        g_free(surface);
+        return NULL;
+    }
+
+    container->buffer = NULL;
+    container->length = 0;
+
+    ret = WebPEncodeLosslessBGRA((const uint8_t *)surface, width,
             height, image_stride, &container->buffer);
     LOG_TRACE("lossless encode framebuffer via webp. result %zu\n", ret);
 
     container->length = (int)ret;
 
-    g_free(surface->data);
     g_free(surface);
 
     return container;
