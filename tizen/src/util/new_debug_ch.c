@@ -225,6 +225,7 @@ static void debug_init(void)
         return;  /* already initialized */
     }
 
+    nb_debug_options = 0;
     if (0 == strlen(bin_path)) {
         g_strlcpy(debugchfile, "DEBUGCH", MAX_FILE_LEN);
     } else {
@@ -237,6 +238,7 @@ static void debug_init(void)
         debug = getenv("DEBUGCH");
     } else {
         if ((tmp = (char *)malloc(1024 + 1)) == NULL){
+            nb_debug_options = -1;
             fclose(fp);
             return;
         }
@@ -248,6 +250,7 @@ static void debug_init(void)
             if (tmp != NULL)
                 free(tmp);
 
+            nb_debug_options = -1;
             return;
         }
         const char* str = fgets(tmp, 1024, fp);
@@ -272,7 +275,7 @@ static void debug_init(void)
 
     // If "log_path" is not set, we use "stdout".
     if (log_path[0] != '\0') {
-        fd = qemu_open(log_path, O_RDWR | O_CREAT | O_TRUNC, 0666);
+        fd = qemu_open(log_path, O_RDWR | O_CREAT | O_TRUNC | O_APPEND, 0666);
         if (fd < 0) {
             fprintf(stderr, "Can't open logfile: %s\n", log_path);
             exit(1);
