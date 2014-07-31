@@ -224,7 +224,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 
 		/* make window region */
 		Region region = (SwtUtil.isLinuxPlatform() == false) ?
-				getTrimmedRegion(shell.getDisplay(), generalSkin) : /* color key */
+				getTrimmedRegion(generalSkin) : /* color key */
 				SkinUtil.getTrimmedRegion(generalSkin);
 
 		/* update the skin state information */
@@ -320,7 +320,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		return displayBounds;
 	}
 
-	private static Region getTrimmedRegion(Display display, Image image) {
+	private static Region getTrimmedRegion(Image image) {
 		if (null == image) {
 			return null;
 		}
@@ -332,6 +332,7 @@ public class GeneralPurposeSkinComposer implements ISkinComposer {
 		Region region = new Region();
 		region.add(new Rectangle(0, 0, width, height));
 
+		Display display = Display.getDefault();
 		int r = display.getSystemColor(SWT.COLOR_MAGENTA).getRed();
 		int g = display.getSystemColor(SWT.COLOR_MAGENTA).getGreen();
 		int b = display.getSystemColor(SWT.COLOR_MAGENTA).getBlue();

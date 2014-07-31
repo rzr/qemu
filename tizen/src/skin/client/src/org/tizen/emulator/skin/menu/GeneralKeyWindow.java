@@ -303,7 +303,7 @@ public class GeneralKeyWindow extends SkinWindow {
 		}
 	}
 
-	private static Region getTrimmedRegion(Display display, Image image) {
+	private static Region getTrimmedRegion(Image image) {
 		if (null == image) {
 			return null;
 		}
@@ -315,6 +315,7 @@ public class GeneralKeyWindow extends SkinWindow {
 		Region region = new Region();
 		region.add(new Rectangle(0, 0, width, height));
 
+		Display display = Display.getDefault();
 		int r = display.getSystemColor(SWT.COLOR_MAGENTA).getRed();
 		int g = display.getSystemColor(SWT.COLOR_MAGENTA).getGreen();
 		int b = display.getSystemColor(SWT.COLOR_MAGENTA).getBlue();
@@ -342,7 +343,7 @@ public class GeneralKeyWindow extends SkinWindow {
 	protected void trimWindow() {
 		/* make window region */
 		Region region = (SwtUtil.isLinuxPlatform() == false) ?
-				getTrimmedRegion(shell.getDisplay(), imageFrame) : /* color key */
+				getTrimmedRegion(imageFrame) : /* color key */
 				SkinUtil.getTrimmedRegion(imageFrame);
 
 		/* custom window shape */
@@ -521,13 +522,15 @@ public class GeneralKeyWindow extends SkinWindow {
 
 		shell.addMouseListener(shellMouseListener);
 
-		/* keep window region while OS theme changing */
-		shell.getDisplay().addListener(SWT.Settings, new Listener() {
-			@Override
-			public void handleEvent(Event e) {
-				trimWindow();
-			}
-		});
+		if (SwtUtil.isWindowsPlatform() == false) {
+			/* keep window region while OS theme changing */
+			shell.getDisplay().addListener(SWT.Settings, new Listener() {
+				@Override
+				public void handleEvent(Event e) {
+					trimWindow();
+				}
+			});
+		}
 	}
 
 	private void dispose() {

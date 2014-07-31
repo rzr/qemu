@@ -617,15 +617,17 @@ public class EmulatorSkin {
 
 		shell.addMenuDetectListener(shellMenuDetectListener);
 
-		/* keep window region while OS theme changing */
-		shell.getDisplay().addListener(SWT.Settings, new Listener() {
-			@Override
-			public void handleEvent(Event e) {
-				logger.info("operating system property has been changed");
+		if (SwtUtil.isWindowsPlatform() == false) {
+			/* keep window region while OS theme changing */
+			shell.getDisplay().addListener(SWT.Settings, new Listener() {
+				@Override
+				public void handleEvent(Event e) {
+					logger.info("operating system property has been changed");
 
-				rearrangeSkin();
-			}
-		});
+					rearrangeSkin();
+				}
+			});
+		}
 	}
 
 	private void removeShellListeners() {
