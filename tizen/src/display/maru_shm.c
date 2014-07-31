@@ -32,14 +32,20 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-#include "maru_shm.h"
+#include "qemu/main-loop.h"
 #include "emul_state.h"
+#include "maru_display.h"
+#include "maru_shm.h"
 #include "hw/pci/maru_brightness.h"
 #include "skin/maruskin_server.h"
 #include "util/maru_err_table.h"
 #include "debug_ch.h"
 
+#include "tethering/touch.h"
+
 MULTI_DEBUG_CHANNEL(tizen, maru_shm);
+
+static QEMUBH *shm_update_bh;
 
 static DisplaySurface *dpy_surface;
 static void *shared_memory = (void *) 0;
@@ -89,6 +95,8 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
             if (is_fit_console_size == true) {
                 maru_do_pixman_dpy_surface(dpy_surface->image);
 
+                save_screenshot(dpy_surface);
+
                 memcpy(shared_memory,
                     surface_data(dpy_surface),
                     surface_stride(dpy_surface) *
@@ -115,6 +123,8 @@ static void qemu_ds_shm_update(DisplayChangeListener *dcl,
              drop_frame, draw_frame + drop_frame);
 #endif
     }
+
+    set_display_dirty(true);
 }
 
 static void qemu_ds_shm_switch(DisplayChangeListener *dcl,
@@ -191,12 +201,22 @@ static void qemu_ds_shm_refresh(DisplayChangeListener *dcl)
     }
 }
 
+static void maru_shm_update_bh(void *opaque)
+{
+    graphic_hw_invalidate(NULL);
+}
+
 DisplayChangeListenerOps maru_dcl_ops = {
     .dpy_name          = "maru_shm",
     .dpy_refresh       = qemu_ds_shm_refresh,
     .dpy_gfx_update    = qemu_ds_shm_update,
     .dpy_gfx_switch    = qemu_ds_shm_switch,
 };
+
+void maru_shm_pre_init(void)
+{
+    shm_update_bh = qemu_bh_new(maru_shm_update_bh, NULL);
+}
 
 void maru_shm_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
@@ -288,8 +308,27 @@ void maru_shm_resize(void)
     shm_skip_update = 0;
 }
 
-bool maru_extract_framebuffer(void* buffer)
+void maru_shm_update(void)
 {
-    INFO("not support on Mac OS X\n");
-    return false;
+    if (shm_update_bh != NULL) {
+        qemu_bh_schedule(shm_update_bh);
+    }
+}
+
+bool maru_extract_framebuffer(void *buffer)
+{
+    uint32_t buffer_size = 0;
+
+    if (!buffer) {
+        ERR("given buffer is null\n");
+        return false;
+    }
+
+    maru_do_pixman_dpy_surface(dpy_surface->image);
+
+    buffer_size = surface_stride(dpy_surface) * surface_height(dpy_surface);
+    TRACE("extract framebuffer %d\n", buffer_size);
+
+    memcpy(buffer, surface_data(dpy_surface), buffer_size);
+    return true;
 }

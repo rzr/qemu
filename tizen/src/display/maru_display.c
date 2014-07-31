@@ -75,7 +75,7 @@ void maru_display_init(DisplayState *ds)
     maru_sdl_pre_init();
 #endif
 #else
-    /* do nothing */
+    maru_shm_pre_init();
 #endif
 
     /*  graphics context information */
@@ -114,7 +114,7 @@ void maru_display_update(void)
     maru_sdl_update();
 #endif
 #else
-    /* do nothing */
+    maru_shm_update();
 #endif
 }
 
