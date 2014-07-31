@@ -25,7 +25,7 @@ prepare()
         exit 1
     fi
 
-    export PKG_CONFIG_PATH=$ROOTDIR/glib2/lib/pkgconfig:$ROOTDIR/curl/lib/pkgconfig:$ROOTDIR/libffi/lib/pkgconfig:$ROOTDIR/libidn/lib/pkgconfig:$ROOTDIR/libxml2/lib/pkgconfig:$ROOTDIR/ncurses/lib/pkgconfig:$ROOTDIR/openssl/lib/pkgconfig:$ROOTDIR/pixman/lib/pkgconfig:$ROOTDIR/zlib/lib/pkgconfig:$ROOTDIR/libav/lib/pkgconfig:$PKG_CONFIG_PATH
+    export PKG_CONFIG_PATH=$ROOTDIR/glib2/lib/pkgconfig:$ROOTDIR/curl/lib/pkgconfig:$ROOTDIR/libffi/lib/pkgconfig:$ROOTDIR/libidn/lib/pkgconfig:$ROOTDIR/libxml2/lib/pkgconfig:$ROOTDIR/ncurses/lib/pkgconfig:$ROOTDIR/openssl/lib/pkgconfig:$ROOTDIR/pixman/lib/pkgconfig:$ROOTDIR/zlib/lib/pkgconfig:$ROOTDIR/libav/lib/pkgconfig:$ROOTDIR/libpng/lib/pkgconfig:$PKG_CONFIG_PATH
 
     BUILD_CFLAGS="--extra-cflags=-I$ROOTDIR/libiconv/include "
     BUILD_LDFLAGS="--extra-ldflags=-L$ROOTDIR/libiconv/lib "
