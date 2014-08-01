@@ -196,7 +196,6 @@ bool send_msg_to_controller(void *msg)
         if (sent_size < 0) {
             perror("failed to send a packet");
             if (errno == EAGAIN) {
-                //sleep(1);
                 fd_set writefds;
                 struct timeval timeout;
 
@@ -640,9 +639,9 @@ static int start_tethering_socket(const char *ipaddress, int port)
     set_tethering_connection_status(CONNECTING);
 
     while (1) {
-       ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+        ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
 
-       if (ret == 0) {
+        if (ret == 0) {
             LOG_INFO("tethering socket is connected.\n");
             break;
         } else {
@@ -675,16 +674,17 @@ static int start_tethering_socket(const char *ipaddress, int port)
                 }
                 continue;
             } else if (connection_errno == EALREADY) {
-                ret = 0;
                 LOG_INFO("a previous connection has not yet been completed\n");
+                ret = 0;
                 continue;
             } else if (connection_errno == EISCONN) {
-                ret = 0;
                 LOG_INFO("connection is already connected\n");
+                ret = 0;
                 break;
             } else {
                 perror("connect failure");
                 ret = -connection_errno;
+                break;
             }
         }
     }
