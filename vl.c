@@ -4581,7 +4581,7 @@ int main(int argc, char **argv, char **envp)
         break;
 #endif
 #if defined(CONFIG_MARU)
-#if defined(CONFIG_SDL)
+#if defined(CONFIG_SDL) || defined(CONFIG_USE_SHM)
     case DT_MARU:
         maru_display_init(ds);
         if (skin_disabled == 1) {

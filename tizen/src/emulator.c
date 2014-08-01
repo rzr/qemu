@@ -79,7 +79,7 @@ void emulator_add_exit_notifier(Notifier *notify)
     qemu_add_exit_notifier(notify);
 }
 
-#ifdef CONFIG_SDL
+#if defined(CONFIG_SDL) || defined(CONFIG_USE_SHM)
 static void construct_main_window(int skin_argc, char *skin_argv[],
                                 int qemu_argc, char *qemu_argv[])
 {
@@ -276,7 +276,7 @@ const char *prepare_maru(const gchar * const kernel_cmdline)
     return maru_kernel_cmdline;
 }
 
-#ifdef CONFIG_SDL
+#if defined(CONFIG_SDL) || defined(CONFIG_USE_SHM)
 void start_skin(void)
 {
     LOG_INFO("Start skin\n");
