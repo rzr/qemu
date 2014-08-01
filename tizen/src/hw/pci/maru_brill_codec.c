@@ -692,7 +692,7 @@ static int maru_brill_codec_get_picture_size(AVPicture *picture, uint8_t *ptr,
 
         if (!encode && !ptr) {
             TRACE("allocate a buffer for a decoded picture.\n");
-            ptr = av_mallocz(fsize);
+            ptr = g_malloc(fsize);
             if (!ptr) {
                 ERR("[%d] failed to allocate memory.\n", __LINE__);
                 return -1;
@@ -1373,7 +1373,7 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     tempbuf = g_malloc(tempbuf_size);
     if (!tempbuf) {
         ERR("failed to allocate decoded audio buffer\n");
-        // FIXME: how to handle this case?
+        tempbuf_size = 0;
     } else {
         struct video_data video;
 
@@ -1399,7 +1399,7 @@ static bool codec_picture_copy (MaruBrillCodecState *s, int ctx_id, void *elem)
     AVCodecContext *avctx = NULL;
     AVPicture *src = NULL;
     AVPicture dst;
-    uint8_t *out_buffer = NULL, *tempbuf = NULL;
+    uint8_t *tempbuf = NULL;
     int pict_size = 0;
     bool ret = true;
 
@@ -1433,14 +1433,7 @@ static bool codec_picture_copy (MaruBrillCodecState *s, int ctx_id, void *elem)
             av_picture_copy(&dst, src, avctx->pix_fmt,
                             avctx->width, avctx->height);
 
-            tempbuf = g_malloc0(pict_size);
-            if (!tempbuf) {
-                ERR("failed to allocate a picture buffer. size: %d\n", pict_size);
-            } else {
-                out_buffer = dst.data[0];
-                memcpy(tempbuf, out_buffer, pict_size);
-            }
-            av_free(out_buffer);
+            tempbuf = dst.data[0];
         }
     }
 
