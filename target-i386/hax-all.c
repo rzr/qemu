@@ -27,6 +27,7 @@
 #include "strings.h"
 #include "hax-i386.h"
 #include "sysemu/kvm.h"
+#include "exec/address-spaces.h"
 
 #define HAX_EMUL_ONE    0x1
 #define HAX_EMUL_REAL   0x2
@@ -506,7 +507,7 @@ static int hax_init(void)
         goto error;
     }
 
-    memory_listener_register(&hax_memory_listener, NULL);
+    memory_listener_register(&hax_memory_listener, &address_space_memory);
 
     hax_support = 1;
 
