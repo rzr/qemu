@@ -70,35 +70,6 @@ enum sensor_level {
 
 static int sensor_device_status;
 
-#if 0
-static void init_sensor_state(void)
-{
-    input_device_list *device = NULL;
-    sensor_state *sensor = NULL;
-    int ret = 0;
-
-    device = g_malloc0(sizeof(device));
-    if (!device) {
-        return;
-    }
-
-    sensor = g_malloc0(sizeof(sensor_state));
-    if (!sensor) {
-        g_free(device);
-        return;
-    }
-
-    device->type = TETHERING__TETHERING_MSG__TYPE__SENSOR_MSG;
-    device->opaque = sensor;
-
-    ret = add_input_device(device);
-    if (ret < 0) {
-        g_free(sensor);
-        g_free(device);
-    }
-}
-#endif
-
 // create a sensor message.
 static bool build_sensor_msg(Tethering__SensorMsg *sensor)
 {
@@ -244,9 +215,6 @@ bool msgproc_tethering_sensor_msg(void *message)
     switch(msg->type) {
     case TETHERING__SENSOR_MSG__TYPE__START_REQ:
         LOG_TRACE("SENSOR_MSG_TYPE_START_REQ\n");
-
-        // TODO
-        // init_sensor_state();
 
         // set sensor type.
         send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__ACCEL,

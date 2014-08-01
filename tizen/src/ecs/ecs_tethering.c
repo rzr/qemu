@@ -35,12 +35,16 @@
 #include "tethering/sensor.h"
 #include "tethering/touch.h"
 #include "hw/virtio/maru_virtio_touchscreen.h"
+#include "hw/virtio/maru_virtio_hwkey.h"
 #include "debug_ch.h"
 
 MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
 
 #define MSG_BUF_SIZE  255
 #define MSG_LEN_SIZE    4
+
+#define PRESSED     1
+#define RELEASED    2
 
 // static bool send_tethering_ntf(const char *data, const int len);
 static bool send_tethering_ntf(const char *data);
@@ -95,7 +99,6 @@ static void send_tethering_port_ecp(void)
     TRACE(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s\n",
         action, group, data);
 
-//    send_tethering_ntf((const char *)msg, MSG_BUF_SIZE);
     send_tethering_ntf((const char *)msg);
 
     if (msg) {
@@ -143,7 +146,6 @@ static void send_tethering_status_ntf(type_group group, type_action action)
     TRACE(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s\n",
         action, group, data);
 
-//    send_tethering_ntf((const char *)msg, MSG_BUF_SIZE);
     send_tethering_ntf((const char *)msg);
 
     if (msg) {
@@ -151,7 +153,6 @@ static void send_tethering_status_ntf(type_group group, type_action action)
     }
 }
 
-// static bool send_tethering_ntf(const char *data, const int len)
 static bool send_tethering_ntf(const char *data)
 {
     type_length length = 0;
@@ -215,6 +216,12 @@ void send_tethering_sensor_data(const char *data, int len)
 void send_tethering_touch_data(int x, int y, int index, int status)
 {
     virtio_touchscreen_event(x, y, index, status);
+}
+
+void send_tethering_hwkey_data(int keycode)
+{
+    maru_hwkey_event(PRESSED, keycode);
+    maru_hwkey_event(RELEASED, keycode);
 }
 
 // handle tethering_req message

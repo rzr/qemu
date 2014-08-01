@@ -39,50 +39,11 @@
 
 DECLARE_DEBUG_CHANNEL(app_tethering);
 
-typedef struct touch_state {
-    bool is_touch_event;
-    bool is_touch_supported;
-
-    // int touch_max_point;
-    // display_state *display;
-} touch_event;
-
-// static bool is_touch_event;
 static int touch_device_status;
-
-// static void set_touch_event_status(bool status);
 static bool send_display_image_data(void);
 
-#if 0
-touch_state *init_touch_state(void)
-{
-    input_device_list *device = NULL;
-    touch_state *touch = NULL;
-    int ret = 0;
-
-    device = g_malloc0(sizeof(device));
-    if (!device) {
-        return NULL;
-    }
-
-    touch = g_malloc0(sizeof(touch_state));
-    if (!touch) {
-        g_free(device);
-        return NULL;
-    }
-
-    device->type = TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG;
-    device->opaque = touch;
-
-    ret = add_input_device(device);
-    if (ret < 0) {
-        g_free(touch);
-        g_free(device);
-    }
-
-    return touch;
-}
-#endif
+#define HARD_KEY_MENU 169
+#define HARD_KEY_BACK 158
 
 static bool build_touch_msg(Tethering__TouchMsg *touch)
 {
@@ -199,21 +160,13 @@ static bool send_set_touch_resolution(void)
     return ret;
 }
 
-#if 0
-static void set_touch_event_status(bool status)
-{
-    is_touch_event = status;
-
-    LOG_TRACE("set touch_event status: %d\n", status);
-}
-
 static void set_hwkey_data(Tethering__HWKeyMsg *msg)
 {
     int32_t keycode = 0;
 
     switch (msg->type) {
     case TETHERING__HWKEY_TYPE__MENU:
-        // keycode = HARD_KEY_ ;
+        keycode = HARD_KEY_MENU;
         break;
 
     case TETHERING__HWKEY_TYPE__HOME:
@@ -221,18 +174,18 @@ static void set_hwkey_data(Tethering__HWKeyMsg *msg)
         break;
 
     case TETHERING__HWKEY_TYPE__BACK:
-        // keycode = ;
+        keycode = HARD_KEY_BACK;
         break;
 
     case TETHERING__HWKEY_TYPE__POWER:
         keycode = HARD_KEY_POWER;
         break;
 
-    case TETHERING__HWKEY_TYPE__VOLUMEUP:
+    case TETHERING__HWKEY_TYPE__VOLUME_UP:
         keycode = HARD_KEY_VOL_UP;
         break;
 
-    case TETHERING__HWKEY_TYPE__VOLUMEDOWN:
+    case TETHERING__HWKEY_TYPE__VOLUME_DOWN:
         keycode = HARD_KEY_VOL_DOWN;
         break;
 
@@ -243,7 +196,6 @@ static void set_hwkey_data(Tethering__HWKeyMsg *msg)
     LOG_TRACE("convert hwkey msg to keycode: %d\n", keycode);
     send_tethering_hwkey_data(keycode);
 }
-#endif
 
 static bool is_display_dirty = false;
 
@@ -253,50 +205,43 @@ void set_display_dirty(bool dirty)
     is_display_dirty = dirty;
 }
 
-// bool msgproc_tethering_touch_msg(Tethering__TouchMsg *msg)
 bool msgproc_tethering_touch_msg(void *message)
 {
     bool ret = true;
     Tethering__TouchMsg *msg = (Tethering__TouchMsg *)message;
 
-    // touch_state *state = NULL;
-
     switch(msg->type) {
     case TETHERING__TOUCH_MSG__TYPE__START_REQ:
         LOG_TRACE("TOUCH_MSG_TYPE_START\n");
-        // state = init_touch_state();
-
-        // it means that app starts to send touch values.
-        // set_touch_event_status(true);
-
         send_set_touch_max_count();
         send_set_touch_resolution();
-
         ret = send_touch_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
         break;
     case TETHERING__TOUCH_MSG__TYPE__TERMINATE:
         LOG_TRACE("TOUCH_MSG_TYPE_TERMINATE\n");
-
-        // it means that app stops to send touch values.
-        // set_touch_event_status(false);
         break;
 
     case TETHERING__TOUCH_MSG__TYPE__TOUCH_DATA:
+        LOG_TRACE("TOUCH_MSG_TYPE_TOUCH_DATA\n");
         set_touch_data(msg->touchdata);
         break;
 
     case TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG:
+        LOG_TRACE("TOUCH_MSG_TYPE_DISPLAY_MSG\n");
+
         if (is_display_dirty) {
+            LOG_TRACE("display dirty status!! send the image\n");
+
             send_display_image_data();
             is_display_dirty = false;
         }
         break;
 
-#if 0
     case TETHERING__TOUCH_MSG__TYPE__HWKEY_MSG:
+        LOG_TRACE("TOUCH_MSG_TYPE_HWKEY_MSG\n");
         set_hwkey_data(msg->hwkey);
         break;
-#endif
+
     default:
         LOG_TRACE("invalid touch_msg\n");
         ret = false;
