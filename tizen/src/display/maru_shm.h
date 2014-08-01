@@ -35,11 +35,13 @@
 
 extern DisplayChangeListenerOps maru_dcl_ops;
 
+void maru_shm_pre_init(void);
 void maru_shm_init(uint64 swt_handle,
     unsigned int display_width, unsigned int display_height,
     bool blank_guide);
 void maru_shm_resize(void);
 void maru_shm_quit(void);
+void maru_shm_update(void);
 bool maru_extract_framebuffer(void *buffer);
 
 #endif /* MARU_SHM_H_ */
