@@ -84,14 +84,11 @@ static inline int get_timeofday(char *buf, size_t size)
     qemu_gettimeofday(&tv);
     ti = tv.tv_sec;
 
-#ifndef CONFIG_WIN32
-    localtime_r(&ti, ptm);
-#else
+    /* In this case, localtime_r() function is not necessary. */
     ptm = localtime(&ti);
-#endif
     ret = strftime(buf, size, "%H:%M:%S", ptm);
 
-    return ret + g_snprintf(buf + ret, size - ret, ".%06ld", tv.tv_usec);
+    return ret + g_snprintf(buf + ret, size - ret, ".%06ld", (long)tv.tv_usec);
 }
 
 int get_number_of_processors(void);
