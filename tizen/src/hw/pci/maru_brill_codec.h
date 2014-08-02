@@ -40,13 +40,14 @@
 #include "qemu/thread.h"
 
 #include "util/osutil.h"
-#include "debug_ch.h"
 #include "hw/maru_device_ids.h"
 
 #include "libavformat/avformat.h"
 #include "libavresample/avresample.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixfmt.h"
+
 
 #define CODEC_CONTEXT_MAX           1024
 
@@ -100,6 +101,11 @@ typedef struct CodecThreadPool {
     QemuMutex           mutex;
     QemuCond            cond;
 } CodecThreadPool;
+
+typedef struct DataHandler {
+    void (*get_data)(void *dst, void *src, size_t size, enum AVPixelFormat pix_fmt);
+    void (*release)(void *opaque);
+} DataHandler;
 
 typedef struct MaruBrillCodecState {
     PCIDevice           dev;
