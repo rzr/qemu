@@ -1,4 +1,6 @@
-obj-y += maru_brill_codec.o
+obj-$(CONFIG_LIBAV) += maru_brillcodec_device.o
+obj-$(CONFIG_LIBAV) += maru_brillcodec.o
+
 obj-y += maru_brightness.o
 
 obj-y += maru_camera_common_pci.o
@@ -18,5 +20,5 @@ LIBS += -framework Cocoa -framework QTKit -framework CoreVideo
 LIBS += -framework AppKit
 endif
 
-maru_brill_codec.o-cflags := $(LIBAV_CFLAGS)
-#$(obj)/maru_brillcodec.o $(obj)/maru_brillcodec_device.o: QEMU_CFLAGS += $(LIBAV_CFLAGS)
+maru_brillcodec_device.o-cflags := $(LIBAV_CFLAGS)
+maru_brillcodec.o-cflags := $(LIBAV_CFLAGS)

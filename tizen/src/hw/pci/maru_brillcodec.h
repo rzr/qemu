@@ -28,28 +28,17 @@
  *
  */
 
-#include <stdio.h>
-#include <sys/types.h>
+#ifndef __MARU_BRILLCODEC_H__
+#define __MARU_BRILLCODEC_H__
 
-#include "hw/hw.h"
-#include "sysemu/kvm.h"
-#include "qemu/main-loop.h"
 #include "hw/pci/pci.h"
-#include "hw/pci/pci_ids.h"
-#include "qemu-common.h"
-#include "qemu/thread.h"
 
-#include "util/osutil.h"
-#include "hw/maru_device_ids.h"
-
-#include "libavformat/avformat.h"
-#include "libavresample/avresample.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/opt.h"
-#include "libavutil/pixfmt.h"
-
+#include "libavcodec/avcodec.h"
 
 #define CODEC_CONTEXT_MAX           1024
+#define CODEC_MEM_SIZE          (32 * 1024 * 1024)
+
+#define CONTEXT(s, id)        (s->context[id])
 
 /*
  *  Codec Device Structures
@@ -59,30 +48,6 @@ typedef struct CodecParam {
     int32_t     ctx_index;
     uint32_t    mem_offset;
 } CodecParam;
-
-struct video_data {
-    int32_t width;
-    int32_t height;
-    int32_t fps_n;
-    int32_t fps_d;
-    int32_t par_n;
-    int32_t par_d;
-    int32_t pix_fmt;
-    int32_t bpp;
-    int32_t ticks_per_frame;
-};
-
-struct audio_data {
-    int32_t channels;
-    int32_t sample_rate;
-    int32_t block_align;
-    int32_t depth;
-    int32_t sample_fmt;
-    int32_t frame_size;
-    int32_t bits_per_smp_fmt;
-    int32_t reserved;
-    int64_t channel_layout;
-};
 
 typedef struct CodecContext {
     AVCodecContext          *avctx;
@@ -130,42 +95,27 @@ typedef struct MaruBrillCodecState {
     CodecParam          ioparam;
 } MaruBrillCodecState;
 
-enum codec_io_cmd {
-    CODEC_CMD_API_INDEX             = 0x28,
-    CODEC_CMD_CONTEXT_INDEX         = 0x2C,
-    CODEC_CMD_DEVICE_MEM_OFFSET     = 0x34,
-    CODEC_CMD_GET_THREAD_STATE      = 0x38,
-    CODEC_CMD_GET_CTX_FROM_QUEUE    = 0x3C,
-    CODEC_CMD_GET_DATA_FROM_QUEUE   = 0x40,
-    CODEC_CMD_RELEASE_CONTEXT       = 0x44,
-    CODEC_CMD_GET_VERSION           = 0x50,
-    CODEC_CMD_GET_ELEMENT           = 0x54,
-    CODEC_CMD_GET_CONTEXT_INDEX     = 0x58,
-};
+typedef struct DeviceMemEntry {
+    void *opaque;
+    uint32_t data_size;
+    uint32_t ctx_id;
 
-enum codec_api_type {
-    CODEC_INIT = 0,
-    CODEC_DECODE_VIDEO,
-    CODEC_ENCODE_VIDEO,
-    CODEC_DECODE_AUDIO,
-    CODEC_ENCODE_AUDIO,
-    CODEC_PICTURE_COPY,
-    CODEC_DEINIT,
-    CODEC_FLUSH_BUFFERS,
- };
+    DataHandler *handler;
 
-enum codec_type {
-    CODEC_TYPE_UNKNOWN = -1,
-    CODEC_TYPE_DECODE,
-    CODEC_TYPE_ENCODE,
-};
+    QTAILQ_ENTRY(DeviceMemEntry) node;
+} DeviceMemEntry;
 
-enum thread_state {
-    CODEC_TASK_START    = 0,
-    CODEC_TASK_END      = 0x1f,
-};
+QTAILQ_HEAD(codec_wq, DeviceMemEntry);
+extern struct codec_wq codec_wq;
 
-/*
- *  Codec Device Functions
- */
-int maru_brill_codec_pci_device_init(PCIBus *bus);
+extern DeviceMemEntry *entry[CODEC_CONTEXT_MAX];
+
+int maru_brill_codec_query_list(MaruBrillCodecState *s);
+int maru_brill_codec_get_context_index(MaruBrillCodecState *s);
+void maru_brill_codec_wakeup_threads(MaruBrillCodecState *s, int api_index);
+void maru_brill_codec_release_context(MaruBrillCodecState *s, int32_t ctx_id);
+void maru_brill_codec_pop_writequeue(MaruBrillCodecState *s, uint32_t ctx_idx);
+
+void *maru_brill_codec_threads(void *opaque);
+
+#endif // __MARU_BRILLCODEC_H__
