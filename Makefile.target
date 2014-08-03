@@ -65,7 +65,7 @@ else
 stap:
 endif
 
-all: $(PROGS) stap check-gl
+all: $(PROGS) stap
 
 # Dummy command so that make thinks it has done something
 	@true
@@ -189,40 +189,6 @@ else
 $(QEMU_PROG): $(all-obj-y) ../libqemuutil.a ../libqemustub.a
 	$(call LINK,$^)
 endif
-
-CHECK_GL_OBJS = check_gl.o check_gl_core.o
-CHECK_GL_LDFLAGS =
-CHECK_GL_TARGET =
-ifdef CONFIG_LINUX
-CHECK_GL_OBJS += check_gl_glx.o
-#CHECK_GL_LDFLAGS += -lGL -lXcomposite -lXext -lglib-2.0
-# Fix linking error on Ubuntu 13.04
-CHECK_GL_LDFLAGS += -lX11 -lXext -lglib-2.0 -ldl
-CHECK_GL_TARGET = check-gl
-endif
-ifdef CONFIG_WIN32
-CHECK_GL_OBJS += check_gl_wgl.o
-CHECK_GL_LDFLAGS += -fstack-protector `pkg-config --libs glib-2.0` -lgdi32
-CHECK_GL_TARGET = check-gl.exe
-endif
-ifdef CONFIG_DARWIN
-CHECK_GL_OBJS += check_gl_cgl.o
-CHECK_GL_LDFLAGS += -mmacosx-version-min=10.4 `pkg-config --cflags --libs glib-2.0` -framework OpenGL
-CHECK_GL_TARGET = check-gl
-endif
-
-check-gl: $(CHECK_GL_OBJS)
-	gcc -o $(CHECK_GL_TARGET) $(CHECK_GL_OBJS) $(CHECK_GL_LDFLAGS)
-check_gl.o:
-	gcc -c $(SRC_PATH)/tizen/src/util/check_gl.c -I$(SRC_PATH)/hw/yagl/yagl_inc
-check_gl_core.o:
-	gcc -c $(SRC_PATH)/tizen/src/util/check_gl_core.c -I$(SRC_PATH)/hw/yagl/yagl_inc
-check_gl_glx.o:
-	gcc -c $(SRC_PATH)/tizen/src/util/check_gl_glx.c -I$(SRC_PATH)/hw/yagl/yagl_inc
-check_gl_wgl.o:
-	gcc -c $(SRC_PATH)/tizen/src/util/check_gl_wgl.c -I$(SRC_PATH)/hw/yagl/yagl_inc
-check_gl_cgl.o:
-	gcc -c $(SRC_PATH)/tizen/src/util/check_gl_cgl.c -I$(SRC_PATH)/hw/yagl/yagl_inc
 
 gdbstub-xml.c: $(TARGET_XML_FILES) $(SRC_PATH)/scripts/feature_to_c.sh
 	$(call quiet-command,rm -f $@ && $(SHELL) $(SRC_PATH)/scripts/feature_to_c.sh $@ $(TARGET_XML_FILES),"  GEN   $(TARGET_DIR)$@")

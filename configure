@@ -320,11 +320,11 @@ coroutine=""
 coroutine_pool=""
 seccomp=""
 
-# for TIZEN-maru 
+# for TIZEN-maru
 maru="no"
 shm="no"
 libav="no"
-png="no"
+libpng="no"
 #
 glusterfs=""
 glusterfs_discard="no"
@@ -1101,7 +1101,7 @@ for opt do
   ;;
   --enable-libav) libav="yes"
   ;;
-  --enable-png) png="yes"
+  --enable-libpng) libpng="yes"
   ;;
 #
   --disable-glusterfs) glusterfs="no"
@@ -1417,7 +1417,7 @@ TIZEN-maru options:
   --enable-maru            enable maru board
   --enable-shm             enable shared memory for framebuffer
   --enable-libav           enable libav library
-  --enable-png             enable png library
+  --enable-libpng          enable png library
 
 NOTE: The object files are built at the place where configure is launched
 EOF
@@ -3990,7 +3990,6 @@ if test "$libav" != "no"; then
         libav_cflags=`$pkg_config --cflags $libavcodec_package`
         libav_libs=`$pkg_config --libs $libavcodec_package`
         libs_softmmu="$libav_libs $libs_softmmu"
-        QEMU_CFLAGS="$QEMU_CFLAGS $libav_cflags"
         libav="yes"
     else
         if test "$libav" = "yes" ; then
@@ -4035,22 +4034,21 @@ if test "$libav" != "no"; then
 fi
 
 ##########################################
-# png probe
+# libpng probe
 
-if test "$png" != "no"; then
-    png_package="libpng"
+if test "$libpng" != "no"; then
+    libpng_package="libpng"
 
-    if $pkg_config --exists "$png_package" ; then
-        png_cflags=`$pkg_config --cflags $png_package`
-        png_libs=`$pkg_config --libs $png_package`
-        libs_softmmu="$png_libs $libs_softmmu"
-        QEMU_CFLAGS="$QEMU_CFLAGS $png_cflags"
-        png="yes"
+    if $pkg_config --exists "$libpng_package" ; then
+        libpng_cflags=`$pkg_config --cflags $libpng_package`
+        libpng_libs=`$pkg_config --libs $libpng_package`
+        libs_softmmu="$libpng_libs $libs_softmmu"
+        libpng="yes"
     else
-        if test "$png" = "yes" ; then
-            feature_not_found "png"
+        if test "$libpng" = "yes" ; then
+            feature_not_found "libpng"
         fi
-        png="no"
+        libpng="no"
     fi
 fi
 
@@ -4352,7 +4350,7 @@ echo "VIGS support      $vigs"
 echo "TIZEN-maru support $maru"
 echo "TIZEN-maru shared framebuffer support $shm"
 echo "TIZEN-maru libav support $libav"
-echo "TIZEN-maru png support $png"
+echo "TIZEN-maru libpng support $libpng"
 #
 
 if test "$sdl_too_old" = "yes"; then
@@ -4841,9 +4839,11 @@ if test "$shm" = "yes" ; then
 fi
 if test "$libav" = "yes" ; then
   echo "CONFIG_LIBAV=y" >> $config_host_mak
+  echo "LIBAV_CFLAGS=$libav_cflags" >> $config_host_mak
 fi
-if test "$png" = "yes" ; then
+if test "$libpng" = "yes" ; then
   echo "CONFIG_PNG=y" >> $config_host_mak
+  echo "LIBPNG_CFLAGS=$libpng_cflags" >> $config_host_mak
 fi
 
 # TPM passthrough support?

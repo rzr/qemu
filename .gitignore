@@ -129,6 +129,10 @@ tizen/src/skin/client/native_src/*.dynlib
 fsdev/virtfs-proxy-helper
 .cproject
 .project
-tizen/src/util/check-hax
-tizen/src/util/check-cam
+check-hax
+check-hax.exe
+check-cam
+check-cam.exe
+check-gl
+check-gl.exe
 

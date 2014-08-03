@@ -10,48 +10,78 @@ endif
 
 ifneq ($(wildcard ../../config-host.mak),)
 include ../../config-host.mak
-else
-config-host.mak:
-	@echo "Please call configure before running make!"
-	@exit 1
+
+TARGET_EXE += util/check-cam$(EXESUF)
+ifdef CONFIG_YAGL
+TARGET_EXE += util/check-gl$(EXESUF)
+endif
+ifndef CONFIG_LINUX
+TARGET_EXE += util/check-hax$(EXESUF)
 endif
 
-ifdef CONFIG_WIN32
-EXECUTABLE_EXTENSION=.exe
-else
-EXECUTABLE_EXTENSION=
-endif
-
-all: qemu skin_client
-qemu: build_info check_hax check_cam
+all: qemu skin_client $(TARGET_EXE)
+qemu: $(TARGET_EXE) build_info
 	cd ../../ && $(MAKE)
 qemu_clean:
 	cd ../../ && $(MAKE) clean
-
 qemu_distclean:
 	cd ../../ && $(MAKE) distclean
 
-check_hax:
-	@echo "build check hax"
-ifdef CONFIG_WIN32
-	$(CC) -o util/check-hax.exe util/check_hax.c
-endif
-ifdef CONFIG_DARWIN
-	$(CC) -mmacosx-version-min=10.4 -o util/check-hax util/check_hax.c
-endif
-
-check_cam:
-	@echo "build check cam"
+# Building check-gl
+CHECK_GL_OBJS = util/check_gl.o util/check_gl_core.o
+CHECK_GL_CFLAGS = -c -I$(SRC_PATH)/hw/yagl/yagl_inc
+CHECK_GL_LDFLAGS =
+CHECK_GL_TARGET = util/check-gl$(EXESUF)
 ifdef CONFIG_LINUX
-	$(CC) -o util/check-cam util/check_cam.c -lv4l2 -lv4lconvert
+CHECK_GL_OBJS += util/check_gl_glx.o
+CHECK_GL_LDFLAGS += -lX11 -lXext -lglib-2.0 -ldl
 endif
 ifdef CONFIG_WIN32
-	$(CC) -o util/check-cam.exe util/check_cam.c -I. -lole32 -loleaut32 -luuid -lstrmiids
+CHECK_GL_OBJS += util/check_gl_wgl.o
+CHECK_GL_LDFLAGS += -fstack-protector `pkg-config --libs glib-2.0` -lgdi32
 endif
 ifdef CONFIG_DARWIN
-	$(CC) -o util/check-cam util/check_cam.c
+CHECK_GL_OBJS += util/check_gl_cgl.o
+CHECK_GL_LDFLAGS += -mmacosx-version-min=10.4 `pkg-config --cflags --libs glib-2.0` -framework OpenGL
 endif
 
+util/check-gl$(EXESUF): $(CHECK_GL_OBJS)
+	gcc $(CHECK_GL_OBJS) $(CHECK_GL_LDFLAGS) -o $@
+$(CHECK_GL_OBJS): %.o: %.c
+	gcc $< $(CHECK_GL_CFLAGS) -o $@
+
+# Building check-cam
+CHECK_CAM_CFLAGS = -c
+ifdef CONFIG_LINUX
+CHECK_CAM_LDFLAGS = -lv4l2 -lv4lconvert
+endif
+ifdef CONFIG_WIN32
+CHECK_CAM_CFLAGS += -I.
+CHECK_CAM_LDFLAGS = -lole32 -loleaut32 -luuid -lstrmiids
+endif
+ifdef CONFIG_DARWIN
+endif
+
+util/check-cam$(EXESUF): util/check_cam.o
+	$(CC) $< -o $@ $(CHECK_CAM_LDFLAGS)
+util/check_cam.o: %.o: %.c
+	$(CC) $< -o $@ $(CHECK_CAM_CFLAGS)
+
+# Building check-hax
+CHECK_HAX_CFLAGS = -c
+ifdef CONFIG_LINUX
+endif
+ifdef CONFIG_WIN32
+endif
+ifdef CONFIG_DARWIN
+CHECK_HAX_CFLAGS += -mmacosx-version-min=10.4
+endif
+util/check-hax$(EXESUF): util/check_hax.o
+	$(CC) $< -o $@
+util/check_hax.o: %.o: %.c
+	$(CC) $< $(CHECK_HAX_CFLAGS) -o $@
+
+# Building java skin
 skin_client:
 ifdef CONFIG_USE_SHM
 	TIZEN_SDK_DEV_PATH=${TIZEN_SDK_DEV_PATH} ant -DdoNotUseSHM=false -buildfile skin/client/build.xml make-jar
@@ -73,11 +103,7 @@ build_info:
 
 
 clean: qemu_clean
-ifndef CONFIG_LINUX
-	rm -f util/check-hax$(EXECUTABLE_EXTENSION) util/check-cam$(EXECUTABLE_EXTENSION)
-else
-	rm -f util/check-cam
-endif
+	rm -f util/check-hax$(EXESUF) util/check-cam$(EXESUF) util/check-gl$(EXESUF)
 distclean: clean qemu_distclean
 
 install: all
@@ -90,8 +116,8 @@ install: all
 	case "$$target" in \
 	i386-softmmu) \
 		mkdir -p $(EMUL_DIR)/data/bios ;\
-		echo "Copying i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) to $(EMUL_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION)" ;\
-		cp -pP ../../i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION) ;\
+		echo "Copying i386-softmmu/qemu-system-i386$(EXESUF) to $(EMUL_DIR)/bin/emulator-x86$(EXESUF)" ;\
+		cp -pP ../../i386-softmmu/qemu-system-i386$(EXESUF) $(EMUL_DIR)/bin/emulator-x86$(EXESUF) ;\
 		echo "Copying bioses to $(EMUL_DIR)/data/bios" ;\
 		cp -pP ../../pc-bios/bios-256k.bin $(EMUL_DIR)/data/bios ;\
 		cp -pP ../../pc-bios/linuxboot.bin $(EMUL_DIR)/data/bios ;\
@@ -99,13 +125,13 @@ install: all
 		cp -pP ../../pc-bios/acpi-dsdt.aml $(EMUL_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
-		echo "Copying arm-softmmu/qemu-system-arm$(EXECUTABLE_EXTENSION) to $(EMUL_DIR)/bin/emulator-arm$(EXECUTABLE_EXTENSION)" ;\
-		cp -pP ../../arm-softmmu/qemu-system-arm$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin/emulator-arm$(EXECUTABLE_EXTENSION) ;\
+		echo "Copying arm-softmmu/qemu-system-arm$(EXESUF) to $(EMUL_DIR)/bin/emulator-arm$(EXESUF)" ;\
+		cp -pP ../../arm-softmmu/qemu-system-arm$(EXESUF) $(EMUL_DIR)/bin/emulator-arm$(EXESUF) ;\
 		;; \
 	esac; \
 	done
 
-	cp -pP ../../qemu-img$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+	cp -pP ../../qemu-img$(EXESUF) $(EMUL_DIR)/bin
 
 ifndef CONFIG_WIN32
 	cp -pP scripts/emulator.sh $(EMUL_DIR)/bin
@@ -126,8 +152,8 @@ endif
 endif
 
 # check capabilities of OpenGL and Webcam
-	cp -pP ../../i386-softmmu/check-gl$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
-	cp -pP util/check-cam$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+	cp -pP util/check-gl$(EXESUF) $(EMUL_DIR)/bin
+	cp -pP util/check-cam$(EXESUF) $(EMUL_DIR)/bin
 
 # Enable HW Virtualization on Linux
 ifdef CONFIG_LINUX
@@ -137,7 +163,7 @@ endif
 
 # check HW Virtualization on Windows and MAC OS X.
 ifndef CONFIG_LINUX
-	cp -pP util/check-hax$(EXECUTABLE_EXTENSION) $(EMUL_DIR)/bin
+	cp -pP util/check-hax$(EXESUF) $(EMUL_DIR)/bin
 endif
 
 # give a title name for sdb terminal.
@@ -215,8 +241,8 @@ install_dibs: all_dibs
 	case "$$target" in \
 	i386-softmmu) \
 		mkdir -p $(DIBS_X86_DIR)/data/bios ;\
-		echo "Copying i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) to $(DIBS_X86__DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION)" ;\
-		cp ../../i386-softmmu/qemu-system-i386$(EXECUTABLE_EXTENSION) $(DIBS_X86_DIR)/bin/emulator-x86$(EXECUTABLE_EXTENSION) ;\
+		echo "Copying i386-softmmu/qemu-system-i386$(EXESUF) to $(DIBS_X86__DIR)/bin/emulator-x86$(EXESUF)" ;\
+		cp ../../i386-softmmu/qemu-system-i386$(EXESUF) $(DIBS_X86_DIR)/bin/emulator-x86$(EXESUF) ;\
 		echo "Copying bioses to $(DIBS_X86_DIR)/data/bios" ;\
 		cp -pP ../../pc-bios/bios-256k.bin $(DIBS_X86_DIR)/data/bios ;\
 		cp -pP ../../pc-bios/linuxboot.bin $(DIBS_X86_DIR)/data/bios ;\
@@ -224,13 +250,13 @@ install_dibs: all_dibs
 		cp -pP ../../pc-bios/acpi-dsdt.aml $(DIBS_X86_DIR)/data/bios ;\
 		;; \
 	arm-softmmu) \
-		echo "Copying arm-softmmu/qemu-system-arm$(EXECUTABLE_EXTENSION) to $(DIBS_ARM_DIR)/bin/emulator-arm$(EXECUTABLE_EXTENSION)" ;\
-		cp -pP ../../arm-softmmu/qemu-system-arm$(EXECUTABLE_EXTENSION) $(DIBS_ARM_DIR)/bin/emulator-arm$(EXECUTABLE_EXTENSION) ;\
+		echo "Copying arm-softmmu/qemu-system-arm$(EXESUF) to $(DIBS_ARM_DIR)/bin/emulator-arm$(EXESUF)" ;\
+		cp -pP ../../arm-softmmu/qemu-system-arm$(EXESUF) $(DIBS_ARM_DIR)/bin/emulator-arm$(EXESUF) ;\
 		;; \
 	esac; \
 	done
 
-	cp -pP ../../qemu-img$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+	cp -pP ../../qemu-img$(EXESUF) $(DIBS_COMMON_DIR)/bin
 
 ifndef CONFIG_WIN32
 	cp -pP scripts/emulator.sh $(DIBS_COMMON_DIR)/bin
@@ -249,8 +275,8 @@ endif
 endif
 
 # check capabilities of OpenGL and Webcam
-	cp -pP ../../i386-softmmu/check-gl$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
-	cp -pP util/check-cam$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+	cp -pP util/check-gl$(EXESUF) $(DIBS_COMMON_DIR)/bin
+	cp -pP util/check-cam$(EXESUF) $(DIBS_COMMON_DIR)/bin
 
 
 # Enable HW Virtualization on Linux
@@ -262,7 +288,7 @@ endif
 
 # check HW Virtualization on Windows and MAC OS X.
 ifndef CONFIG_LINUX
-	cp -pP util/check-hax$(EXECUTABLE_EXTENSION) $(DIBS_COMMON_DIR)/bin
+	cp -pP util/check-hax$(EXESUF) $(DIBS_COMMON_DIR)/bin
 endif
 
 # give a title name for sdb terminal.
@@ -314,4 +340,10 @@ ifdef CONFIG_DARWIN
 		;; \
 	esac; \
 	done
+endif
+
+else
+all:
+	@echo "Please call configure before running make!"
+	@exit 1
 endif

@@ -17,3 +17,6 @@ LIBS += -framework Foundation -framework SystemConfiguration
 LIBS += -framework Cocoa -framework QTKit -framework CoreVideo
 LIBS += -framework AppKit
 endif
+
+maru_brill_codec.o-cflags := $(LIBAV_CFLAGS)
+#$(obj)/maru_brillcodec.o $(obj)/maru_brillcodec_device.o: QEMU_CFLAGS += $(LIBAV_CFLAGS)
