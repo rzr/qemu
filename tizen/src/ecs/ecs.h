@@ -60,6 +60,7 @@
 #define COMMAND_TYPE_TETHERING  "tethering"
 
 #define MSG_TYPE_SENSOR         "sensor"
+#define MSG_TYPE_LOCATION       "location"
 #define MSG_TYPE_NFC            "nfc"
 #define MSG_TYPE_SIMUL_NFC      "simul_nfc"
 #define MSG_TYPE_SDCARD         "sdcard"
@@ -78,7 +79,8 @@ enum message_action {
     MSG_ACT_MAG = 112,
     MSG_ACT_LIGHT = 113,
     MSG_ACT_PROXI = 114,
-    MSG_ACT_MOTION = 115
+    MSG_ACT_MOTION = 115,
+    MSG_ACT_LOCATION = 120
 };
 
 #define TIMER_ALIVE_S           60
@@ -103,6 +105,7 @@ typedef unsigned char   type_action;
 #define OUT_BUF_SIZE    4096
 #define READ_BUF_LEN    4096
 #define MAX_ID_SIZE     255
+#define MAX_INJECTOR_REQ_DATA 32
 typedef struct sbuf
 {
     int _netlen;

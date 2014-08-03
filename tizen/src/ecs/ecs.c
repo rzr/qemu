@@ -73,6 +73,7 @@ static int g_client_id = 1;
 
 static QemuMutex mutex_clilist;
 QemuMutex mutex_guest_connection;
+QemuMutex mutex_location_data;
 
 static QemuThread ecs_thread_id;
 
@@ -236,6 +237,7 @@ static void ecs_close(ECS_State *cs) {
 
     qemu_mutex_destroy(&mutex_clilist);
     qemu_mutex_destroy(&mutex_guest_connection);
+    qemu_mutex_destroy(&mutex_location_data);
 }
 
 #ifndef _WIN32
@@ -716,6 +718,7 @@ static void* ecs_initialize(void* args) {
 
     qemu_mutex_init(&mutex_clilist);
     qemu_mutex_init(&mutex_guest_connection);
+    qemu_mutex_init(&mutex_location_data);
 
     TRACE("ecs_loop entered.\n");
     while (cs->ecs_running) {
