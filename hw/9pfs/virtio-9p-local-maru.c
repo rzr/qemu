@@ -250,7 +250,7 @@ err_out:
         GetDiskFreeSpace(RootPathName, NULL, &BytesPerSector, NULL, NULL);
         hostBytesPerSector = BytesPerSector;
     }
-    err = _stat(pathname, stbuf);
+    err = stat(pathname, stbuf);
 
     /* Modify the permission to 777 except the directories. */
     stbuf->st_mode = stbuf->st_mode | 0777;
@@ -1313,7 +1313,7 @@ static int local_utimensat(FsContext *s, V9fsPath *fs_path,
         gettimeofday(&tv_now, NULL);
     }
     if (buf[0].tv_nsec == UTIME_OMIT || buf[1].tv_nsec == UTIME_OMIT) {
-        _stat(r_path, &st);
+        stat(r_path, &st);
     }
 
     for (i = 0; i < 2; i++) {
@@ -1345,7 +1345,7 @@ static int local_remove(FsContext *ctx, const char *path)
 #ifndef CONFIG_WIN32
         err =  lstat(buffer, &stbuf);
 #else
-        err = _stat(buffer, &stbuf);
+        err = stat(buffer, &stbuf);
 #endif
         g_free(buffer);
         if (err) {
