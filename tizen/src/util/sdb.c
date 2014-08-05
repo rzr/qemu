@@ -202,7 +202,7 @@ void sdb_setup(void)
     number = get_device_serial_number();
 
     for ( ; tries > 0; tries--, number += 10 ) {
-        sprintf(buf, "tcp:%d::26101", number);
+        sprintf(buf, "tcp:%d::%d", number, number);
         if(net_slirp_redir((char*)buf) < 0)
             continue;
 
