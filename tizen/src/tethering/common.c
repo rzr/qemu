@@ -43,7 +43,6 @@
 #include "common.h"
 #include "sensor.h"
 #include "touch.h"
-// #include "display.h"
 #include "emul_state.h"
 #include "ecs/ecs_tethering.h"
 #include "genmsg/tethering.pb-c.h"
@@ -67,15 +66,6 @@ typedef struct tethering_recv_buf {
     uint32_t stack_size;
     char data[MSG_BUF_SIZE];
 } tethering_recv_buf;
-
-#if 0
-typedef struct input_device_list {
-    int type;
-    void *opaque;
-
-    QTAILQ_ENTRY(input_device_list) node;
-} input_device_list;
-#endif
 
 typedef struct _TetheringState {
     int fd;
@@ -108,32 +98,6 @@ static void set_tethering_connection_status(int status);
 #if 0
 static void set_tethering_app_state(bool state);
 static bool get_tethering_app_state(void);
-#endif
-
-#if 0
-int add_input_device(void *opaque)
-{
-    input_device_list *elem = (input_device_list *)opaque;
-
-    if (!tethering_client) {
-        return -1;
-    }
-
-    QTAILQ_INSERT_TAIL(&tethering_client->device, elem, node);
-
-    return (tethering_client->device_node_cnt++);
-}
-
-int remove_input_device(void *opaque)
-{
-    if (!tethering_client) {
-        return -1;
-    }
-
-    QTAILQ_REMOVE(&tethering_client->device, opaque, node);
-
-    tethering_client->device_node_cnt--;
-}
 #endif
 
 // create master message
@@ -370,15 +334,12 @@ static bool msgproc_tethering_event_msg(Tethering__EventMsg *msg)
                                 TETHERING__STATE__ENABLED);
 
         // TODO: check sensor device whether it exists or not
-        // set_tethering_sensor_status(ENABLED);
         set_tethering_sensor_status(TETHERING__STATE__ENABLED);
 
         if (is_emul_input_touch_enable()) {
             touch_status = TETHERING__STATE__ENABLED;
-            // set_tethering_touch_status(ENABLED);
         } else {
             touch_status = TETHERING__STATE__DISABLED;
-            // set_tethering_touch_status(DISABLED);
         }
         set_tethering_touch_status(touch_status);
 
@@ -478,28 +439,12 @@ static bool handle_tethering_msg_from_controller(char *data, int len)
     }
         break;
 
-#if 0
-    case TETHERING__TETHERING_MSG__TYPE__DISPLAY_MSG:
-    {
-        Tethering__DisplayMsg *msg = tethering->displaymsg;
-
-        LOG_TRACE("receive display_msg\n");
-        if (!msg) {
-            ret = false;
-        } else {
-            msgproc_tethering_display_msg(msg);
-        }
-    }
-        break;
-#endif
-
     default:
         LOG_WARNING("invalid type message\n");
         ret = false;
         break;
     }
 
-//    g_free(data);
     tethering__tethering_msg__free_unpacked(tethering, NULL);
     return ret;
 }
@@ -773,7 +718,6 @@ static void tethering_notify_exit(Notifier *notifier, void *data)
 static Notifier tethering_exit = { .notify = tethering_notify_exit };
 
 static void *initialize_tethering_socket(void *opaque);
-// static void release_tethering_thread(void *opaque);
 
 int connect_tethering_app(const char *ipaddress, int port)
 {
@@ -895,12 +839,3 @@ static void *initialize_tethering_socket(void *opaque)
 
     return client;
 }
-
-#if 0
-static void release_tethering_thread(void *opaque)
-{
-    TetheringState *client = (TetheringState *)opaque;
-
-    qemu_thread_join(&client->thread);
-}
-#endif

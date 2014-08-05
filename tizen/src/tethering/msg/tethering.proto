@@ -158,6 +158,19 @@ message TouchData {
 	optional TouchState state = 4;
 }
 
+enum HWKeyType {
+	MENU = 1;
+	HOME = 2;
+	BACK = 3;
+	POWER = 4;
+	VOLUME_UP = 5;
+	VOLUME_DOWN = 6;
+}
+
+message HWKeyMsg {
+    required HWKeyType type = 1;
+}
+
 message TouchMsg {
 	enum Type {
 		START_REQ = 2;
@@ -167,6 +180,7 @@ message TouchMsg {
 		TOUCH_DATA = 6;
 		RESOLUTION = 7;
 		DISPLAY_MSG = 8;
+		HWKEY_MSG = 9;
 	}
 	required Type type = 1;
 	optional StartReq startReq = 2;
@@ -176,6 +190,7 @@ message TouchMsg {
 	optional TouchData touchData = 6;
 	optional Resolution resolution = 7;
 	optional DisplayMsg display = 8;
+	optional HWKeyMsg hwkey = 9;
 }
 
 message TetheringMsg {

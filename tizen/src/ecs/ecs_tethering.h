@@ -62,3 +62,5 @@ void send_tethering_connection_status_ecp(void);
 void send_tethering_sensor_data(const char *data, int len);
 
 void send_tethering_touch_data(int x, int y, int index, int status);
+
+void send_tethering_hwkey_data(int keycode);

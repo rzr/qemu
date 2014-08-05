@@ -694,6 +694,49 @@ void   tethering__touch_data__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__touch_data__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   tethering__hwkey_msg__init
+                     (Tethering__HWKeyMsg         *message)
+{
+  static Tethering__HWKeyMsg init_value = TETHERING__HWKEY_MSG__INIT;
+  *message = init_value;
+}
+size_t tethering__hwkey_msg__get_packed_size
+                     (const Tethering__HWKeyMsg *message)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hwkey_msg__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t tethering__hwkey_msg__pack
+                     (const Tethering__HWKeyMsg *message,
+                      uint8_t       *out)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hwkey_msg__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t tethering__hwkey_msg__pack_to_buffer
+                     (const Tethering__HWKeyMsg *message,
+                      ProtobufCBuffer *buffer)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hwkey_msg__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Tethering__HWKeyMsg *
+       tethering__hwkey_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Tethering__HWKeyMsg *)
+     protobuf_c_message_unpack (&tethering__hwkey_msg__descriptor,
+                                allocator, len, data);
+}
+void   tethering__hwkey_msg__free_unpacked
+                     (Tethering__HWKeyMsg *message,
+                      ProtobufCAllocator *allocator)
+{
+  PROTOBUF_C_ASSERT (message->base.descriptor == &tethering__hwkey_msg__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   tethering__touch_msg__init
                      (Tethering__TouchMsg         *message)
 {
@@ -1668,7 +1711,45 @@ const ProtobufCMessageDescriptor tethering__touch_data__descriptor =
   (ProtobufCMessageInit) tethering__touch_data__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-const ProtobufCEnumValue tethering__touch_msg__type__enum_values_by_number[7] =
+static const ProtobufCFieldDescriptor tethering__hwkey_msg__field_descriptors[1] =
+{
+  {
+    "type",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_ENUM,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Tethering__HWKeyMsg, type),
+    &tethering__hwkey_type__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned tethering__hwkey_msg__field_indices_by_name[] = {
+  0,   /* field[0] = type */
+};
+static const ProtobufCIntRange tethering__hwkey_msg__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor tethering__hwkey_msg__descriptor =
+{
+  PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
+  "tethering.HWKeyMsg",
+  "HWKeyMsg",
+  "Tethering__HWKeyMsg",
+  "tethering",
+  sizeof(Tethering__HWKeyMsg),
+  1,
+  tethering__hwkey_msg__field_descriptors,
+  tethering__hwkey_msg__field_indices_by_name,
+  1,  tethering__hwkey_msg__number_ranges,
+  (ProtobufCMessageInit) tethering__hwkey_msg__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+const ProtobufCEnumValue tethering__touch_msg__type__enum_values_by_number[8] =
 {
   { "START_REQ", "TETHERING__TOUCH_MSG__TYPE__START_REQ", 2 },
   { "START_ANS", "TETHERING__TOUCH_MSG__TYPE__START_ANS", 3 },
@@ -1677,13 +1758,15 @@ const ProtobufCEnumValue tethering__touch_msg__type__enum_values_by_number[7] =
   { "TOUCH_DATA", "TETHERING__TOUCH_MSG__TYPE__TOUCH_DATA", 6 },
   { "RESOLUTION", "TETHERING__TOUCH_MSG__TYPE__RESOLUTION", 7 },
   { "DISPLAY_MSG", "TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG", 8 },
+  { "HWKEY_MSG", "TETHERING__TOUCH_MSG__TYPE__HWKEY_MSG", 9 },
 };
 static const ProtobufCIntRange tethering__touch_msg__type__value_ranges[] = {
-{2, 0},{0, 7}
+{2, 0},{0, 8}
 };
-const ProtobufCEnumValueIndex tethering__touch_msg__type__enum_values_by_name[7] =
+const ProtobufCEnumValueIndex tethering__touch_msg__type__enum_values_by_name[8] =
 {
   { "DISPLAY_MSG", 6 },
+  { "HWKEY_MSG", 7 },
   { "MAX_COUNT", 3 },
   { "RESOLUTION", 5 },
   { "START_ANS", 1 },
@@ -1698,15 +1781,15 @@ const ProtobufCEnumDescriptor tethering__touch_msg__type__descriptor =
   "Type",
   "Tethering__TouchMsg__Type",
   "tethering",
-  7,
+  8,
   tethering__touch_msg__type__enum_values_by_number,
-  7,
+  8,
   tethering__touch_msg__type__enum_values_by_name,
   1,
   tethering__touch_msg__type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-static const ProtobufCFieldDescriptor tethering__touch_msg__field_descriptors[8] =
+static const ProtobufCFieldDescriptor tethering__touch_msg__field_descriptors[9] =
 {
   {
     "type",
@@ -1804,9 +1887,22 @@ static const ProtobufCFieldDescriptor tethering__touch_msg__field_descriptors[8]
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "hwkey",
+    9,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    PROTOBUF_C_OFFSETOF(Tethering__TouchMsg, hwkey),
+    &tethering__hwkey_msg__descriptor,
+    NULL,
+    0,            /* packed */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned tethering__touch_msg__field_indices_by_name[] = {
   7,   /* field[7] = display */
+  8,   /* field[8] = hwkey */
   4,   /* field[4] = maxCount */
   6,   /* field[6] = resolution */
   2,   /* field[2] = startAns */
@@ -1818,7 +1914,7 @@ static const unsigned tethering__touch_msg__field_indices_by_name[] = {
 static const ProtobufCIntRange tethering__touch_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 8 }
+  { 0, 9 }
 };
 const ProtobufCMessageDescriptor tethering__touch_msg__descriptor =
 {
@@ -1828,7 +1924,7 @@ const ProtobufCMessageDescriptor tethering__touch_msg__descriptor =
   "Tethering__TouchMsg",
   "tethering",
   sizeof(Tethering__TouchMsg),
-  8,
+  9,
   tethering__touch_msg__field_descriptors,
   tethering__touch_msg__field_indices_by_name,
   1,  tethering__touch_msg__number_ranges,
@@ -2178,5 +2274,41 @@ const ProtobufCEnumDescriptor tethering__touch_state__descriptor =
   tethering__touch_state__enum_values_by_name,
   1,
   tethering__touch_state__value_ranges,
+  NULL,NULL,NULL,NULL   /* reserved[1234] */
+};
+const ProtobufCEnumValue tethering__hwkey_type__enum_values_by_number[6] =
+{
+  { "MENU", "TETHERING__HWKEY_TYPE__MENU", 1 },
+  { "HOME", "TETHERING__HWKEY_TYPE__HOME", 2 },
+  { "BACK", "TETHERING__HWKEY_TYPE__BACK", 3 },
+  { "POWER", "TETHERING__HWKEY_TYPE__POWER", 4 },
+  { "VOLUME_UP", "TETHERING__HWKEY_TYPE__VOLUME_UP", 5 },
+  { "VOLUME_DOWN", "TETHERING__HWKEY_TYPE__VOLUME_DOWN", 6 },
+};
+static const ProtobufCIntRange tethering__hwkey_type__value_ranges[] = {
+{1, 0},{0, 6}
+};
+const ProtobufCEnumValueIndex tethering__hwkey_type__enum_values_by_name[6] =
+{
+  { "BACK", 2 },
+  { "HOME", 1 },
+  { "MENU", 0 },
+  { "POWER", 3 },
+  { "VOLUME_DOWN", 5 },
+  { "VOLUME_UP", 4 },
+};
+const ProtobufCEnumDescriptor tethering__hwkey_type__descriptor =
+{
+  PROTOBUF_C_ENUM_DESCRIPTOR_MAGIC,
+  "tethering.HWKeyType",
+  "HWKeyType",
+  "Tethering__HWKeyType",
+  "tethering",
+  6,
+  tethering__hwkey_type__enum_values_by_number,
+  6,
+  tethering__hwkey_type__enum_values_by_name,
+  1,
+  tethering__hwkey_type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };

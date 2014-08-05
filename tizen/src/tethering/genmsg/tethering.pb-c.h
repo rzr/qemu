@@ -24,6 +24,7 @@ typedef struct _Tethering__Resolution Tethering__Resolution;
 typedef struct _Tethering__DisplayMsg Tethering__DisplayMsg;
 typedef struct _Tethering__TouchMaxCount Tethering__TouchMaxCount;
 typedef struct _Tethering__TouchData Tethering__TouchData;
+typedef struct _Tethering__HWKeyMsg Tethering__HWKeyMsg;
 typedef struct _Tethering__TouchMsg Tethering__TouchMsg;
 typedef struct _Tethering__TetheringMsg Tethering__TetheringMsg;
 
@@ -50,7 +51,8 @@ typedef enum _Tethering__TouchMsg__Type {
   TETHERING__TOUCH_MSG__TYPE__MAX_COUNT = 5,
   TETHERING__TOUCH_MSG__TYPE__TOUCH_DATA = 6,
   TETHERING__TOUCH_MSG__TYPE__RESOLUTION = 7,
-  TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG = 8
+  TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG = 8,
+  TETHERING__TOUCH_MSG__TYPE__HWKEY_MSG = 9
 } Tethering__TouchMsg__Type;
 typedef enum _Tethering__TetheringMsg__Type {
   TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_REQ = 2,
@@ -90,6 +92,14 @@ typedef enum _Tethering__TouchState {
   TETHERING__TOUCH_STATE__PRESSED = 1,
   TETHERING__TOUCH_STATE__RELEASED = 2
 } Tethering__TouchState;
+typedef enum _Tethering__HWKeyType {
+  TETHERING__HWKEY_TYPE__MENU = 1,
+  TETHERING__HWKEY_TYPE__HOME = 2,
+  TETHERING__HWKEY_TYPE__BACK = 3,
+  TETHERING__HWKEY_TYPE__POWER = 4,
+  TETHERING__HWKEY_TYPE__VOLUME_UP = 5,
+  TETHERING__HWKEY_TYPE__VOLUME_DOWN = 6
+} Tethering__HWKeyType;
 
 /* --- messages --- */
 
@@ -280,6 +290,16 @@ struct  _Tethering__TouchData
     , 0,0, 0,0, 0,0, 0,0 }
 
 
+struct  _Tethering__HWKeyMsg
+{
+  ProtobufCMessage base;
+  Tethering__HWKeyType type;
+};
+#define TETHERING__HWKEY_MSG__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&tethering__hwkey_msg__descriptor) \
+    , 0 }
+
+
 struct  _Tethering__TouchMsg
 {
   ProtobufCMessage base;
@@ -291,10 +311,11 @@ struct  _Tethering__TouchMsg
   Tethering__TouchData *touchdata;
   Tethering__Resolution *resolution;
   Tethering__DisplayMsg *display;
+  Tethering__HWKeyMsg *hwkey;
 };
 #define TETHERING__TOUCH_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&tethering__touch_msg__descriptor) \
-    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 
 
 struct  _Tethering__TetheringMsg
@@ -618,6 +639,25 @@ Tethering__TouchData *
 void   tethering__touch_data__free_unpacked
                      (Tethering__TouchData *message,
                       ProtobufCAllocator *allocator);
+/* Tethering__HWKeyMsg methods */
+void   tethering__hwkey_msg__init
+                     (Tethering__HWKeyMsg         *message);
+size_t tethering__hwkey_msg__get_packed_size
+                     (const Tethering__HWKeyMsg   *message);
+size_t tethering__hwkey_msg__pack
+                     (const Tethering__HWKeyMsg   *message,
+                      uint8_t             *out);
+size_t tethering__hwkey_msg__pack_to_buffer
+                     (const Tethering__HWKeyMsg   *message,
+                      ProtobufCBuffer     *buffer);
+Tethering__HWKeyMsg *
+       tethering__hwkey_msg__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   tethering__hwkey_msg__free_unpacked
+                     (Tethering__HWKeyMsg *message,
+                      ProtobufCAllocator *allocator);
 /* Tethering__TouchMsg methods */
 void   tethering__touch_msg__init
                      (Tethering__TouchMsg         *message);
@@ -706,6 +746,9 @@ typedef void (*Tethering__TouchMaxCount_Closure)
 typedef void (*Tethering__TouchData_Closure)
                  (const Tethering__TouchData *message,
                   void *closure_data);
+typedef void (*Tethering__HWKeyMsg_Closure)
+                 (const Tethering__HWKeyMsg *message,
+                  void *closure_data);
 typedef void (*Tethering__TouchMsg_Closure)
                  (const Tethering__TouchMsg *message,
                   void *closure_data);
@@ -724,6 +767,7 @@ extern const ProtobufCEnumDescriptor    tethering__event_type__descriptor;
 extern const ProtobufCEnumDescriptor    tethering__state__descriptor;
 extern const ProtobufCEnumDescriptor    tethering__sensor_type__descriptor;
 extern const ProtobufCEnumDescriptor    tethering__touch_state__descriptor;
+extern const ProtobufCEnumDescriptor    tethering__hwkey_type__descriptor;
 extern const ProtobufCMessageDescriptor tethering__hand_shake_req__descriptor;
 extern const ProtobufCMessageDescriptor tethering__hand_shake_ans__descriptor;
 extern const ProtobufCMessageDescriptor tethering__emulator_state__descriptor;
@@ -742,6 +786,7 @@ extern const ProtobufCMessageDescriptor tethering__resolution__descriptor;
 extern const ProtobufCMessageDescriptor tethering__display_msg__descriptor;
 extern const ProtobufCMessageDescriptor tethering__touch_max_count__descriptor;
 extern const ProtobufCMessageDescriptor tethering__touch_data__descriptor;
+extern const ProtobufCMessageDescriptor tethering__hwkey_msg__descriptor;
 extern const ProtobufCMessageDescriptor tethering__touch_msg__descriptor;
 extern const ProtobufCEnumDescriptor    tethering__touch_msg__type__descriptor;
 extern const ProtobufCMessageDescriptor tethering__tethering_msg__descriptor;
