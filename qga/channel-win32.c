@@ -270,6 +270,9 @@ GIOStatus ga_channel_write_all(GAChannel *c, const char *buf, size_t size)
 {
     GIOStatus status = G_IO_STATUS_NORMAL;
     size_t count;
+#ifdef CONFIG_MARU
+    count = 0;
+#endif
 
     while (size) {
         status = ga_channel_write(c, buf, size, &count);
