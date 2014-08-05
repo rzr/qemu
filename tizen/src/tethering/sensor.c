@@ -68,6 +68,9 @@ enum sensor_level {
     level_magnetic = 13
 };
 
+#define ACCEL_ADJUST    100000
+#define GYRO_ADJUST     17.50
+
 static int sensor_device_status;
 
 // create a sensor message.
@@ -148,8 +151,9 @@ static void set_sensor_data(Tethering__SensorData *data)
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
-                level_accel, 3, data->x, data->y, data->z);
+        sprintf(tmp, "%d\n%d\n%lf\n%lf\n%lf\n",
+                level_accel, 3, (atof(data->x) * ACCEL_ADJUST),
+                (atof(data->y) * ACCEL_ADJUST), (atof(data->z) * ACCEL_ADJUST));
         send_tethering_sensor_data(tmp, strlen(tmp));
 
         LOG_TRACE("sensor_accel x: %s, y: %s, z: %s\n",
@@ -172,8 +176,9 @@ static void set_sensor_data(Tethering__SensorData *data)
     {
         char tmp[255] = {0};
 
-        sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
-                level_gyro, 3, data->x, data->y, data->z);
+        sprintf(tmp, "%d\n%d\n%lf\n%lf\n%lf\n",
+                level_gyro, 3, (atof(data->x) / GYRO_ADJUST),
+                (atof(data->y) / GYRO_ADJUST), (atof(data->z) / GYRO_ADJUST));
         send_tethering_sensor_data(tmp, strlen(tmp));
 
         LOG_TRACE("sensor_gyro x: %s, y: %s, z: %s\n",
