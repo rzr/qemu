@@ -104,10 +104,10 @@ static void user_write_data(png_structp png_ptr, png_bytep data, png_size_t len)
 
     if (!p->buffer) {
         LOG_SEVERE("failed to allocate \n");
+    } else {
+        memcpy(p->buffer + p->length, data, len);
+        p->length += len;
     }
-
-    memcpy(p->buffer + p->length, data, len);
-    p->length += len;
 }
 
 static void user_flush_data(png_structp png_ptr)
@@ -162,7 +162,7 @@ static void *encode_png(void)
 
     LOG_TRACE("png_create_info_struct\n");
     info_ptr = png_create_info_struct(png_ptr);
-    if (!png_ptr) {
+    if (!info_ptr) {
         LOG_SEVERE("png_create_info_struct failure\n");
         g_free(surface);
         png_destroy_write_struct(&png_ptr, &info_ptr);

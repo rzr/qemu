@@ -162,6 +162,7 @@ bool send_msg_to_controller(void *msg)
             if (errno == EAGAIN) {
                 fd_set writefds;
                 struct timeval timeout;
+                int result = 0;
 
                 FD_ZERO(&writefds);
                 FD_SET(sockfd, &writefds);
@@ -169,9 +170,10 @@ bool send_msg_to_controller(void *msg)
                 timeout.tv_sec = 1;
                 timeout.tv_usec = 0;
 
-                ret = select(sockfd + 1, NULL, &writefds, NULL, &timeout);
-                if (ret < 0) {
+                result = select(sockfd + 1, NULL, &writefds, NULL, &timeout);
+                if (result < 0) {
                     LOG_INFO("not possible to send data\n");
+                    ret = false;
                     break;
                 }
                 LOG_TRACE("possible to send data\n");
@@ -634,7 +636,7 @@ static int start_tethering_socket(const char *ipaddress, int port)
         }
     }
 
-    if (ret < 0 && ret != -EISCONN) {
+    if (ret < 0) {
         if (ret == -ECONNREFUSED) {
             LOG_INFO("socket connection is refused\n");
             set_tethering_connection_status(CONNREFUSED);
