@@ -72,6 +72,7 @@ void send_tethering_connection_status_ecp(void)
             ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS);
 }
 
+#if 0
 static void send_tethering_port_ecp(void)
 {
     type_length length;
@@ -104,6 +105,55 @@ static void send_tethering_port_ecp(void)
         g_free(msg);
     }
 }
+#endif
+
+static void send_tethering_connection_info(void)
+{
+    type_length length;
+    type_group group = ECS_TETHERING_MSG_GROUP_ECP;
+    type_action action = ECS_TETHERING_MSG_ACTION_CONNECT;
+    uint8_t *msg = NULL;
+    gchar data[64];
+
+    msg = g_malloc(MSG_BUF_SIZE);
+    if (!msg) {
+        LOG_SEVERE("failed to allocate memory\n");
+        return;
+    }
+
+    LOG_INFO(">> send port_num: %d\n", tethering_port);
+    {
+        const char *ip = get_tethering_connected_ipaddr();
+        int port = get_tethering_connected_port();
+
+        if (!ip) {
+            LOG_SEVERE("invalid connected ip\n");
+            return;
+        }
+
+        if (!port) {
+            LOG_SEVERE("invalid connected port\n");
+            return;
+        }
+        g_snprintf(data, sizeof(data) - 1, "%s:%d", ip, port);
+        length = strlen(data);
+        data[length] = '\0';
+    }
+
+    memcpy(msg, ECS_TETHERING_MSG_CATEGORY, 10);
+    memcpy(msg + 10, &length, sizeof(unsigned short));
+    memcpy(msg + 12, &group, sizeof(unsigned char));
+    memcpy(msg + 13, &action, sizeof(unsigned char));
+    memcpy(msg + 14, data, length);
+
+    LOG_INFO(">> send connection msg to ecp. "
+        "action=%d, group=%d, data=%s length=%d\n",
+        action, group, data, length);
+
+    send_tethering_ntf((const char *)msg);
+
+    g_free(msg);
+}
 
 static void send_tethering_status_ntf(type_group group, type_action action)
 {
@@ -116,7 +166,7 @@ static void send_tethering_status_ntf(type_group group, type_action action)
         case ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS:
             status = get_tethering_connection_status();
             if (status == CONNECTED) {
-                send_tethering_port_ecp();
+                send_tethering_connection_info();
             }
             break;
         case ECS_TETHERING_MSG_ACTION_SENSOR_STATUS:
@@ -229,7 +279,7 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
     gchar cmd[10] = {0};
     gchar **server_addr = NULL;
 
-    LOG_INFO("enter %s\n", __func__);
+    LOG_TRACE("enter %s\n", __func__);
 
     g_strlcpy(cmd, msg->category, sizeof(cmd));
     type_length length = (type_length) msg->length;
@@ -265,7 +315,6 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
                 } else {
                     LOG_SEVERE("failed to parse port number\n");
                 }
-
                 LOG_INFO("len = %zd, data\" %s\"", strlen(data), data);
 
                 connect_tethering_app(ip_address, port);
@@ -293,7 +342,7 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
             break;
     }
 
-    LOG_INFO("leave %s\n", __func__);
+    LOG_TRACE("leave %s\n", __func__);
 
     return true;
 }
