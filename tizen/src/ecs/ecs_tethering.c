@@ -245,7 +245,6 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
             // get ip address and port
             if (msg->data.data && msg->data.len > 0) {
                 const gchar *data = (const gchar *)msg->data.data;
-                // gchar **server_addr = NULL;
                 gchar *ip_address = NULL;
                 guint64 port = 0;
 

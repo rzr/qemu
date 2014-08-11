@@ -60,6 +60,7 @@ DECLARE_DEBUG_CHANNEL(app_tethering);
 #endif
 
 #define SEND_BUF_MAX_SIZE 4096
+static const char *loopback="127.0.0.1";
 
 typedef struct tethering_recv_buf {
     uint32_t len;
@@ -551,22 +552,14 @@ static void tethering_io_handler(void *opaque)
 static int start_tethering_socket(const char *ipaddress, int port)
 {
     struct sockaddr_in addr;
-
-    gchar serveraddr[32] = { 0, };
     int sock = -1;
     int ret = 0;
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port); // i.e. 1234
 
-    if (ipaddress == NULL) {
-        g_strlcpy(serveraddr, "127.0.0.1", sizeof(serveraddr));
-    } else {
-        g_strlcpy(serveraddr, ipaddress, sizeof(serveraddr));
-    }
-
-    LOG_INFO("server ip address: %s, port: %d\n", serveraddr, port);
-    ret = inet_aton(serveraddr, &addr.sin_addr);
+    LOG_INFO("server ip address: %s, port: %d\n", ipaddress, port);
+    ret = inet_aton(ipaddress, &addr.sin_addr);
 
     if (ret == 0) {
         LOG_SEVERE("inet_aton failure\n");
@@ -724,6 +717,7 @@ static void *initialize_tethering_socket(void *opaque);
 int connect_tethering_app(const char *ipaddress, int port)
 {
     TetheringState *client = NULL;
+    int ipaddr_len = 0;
 
     client = g_malloc0(sizeof(TetheringState));
     if (!client) {
@@ -733,23 +727,21 @@ int connect_tethering_app(const char *ipaddress, int port)
     client->port = port;
 
     if (ipaddress) {
-        int ipaddr_len = 0;
-
         ipaddr_len = strlen(ipaddress);
-
-        client->ipaddress = g_malloc0(ipaddr_len + 1);
-        if (!client->ipaddress) {
-            g_free(client);
-            return -1;
-        }
-
-        g_strlcpy(client->ipaddress, ipaddress, ipaddr_len);
     } else {
-        client->ipaddress = NULL;
+        // ipaddr_len = strlen(LOOPBACK);
+        ipaddr_len = strlen(loopback);
+        ipaddress = loopback;
     }
 
-    tethering_client = client;
+    client->ipaddress = g_malloc0(ipaddr_len + 1);
+    if (!client->ipaddress) {
+        g_free(client);
+        return -1;
+    }
+    g_strlcpy(client->ipaddress, ipaddress, ipaddr_len + 1);
 
+    tethering_client = client;
     qemu_mutex_init(&tethering_client->mutex);
 
     qemu_thread_create(&tethering_client->thread, "tethering-io-thread",
