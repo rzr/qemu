@@ -32,18 +32,7 @@
  * define tethering messages between ecs and ecp
  */
 #define ECS_TETHERING_MSG_CATEGORY                      "tethering"
-
 #define ECS_TETHERING_MSG_GROUP_ECP                     1
-// #define TETHERING_MSG_GROUP_USB
-// #define TETHERING_MSG_GROUP_WIFI
-
-#if 0
-#define ECS_TETHERING_MSG_ACTION_CONNECT                1
-#define ECS_TETHERING_MSG_ACTION_DISCONNECT             2
-#define ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS      3
-#define ECS_TETHERING_MSG_ACTION_SENSOR_STATUS          4
-#define ECS_TETHERING_MSG_ACTION_TOUCH_STATUS           5
-#endif
 
 enum ECS_TETHERING_MSG_ACTION {
     ECS_TETHERING_MSG_ACTION_CONNECT = 1,
