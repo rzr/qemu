@@ -859,6 +859,8 @@ void marucam_device_open(MaruCamState *state)
           "errstr(%s)\n", dst_fmt.fmt.pix.pixelformat, dst_fmt.fmt.pix.width,
           dst_fmt.fmt.pix.height, strerror(errno));
         param->errCode = errno;
+        v4l2_close(v4l2_fd);
+        v4l2_fd = -1;
         return;
     }
     TRACE("Set the default format: w:h(%dx%d), fmt(0x%x), size(%d), "
