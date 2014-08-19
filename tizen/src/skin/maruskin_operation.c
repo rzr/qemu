@@ -51,6 +51,7 @@
 #include "hw/maru_pm.h"
 #include "util/maru_device_hotplug.h"
 #include "ecs/ecs.h"
+#include "hw/virtio/maru_virtio_evdi.h"
 
 #ifdef CONFIG_HAX
 #include "target-i386/hax-i386.h"
@@ -75,8 +76,7 @@ extern pthread_mutex_t mutex_screenshot;
 extern pthread_cond_t cond_screenshot;
 
 static void* run_timed_shutdown_thread(void* args);
-static void send_to_emuld(const char* request_type,
-    int request_size, const char* send_buf, int buf_size);
+static void send_shutdown_to_emuld(void);
 
 
 void start_display(uint64 handle_id,
@@ -618,7 +618,7 @@ int is_requested_shutdown_qemu_gracefully(void)
 
 static void* run_timed_shutdown_thread(void* args)
 {
-    send_to_emuld("system\n\n\n\n", 10, "shutdown", 8);
+    send_shutdown_to_emuld();
 
     int sleep_interval_time = 1000; /* milli-seconds */
 
@@ -640,40 +640,22 @@ static void* run_timed_shutdown_thread(void* args)
     return NULL;
 }
 
-static void send_to_emuld(const char* request_type,
-    int request_size, const char* send_buf, int buf_size)
+#define ECS_HEADER_SIZE 14
+static void send_shutdown_to_emuld(void)
 {
-    char addr[128];
-    int s = 0;
-    int device_serial_number = get_device_serial_number();
-    snprintf(addr, 128, ":%u", (uint16_t) ( device_serial_number + SDB_TCP_EMULD_INDEX));
-
-    //TODO: Error handling
-    s = inet_connect(addr, NULL);
-
-    if ( s < 0 ) {
-        ERR( "can't create socket to emulator daemon in guest\n" );
-        ERR( "[127.0.0.1:%d/tcp] connect fail (%d:%s)\n" , device_serial_number + SDB_TCP_EMULD_INDEX , errno, strerror(errno) );
+    int ret;
+    char* sndbuf = (char*) g_malloc0(sizeof(char) * ECS_HEADER_SIZE);
+    if (!sndbuf) {
+        LOG_SEVERE("failed to allocate buffer to send shutdown\n");
         return;
     }
 
-    if(send( s, (char*)request_type, request_size, 0 ) < 0) {
-        ERR("failed to send to emuld\n");
-    }
-    if(send( s, (char*)&buf_size, 4, 0 ) < 0) {
-        ERR("failed to send to emuld\n");
-    }
-    if(send( s, (char*)send_buf, buf_size, 0 ) < 0) {
-        ERR("failed to send to emuld\n");
+    memcpy(sndbuf, "system", 6);
+
+    ret = send_to_evdi(route_ij, sndbuf, ECS_HEADER_SIZE);
+    if (!ret) {
+        LOG_SEVERE("fail to send evdi shutdown system call to emuld.\n");
     }
 
-    INFO( "send to emuld [req_type:%s, send_data:%s, send_size:%d] 127.0.0.1:%d/tcp \n",
-            request_type, send_buf, buf_size, device_serial_number + SDB_TCP_EMULD_INDEX );
-
-#ifdef CONFIG_WIN32
-    closesocket( s );
-#else
-    close( s );
-#endif
-
+    g_free(sndbuf);
 }
