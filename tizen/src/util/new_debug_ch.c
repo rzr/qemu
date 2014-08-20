@@ -282,7 +282,6 @@ static void debug_init(void)
             return;
         }
     }
-    nb_debug_options = 0;
 }
 
 int dbg_log(enum _debug_class cls, struct _debug_channel *channel,
