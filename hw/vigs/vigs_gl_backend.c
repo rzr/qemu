@@ -772,6 +772,8 @@ static bool vigs_gl_surface_setup_framebuffer(struct vigs_gl_surface *gl_sfc,
 
     gl_backend->BindFramebuffer(GL_FRAMEBUFFER, gl_sfc->fb);
 
+    gl_backend->Disable(GL_BLEND);
+
     return true;
 }
 
