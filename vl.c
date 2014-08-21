@@ -145,7 +145,7 @@ int qemu_main(int argc, char **argv, char **envp);
 
 #ifdef CONFIG_MARU
 int skin_disabled = 0;
-static int enable_yagl= 0;
+extern int enable_yagl;
 extern int enable_spice;
 static const char *yagl_backend = NULL;
 static int enable_vigs = 0;
