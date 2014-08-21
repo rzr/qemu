@@ -27,6 +27,7 @@
  * - S-Core Co., Ltd
  *
  */
+
 #ifndef __WIN32
 #include <sys/ioctl.h>
 #else
@@ -60,7 +61,13 @@ DECLARE_DEBUG_CHANNEL(app_tethering);
 #endif
 
 #define SEND_BUF_MAX_SIZE 4096
-static const char *loopback="127.0.0.1";
+static const char *loopback = "127.0.0.1";
+
+enum connection_type {
+    NONE = 0,
+    USB,
+    WIFI,
+};
 
 typedef struct tethering_recv_buf {
     uint32_t len;
@@ -77,6 +84,7 @@ typedef struct _TetheringState {
 
     // connection state
     int status;
+    int type;
 
     // receiver handling thread
     QemuThread thread;
@@ -90,13 +98,14 @@ typedef struct _TetheringState {
 
 } TetheringState;
 
-static TetheringState *tethering_client;
+static TetheringState *tethering_client = NULL;
 static tethering_recv_buf recv_buf;
-// static bool app_state = false;
 
 static void end_tethering_socket(int sockfd);
 static void set_tethering_connection_status(int status);
 #if 0
+static bool app_state = false;
+
 static void set_tethering_app_state(bool state);
 static bool get_tethering_app_state(void);
 #endif
@@ -302,8 +311,7 @@ static bool send_set_event_status_msg(Tethering__EventType event_type,
 // message handlers
 static void msgproc_tethering_handshake_ans(Tethering__HandShakeAns *msg)
 {
-    // FIXME: handle handshake answer
-    //  ans = msg->result;
+    // handle handshake answer
 }
 
 static void msgproc_app_state_msg(Tethering__AppState *msg)
@@ -318,8 +326,6 @@ static void msgproc_app_state_msg(Tethering__AppState *msg)
         set_tethering_touch_status(status);
 
         disconnect_tethering_app();
-    } else {
-        // does nothing
     }
 }
 
@@ -552,17 +558,15 @@ static void tethering_io_handler(void *opaque)
 static int start_tethering_socket(const char *ipaddress, int port)
 {
     struct sockaddr_in addr;
-    int sock = -1;
-    int ret = 0;
+    int sock = -1, ret = 0;
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port); // i.e. 1234
 
     LOG_INFO("server ip address: %s, port: %d\n", ipaddress, port);
     ret = inet_aton(ipaddress, &addr.sin_addr);
-
     if (ret == 0) {
-        LOG_SEVERE("inet_aton failure\n");
+        perror("inet_aton failure\n");
         return -1;
     }
 
@@ -682,14 +686,40 @@ int get_tethering_connection_status(void)
     int status = 0;
 
     if (!tethering_client) {
-        return -1;
+        LOG_INFO("tethering_client is null\n");
+        LOG_INFO("tetherging connection status: %d\n", status);
+        return DISCONNECTED;
     }
 
     qemu_mutex_lock(&tethering_client->mutex);
     status = tethering_client->status;
     qemu_mutex_unlock(&tethering_client->mutex);
 
+    LOG_INFO("tetherging connection status: %d\n", status);
+
     return status;
+}
+
+int get_tethering_connected_port(void)
+{
+	if (!tethering_client) {
+		LOG_SEVERE("tethering_client is null\n");
+		return 0;
+	}
+
+	LOG_TRACE("connected port: %d\n", tethering_client->port);
+	return tethering_client->port;
+}
+
+const char *get_tethering_connected_ipaddr(void)
+{
+	if (!tethering_client) {
+		LOG_SEVERE("tethering client is null\n");
+		return NULL;
+	}
+
+	LOG_TRACE("connected ip address: %s\n", tethering_client->ipaddress);
+	return tethering_client->ipaddress;
 }
 
 static void set_tethering_connection_status(int status)
@@ -728,22 +758,27 @@ int connect_tethering_app(const char *ipaddress, int port)
 
     if (ipaddress) {
         ipaddr_len = strlen(ipaddress);
+        client->type = WIFI;
     } else {
-        // ipaddr_len = strlen(LOOPBACK);
         ipaddr_len = strlen(loopback);
         ipaddress = loopback;
+        client->type = USB;
     }
 
     client->ipaddress = g_malloc0(ipaddr_len + 1);
     if (!client->ipaddress) {
+        LOG_SEVERE("failed to allocate ipaddress buffer\n");
         g_free(client);
         return -1;
     }
+
     g_strlcpy(client->ipaddress, ipaddress, ipaddr_len + 1);
+    LOG_INFO("connection info. ip %s, port %d type %d\n",
+        client->ipaddress, client->port, client->type);
 
     tethering_client = client;
-    qemu_mutex_init(&tethering_client->mutex);
 
+    qemu_mutex_init(&tethering_client->mutex);
     qemu_thread_create(&tethering_client->thread, "tethering-io-thread",
             initialize_tethering_socket, client,
             QEMU_THREAD_DETACHED);
@@ -763,7 +798,7 @@ int disconnect_tethering_app(void)
 
     sock = tethering_client->fd;
     if (sock < 0) {
-        LOG_SEVERE("tethering socket is terminated or not ready\n");
+        LOG_SEVERE("tethering socket is already terminated or not ready\n");
         return -1;
     } else {
         send_emul_state_msg();

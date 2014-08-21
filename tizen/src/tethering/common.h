@@ -28,19 +28,9 @@
  *
  */
 
-#include "qemu/queue.h"
-
-typedef struct input_device_list {
-    int type;
-    void *opaque;
-
-    QTAILQ_ENTRY(input_device_list) node;
-} input_device_list;
-
-// common
 enum connection_status {
-    CONNECTED = 1,
-    DISCONNECTED,
+    DISCONNECTED = 0,
+    CONNECTED,
     CONNECTING,
     CONNREFUSED,
 };
@@ -58,4 +48,6 @@ int disconnect_tethering_app(void);
 
 int get_tethering_connection_status(void);
 
-int add_input_device(void *opaque);
+int get_tethering_connected_port(void);
+
+const char *get_tethering_connected_ipaddr(void);
