@@ -36,9 +36,10 @@
 #include "tethering/touch.h"
 #include "hw/virtio/maru_virtio_touchscreen.h"
 #include "hw/virtio/maru_virtio_hwkey.h"
-#include "debug_ch.h"
 
-MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
+#include "util/new_debug_ch.h"
+
+DECLARE_DEBUG_CHANNEL(ecs_tethering);
 
 #define MSG_BUF_SIZE  255
 #define MSG_LEN_SIZE    4
@@ -46,7 +47,6 @@ MULTI_DEBUG_CHANNEL(tizen, ecs_tethering);
 #define PRESSED     1
 #define RELEASED    2
 
-// static bool send_tethering_ntf(const char *data, const int len);
 static bool send_tethering_ntf(const char *data);
 static void send_tethering_status_ntf(type_group group, type_action action);
 
@@ -54,7 +54,7 @@ static int tethering_port = 0;
 
 void send_tethering_sensor_status_ecp(void)
 {
-    INFO(">> send tethering_event_status to ecp\n");
+    LOG_INFO(">> send tethering_event_status to ecp\n");
     send_tethering_status_ntf(ECS_TETHERING_MSG_GROUP_ECP,
             ECS_TETHERING_MSG_ACTION_SENSOR_STATUS);
 }
@@ -67,7 +67,7 @@ void send_tethering_touch_status_ecp(void)
 
 void send_tethering_connection_status_ecp(void)
 {
-    INFO(">> send tethering_connection_status to ecp\n");
+    LOG_INFO(">> send tethering_connection_status to ecp\n");
     send_tethering_status_ntf(ECS_TETHERING_MSG_GROUP_ECP,
             ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS);
 }
@@ -85,8 +85,7 @@ static void send_tethering_port_ecp(void)
         return;
     }
 
-    TRACE(">> send port_num: %d\n", tethering_port);
-
+    LOG_INFO(">> send port_num: %d\n", tethering_port);
     g_snprintf(data, sizeof(data) - 1, "%d", tethering_port);
     length = strlen(data);
 
@@ -96,7 +95,7 @@ static void send_tethering_port_ecp(void)
     memcpy(msg + 13, &action, sizeof(unsigned char));
     memcpy(msg + 14, data, length);
 
-    TRACE(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s\n",
+    LOG_INFO(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s\n",
         action, group, data);
 
     send_tethering_ntf((const char *)msg);
@@ -114,20 +113,20 @@ static void send_tethering_status_ntf(type_group group, type_action action)
     gchar data[2];
 
     switch (action) {
-    case ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS:
-        status = get_tethering_connection_status();
-        if (status == CONNECTED) {
-            send_tethering_port_ecp();
-        }
-        break;
-    case ECS_TETHERING_MSG_ACTION_SENSOR_STATUS:
-        status = get_tethering_sensor_status();
-        break;
-    case ECS_TETHERING_MSG_ACTION_TOUCH_STATUS:
-        status = get_tethering_touch_status();
-        break;
-    default:
-        break;
+        case ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS:
+            status = get_tethering_connection_status();
+            if (status == CONNECTED) {
+                send_tethering_port_ecp();
+            }
+            break;
+        case ECS_TETHERING_MSG_ACTION_SENSOR_STATUS:
+            status = get_tethering_sensor_status();
+            break;
+        case ECS_TETHERING_MSG_ACTION_TOUCH_STATUS:
+            status = get_tethering_touch_status();
+            break;
+        default:
+            break;
     }
 
     msg = g_malloc(MSG_BUF_SIZE);
@@ -143,7 +142,7 @@ static void send_tethering_status_ntf(type_group group, type_action action)
     memcpy(msg + 13, &action, sizeof(unsigned char));
     memcpy(msg + 14, data, 1);
 
-    TRACE(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s\n",
+    LOG_INFO(">> send tethering_ntf to ecp. action=%d, group=%d, data=%s\n",
         action, group, data);
 
     send_tethering_ntf((const char *)msg);
@@ -170,7 +169,7 @@ static bool send_tethering_ntf(const char *data)
 
     const char* ijdata = (data + catsize + 2 + 1 + 1);
 
-    TRACE("<< header cat = %s, length = %d, action=%d, group=%d\n", cat, length,action, group);
+    LOG_INFO(">> header cat = %s, length = %d, action=%d, group=%d\n", cat, length,action, group);
 
     ECS__Master master = ECS__MASTER__INIT;
     ECS__TetheringNtf ntf = ECS__TETHERING_NTF__INIT;
@@ -189,7 +188,7 @@ static bool send_tethering_ntf(const char *data)
         ntf.data.len = length;
         memcpy(ntf.data.data, ijdata, length);
 
-        TRACE("data = %s, length = %hu\n", ijdata, length);
+        LOG_INFO("data = %s, length = %hu\n", ijdata, length);
     }
 
     master.type = ECS__MASTER__TYPE__TETHERING_NTF;
@@ -230,19 +229,20 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
     gchar cmd[10] = {0};
     gchar **server_addr = NULL;
 
+    LOG_INFO("enter %s\n", __func__);
+
     g_strlcpy(cmd, msg->category, sizeof(cmd));
     type_length length = (type_length) msg->length;
     type_group group = (type_group) (msg->group & 0xff);
     type_action action = (type_action) (msg->action & 0xff);
 
-    TRACE(">> header = cmd = %s, length = %d, action=%d, group=%d\n",
+    LOG_INFO("<< header = cmd = %s, length = %d, action = %d, group = %d\n",
             cmd, length, action, group);
 
-    if (group == ECS_TETHERING_MSG_GROUP_ECP) {
-        switch(action) {
+    switch(action) {
         case ECS_TETHERING_MSG_ACTION_CONNECT:
-        {
-            // get ip address and port
+            LOG_INFO("MSG_ACTION_CONNECT\n");
+
             if (msg->data.data && msg->data.len > 0) {
                 const gchar *data = (const gchar *)msg->data.data;
                 gchar *ip_address = NULL;
@@ -256,44 +256,44 @@ bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg)
                         ip_address = g_malloc(len + 1);
                         g_strlcpy(ip_address, server_addr[0], len + 1);
                     }
-                    INFO("IP address: %s, length: %d\n", ip_address, len);
+                    LOG_INFO("IP address: %s, length: %d\n", ip_address, len);
                 }
 
                 if (server_addr && server_addr[1]) {
                     port = g_ascii_strtoull(server_addr[1], NULL, 10);
-                    INFO("port number: %d\n", port);
+                    LOG_INFO("port number: %d\n", port);
                 } else {
-                    ERR("failed to parse port number\n");
+                    LOG_SEVERE("failed to parse port number\n");
                 }
 
-                TRACE("MSG_ACTION_CONNECT");
-                TRACE("len = %zd, data\" %s\"", strlen(data), data);
+                LOG_INFO("len = %zd, data\" %s\"", strlen(data), data);
 
                 connect_tethering_app(ip_address, port);
                 tethering_port = port;
 
-                TRACE(">> port_num: %d, %d\n", port, tethering_port);
+                LOG_INFO(">> port_num: %d, %d\n", port, tethering_port);
                 g_free(ip_address);
-
                 g_strfreev(server_addr);
+            } else {
+                LOG_INFO("ip address and port value are null\n");
             }
-        }
             break;
         case ECS_TETHERING_MSG_ACTION_DISCONNECT:
-            INFO(">> MSG_ACTION_DISCONNECT\n");
+            LOG_INFO(">> MSG_ACTION_DISCONNECT\n");
             disconnect_tethering_app();
             tethering_port = 0;
             break;
         case ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS:
         case ECS_TETHERING_MSG_ACTION_SENSOR_STATUS:
         case ECS_TETHERING_MSG_ACTION_TOUCH_STATUS:
-            TRACE(">> get_status_action\n");
+            LOG_INFO(">> get_status_action\n");
             send_tethering_status_ntf(group, action);
             break;
         default:
             break;
-        }
     }
+
+    LOG_INFO("leave %s\n", __func__);
 
     return true;
 }
