@@ -312,7 +312,10 @@ static void vigs_server_dispatch_set_plane(void *user_data,
                                            int dst_x,
                                            int dst_y,
                                            const struct vigsp_size *dst_size,
-                                           int z_pos)
+                                           int z_pos,
+                                           bool hflip,
+                                           bool vflip,
+                                           vigsp_rotation rotation)
 {
     struct vigs_server *server = user_data;
     struct vigs_surface *surfaces[4] = { NULL, NULL, NULL, NULL };
@@ -348,6 +351,9 @@ static void vigs_server_dispatch_set_plane(void *user_data,
     server->planes[plane].dst_y = dst_y;
     server->planes[plane].dst_size = *dst_size;
     server->planes[plane].z_pos = z_pos;
+    server->planes[plane].hflip = hflip;
+    server->planes[plane].vflip = vflip;
+    server->planes[plane].rotation = rotation;
     server->planes[plane].is_dirty = true;
 }
 

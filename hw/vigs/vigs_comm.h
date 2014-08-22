@@ -97,7 +97,10 @@ struct vigs_comm_batch_ops
                       int /*dst_x*/,
                       int /*dst_y*/,
                       const struct vigsp_size */*dst_size*/,
-                      int /*z_pos*/);
+                      int /*z_pos*/,
+                      bool /*hflip*/,
+                      bool /*vflip*/,
+                      vigsp_rotation /*rotation*/);
 
     void (*ga_copy)(void */*user_data*/,
                     vigsp_surface_id /*src_id*/,

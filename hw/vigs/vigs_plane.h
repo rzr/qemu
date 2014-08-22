@@ -49,6 +49,9 @@ struct vigs_plane
     struct vigsp_size dst_size;
 
     int z_pos;
+    bool hflip;
+    bool vflip;
+    vigsp_rotation rotation;
 
     /*
      * Plane moved/resized, need to recomposite.

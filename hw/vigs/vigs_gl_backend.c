@@ -1561,6 +1561,7 @@ static bool vigs_gl_backend_composite_planes(struct vigs_gl_backend *gl_backend,
     for (i = 0; i < VIGS_MAX_PLANES; ++i) {
         const struct vigs_plane *plane = planes[i];
         GLfloat src_w, src_h;
+        GLfloat tmp_x, tmp_y;
 
         if (!vigs_plane_enabled(plane) || ((plane->z_pos >= 0) ^ above_root)) {
             continue;
@@ -1586,6 +1587,99 @@ static bool vigs_gl_backend_composite_planes(struct vigs_gl_backend *gl_backend,
         tex_coords[9] = tex_coords[5] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
         tex_coords[10] = (GLfloat)plane->src_rect.pos.x / src_w;
         tex_coords[11] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
+
+        if (plane->hflip) {
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[2];
+            tex_coords[7] = tex_coords[1] = tex_coords[3];
+
+            tex_coords[2] = tmp_x;
+            tex_coords[3] = tmp_y;
+
+            tmp_x = tex_coords[4];
+            tmp_y = tex_coords[5];
+
+            tex_coords[8] = tex_coords[4] = tex_coords[10];
+            tex_coords[9] = tex_coords[5] = tex_coords[11];
+
+            tex_coords[10] = tmp_x;
+            tex_coords[11] = tmp_y;
+        }
+
+        if (plane->vflip) {
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[10];
+            tex_coords[7] = tex_coords[1] = tex_coords[11];
+
+            tex_coords[10] = tmp_x;
+            tex_coords[11] = tmp_y;
+
+            tmp_x = tex_coords[4];
+            tmp_y = tex_coords[5];
+
+            tex_coords[8] = tex_coords[4] = tex_coords[2];
+            tex_coords[9] = tex_coords[5] = tex_coords[3];
+
+            tex_coords[2] = tmp_x;
+            tex_coords[3] = tmp_y;
+        }
+
+        switch (plane->rotation) {
+        case vigsp_rotation90:
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[10];
+            tex_coords[7] = tex_coords[1] = tex_coords[11];
+            tex_coords[10] = tex_coords[4];
+            tex_coords[11] = tex_coords[5];
+            tex_coords[8] = tex_coords[4] = tex_coords[2];
+            tex_coords[9] = tex_coords[5] = tex_coords[3];
+            tex_coords[2] = tmp_x;
+            tex_coords[3] = tmp_y;
+
+            break;
+        case vigsp_rotation180:
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[4];
+            tex_coords[7] = tex_coords[1] = tex_coords[5];
+            tex_coords[8] = tex_coords[4] = tmp_x;
+            tex_coords[9] = tex_coords[5] = tmp_y;
+
+            tmp_x = tex_coords[2];
+            tmp_y = tex_coords[3];
+
+            tex_coords[2] = tex_coords[10];
+            tex_coords[3] = tex_coords[11];
+
+            tex_coords[10] = tmp_x;
+            tex_coords[11] = tmp_y;
+
+            break;
+        case vigsp_rotation270:
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[2];
+            tex_coords[7] = tex_coords[1] = tex_coords[3];
+            tex_coords[2] = tex_coords[4];
+            tex_coords[3] = tex_coords[5];
+            tex_coords[8] = tex_coords[4] = tex_coords[10];
+            tex_coords[9] = tex_coords[5] = tex_coords[11];
+            tex_coords[10] = tmp_x;
+            tex_coords[11] = tmp_y;
+
+            break;
+        case vigsp_rotation0:
+        default:
+            break;
+        }
 
         if (!bottom && (plane->format == vigsp_plane_bgra8888)) {
             /*
