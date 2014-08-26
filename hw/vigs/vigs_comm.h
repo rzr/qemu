@@ -89,12 +89,24 @@ struct vigs_comm_batch_ops
 
     void (*set_plane)(void */*user_data*/,
                       vigsp_u32 /*plane*/,
-                      vigsp_surface_id /*sfc_id*/,
+                      vigsp_u32 /*width*/,
+                      vigsp_u32 /*height*/,
+                      vigsp_plane_format /*format*/,
+                      vigsp_surface_id[4] /*surfaces*/,
                       const struct vigsp_rect */*src_rect*/,
                       int /*dst_x*/,
                       int /*dst_y*/,
                       const struct vigsp_size */*dst_size*/,
                       int /*z_pos*/);
+
+    void (*ga_copy)(void */*user_data*/,
+                    vigsp_surface_id /*src_id*/,
+                    bool /*src_scanout*/,
+                    vigsp_offset /*src_offset*/,
+                    vigsp_u32 /*src_stride*/,
+                    vigsp_surface_id /*dst_id*/,
+                    vigsp_u32 /*dst_stride*/,
+                    const struct vigsp_copy */*entry*/);
 
     void (*end)(void */*user_data*/, vigsp_fence_seq /*fence_seq*/);
 };

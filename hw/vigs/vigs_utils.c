@@ -42,3 +42,19 @@ uint32_t vigs_format_bpp(vigsp_surface_format format)
         return 0;
     }
 }
+
+int vigs_format_num_buffers(vigsp_plane_format format)
+{
+    switch (format) {
+    case vigsp_plane_bgrx8888: return 1;
+    case vigsp_plane_bgra8888: return 1;
+    case vigsp_plane_nv21: return 2;
+    case vigsp_plane_nv42: return 2;
+    case vigsp_plane_nv61: return 2;
+    default:
+        assert(false);
+        VIGS_LOG_CRITICAL("unknown format: %d", format);
+        exit(1);
+        return 1;
+    }
+}

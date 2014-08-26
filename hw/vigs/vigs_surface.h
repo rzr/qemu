@@ -70,6 +70,13 @@ struct vigs_surface
                        const struct vigsp_rect */*entries*/,
                        uint32_t /*num_entries*/);
 
+    void (*ga_copy)(struct vigs_surface */*dst*/,
+                    uint32_t /*dst_stride*/,
+                    struct vigs_surface */*src*/,
+                    uint8_t */*src_pixels*/,
+                    uint32_t /*src_stride*/,
+                    const struct vigsp_copy */*entry*/);
+
     void (*destroy)(struct vigs_surface */*sfc*/);
 };
 

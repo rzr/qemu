@@ -38,4 +38,6 @@
  */
 uint32_t vigs_format_bpp(vigsp_surface_format format);
 
+int vigs_format_num_buffers(vigsp_plane_format format);
+
 #endif
