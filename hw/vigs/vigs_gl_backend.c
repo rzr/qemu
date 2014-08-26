@@ -1230,6 +1230,74 @@ static void vigs_gl_backend_read_pixels_work(struct work_queue_item *wq_item)
     g_free(item);
 }
 
+/*
+ * 'above_root' means we want to render only planes that are above root surface.
+ * 'bottom' means that if at least one plane is going to be rendered it'll be
+ *  bottom plane, i.e. the first one in surface stack.
+ */
+static bool vigs_gl_backend_composite_planes(struct vigs_gl_backend *gl_backend,
+                                             const struct vigs_plane **planes,
+                                             bool above_root,
+                                             bool bottom)
+{
+    uint32_t i;
+    GLfloat *vert_coords = vigs_vector_data(&gl_backend->v1);
+    GLfloat *tex_coords = vigs_vector_data(&gl_backend->v2);
+
+    for (i = 0; i < VIGS_MAX_PLANES; ++i) {
+        const struct vigs_plane *plane = planes[i];
+        struct vigs_gl_surface *gl_sfc;
+        struct vigs_winsys_gl_surface *ws_sfc;
+        GLfloat src_w, src_h;
+
+        if (!plane->sfc || ((plane->z_pos >= 0) ^ above_root)) {
+            continue;
+        }
+
+        gl_sfc = (struct vigs_gl_surface*)plane->sfc;
+        ws_sfc = get_ws_sfc(gl_sfc);
+
+        src_w = ws_sfc->base.base.width;
+        src_h = ws_sfc->base.base.height;
+
+        vert_coords[6] = vert_coords[0] = plane->dst_x;
+        vert_coords[7] = vert_coords[1] = plane->dst_y;
+        vert_coords[2] = plane->dst_x + (int)plane->dst_size.w;
+        vert_coords[3] = plane->dst_y;
+        vert_coords[8] = vert_coords[4] = plane->dst_x + (int)plane->dst_size.w;
+        vert_coords[9] = vert_coords[5] = plane->dst_y + (int)plane->dst_size.h;
+        vert_coords[10] = plane->dst_x;
+        vert_coords[11] = plane->dst_y + (int)plane->dst_size.h;
+
+        tex_coords[6] = tex_coords[0] = (GLfloat)plane->src_rect.pos.x / src_w;
+        tex_coords[7] = tex_coords[1] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
+        tex_coords[2] = (GLfloat)(plane->src_rect.pos.x + plane->src_rect.size.w) / src_w;
+        tex_coords[3] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
+        tex_coords[8] = tex_coords[4] = (GLfloat)(plane->src_rect.pos.x + plane->src_rect.size.w) / src_w;
+        tex_coords[9] = tex_coords[5] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
+        tex_coords[10] = (GLfloat)plane->src_rect.pos.x / src_w;
+        tex_coords[11] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
+
+        if (!bottom && (plane->sfc->format == vigsp_surface_bgra8888)) {
+            /*
+             * This is not bottom plane and it has alpha, turn on blending.
+             */
+            gl_backend->Enable(GL_BLEND);
+            gl_backend->BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        } else {
+            gl_backend->Disable(GL_BLEND);
+        }
+
+        gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
+
+        vigs_gl_draw_tex_prog(gl_backend, 6);
+
+        bottom = false;
+    }
+
+    return bottom;
+}
+
 static void vigs_gl_backend_composite(struct vigs_surface *surface,
                                       const struct vigs_plane *planes,
                                       vigs_composite_start_cb start_cb,
@@ -1245,17 +1313,16 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
     const struct vigs_plane *sorted_planes[VIGS_MAX_PLANES];
     uint32_t size = surface->stride * surface->ws_sfc->height;
     struct vigs_gl_backend_read_pixels_work_item *item;
+    bool bottom = true;
 
     VIGS_LOG_TRACE("enter");
 
-    if (!surface->ptr) {
-        if (!ws_root_sfc->tex) {
-            VIGS_LOG_WARN("compositing garbage (root surface) ???");
-        }
+    if (!surface->ptr && !ws_root_sfc->tex) {
+        VIGS_LOG_WARN("compositing garbage (root surface) ???");
+    }
 
-        if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc)) {
-            goto out;
-        }
+    if (!vigs_winsys_gl_surface_create_texture(ws_root_sfc)) {
+        goto out;
     }
 
     if (!vigs_gl_surface_create_tmp_texture(gl_root_sfc)) {
@@ -1288,6 +1355,20 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
         goto out;
     }
 
+    /*
+     * Sort planes, only 2 of them now, don't bother...
+     */
+
+    assert(VIGS_MAX_PLANES == 2);
+
+    if (planes[0].z_pos <= planes[1].z_pos) {
+        sorted_planes[0] = &planes[0];
+        sorted_planes[1] = &planes[1];
+    } else {
+        sorted_planes[0] = &planes[1];
+        sorted_planes[1] = &planes[0];
+    }
+
     vigs_vector_resize(&gl_backend->v1, 0);
     vigs_vector_resize(&gl_backend->v2, 0);
 
@@ -1307,7 +1388,7 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
         gl_backend->PixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
         gl_backend->PixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
-        gl_backend->BindTexture(GL_TEXTURE_2D, gl_root_sfc->tmp_tex);
+        gl_backend->BindTexture(GL_TEXTURE_2D, ws_root_sfc->tex);
 
         gl_backend->TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                                   ws_root_sfc->base.base.width,
@@ -1320,91 +1401,64 @@ static void vigs_gl_backend_composite(struct vigs_surface *surface,
     gl_backend->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                      GL_TEXTURE_2D, gl_root_sfc->tmp_tex, 0);
 
-    if (!surface->ptr) {
+    bottom = vigs_gl_backend_composite_planes(gl_backend,
+                                              sorted_planes,
+                                              false,
+                                              bottom);
+
+    /*
+     * Render root surface.
+     */
+
+    vert_coords[6] = vert_coords[0] = 0;
+    vert_coords[7] = vert_coords[1] = ws_root_sfc->base.base.height;
+    vert_coords[2] = ws_root_sfc->base.base.width;
+    vert_coords[3] = ws_root_sfc->base.base.height;
+    vert_coords[8] = vert_coords[4] = ws_root_sfc->base.base.width;
+    vert_coords[9] = vert_coords[5] = 0;
+    vert_coords[10] = 0;
+    vert_coords[11] = 0;
+
+    tex_coords[6] = tex_coords[0] = 0;
+    tex_coords[7] =tex_coords[1] = 0;
+    tex_coords[2] = 1;
+    tex_coords[3] = 0;
+    tex_coords[8] = tex_coords[4] = 1;
+    tex_coords[9] = tex_coords[5] = 1;
+    tex_coords[10] = 0;
+    tex_coords[11] = 1;
+
+    if (!bottom) {
         /*
-         * If root surface is not scanout then we must render
-         * it.
+         * Root surface has planes beneath it, turn on blending.
+         *
+         * Note that we DON'T check for alpha on root surface, i.e.:
+         * (surface->format == vigsp_surface_bgra8888)
+         * The reasons are:
+         * + X.Org doesn't allow having 32 depths, i.e. only bpp can
+         *   be 32, depth must be <= 24, i.e. X.Org is not underlay-aware,
+         *   but that doesn't mean we can't have them with X.Org
+         * + Since we DO have something beneath the root surface that means
+         *   root surface just got to have alpha, otherwise user won't be
+         *   able to see that "something", i.e. specifying alpha in root
+         *   surface format is not that necessary in this case
          */
-
-        vert_coords[6] = vert_coords[0] = 0;
-        vert_coords[7] = vert_coords[1] = ws_root_sfc->base.base.height;
-        vert_coords[2] = ws_root_sfc->base.base.width;
-        vert_coords[3] = ws_root_sfc->base.base.height;
-        vert_coords[8] = vert_coords[4] = ws_root_sfc->base.base.width;
-        vert_coords[9] = vert_coords[5] = 0;
-        vert_coords[10] = 0;
-        vert_coords[11] = 0;
-
-        tex_coords[6] = tex_coords[0] = 0;
-        tex_coords[7] =tex_coords[1] = 0;
-        tex_coords[2] = 1;
-        tex_coords[3] = 0;
-        tex_coords[8] = tex_coords[4] = 1;
-        tex_coords[9] = tex_coords[5] = 1;
-        tex_coords[10] = 0;
-        tex_coords[11] = 1;
-
-        gl_backend->BindTexture(GL_TEXTURE_2D, ws_root_sfc->tex);
-
-        vigs_gl_draw_tex_prog(gl_backend, 6);
-    }
-
-    /*
-     * Sort planes, only 2 of them now, don't bother...
-     */
-
-    assert(VIGS_MAX_PLANES == 2);
-
-    if (planes[0].z_pos <= planes[1].z_pos) {
-        sorted_planes[0] = &planes[0];
-        sorted_planes[1] = &planes[1];
+        gl_backend->Enable(GL_BLEND);
+        gl_backend->BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     } else {
-        sorted_planes[0] = &planes[1];
-        sorted_planes[1] = &planes[0];
+        gl_backend->Disable(GL_BLEND);
     }
 
-    /*
-     * Now render planes, respect z-order.
-     */
+    gl_backend->BindTexture(GL_TEXTURE_2D, ws_root_sfc->tex);
 
-    for (i = 0; i < VIGS_MAX_PLANES; ++i) {
-        const struct vigs_plane *plane = sorted_planes[i];
-        struct vigs_gl_surface *gl_sfc;
-        struct vigs_winsys_gl_surface *ws_sfc;
-        GLfloat src_w, src_h;
+    vigs_gl_draw_tex_prog(gl_backend, 6);
 
-        if (!plane->sfc) {
-            continue;
-        }
+    bottom = false;
 
-        gl_sfc = (struct vigs_gl_surface*)plane->sfc;
-        ws_sfc = get_ws_sfc(gl_sfc);
-
-        src_w = ws_sfc->base.base.width;
-        src_h = ws_sfc->base.base.height;
-
-        vert_coords[6] = vert_coords[0] = plane->dst_x;
-        vert_coords[7] = vert_coords[1] = plane->dst_y;
-        vert_coords[2] = plane->dst_x + (int)plane->dst_size.w;
-        vert_coords[3] = plane->dst_y;
-        vert_coords[8] = vert_coords[4] = plane->dst_x + (int)plane->dst_size.w;
-        vert_coords[9] = vert_coords[5] = plane->dst_y + (int)plane->dst_size.h;
-        vert_coords[10] = plane->dst_x;
-        vert_coords[11] = plane->dst_y + (int)plane->dst_size.h;
-
-        tex_coords[6] = tex_coords[0] = (GLfloat)plane->src_rect.pos.x / src_w;
-        tex_coords[7] = tex_coords[1] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
-        tex_coords[2] = (GLfloat)(plane->src_rect.pos.x + plane->src_rect.size.w) / src_w;
-        tex_coords[3] = (GLfloat)(src_h - plane->src_rect.pos.y) / src_h;
-        tex_coords[8] = tex_coords[4] = (GLfloat)(plane->src_rect.pos.x + plane->src_rect.size.w) / src_w;
-        tex_coords[9] = tex_coords[5] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
-        tex_coords[10] = (GLfloat)plane->src_rect.pos.x / src_w;
-        tex_coords[11] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
-
-        gl_backend->BindTexture(GL_TEXTURE_2D, ws_sfc->tex);
-
-        vigs_gl_draw_tex_prog(gl_backend, 6);
-    }
+    vigs_gl_backend_composite_planes(gl_backend,
+                                     sorted_planes,
+                                     true,
+                                     bottom);
 
     /*
      * Now schedule asynchronous glReadPixels.
