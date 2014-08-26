@@ -59,6 +59,9 @@ enum {
     MOUSE_WHEELUP = 4,
     MOUSE_WHEELDOWN = 5,
     MOUSE_MOVE = 6,
+    MOUSE_DOUBLECLICK = 7,
+    PS2_DOWN = 8,
+    PS2_UP = 9,
 };
 
 /* keep it consistent with emulator-skin definition */
@@ -94,6 +97,7 @@ typedef  struct EmulatorConfigInfo {
     int ecs_port;
     char *vm_name;
     /* add here */
+    int serial_port;
 } EmulatorConfigInfo;
 
 typedef struct EmulatorConfigState {
@@ -144,6 +148,7 @@ int get_emul_max_touch_point(void);
 int get_emul_vm_base_port(void);
 int get_device_serial_number(void);
 int get_emul_ecs_port(void);
+int get_emul_serial_port(void);
 
 int get_emulator_condition(void);
 short get_emul_rotation(void);

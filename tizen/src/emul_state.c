@@ -186,6 +186,7 @@ void set_emul_vm_base_port(int port)
     _emul_info.vm_base_port = port;
     _emul_info.device_serial_number = port + 1;
     _emul_info.ecs_port = port + 3;
+    _emul_info.serial_port = port + 4;
 }
 
 void set_emul_ecs_port(int port)
@@ -206,6 +207,11 @@ int get_device_serial_number(void)
 int get_emul_ecs_port(void)
 {
     return _emul_info.ecs_port;
+}
+
+int get_emul_serial_port(void)
+{
+    return _emul_info.serial_port;
 }
 
 /* current emulator condition */
