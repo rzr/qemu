@@ -265,11 +265,11 @@ static const char *g_fs_nv21_source_gl3 =
     "{\n"
     "    float ypos = floor((1.0 - v_texCoord.y) * size.y) * size.x + floor(v_texCoord.x * size.x);\n"
     "    float ytexPos = floor(ypos / 4);\n"
-    "    vec4 ytexColor = texture2D(ytex, vec2((mod(ytexPos, ytexSize.x) + 0.5) / ytexSize.x, 1.0 - (floor(ytexPos / ytexSize.x) + 0.5) / ytexSize.y));\n"
+    "    vec4 ytexColor = texture(ytex, vec2((mod(ytexPos, ytexSize.x) + 0.5) / ytexSize.x, 1.0 - (floor(ytexPos / ytexSize.x) + 0.5) / ytexSize.y));\n"
     "    float y = ytexColor[3 - int(mod(ypos + 1, 4))];\n"
     "    float cpos = floor(floor((1.0 - v_texCoord.y) * size.y) / 2) * size.x + floor(v_texCoord.x * size.x);\n"
     "    float ctexPos = floor(cpos / 4);\n"
-    "    vec4 ctexColor = texture2D(ctex, vec2((mod(ctexPos, ctexSize.x) + 0.5) / ctexSize.x, 1.0 - (floor(ctexPos / ctexSize.x) + 0.5) / ctexSize.y));\n"
+    "    vec4 ctexColor = texture(ctex, vec2((mod(ctexPos, ctexSize.x) + 0.5) / ctexSize.x, 1.0 - (floor(ctexPos / ctexSize.x) + 0.5) / ctexSize.y));\n"
     "    int index = 2 * int(mod(floor(cpos / 2) + 1, 2));"
     "    float u = ctexColor[index];\n"
     "    float v = ctexColor[3 - index];\n"
@@ -345,12 +345,12 @@ static const char *g_fs_yuv420_source_gl3 =
     "{\n"
     "    float ypos = floor((1.0 - v_texCoord.y) * size.y) * size.x + floor(v_texCoord.x * size.x);\n"
     "    float ytexPos = floor(ypos / 4);\n"
-    "    vec4 ytexColor = texture2D(ytex, vec2((mod(ytexPos, ytexSize.x) + 0.5) / ytexSize.x, 1.0 - (floor(ytexPos / ytexSize.x) + 0.5) / ytexSize.y));\n"
+    "    vec4 ytexColor = texture(ytex, vec2((mod(ytexPos, ytexSize.x) + 0.5) / ytexSize.x, 1.0 - (floor(ytexPos / ytexSize.x) + 0.5) / ytexSize.y));\n"
     "    float y = ytexColor[3 - int(mod(ypos + 1, 4))];\n"
     "    float uvpos = floor(floor((1.0 - v_texCoord.y) * size.y) / 2) * size.x + floor(v_texCoord.x * size.x);\n"
     "    float uvtexPos = floor(uvpos / 8);\n"
-    "    vec4 utexColor = texture2D(utex, vec2((mod(uvtexPos, utexSize.x) + 0.5) / utexSize.x, 1.0 - (floor(uvtexPos / utexSize.x) + 0.5) / utexSize.y));\n"
-    "    vec4 vtexColor = texture2D(vtex, vec2((mod(uvtexPos, vtexSize.x) + 0.5) / vtexSize.x, 1.0 - (floor(uvtexPos / vtexSize.x) + 0.5) / vtexSize.y));\n"
+    "    vec4 utexColor = texture(utex, vec2((mod(uvtexPos, utexSize.x) + 0.5) / utexSize.x, 1.0 - (floor(uvtexPos / utexSize.x) + 0.5) / utexSize.y));\n"
+    "    vec4 vtexColor = texture(vtex, vec2((mod(uvtexPos, vtexSize.x) + 0.5) / vtexSize.x, 1.0 - (floor(uvtexPos / vtexSize.x) + 0.5) / vtexSize.y));\n"
     "    int index = 3 - int(mod((uvpos / 2) + 1, 4));\n"
     "    float u = utexColor[index];\n"
     "    float v = vtexColor[index];\n"
@@ -1561,6 +1561,7 @@ static bool vigs_gl_backend_composite_planes(struct vigs_gl_backend *gl_backend,
     for (i = 0; i < VIGS_MAX_PLANES; ++i) {
         const struct vigs_plane *plane = planes[i];
         GLfloat src_w, src_h;
+        GLfloat tmp_x, tmp_y;
 
         if (!vigs_plane_enabled(plane) || ((plane->z_pos >= 0) ^ above_root)) {
             continue;
@@ -1586,6 +1587,99 @@ static bool vigs_gl_backend_composite_planes(struct vigs_gl_backend *gl_backend,
         tex_coords[9] = tex_coords[5] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
         tex_coords[10] = (GLfloat)plane->src_rect.pos.x / src_w;
         tex_coords[11] = (GLfloat)(src_h - (plane->src_rect.pos.y + plane->src_rect.size.h)) / src_h;
+
+        if (plane->hflip) {
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[2];
+            tex_coords[7] = tex_coords[1] = tex_coords[3];
+
+            tex_coords[2] = tmp_x;
+            tex_coords[3] = tmp_y;
+
+            tmp_x = tex_coords[4];
+            tmp_y = tex_coords[5];
+
+            tex_coords[8] = tex_coords[4] = tex_coords[10];
+            tex_coords[9] = tex_coords[5] = tex_coords[11];
+
+            tex_coords[10] = tmp_x;
+            tex_coords[11] = tmp_y;
+        }
+
+        if (plane->vflip) {
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[10];
+            tex_coords[7] = tex_coords[1] = tex_coords[11];
+
+            tex_coords[10] = tmp_x;
+            tex_coords[11] = tmp_y;
+
+            tmp_x = tex_coords[4];
+            tmp_y = tex_coords[5];
+
+            tex_coords[8] = tex_coords[4] = tex_coords[2];
+            tex_coords[9] = tex_coords[5] = tex_coords[3];
+
+            tex_coords[2] = tmp_x;
+            tex_coords[3] = tmp_y;
+        }
+
+        switch (plane->rotation) {
+        case vigsp_rotation90:
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[10];
+            tex_coords[7] = tex_coords[1] = tex_coords[11];
+            tex_coords[10] = tex_coords[4];
+            tex_coords[11] = tex_coords[5];
+            tex_coords[8] = tex_coords[4] = tex_coords[2];
+            tex_coords[9] = tex_coords[5] = tex_coords[3];
+            tex_coords[2] = tmp_x;
+            tex_coords[3] = tmp_y;
+
+            break;
+        case vigsp_rotation180:
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[4];
+            tex_coords[7] = tex_coords[1] = tex_coords[5];
+            tex_coords[8] = tex_coords[4] = tmp_x;
+            tex_coords[9] = tex_coords[5] = tmp_y;
+
+            tmp_x = tex_coords[2];
+            tmp_y = tex_coords[3];
+
+            tex_coords[2] = tex_coords[10];
+            tex_coords[3] = tex_coords[11];
+
+            tex_coords[10] = tmp_x;
+            tex_coords[11] = tmp_y;
+
+            break;
+        case vigsp_rotation270:
+            tmp_x = tex_coords[0];
+            tmp_y = tex_coords[1];
+
+            tex_coords[6] = tex_coords[0] = tex_coords[2];
+            tex_coords[7] = tex_coords[1] = tex_coords[3];
+            tex_coords[2] = tex_coords[4];
+            tex_coords[3] = tex_coords[5];
+            tex_coords[8] = tex_coords[4] = tex_coords[10];
+            tex_coords[9] = tex_coords[5] = tex_coords[11];
+            tex_coords[10] = tmp_x;
+            tex_coords[11] = tmp_y;
+
+            break;
+        case vigsp_rotation0:
+        default:
+            break;
+        }
 
         if (!bottom && (plane->format == vigsp_plane_bgra8888)) {
             /*

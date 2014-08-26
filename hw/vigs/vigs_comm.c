@@ -195,7 +195,18 @@ static void vigs_comm_dispatch_set_plane(struct vigs_comm_batch_ops *ops,
                                          void *user_data,
                                          struct vigsp_cmd_set_plane_request *request)
 {
-    VIGS_LOG_TRACE("plane = %u, width = %u, height = %u, format = %u, surfaces = {%u, %u, %u, %u}, src_rect = {%u, %u, %u, %u}, dst_x = %d, dst_y = %d, dst_size = {%u, %u}, z_pos = %d",
+    switch (request->rotation) {
+    case vigsp_rotation0:
+    case vigsp_rotation90:
+    case vigsp_rotation180:
+    case vigsp_rotation270:
+        break;
+    default:
+        VIGS_LOG_CRITICAL("bad plane rotation = %u", request->rotation);
+        return;
+    }
+
+    VIGS_LOG_TRACE("plane = %u, width = %u, height = %u, format = %u, surfaces = {%u, %u, %u, %u}, src_rect = {%u, %u, %u, %u}, dst_x = %d, dst_y = %d, dst_size = {%u, %u}, z_pos = %d, hflip = %u, vflip = %u, rotation = %u",
                    request->plane,
                    request->width,
                    request->height,
@@ -212,12 +223,16 @@ static void vigs_comm_dispatch_set_plane(struct vigs_comm_batch_ops *ops,
                    request->dst_y,
                    request->dst_size.w,
                    request->dst_size.h,
-                   request->z_pos);
+                   request->z_pos,
+                   request->hflip,
+                   request->vflip,
+                   request->rotation);
 
     ops->set_plane(user_data, request->plane, request->width, request->height,
                    request->format, request->surfaces,
                    &request->src_rect, request->dst_x, request->dst_y,
-                   &request->dst_size, request->z_pos);
+                   &request->dst_size, request->z_pos, request->hflip,
+                   request->vflip, request->rotation);
 }
 
 static void vigs_comm_dispatch_ga_copy(struct vigs_comm_batch_ops *ops,
