@@ -63,7 +63,45 @@ typedef struct NFCBuf {
     QTAILQ_ENTRY(NFCBuf) next;
 } NFCBuf;
 
+
+static char nfc_data [NFC_MAX_BUF_SIZE] = {'0',};
 static pthread_mutex_t recv_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void send_nfc_data_to_ecs(const char* data)
+{
+    type_length length = 0;
+    type_group group = 15;
+    type_action action = 0;
+    int buf_len = strlen(data);
+    int message_len =  buf_len + 14;
+
+    char* ecs_message = (char*) malloc(message_len + 1);
+    if (!ecs_message)
+        return;
+
+    memset(ecs_message, 0, message_len + 1);
+
+    length = (unsigned short) buf_len;
+    action = 0;
+
+    memcpy(ecs_message, MESSAGE_TYPE_NFC, 3);
+    memcpy(ecs_message + 10, &length, sizeof(unsigned short));
+    memcpy(ecs_message + 12, &group, sizeof(unsigned char));
+    memcpy(ecs_message + 13, &action, sizeof(unsigned char));
+    memcpy(ecs_message + 14, data, buf_len);
+
+    TRACE("ntf_to_injector- len: %d, group: %d, action: %d, data: %s\n", length, group, action, data);
+
+    send_device_ntf(ecs_message, message_len);
+
+    if (ecs_message)
+        free(ecs_message);
+}
+
+void get_nfc_data(void)
+{
+    send_nfc_data_to_ecs(nfc_data);
+}
 
 bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const uint32_t len)
 {
@@ -96,7 +134,7 @@ bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const u
     _msg->info.client_type = type;
 
     pthread_mutex_lock(&recv_buf_mutex);
-
+    strcpy(nfc_data, data);
     QTAILQ_INSERT_TAIL(&nfc_recv_msg_queue, _msg, next);
 
     pthread_mutex_unlock(&recv_buf_mutex);

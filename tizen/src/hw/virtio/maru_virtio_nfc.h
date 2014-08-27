@@ -45,7 +45,7 @@ enum request_cmd_nfc {
 /* device protocol */
 
 #define __MAX_BUF_SIZE	1024
-
+#define MESSAGE_TYPE_NFC "nfc"
 
 typedef struct VirtIONFC{
     VirtIODevice    vdev;
@@ -63,6 +63,7 @@ typedef struct VirtIONFC{
 
 
 bool send_to_nfc(unsigned char id, unsigned char type, const char* data, const uint32_t len);
+void get_nfc_data(void);
 
 #ifdef __cplusplus
 }

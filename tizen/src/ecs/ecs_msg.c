@@ -615,8 +615,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg)
         msgproc_device_ans(ccli, cmd, true, vmname);
     } else if (!strcmp(cmd, "nfc")) {
         if (group == MSG_GROUP_STATUS) {
-            //TODO:
-            INFO("get nfc data: do nothing\n");
+            get_nfc_data();
         } else {
             if (data != NULL) {
                 send_to_nfc(ccli->client_id, ccli->client_type, data, msg->data.len);
