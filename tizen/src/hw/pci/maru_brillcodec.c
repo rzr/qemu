@@ -658,6 +658,7 @@ int maru_brill_codec_query_list (MaruBrillCodecState *s)
         memcpy(s->vaddr + size, codec_fmts, sizeof(codec_fmts));
         size += sizeof(codec_fmts);
 
+        TRACE("register %s %s\n", codec->name, codec->decode ? "decoder" : "encoder");
         codec = av_codec_next(codec);
     }
 
@@ -867,6 +868,82 @@ static uint8_t *resample_audio_buffer(AVCodecContext * avctx, AVFrame *samples,
     return resampled_audio;
 }
 
+static int parse_and_decode_video(AVCodecContext *avctx, AVFrame *picture,
+                                AVCodecParserContext *pctx, int ctx_id,
+                                AVPacket *packet, int *got_picture,
+                                int idx, int64_t in_offset)
+{
+    uint8_t *parser_outbuf = NULL;
+    int parser_outbuf_size = 0;
+    uint8_t *parser_buf = packet->data;
+    int parser_buf_size = packet->size;
+    int ret = 0, len = -1;
+    int64_t pts = 0, dts = 0, pos = 0;
+
+    pts = dts = idx;
+    pos = in_offset;
+
+    do {
+        if (pctx) {
+            ret = av_parser_parse2(pctx, avctx, &parser_outbuf,
+                    &parser_outbuf_size, parser_buf, parser_buf_size,
+                    pts, dts, pos);
+
+            if (ret) {
+                parser_buf_size -= ret;
+                parser_buf += ret;
+            }
+
+            TRACE("after parsing ret: %d parser_outbuf_size %d parser_buf_size %d pts %lld\n",
+                    ret, parser_outbuf_size, parser_buf_size, pctx->pts);
+
+            /* if there is no output, we must break and wait for more data.
+             * also the timestamp in the context is not updated.
+             */
+            if (parser_outbuf_size == 0) {
+                if (parser_buf_size > 0) {
+                    TRACE("parsing data have been left\n");
+                    continue;
+                } else {
+                    TRACE("finish parsing data\n");
+                    break;
+                }
+            }
+
+            packet->data = parser_outbuf;
+            packet->size = parser_outbuf_size;
+        } else {
+            TRACE("not using parser %s\n", avctx->codec->name);
+        }
+
+        len = avcodec_decode_video2(avctx, picture, got_picture, packet);
+        TRACE("decode_video. len %d, got_picture %d\n", len, *got_picture);
+
+        if (!pctx) {
+            if (len == 0 && (*got_picture) == 0) {
+                ERR("decoding video didn't return any data! ctx_id %d len %d\n", ctx_id, len);
+                break;
+            } else if (len < 0) {
+                ERR("decoding video error! ctx_id %d len %d\n", ctx_id, len);
+                break;
+            }
+            parser_buf_size -= len;
+            parser_buf += len;
+        } else {
+            if (len == 0) {
+                ERR("decoding video didn't return any data! ctx_id %d len %d\n", ctx_id, len);
+                *got_picture = 0;
+                break;
+            } else if (len < 0) {
+                ERR("decoding video error! trying next ctx_id %d len %d\n", ctx_id, len);
+                break;
+            }
+        }
+    } while (parser_buf_size > 0);
+
+    return len;
+}
+
 // codec functions
 static bool codec_init(MaruBrillCodecState *s, int ctx_id, void *data_buf)
 {
@@ -1004,6 +1081,7 @@ static bool codec_deinit(MaruBrillCodecState *s, int ctx_id, void *data_buf)
     }
 
     if (parserctx) {
+        INFO("close parser context\n");
         av_parser_close(parserctx);
         CONTEXT(s, ctx_id).parser_ctx = NULL;
     }
@@ -1031,6 +1109,23 @@ static bool codec_flush_buffers(MaruBrillCodecState *s, int ctx_id, void *data_b
         ret = false;
     } else {
         TRACE("flush %d context of buffers.\n", ctx_id);
+        AVCodecParserContext *pctx = NULL;
+        uint8_t *poutbuf = NULL;
+        int poutbuf_size = 0;
+        int res = 0;
+
+        uint8_t p_inbuf[FF_INPUT_BUFFER_PADDING_SIZE];
+        int p_inbuf_size = FF_INPUT_BUFFER_PADDING_SIZE;
+
+        memset(&p_inbuf, 0x00, p_inbuf_size);
+
+        pctx = CONTEXT(s, ctx_id).parser_ctx;
+        if (pctx) {
+            res = av_parser_parse2(pctx, avctx, &poutbuf, &poutbuf_size,
+                    p_inbuf, p_inbuf_size, -1, -1, -1);
+            INFO("before flush buffers, using parser. res: %d\n", res);
+        }
+
         avcodec_flush_buffers(avctx);
     }
 
@@ -1045,11 +1140,14 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
 {
     AVCodecContext *avctx = NULL;
     AVFrame *picture = NULL;
+    AVCodecParserContext *pctx = NULL;
     AVPacket avpkt;
+
     int got_picture = 0, len = -1;
+    int idx = 0, size = 0;
+    int64_t in_offset = 0;
     uint8_t *inbuf = NULL;
-    int inbuf_size = 0, idx, size = 0;
-    int64_t in_offset;
+    int inbuf_size = 0;
     DeviceMemEntry *elem = NULL;
     uint8_t *tempbuf = NULL;
     int tempbuf_size = 0;
@@ -1079,6 +1177,7 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     avpkt.data = inbuf;
     avpkt.size = inbuf_size;
 
+
     avctx = CONTEXT(s, ctx_id).avctx;
     picture = CONTEXT(s, ctx_id).frame;
     if (!avctx) {
@@ -1088,30 +1187,18 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     } else if (!picture) {
         ERR("decode_video. %d of AVFrame is NULL.\n", ctx_id);
     } else {
-        // in case of skipping frames
-        // picture->pict_type = -1;
+        pctx = CONTEXT(s, ctx_id).parser_ctx;
 
-        TRACE("decode_video. bitrate %d\n", avctx->bit_rate);
-        // avctx->reordered_opaque = idx;
-        // picture->reordered_opaque = idx;
-
-        len =
-            avcodec_decode_video2(avctx, picture, &got_picture, &avpkt);
-        TRACE("decode_video. in_size %d len %d, frame_size %d\n", avpkt.size, len, got_picture);
+        len = parse_and_decode_video(avctx, picture, pctx, ctx_id,
+                                    &avpkt, &got_picture, idx, in_offset);
     }
 
-    tempbuf_size =
-            sizeof(len) + sizeof(got_picture) + sizeof(struct video_data);
-
-    if (len < 0) {
-        ERR("failed to decode video. ctx_id: %d, len: %d\n", ctx_id, len);
-        got_picture = 0;
-    }
+    tempbuf_size = sizeof(len) + sizeof(got_picture) + sizeof(struct video_data);
 
     tempbuf = g_malloc(tempbuf_size);
     if (!tempbuf) {
         ERR("failed to allocate decoded audio buffer\n");
-        // FIXME: how to handle this case?
+        tempbuf_size = 0;
     } else {
         struct video_data video;
 
@@ -1640,7 +1727,7 @@ static AVCodecParserContext *maru_brill_codec_parser_init(AVCodecContext *avctx)
     switch (avctx->codec_id) {
     case CODEC_ID_MPEG4:
     case CODEC_ID_VC1:
-        TRACE("not using parser.\n");
+        TRACE("not using parser\n");
         break;
     case CODEC_ID_H264:
         if (avctx->extradata_size == 0) {
@@ -1649,9 +1736,9 @@ static AVCodecParserContext *maru_brill_codec_parser_init(AVCodecContext *avctx)
         }
         break;
     default:
-        parser = av_parser_init (avctx->codec_id);
+        parser = av_parser_init(avctx->codec_id);
         if (parser) {
-            INFO("using parser. %d\n", avctx->codec_id);
+            INFO("using parser: %s\n", avctx->codec->name);
         }
         break;
     }
