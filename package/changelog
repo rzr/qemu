@@ -1,3 +1,43 @@
+* 2.0.7
+- nfc: Add getting status
+- emulator: add get_emul_serial_port func for logging
+- VIGS: Implement plane flip/rotate
+- VIGS: Fix texture fetch for GL3
+- VIGS: Disable blending by default
+- skin: fixed message format for emuld to shutdown
+- debugch: fix logging problem when using DEBUGCH
+- VIGS: Support YUV420 planar format
+- VIGS: Support planar pixel formats
+- VIGS: Support underlays and alpha blending
+- yagl: modified enable_yagl flag
+- tethering: add functions to get connected ip address and port
+- tethering: change log function into new style
+- brillcodec: clean-up source
+- codec: remove unused module
+- tethering: improve error cases
+- tethering: convert sensor values before sending ecs
+- brillcodec: remove redundant memory copy when decoding video
+- tethering: remove redundant source when copying ip address
+- sdb: fix sdbd port to a dynamic number
+- tethering: handle hwkey event and source clean-up
+- virtio-9p: fix compilation errors on Windows
+- emulator: enhance Makefile for standalone executables
+- maru_shm: fix compilation error on Mac OS X
+- log: fix runtime error and MacOS build fail
+- emulator: fix issue that skin is not started on MacOS
+- HAX: fix performance degradation on HAX
+- log: modify some emulator.log formats
+- brillcodec: remove useless memory copy
+- tethering: fix connection failure case
+- tethering: provide a function to get framebuffer on Mac OS X
+- debugch: Fix DEBUGCH and open flag
+- tethering: add a function to get framebuffer in maru_sdl
+- tethering: fix connection routine
+- build: add pkgconfig path of libpng to build qemu on DIBS of Mac OS X
+- skin: detect a system settings change
+- build: add libpng and change loader path of it on Mac OS X
+- ecs: Add location data set/get
+== Jinhyung Jo <jinhyung.jo@samsung.com> 2014-09-01
 * 2.0.6
 - fix compilation errors on Windows.
 - add "-Wno-error=redundant-decls" option on Windows.
