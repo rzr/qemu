@@ -187,6 +187,12 @@ void set_emul_vm_base_port(int port)
     _emul_info.device_serial_number = port + 1;
     _emul_info.ecs_port = port + 3;
     _emul_info.serial_port = port + 4;
+    _emul_info.spice_port = port + 5;
+}
+
+int get_emul_spice_port(void)
+{
+    return _emul_info.spice_port;
 }
 
 void set_emul_ecs_port(int port)

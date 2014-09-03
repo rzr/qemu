@@ -39,6 +39,10 @@
 #include "hw/hw.h"
 #include "ui/spice-display.h"
 
+#ifdef CONFIG_MARU
+extern int get_emul_spice_port(void);
+#endif
+
 /* core bits */
 
 static SpiceServer *spice_server;
@@ -648,7 +652,12 @@ void qemu_spice_init(void)
     if (!opts) {
         return;
     }
+
+#ifdef CONFIG_MARU
+    port = get_emul_spice_port();
+#else
     port = qemu_opt_get_number(opts, "port", 0);
+#endif
     tls_port = qemu_opt_get_number(opts, "tls-port", 0);
     if (!port && !tls_port) {
         error_report("neither port nor tls-port specified for spice");

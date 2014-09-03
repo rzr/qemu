@@ -95,6 +95,7 @@ typedef  struct EmulatorConfigInfo {
     int vm_base_port;
     int device_serial_number;
     int ecs_port;
+    int spice_port;
     char *vm_name;
     /* add here */
     int serial_port;
@@ -149,6 +150,7 @@ int get_emul_vm_base_port(void);
 int get_device_serial_number(void);
 int get_emul_ecs_port(void);
 int get_emul_serial_port(void);
+int get_emul_spice_port(void);
 
 int get_emulator_condition(void);
 short get_emul_rotation(void);
