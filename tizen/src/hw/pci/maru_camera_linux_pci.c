@@ -228,15 +228,17 @@ static void marucam_reset_controls(void)
     for (i = 0; i < ARRAY_SIZE(qctrl_tbl); i++) {
         if (qctrl_tbl[i].hit) {
             struct v4l2_control ctrl = {0,};
-            qctrl_tbl[i].hit = 0;
             ctrl.id = qctrl_tbl[i].id;
             ctrl.value = qctrl_tbl[i].init_val;
+            qctrl_tbl[i].hit = qctrl_tbl[i].init_val = 0;
+            qctrl_tbl[i].min = qctrl_tbl[i].max = qctrl_tbl[i].step = 0;
             if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &ctrl) < 0) {
                 ERR("Failed to reset control value: id(0x%x), errstr(%s)\n",
                     ctrl.id, strerror(errno));
             }
         }
     }
+    TRACE("[%s] Reset done\n", __func__);
 }
 
 static int32_t value_convert_from_guest(int32_t min, int32_t max, int32_t value)
@@ -531,7 +533,6 @@ notify_buffer_ready(MaruCamState *state, uint32_t buf_index)
             return;
         }
         if (state->req_frame == 0) {
-            TRACE("There is no request\n");
             qemu_mutex_unlock(&state->thread_mutex);
             return;
         }
@@ -1148,6 +1149,9 @@ void marucam_device_qctrl(MaruCamState *state)
     CLEAR(ctrl);
     ctrl.id = param->stack[0];
 
+    /* NOTICE: Tizen MMFW hardcoded for control name
+               Do Not Modified the name
+    */
     switch (ctrl.id) {
     case V4L2_CID_BRIGHTNESS:
         TRACE("Query : BRIGHTNESS\n");
@@ -1182,25 +1186,44 @@ void marucam_device_qctrl(MaruCamState *state)
         param->errCode = errno;
         return;
     } else {
-        struct v4l2_control sctrl;
+        struct v4l2_control sctrl, gctrl;
         CLEAR(sctrl);
-        sctrl.id = ctrl.id;
+        CLEAR(gctrl);
+        sctrl.id = gctrl.id = ctrl.id;
+        if (xioctl(v4l2_fd, VIDIOC_G_CTRL, &gctrl) < 0) {
+            ERR("[%s] Failed to get video control value: id(0x%x), "
+                "errstr(%s)\n",
+                __func__, gctrl.id, strerror(errno));
+            param->errCode = errno;
+            return;
+        }
+
+        qctrl_tbl[i].hit = 1;
+        qctrl_tbl[i].min = ctrl.minimum;
+        qctrl_tbl[i].max = ctrl.maximum;
+        qctrl_tbl[i].step = ctrl.step;
+        qctrl_tbl[i].init_val = gctrl.value;
+
         if ((ctrl.maximum + ctrl.minimum) == 0) {
             sctrl.value = 0;
         } else {
             sctrl.value = (ctrl.maximum + ctrl.minimum) / 2;
         }
+
         if (xioctl(v4l2_fd, VIDIOC_S_CTRL, &sctrl) < 0) {
-            ERR("Failed to set control value: id(0x%x), value(%d), "
-                "errstr(%s)\n", sctrl.id, sctrl.value, strerror(errno));
+            ERR("[%s] Failed to set control value: id(0x%x), value(%d), "
+                "errstr(%s)\n",
+                __func__, sctrl.id, sctrl.value, strerror(errno));
             param->errCode = errno;
             return;
         }
-        qctrl_tbl[i].hit = 1;
-        qctrl_tbl[i].min = ctrl.minimum;
-        qctrl_tbl[i].max = ctrl.maximum;
-        qctrl_tbl[i].step = ctrl.step;
-        qctrl_tbl[i].init_val = ctrl.default_value;
+
+        INFO("Query Control: id(0x%x), name(%s), min(%d), max(%d), "
+             "step(%d), def_value(%d)\n"
+             "flags(0x%x), get_value(%d), set_value(%d)\n",
+             ctrl.id, ctrl.name, ctrl.minimum, ctrl.maximum,
+             ctrl.step, ctrl.default_value, ctrl.flags,
+             gctrl.value, sctrl.value);
     }
 
     /* set fixed values by FW configuration file */
