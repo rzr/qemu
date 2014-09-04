@@ -1,3 +1,6 @@
+* 2.0.8
+- spice-server: added auto port setting for tizen
+== SungMin Ha <sungmin82.ha@samsung.com> 2014-09-03
 * 2.0.7
 - nfc: Add getting status
 - emulator: add get_emul_serial_port func for logging
