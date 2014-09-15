@@ -506,6 +506,7 @@ static void parse_skinconfig_prop(void)
     if (buf_size > read_cnt) {
         WARN("Failed to fread for %s\n", SKIN_CONFIG_PROP);
     }
+    buf[read_cnt] = '\0';
 
     fclose(fp);
 
