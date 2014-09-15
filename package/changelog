@@ -1,3 +1,6 @@
+* 2.0.10
+- spice: modified default scale 1/2
+== SungMin Ha <sungmin82.ha@samsung.com> 2014-09-15
 * 2.0.9
 - maru-camera: Insert the prevent code for when queries default value of controls
 - maru-camera: Fix bug that missing the close function to call when error occurs
