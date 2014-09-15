@@ -305,6 +305,10 @@ bool msgproc_injector_req(ECS_Client* ccli, ECS__InjectorReq* msg)
                 sprintf(data, "%d", get_power_capacity());
             } else if (action == MSG_ACT_BATTERY_CHARGER) {
                 sprintf(data, "%d", get_jack_charger());
+            } else if (action == MSG_ACT_USB) {
+                sprintf(data, "%d", get_jack_usb());
+            } else if (action == MSG_ACT_EARJACK) {
+                sprintf(data, "%d", get_jack_earjack());
             } else if (action == MSG_ACT_LOCATION) {
                 qemu_mutex_lock(&mutex_location_data);
                 sprintf(data, "%s", location_data);
