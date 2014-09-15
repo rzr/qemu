@@ -26,6 +26,10 @@
 
 #include "ui/spice-display.h"
 
+#ifdef CONFIG_MARU
+#define RATIO_SCALE 2
+#endif
+
 static int debug = 0;
 
 static void GCC_FMT_ATTR(2, 3) dprint(int level, const char *fmt, ...)
@@ -196,12 +200,14 @@ static void qemu_spice_create_one_update(SimpleSpiceDisplay *ssd,
 
 static void qemu_spice_create_update(SimpleSpiceDisplay *ssd)
 {
+#ifndef CONFIG_MARU
     static const int blksize = 32;
     int blocks = (surface_width(ssd->ds) + blksize - 1) / blksize;
     int dirty_top[blocks];
     int y, yoff, x, xoff, blk, bw;
     int bpp = surface_bytes_per_pixel(ssd->ds);
     uint8_t *guest, *mirror;
+#endif
 
     if (qemu_spice_rect_is_empty(&ssd->dirty)) {
         return;
@@ -213,6 +219,7 @@ static void qemu_spice_create_update(SimpleSpiceDisplay *ssd)
                                                  ssd->ds->image);
     }
 
+#ifndef CONFIG_MARU
     for (blk = 0; blk < blocks; blk++) {
         dirty_top[blk] = -1;
     }
@@ -260,6 +267,27 @@ static void qemu_spice_create_update(SimpleSpiceDisplay *ssd)
             dirty_top[blk] = -1;
         }
     }
+#endif
+
+#ifdef CONFIG_MARU
+    pixman_transform_t matrix;
+    struct pixman_f_transform matrix_f;
+
+    pixman_f_transform_init_identity(&matrix_f);
+    pixman_f_transform_scale(&matrix_f, NULL, RATIO_SCALE, RATIO_SCALE);
+    pixman_transform_from_pixman_f_transform(&matrix, &matrix_f);
+    pixman_image_set_transform(ssd->ds->image, &matrix);
+    pixman_image_set_filter(ssd->ds->image, PIXMAN_FILTER_BEST, NULL, 0);
+
+    QXLRect update = {
+        .top    = 0,
+        .bottom = surface_height(ssd->ds),
+        .left   = 0,
+        .right  = surface_width(ssd->ds),
+    };
+
+    qemu_spice_create_one_update(ssd, &update);
+#endif
 
     memset(&ssd->dirty, 0, sizeof(ssd->dirty));
 }
@@ -306,6 +334,11 @@ void qemu_spice_create_host_primary(SimpleSpiceDisplay *ssd)
     surface.type       = 0;
     surface.mem        = (uintptr_t)ssd->buf;
     surface.group_id   = MEMSLOT_GROUP_HOST;
+
+#ifdef CONFIG_MARU
+    surface.width /= RATIO_SCALE;
+    surface.height /= RATIO_SCALE;
+#endif
 
     qemu_spice_create_primary_surface(ssd, 0, &surface, QXL_SYNC);
 }
