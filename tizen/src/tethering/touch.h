@@ -38,5 +38,3 @@ bool msgproc_tethering_touch_msg(void *message);
 int get_tethering_touch_status(void);
 
 void set_tethering_touch_status(int status);
-
-void set_display_dirty(bool dirty);
