@@ -161,6 +161,7 @@ public class EmulatorSkin {
 	public boolean isKeyWindow;
 	public boolean isOnKbd;
 	private PopupMenu popupMenu;
+	private Timer closeTimer;
 
 	public Color colorVM;
 	private KeyWindowKeeper keyWindowKeeper;
@@ -200,6 +201,7 @@ public class EmulatorSkin {
 		this.isOnInterpolation = true;
 		this.isOnKbd = false;
 		this.isKeyWindow = false;
+		this.closeTimer = new Timer();
 
 		int style = SWT.NO_TRIM | SWT.DOUBLE_BUFFERED;
 		this.shell = new Shell(Display.getDefault(), style);
@@ -408,6 +410,7 @@ public class EmulatorSkin {
 				logger.info("Main Window is closed");
 
 				if (isShutdownRequested) {
+					closeTimer.cancel();
 					removeShellListeners();
 					removeCanvasListeners();
 
@@ -490,10 +493,12 @@ public class EmulatorSkin {
 
 						/* block for a while */
 						try {
-							/* In Close emulation,
-							 * 1000ms parameter was used for sleep function.
-							 * So, we need a bigger value than that.*/
-							new Timer().schedule(new TimerTask() {
+							/*
+							 * In Close emulation, 1000ms parameter was used for
+							 * sleep function. So, we need a bigger value than
+							 * that.
+							 */
+							closeTimer.schedule(new TimerTask() {
 								@Override
 								public void run() {
 									demanderFlag.set(false);
