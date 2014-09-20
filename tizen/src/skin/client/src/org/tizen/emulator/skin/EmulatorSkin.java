@@ -1806,12 +1806,20 @@ public class EmulatorSkin {
 							"-s", "emulator-" + portSdb, "shell");
 				} else if (SwtUtil.isMacPlatform()) {
 					procSdb.command("./sdbscript", "emulator-" + portSdb);
-					/* procSdb.command( "/usr/X11/bin/uxterm", "-T",
-							"emulator-" + portSdb, "-e", sdbPath,"shell"); */
+					/*
+					 * procSdb.command( "/usr/X11/bin/uxterm", "-T", "emulator-"
+					 * + portSdb, "-e", sdbPath, "shell");
+					 */
 				} else { /* Linux */
-					procSdb.command("/usr/bin/gnome-terminal",
-							"--title=" + SkinUtil.makeEmulatorName(config),
-							"-x", sdbPath, "-s", "emulator-" + portSdb, "shell");
+					String sdbCmd = sdbPath + " -s" + " emulator-" + portSdb + " shell";
+
+					/* Work Around :
+					 * To close a factory gnome-terminal(first instance) after the SDB session
+					 * period, suicide command should be reserved by host shell on Ubuntu.
+					 */
+					procSdb.command("/usr/bin/gnome-terminal", "--disable-factory",
+							"--title=" + SkinUtil.makeEmulatorName(config), "-x",
+							"bash", "-c", sdbCmd + "; kill -9 `ps -p $$ -o ppid=`");
 				}
 
 				logger.info(procSdb.command().toString());
