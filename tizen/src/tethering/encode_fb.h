@@ -34,3 +34,9 @@ struct encode_mem {
 };
 
 void *encode_framebuffer(int encoder);
+
+bool maru_extract_framebuffer(void *buffer);
+
+void set_display_dirty(bool dirty);
+
+bool is_display_dirty(void);

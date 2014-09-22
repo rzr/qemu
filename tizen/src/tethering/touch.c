@@ -197,14 +197,6 @@ static void set_hwkey_data(Tethering__HWKeyMsg *msg)
     send_tethering_hwkey_data(keycode);
 }
 
-static bool is_display_dirty = false;
-
-void set_display_dirty(bool dirty)
-{
-    LOG_TRACE("qemu display update: %d\n", is_display_dirty);
-    is_display_dirty = dirty;
-}
-
 bool msgproc_tethering_touch_msg(void *message)
 {
     bool ret = true;
@@ -229,11 +221,11 @@ bool msgproc_tethering_touch_msg(void *message)
     case TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG:
         LOG_TRACE("TOUCH_MSG_TYPE_DISPLAY_MSG\n");
 
-        if (is_display_dirty) {
+        if (is_display_dirty()) {
             LOG_TRACE("display dirty status!! send the image\n");
 
             send_display_image_data();
-            is_display_dirty = false;
+            set_display_dirty(false);
         }
         break;
 

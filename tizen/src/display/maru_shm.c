@@ -41,7 +41,7 @@
 #include "util/maru_err_table.h"
 #include "debug_ch.h"
 
-#include "tethering/touch.h"
+#include "tethering/encode_fb.h"
 
 MULTI_DEBUG_CHANNEL(tizen, maru_shm);
 

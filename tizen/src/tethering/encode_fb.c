@@ -32,14 +32,6 @@
 
 #include "emulator_common.h"
 #include "emul_state.h"
-
-#ifdef CONFIG_SDL
-#include "display/maru_sdl.h"
-#endif
-#ifdef CONFIG_USE_SHM
-#include "display/maru_shm.h"
-#endif
-
 #include "skin/maruskin_operation.h"
 #include "encode_fb.h"
 
@@ -56,41 +48,74 @@
 DECLARE_DEBUG_CHANNEL(app_tethering);
 
 #ifdef CONFIG_WEBP
-static void *encode_webp(void);
-#endif
-static void *encode_png(void);
-
-void *encode_framebuffer(int encoder)
+/*
+ *  webp functions
+ */
+static void *encode_webp(void)
 {
-    void *output = NULL;
+    int width = 0, height = 0, image_stride = 0;
+    size_t ret = 0;
 
-#if defined(CONFIG_LINUX) && defined(ENCODE_DEBUG)
-    struct timespec start, end;
+    struct encode_mem *container = NULL;
+    uint8_t *surface = NULL;
+    uint32_t surface_size = 0;
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
-#endif
-
-#ifdef CONFIG_WEBP
-    if (encoder == 0) {
-        output = encode_webp();
-    } else if (encoder == 1) {
-        output = encode_png();
+    container = g_malloc(sizeof(struct encode_mem));
+    if (!container) {
+        LOG_SEVERE("failed to allocate encode_mem\n");
+        return NULL;
     }
-#else
-    output = encode_png();
-#endif
 
-#if defined(CONFIG_LINUX) && defined(ENCODE_DEBUG)
-    clock_gettime(CLOCK_MONOTONIC, &end);
+    container->buffer = NULL;
+    container->length = 0;
 
-    LOG_TRACE("encoding time: %.5f seconds\n",
-        ((double)end.tv_sec + (1.0e-9 * end.tv_nsec)) -
-        ((double)start.tv_sec + (1.0e-9 * start.tv_nsec)));
-#endif
+    width = get_emul_resolution_width();
+    height = get_emul_resolution_height();
 
-    return output;
+    image_stride = width * 4;
+    LOG_TRACE("width %d, height %d, stride %d, raw image %d\n",
+        width, height, image_stride, (image_stride * height));
+
+    surface_size = width * height * 4;
+
+    surface = g_malloc0(surface_size);
+    if (!surface) {
+        LOG_SEVERE("failed to allocate framebuffer\n");
+        return NULL;
+    }
+
+    if (!maru_extract_framebuffer(surface)) {
+        LOG_SEVERE("failed to extract framebuffer\n");
+        g_free(surface);
+        return NULL;
+    }
+
+    container = g_malloc(sizeof(struct encode_mem));
+    if (!container) {
+        LOG_SEVERE("failed to allocate encode_mem\n");
+        g_free(surface);
+        return NULL;
+    }
+
+    container->buffer = NULL;
+    container->length = 0;
+
+    ret = WebPEncodeLosslessBGRA((const uint8_t *)surface, width,
+            height, image_stride, &container->buffer);
+    LOG_TRACE("lossless encode framebuffer via webp. result %zu\n", ret);
+
+    container->length = (int)ret;
+
+    g_free(surface);
+
+    return container;
 }
+#endif
 
+#ifdef CONFIG_PNG
+/*
+ *  png functions
+ */
 static void user_write_data(png_structp png_ptr, png_bytep data, png_size_t len)
 {
     struct encode_mem *p = (struct encode_mem *)png_get_io_ptr(png_ptr);
@@ -232,65 +257,42 @@ static void *encode_png(void)
 
     return container;
 }
-
-#ifdef CONFIG_WEBP
-static void *encode_webp(void)
-{
-    int width = 0, height = 0, image_stride = 0;
-    size_t ret = 0;
-
-    struct encode_mem *container = NULL;
-    uint8_t *surface = NULL;
-    uint32_t surface_size = 0;
-
-    container = g_malloc(sizeof(struct encode_mem));
-    if (!container) {
-        LOG_SEVERE("failed to allocate encode_mem\n");
-        return NULL;
-    }
-
-    container->buffer = NULL;
-    container->length = 0;
-
-    width = get_emul_resolution_width();
-    height = get_emul_resolution_height();
-
-    image_stride = width * 4;
-    LOG_TRACE("width %d, height %d, stride %d, raw image %d\n",
-        width, height, image_stride, (image_stride * height));
-
-    surface_size = width * height * 4;
-
-    surface = g_malloc0(surface_size);
-    if (!surface) {
-        LOG_SEVERE("failed to allocate framebuffer\n");
-        return NULL;
-    }
-
-    if (!maru_extract_framebuffer(surface)) {
-        LOG_SEVERE("failed to extract framebuffer\n");
-        g_free(surface);
-        return NULL;
-    }
-
-    container = g_malloc(sizeof(struct encode_mem));
-    if (!container) {
-        LOG_SEVERE("failed to allocate encode_mem\n");
-        g_free(surface);
-        return NULL;
-    }
-
-    container->buffer = NULL;
-    container->length = 0;
-
-    ret = WebPEncodeLosslessBGRA((const uint8_t *)surface, width,
-            height, image_stride, &container->buffer);
-    LOG_TRACE("lossless encode framebuffer via webp. result %zu\n", ret);
-
-    container->length = (int)ret;
-
-    g_free(surface);
-
-    return container;
-}
 #endif
+
+void *encode_framebuffer(int encoder)
+{
+    void *output = NULL;
+
+#ifdef CONFIG_PNG
+#if defined(CONFIG_LINUX) && defined(ENCODE_DEBUG)
+    struct timespec start, end;
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+#endif
+
+    output = encode_png();
+
+#if defined(CONFIG_LINUX) && defined(ENCODE_DEBUG)
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    LOG_TRACE("encoding time: %.5f seconds\n",
+        ((double)end.tv_sec + (1.0e-9 * end.tv_nsec)) -
+        ((double)start.tv_sec + (1.0e-9 * start.tv_nsec)));
+#endif
+#endif
+
+    return output;
+}
+
+static bool display_dirty = false;
+
+void set_display_dirty(bool dirty)
+{
+    LOG_TRACE("qemu display update: %d\n", display_dirty);
+    display_dirty = dirty;
+}
+
+bool is_display_dirty(void)
+{
+    return display_dirty;
+}

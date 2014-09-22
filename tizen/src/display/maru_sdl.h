@@ -46,6 +46,4 @@ void maru_sdl_invalidate(bool on);
 void maru_sdl_interpolation(bool on);
 void maru_sdl_quit(void);
 
-bool maru_extract_framebuffer(void *buffer);
-
 #endif /* MARU_SDL_H_ */
