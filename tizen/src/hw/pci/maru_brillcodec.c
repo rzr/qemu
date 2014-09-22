@@ -658,6 +658,7 @@ int maru_brill_codec_query_list (MaruBrillCodecState *s)
         memcpy(s->vaddr + size, codec_fmts, sizeof(codec_fmts));
         size += sizeof(codec_fmts);
 
+        TRACE("register %s %s\n", codec->name, codec->decode ? "decoder" : "encoder");
         codec = av_codec_next(codec);
     }
 
@@ -800,14 +801,83 @@ static int write_codec_init_data(AVCodecContext *avctx, uint8_t *mem_buf)
     return size;
 }
 
-static uint8_t *resample_audio_buffer(AVCodecContext * avctx, AVFrame *samples,
-                                    int *out_size, int out_sample_fmt)
+static int convert_audio_sample_fmt(const AVCodec *codec, int codec_type, bool encode)
+{
+    int audio_sample_fmt = AV_SAMPLE_FMT_NONE;
+
+    if (!codec) {
+        return audio_sample_fmt;
+    }
+
+    if (codec_type != AVMEDIA_TYPE_AUDIO) {
+        ERR("this codec_type is invalid %d\n", codec_type);
+        return audio_sample_fmt;
+    }
+
+    if (!strcmp(codec->name, "aac")) {
+        // FLOAT format
+        if (encode) {
+            audio_sample_fmt = AV_SAMPLE_FMT_FLTP;
+        } else {
+            audio_sample_fmt = AV_SAMPLE_FMT_FLT;
+        }
+    } else if (!strcmp(codec->name, "mp3") || !strcmp(codec->name, "mp3adu")) {
+        // S16 format
+        if (encode) {
+            audio_sample_fmt = AV_SAMPLE_FMT_S16P;
+        } else {
+            audio_sample_fmt = AV_SAMPLE_FMT_S16;
+        }
+    } else if (!strcmp(codec->name, "wmav1") || !strcmp(codec->name, "wmav2")) {
+        if (encode) {
+            audio_sample_fmt = AV_SAMPLE_FMT_FLTP;
+        } else {
+            audio_sample_fmt = AV_SAMPLE_FMT_FLT;
+        }
+    } else {
+        INFO("cannot handle %s codec\n", codec->name);
+    }
+
+    TRACE("convert audio sample_fmt %d\n", audio_sample_fmt);
+    return audio_sample_fmt;
+}
+
+static int fill_audio_into_frame(AVCodecContext *avctx, AVFrame *frame,
+                                uint8_t *samples, int samples_size,
+                                int nb_samples, int audio_sample_fmt)
+{
+    int result = 0;
+
+    if (!avctx) {
+        ERR("fill_audio. AVCodecContext is NULL!!\n");
+        return -1;
+    }
+
+    if (!frame) {
+        ERR("fill_audio. AVFrame is NULL!!\n");
+        return -1;
+    }
+
+    frame->nb_samples = nb_samples;
+    frame->format = audio_sample_fmt;
+    frame->channel_layout = avctx->channel_layout;
+
+    result =
+        avcodec_fill_audio_frame(frame, avctx->channels, audio_sample_fmt, (const uint8_t *)samples, samples_size, 0);
+    TRACE("fill audio in_frame. ret: %d in_frame->ch_layout %lld\n", result, frame->channel_layout);
+
+    return result;
+}
+
+static AVFrame *resample_audio(AVCodecContext *avctx, AVFrame *sample_frame,
+                            int sample_buffer_size, int in_sample_fmt,
+                            AVFrame *resample_frame, int *resample_buffer_size,
+                            int resample_sample_fmt)
 {
     AVAudioResampleContext *avr = NULL;
-    uint8_t *resampled_audio = NULL;
-    int buffer_size = 0, out_linesize = 0;
-    int nb_samples = samples->nb_samples;
-    // int out_sample_fmt = avctx->sample_fmt - 5;
+    uint8_t *resample_buffer = NULL;
+    int buffer_size = 0;
+    int resample_nb_samples = sample_frame->nb_samples;
 
     avr = avresample_alloc_context();
     if (!avr) {
@@ -815,16 +885,15 @@ static uint8_t *resample_audio_buffer(AVCodecContext * avctx, AVFrame *samples,
         return NULL;
     }
 
-    TRACE("resample audio. channel_layout %lld sample_rate %d "
-        "in_sample_fmt %d out_sample_fmt %d\n",
-        avctx->channel_layout, avctx->sample_rate,
-        avctx->sample_fmt, out_sample_fmt);
+    TRACE("channel_layout %lld sample_rate %d in_sample_fmt %d resample_sample_fmt %d\n",
+        avctx->channel_layout, avctx->sample_rate, avctx->sample_fmt, resample_sample_fmt);
 
     av_opt_set_int(avr, "in_channel_layout", avctx->channel_layout, 0);
-    av_opt_set_int(avr, "in_sample_fmt", avctx->sample_fmt, 0);
+    av_opt_set_int(avr, "in_sample_fmt", in_sample_fmt, 0);
     av_opt_set_int(avr, "in_sample_rate", avctx->sample_rate, 0);
+
     av_opt_set_int(avr, "out_channel_layout", avctx->channel_layout, 0);
-    av_opt_set_int(avr, "out_sample_fmt", out_sample_fmt, 0);
+    av_opt_set_int(avr, "out_sample_fmt", resample_sample_fmt, 0);
     av_opt_set_int(avr, "out_sample_rate", avctx->sample_rate, 0);
 
     TRACE("open avresample context\n");
@@ -834,37 +903,115 @@ static uint8_t *resample_audio_buffer(AVCodecContext * avctx, AVFrame *samples,
         return NULL;
     }
 
-    *out_size =
-        av_samples_get_buffer_size(&out_linesize, avctx->channels,
-                                    nb_samples, out_sample_fmt, 0);
+    resample_frame = avcodec_alloc_frame();
+    TRACE("resample audio. nb_samples %d sample_fmt %d\n", resample_nb_samples, resample_sample_fmt);
 
-    TRACE("resample audio. out_linesize %d nb_samples %d\n", out_linesize, nb_samples);
-
-    if (*out_size < 0) {
-        ERR("failed to get size of sample buffer %d\n", *out_size);
+    *resample_buffer_size = av_samples_get_buffer_size(NULL, avctx->channels, resample_nb_samples, resample_sample_fmt, 0);
+    if (*resample_buffer_size < 0) {
+        ERR("failed to get size of resample buffer %d\n", *resample_buffer_size);
         avresample_close(avr);
         avresample_free(&avr);
         return NULL;
     }
 
-    resampled_audio = av_mallocz(*out_size);
-    if (!resampled_audio) {
+    resample_buffer = av_mallocz(*resample_buffer_size);
+    if (!resample_buffer) {
         ERR("failed to allocate resample buffer\n");
         avresample_close(avr);
         avresample_free(&avr);
         return NULL;
     }
 
-    buffer_size = avresample_convert(avr, &resampled_audio,
-        out_linesize, nb_samples,
-        samples->data, samples->linesize[0],
-        samples->nb_samples);
-    TRACE("resample_audio out_size %d buffer_size %d\n", *out_size, buffer_size);
+    fill_audio_into_frame(avctx, resample_frame, resample_buffer,
+                        *resample_buffer_size, resample_nb_samples, resample_sample_fmt);
+
+    buffer_size = avresample_convert(avr, resample_frame->data,
+                                    *resample_buffer_size, resample_nb_samples,
+                                    sample_frame->data, sample_buffer_size,
+                                    sample_frame->nb_samples);
+
+    TRACE("resample_audio buffer_size %d\n", buffer_size);
 
     avresample_close(avr);
     avresample_free(&avr);
 
-    return resampled_audio;
+    return resample_frame;
+}
+
+static int parse_and_decode_video(AVCodecContext *avctx, AVFrame *picture,
+                                AVCodecParserContext *pctx, int ctx_id,
+                                AVPacket *packet, int *got_picture,
+                                int idx, int64_t in_offset)
+{
+    uint8_t *parser_outbuf = NULL;
+    int parser_outbuf_size = 0;
+    uint8_t *parser_buf = packet->data;
+    int parser_buf_size = packet->size;
+    int ret = 0, len = -1;
+    int64_t pts = 0, dts = 0, pos = 0;
+
+    pts = dts = idx;
+    pos = in_offset;
+
+    do {
+        if (pctx) {
+            ret = av_parser_parse2(pctx, avctx, &parser_outbuf,
+                    &parser_outbuf_size, parser_buf, parser_buf_size,
+                    pts, dts, pos);
+
+            if (ret) {
+                parser_buf_size -= ret;
+                parser_buf += ret;
+            }
+
+            TRACE("after parsing ret: %d parser_outbuf_size %d parser_buf_size %d pts %lld\n",
+                    ret, parser_outbuf_size, parser_buf_size, pctx->pts);
+
+            /* if there is no output, we must break and wait for more data.
+             * also the timestamp in the context is not updated.
+             */
+            if (parser_outbuf_size == 0) {
+                if (parser_buf_size > 0) {
+                    TRACE("parsing data have been left\n");
+                    continue;
+                } else {
+                    TRACE("finish parsing data\n");
+                    break;
+                }
+            }
+
+            packet->data = parser_outbuf;
+            packet->size = parser_outbuf_size;
+        } else {
+            TRACE("not using parser %s\n", avctx->codec->name);
+        }
+
+        len = avcodec_decode_video2(avctx, picture, got_picture, packet);
+        TRACE("decode_video. len %d, got_picture %d\n", len, *got_picture);
+
+        if (!pctx) {
+            if (len == 0 && (*got_picture) == 0) {
+                ERR("decoding video didn't return any data! ctx_id %d len %d\n", ctx_id, len);
+                break;
+            } else if (len < 0) {
+                ERR("decoding video error! ctx_id %d len %d\n", ctx_id, len);
+                break;
+            }
+            parser_buf_size -= len;
+            parser_buf += len;
+        } else {
+            if (len == 0) {
+                ERR("decoding video didn't return any data! ctx_id %d len %d\n", ctx_id, len);
+                *got_picture = 0;
+                break;
+            } else if (len < 0) {
+                ERR("decoding video error! trying next ctx_id %d len %d\n", ctx_id, len);
+                break;
+            }
+        }
+    } while (parser_buf_size > 0);
+
+    return len;
 }
 
 // codec functions
@@ -899,7 +1046,8 @@ static bool codec_init(MaruBrillCodecState *s, int ctx_id, void *data_buf)
 
                 avctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
-                INFO("aac encoder!! channels %d channel_layout %lld\n", avctx->channels, avctx->channel_layout);
+                INFO("aac encoder!! channels %d channel_layout %lld\n",
+                    avctx->channels, avctx->channel_layout);
                 avctx->channel_layout = av_get_default_channel_layout(avctx->channels);
             }
 
@@ -909,7 +1057,7 @@ static bool codec_init(MaruBrillCodecState *s, int ctx_id, void *data_buf)
             ret = avcodec_open2(avctx, codec, NULL);
             INFO("avcodec_open. ret 0x%x ctx_id %d\n", ret, ctx_id);
 
-            TRACE("channels %d sample_rate %d sample_fmt %d "
+            INFO("channels %d sample_rate %d sample_fmt %d "
                 "channel_layout %lld frame_size %d\n",
                 avctx->channels, avctx->sample_rate, avctx->sample_fmt,
                 avctx->channel_layout, avctx->frame_size);
@@ -992,7 +1140,6 @@ static bool codec_deinit(MaruBrillCodecState *s, int ctx_id, void *data_buf)
 
     if (frame) {
         TRACE("free frame\n");
-        // av_free(frame);
         avcodec_free_frame(&frame);
         CONTEXT(s, ctx_id).frame = NULL;
     }
@@ -1004,6 +1151,7 @@ static bool codec_deinit(MaruBrillCodecState *s, int ctx_id, void *data_buf)
     }
 
     if (parserctx) {
+        INFO("close parser context\n");
         av_parser_close(parserctx);
         CONTEXT(s, ctx_id).parser_ctx = NULL;
     }
@@ -1031,6 +1179,23 @@ static bool codec_flush_buffers(MaruBrillCodecState *s, int ctx_id, void *data_b
         ret = false;
     } else {
         TRACE("flush %d context of buffers.\n", ctx_id);
+        AVCodecParserContext *pctx = NULL;
+        uint8_t *poutbuf = NULL;
+        int poutbuf_size = 0;
+        int res = 0;
+
+        uint8_t p_inbuf[FF_INPUT_BUFFER_PADDING_SIZE];
+        int p_inbuf_size = FF_INPUT_BUFFER_PADDING_SIZE;
+
+        memset(&p_inbuf, 0x00, p_inbuf_size);
+
+        pctx = CONTEXT(s, ctx_id).parser_ctx;
+        if (pctx) {
+            res = av_parser_parse2(pctx, avctx, &poutbuf, &poutbuf_size,
+                    p_inbuf, p_inbuf_size, -1, -1, -1);
+            INFO("before flush buffers, using parser. res: %d\n", res);
+        }
+
         avcodec_flush_buffers(avctx);
     }
 
@@ -1045,11 +1210,14 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
 {
     AVCodecContext *avctx = NULL;
     AVFrame *picture = NULL;
+    AVCodecParserContext *pctx = NULL;
     AVPacket avpkt;
+
     int got_picture = 0, len = -1;
+    int idx = 0, size = 0;
+    int64_t in_offset = 0;
     uint8_t *inbuf = NULL;
-    int inbuf_size = 0, idx, size = 0;
-    int64_t in_offset;
+    int inbuf_size = 0;
     DeviceMemEntry *elem = NULL;
     uint8_t *tempbuf = NULL;
     int tempbuf_size = 0;
@@ -1079,6 +1247,7 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     avpkt.data = inbuf;
     avpkt.size = inbuf_size;
 
+
     avctx = CONTEXT(s, ctx_id).avctx;
     picture = CONTEXT(s, ctx_id).frame;
     if (!avctx) {
@@ -1088,30 +1257,18 @@ static bool codec_decode_video(MaruBrillCodecState *s, int ctx_id, void *data_bu
     } else if (!picture) {
         ERR("decode_video. %d of AVFrame is NULL.\n", ctx_id);
     } else {
-        // in case of skipping frames
-        // picture->pict_type = -1;
+        pctx = CONTEXT(s, ctx_id).parser_ctx;
 
-        TRACE("decode_video. bitrate %d\n", avctx->bit_rate);
-        // avctx->reordered_opaque = idx;
-        // picture->reordered_opaque = idx;
-
-        len =
-            avcodec_decode_video2(avctx, picture, &got_picture, &avpkt);
-        TRACE("decode_video. in_size %d len %d, frame_size %d\n", avpkt.size, len, got_picture);
+        len = parse_and_decode_video(avctx, picture, pctx, ctx_id,
+                                    &avpkt, &got_picture, idx, in_offset);
     }
 
-    tempbuf_size =
-            sizeof(len) + sizeof(got_picture) + sizeof(struct video_data);
-
-    if (len < 0) {
-        ERR("failed to decode video. ctx_id: %d, len: %d\n", ctx_id, len);
-        got_picture = 0;
-    }
+    tempbuf_size = sizeof(len) + sizeof(got_picture) + sizeof(struct video_data);
 
     tempbuf = g_malloc(tempbuf_size);
     if (!tempbuf) {
         ERR("failed to allocate decoded audio buffer\n");
-        // FIXME: how to handle this case?
+        tempbuf_size = 0;
     } else {
         struct video_data video;
 
@@ -1173,6 +1330,12 @@ static bool codec_picture_copy (MaruBrillCodecState *s, int ctx_id, void *elem)
     return ret;
 }
 
+/*
+ * decode_audio >> raw audio_buffer >> resample
+ *
+ * audios sink cannot handle planar format, so it is required
+ * to resample audio buffer into linear format.
+ */
 static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, void *data_buf)
 {
     AVCodecContext *avctx;
@@ -1186,8 +1349,9 @@ static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     uint8_t *tempbuf = NULL;
     int tempbuf_size = 0;
 
-    uint8_t *out_buf = NULL;
-    int out_buf_size = 0;
+    AVFrame *resample_frame = NULL;
+    uint8_t *resample_buf = NULL;
+    int resample_buf_size = 0;
     int out_sample_fmt = -1;
 
     TRACE("enter: %s\n", __func__);
@@ -1212,8 +1376,7 @@ static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     avpkt.size = inbuf_size;
 
     avctx = CONTEXT(s, ctx_id).avctx;
-    // audio_out = CONTEXT(s, ctx_id).frame;
-    audio_out = avcodec_alloc_frame();
+    audio_out = CONTEXT(s, ctx_id).frame;
     if (!avctx) {
         ERR("decode_audio. %d of AVCodecContext is NULL\n", ctx_id);
     } else if (!avctx->codec) {
@@ -1221,21 +1384,33 @@ static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     } else if (!audio_out) {
         ERR("decode_audio. %d of AVFrame is NULL\n", ctx_id);
     } else {
-        // avcodec_get_frame_defaults(audio_out);
-
         len = avcodec_decode_audio4(avctx, audio_out, &got_frame, &avpkt);
-        TRACE("decode_audio. len %d, channel_layout %lld, got_frame %d\n",
+        TRACE("decode_audio. len %d, channel_layout %lld got_frame %d\n",
             len, avctx->channel_layout, got_frame);
+
         if (got_frame) {
             if (av_sample_fmt_is_planar(avctx->sample_fmt)) {
-                // convert PLANAR to LINEAR format
-                out_sample_fmt = avctx->sample_fmt - 5;
+                out_sample_fmt = convert_audio_sample_fmt(avctx->codec, avctx->codec_type, 0);
 
-                out_buf = resample_audio_buffer(avctx, audio_out, &out_buf_size, out_sample_fmt);
+                if (avctx->channel_layout == 0) {
+                    avctx->channel_layout = av_get_default_channel_layout(avctx->channels);
+                    TRACE("decode_audio. channel_layout %lld channels %d\n",
+                        avctx->channel_layout, avctx->channels);
+                }
+                resample_frame = resample_audio(avctx, audio_out, audio_out->linesize[0],
+                                            avctx->sample_fmt, NULL, &resample_buf_size,
+                                            out_sample_fmt);
+                if (resample_frame) {
+                    resample_buf = resample_frame->data[0];
+                } else {
+                    ERR("failed to resample decoded audio buffer\n");
+                    len = -1;
+                    got_frame = 0;
+                }
             } else {
-                // TODO: not planar format
-                INFO("decode_audio. cannot handle planar audio format\n");
-                len = -1;
+                INFO("decode_audio. linear audio format\n");
+                resample_buf = audio_out->data[0];
+                resample_buf_size = audio_out->linesize[0];
             }
         }
     }
@@ -1247,8 +1422,8 @@ static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
         got_frame = 0;
     } else {
         tempbuf_size += (sizeof(out_sample_fmt) + sizeof(avctx->sample_rate)
-                        + sizeof(avctx->channels) +  sizeof(avctx->channel_layout)
-                        + sizeof(out_buf_size) + out_buf_size);
+                        + sizeof(avctx->channels) + sizeof(avctx->channel_layout)
+                        + sizeof(resample_buf_size) + resample_buf_size);
     }
 
     tempbuf = g_malloc(tempbuf_size);
@@ -1269,26 +1444,22 @@ static bool codec_decode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
             memcpy(tempbuf + size, &avctx->channel_layout, sizeof(avctx->channel_layout));
             size += sizeof(avctx->channel_layout);
 
-            memcpy(tempbuf + size, &out_buf_size, sizeof(out_buf_size));
-            size += sizeof(out_buf_size);
-            if (out_buf) {
+            memcpy(tempbuf + size, &resample_buf_size, sizeof(resample_buf_size));
+            size += sizeof(resample_buf_size);
+            if (resample_buf) {
                 TRACE("copy resampled audio buffer\n");
-                memcpy(tempbuf + size, out_buf, out_buf_size);
+                memcpy(tempbuf + size, resample_buf, resample_buf_size);
             }
         }
     }
 
     maru_brill_codec_push_writequeue(s, tempbuf, tempbuf_size, ctx_id, NULL);
 
-    if (audio_out) {
-        avcodec_free_frame(&audio_out);
+    if (resample_frame) {
+        TRACE("release decoded frame\n");
+        av_free(resample_buf);
+        av_free(resample_frame);
     }
-
-    if (out_buf) {
-        TRACE("and release decoded_audio buffer\n");
-        av_free(out_buf);
-    }
-
 
     TRACE("leave: %s\n", __func__);
     return true;
@@ -1427,15 +1598,14 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     AVPacket avpkt;
     uint8_t *audio_in = NULL;
     int32_t audio_in_size = 0;
-    int ret = 0, got_pkt = 0, size = 0;
+    int ret = -1, got_pkt = 0, size = 0;
 
     DeviceMemEntry *elem = NULL;
     uint8_t *tempbuf = NULL;
     int tempbuf_size = 0;
 
     AVFrame *in_frame = NULL;
-    AVFrame *resampled_frame = NULL;
-    uint8_t *samples = NULL;
+    AVFrame *resample_frame = NULL;
     int64_t in_timestamp = 0;
 
     TRACE("enter: %s\n", __func__);
@@ -1467,123 +1637,49 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
 
     avctx = CONTEXT(s, ctx_id).avctx;
     if (!avctx) {
-        ERR("[%s] %d of Context is NULL!\n", __func__, ctx_id);
+        ERR("encode_audio. %d of Context is NULL\n", ctx_id);
     } else if (!avctx->codec) {
-        ERR("%d of AVCodec is NULL.\n", ctx_id);
+        ERR("encode_audio. %d of AVCodec is NULL\n", ctx_id);
     } else {
         int bytes_per_sample = 0;
-        int audio_in_buffer_size = 0;
+        int nb_samples = 0;
         int audio_in_sample_fmt = AV_SAMPLE_FMT_S16;
+        // audio input src can generate a buffer as an int format.
 
-        in_frame = avcodec_alloc_frame();
-        if (!in_frame) {
-            // FIXME: error handling
-            ERR("encode_audio. failed to allocate in_frame\n");
-            ret = -1;
-        }
+        int resample_buf_size = 0;
+        int resample_sample_fmt = 0;
 
         bytes_per_sample = av_get_bytes_per_sample(audio_in_sample_fmt);
         TRACE("bytes per sample %d, sample format %d\n", bytes_per_sample, audio_in_sample_fmt);
 
-        in_frame->nb_samples = audio_in_size / (bytes_per_sample * avctx->channels);
-        TRACE("in_frame->nb_samples %d\n", in_frame->nb_samples);
+        nb_samples = audio_in_size / (bytes_per_sample * avctx->channels);
+        TRACE("nb_samples %d\n", nb_samples);
 
-        in_frame->format = audio_in_sample_fmt;
-        in_frame->channel_layout = avctx->channel_layout;
+        in_frame = avcodec_alloc_frame();
+        if (!in_frame) {
+            ERR("encode_audio. failed to allocate in_frame\n");
+        } else {
+            // prepare audio_in frame
+            ret = fill_audio_into_frame(avctx, in_frame, audio_in, audio_in_size, nb_samples, audio_in_sample_fmt);
+            if (ret < 0) {
+                ERR("failed to fill audio into frame\n");
+            } else {
+                resample_sample_fmt =
+                    convert_audio_sample_fmt(avctx->codec, avctx->codec_type, 1);
+                resample_frame = resample_audio(avctx, in_frame, audio_in_size,
+                        audio_in_sample_fmt, NULL, &resample_buf_size,
+                        resample_sample_fmt);
 
-        audio_in_buffer_size = av_samples_get_buffer_size(NULL, avctx->channels, avctx->frame_size, audio_in_sample_fmt, 0);
-        TRACE("audio_in_buffer_size: %d, audio_in_size %d\n", audio_in_buffer_size, audio_in_size);
+                if (resample_frame) {
+                    av_init_packet(&avpkt);
+                    avpkt.data = NULL;
+                    avpkt.size = 0;
 
-        {
-            samples = av_mallocz(audio_in_buffer_size);
-            memcpy(samples, audio_in, audio_in_size);
-
-            // g_free(audio_in);
-            // audio_in = NULL;
-
-            ret = avcodec_fill_audio_frame(in_frame, avctx->channels, AV_SAMPLE_FMT_S16, (const uint8_t *)samples, audio_in_size, 0);
-            TRACE("fill in_frame. ret: %d frame->ch_layout %lld\n", ret, in_frame->channel_layout);
-        }
-
-        {
-            AVAudioResampleContext *avr = NULL;
-            uint8_t *resampled_audio = NULL;
-            int resampled_buffer_size = 0, resampled_linesize = 0, convert_size;
-            int resampled_nb_samples = 0;
-            int resampled_sample_fmt = AV_SAMPLE_FMT_FLTP;
-
-            avr = avresample_alloc_context();
-
-            av_opt_set_int(avr, "in_channel_layout", avctx->channel_layout, 0);
-            av_opt_set_int(avr, "in_sample_fmt", audio_in_sample_fmt , 0);
-            av_opt_set_int(avr, "in_sample_rate", avctx->sample_rate, 0);
-            av_opt_set_int(avr, "out_channel_layout", avctx->channel_layout, 0);
-            av_opt_set_int(avr, "out_sample_fmt", resampled_sample_fmt, 0);
-            av_opt_set_int(avr, "out_sample_rate", avctx->sample_rate, 0);
-
-            resampled_nb_samples = in_frame->nb_samples; // av_get_bytes_per_samples(resampled_sample_fmt);
-
-            if (avresample_open(avr) < 0) {
-                ERR("failed to open avresample context\n");
-                avresample_free(&avr);
+                    ret = avcodec_encode_audio2(avctx, &avpkt, (const AVFrame *)resample_frame, &got_pkt);
+                    TRACE("encode audio. ret %d got_pkt %d avpkt.size %d frame_number %d\n",
+                        ret, got_pkt, avpkt.size, avctx->frame_number);
+                }
             }
-
-            resampled_buffer_size = av_samples_get_buffer_size(&resampled_linesize, avctx->channels, resampled_nb_samples, resampled_sample_fmt, 0);
-            if (resampled_buffer_size < 0) {
-                ERR("failed to get size of sample buffer %d\n", resampled_buffer_size);
-                avresample_close(avr);
-                avresample_free(&avr);
-            }
-
-            TRACE("resampled nb_samples %d linesize %d out_size %d\n", resampled_nb_samples, resampled_linesize, resampled_buffer_size);
-
-            resampled_audio = av_mallocz(resampled_buffer_size);
-            if (!resampled_audio) {
-                ERR("failed to allocate resample buffer\n");
-                avresample_close(avr);
-                avresample_free(&avr);
-            }
-
-            // in_frame->nb_samples = nb_samples;
-            resampled_frame = avcodec_alloc_frame();
-            if (!resampled_frame) {
-                // FIXME: error handling
-                ERR("encode_audio. failed to allocate resampled_frame\n");
-                ret = -1;
-            }
-
-
-            bytes_per_sample = av_get_bytes_per_sample(audio_in_sample_fmt);
-            TRACE("bytes per sample %d, sample format %d\n", bytes_per_sample, audio_in_sample_fmt);
-
-            resampled_frame->nb_samples = in_frame->nb_samples;
-            TRACE("resampled_frame->nb_samples %d\n", resampled_frame->nb_samples);
-
-            resampled_frame->format = resampled_sample_fmt;
-            resampled_frame->channel_layout = avctx->channel_layout;
-
-            ret = avcodec_fill_audio_frame(resampled_frame, avctx->channels, resampled_sample_fmt,
-                    (const uint8_t *)resampled_audio, resampled_buffer_size, 0);
-            TRACE("fill resampled_frame ret: %d frame->ch_layout %lld\n", ret, in_frame->channel_layout);
-
-            convert_size = avresample_convert(avr, resampled_frame->data, resampled_buffer_size, resampled_nb_samples,
-                                        in_frame->data, audio_in_size, in_frame->nb_samples);
-
-            TRACE("resample_audio convert_size %d\n", convert_size);
-
-            avresample_close(avr);
-            avresample_free(&avr);
-        }
-
-        if (ret == 0) {
-            av_init_packet(&avpkt);
-            // packet data will be allocated by encoder
-            avpkt.data = NULL;
-            avpkt.size = 0;
-
-            ret = avcodec_encode_audio2(avctx, &avpkt, (const AVFrame *)resampled_frame, &got_pkt);
-            TRACE("encode audio. ret %d got_pkt %d avpkt.size %d frame_number %d coded_frame %p\n",
-                ret, got_pkt, avpkt.size, avctx->frame_number, avctx->coded_frame);
         }
     }
 
@@ -1591,7 +1687,6 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     if (ret < 0) {
         ERR("failed to encode audio. ctx_id %d ret %d\n", ctx_id, ret);
     } else {
-        // tempbuf_size += (max_size); // len;
         tempbuf_size += (sizeof(avpkt.size) + avpkt.size);
     }
     TRACE("encode_audio. writequeue elem buffer size %d\n", tempbuf_size);
@@ -1615,12 +1710,14 @@ static bool codec_encode_audio(MaruBrillCodecState *s, int ctx_id, void *data_bu
     }
 
     maru_brill_codec_push_writequeue(s, tempbuf, tempbuf_size, ctx_id, NULL);
+
     if (in_frame) {
-        avcodec_free_frame(&in_frame);
+        av_free(in_frame);
     }
 
-    if (resampled_frame) {
-        avcodec_free_frame(&resampled_frame);
+    if (resample_frame) {
+        av_free(resample_frame->data[0]);
+        av_free(resample_frame);
     }
 
     TRACE("[%s] leave:\n", __func__);
@@ -1640,7 +1737,7 @@ static AVCodecParserContext *maru_brill_codec_parser_init(AVCodecContext *avctx)
     switch (avctx->codec_id) {
     case CODEC_ID_MPEG4:
     case CODEC_ID_VC1:
-        TRACE("not using parser.\n");
+        TRACE("not using parser\n");
         break;
     case CODEC_ID_H264:
         if (avctx->extradata_size == 0) {
@@ -1649,9 +1746,9 @@ static AVCodecParserContext *maru_brill_codec_parser_init(AVCodecContext *avctx)
         }
         break;
     default:
-        parser = av_parser_init (avctx->codec_id);
+        parser = av_parser_init(avctx->codec_id);
         if (parser) {
-            INFO("using parser. %d\n", avctx->codec_id);
+            INFO("using parser: %s\n", avctx->codec->name);
         }
         break;
     }

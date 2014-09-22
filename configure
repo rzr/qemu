@@ -1101,6 +1101,8 @@ for opt do
   ;;
   --enable-libav) libav="yes"
   ;;
+  --disable-libav) libav="no"
+  ;;
   --enable-libpng) libpng="yes"
   ;;
 #
@@ -1417,6 +1419,7 @@ TIZEN-maru options:
   --enable-maru            enable maru board
   --enable-shm             enable shared memory for framebuffer
   --enable-libav           enable libav library
+  --disable-libav          disable libav library
   --enable-libpng          enable png library
 
 NOTE: The object files are built at the place where configure is launched
@@ -3992,9 +3995,9 @@ if test "$libav" != "no"; then
         libs_softmmu="$libav_libs $libs_softmmu"
         libav="yes"
     else
-        if test "$libav" = "yes" ; then
-            feature_not_found "libav"
-        fi
+        #if test "$libav" = "yes" ; then
+        #    feature_not_found "libav"
+        #fi
         libav="no"
     fi
 
@@ -4003,9 +4006,9 @@ if test "$libav" != "no"; then
         libs_softmmu="$libav_libs $libs_softmmu"
         libav="yes"
     else
-        if test "$libav" = "yes" ; then
-            feature_not_found "libav"
-        fi
+        #if test "$libav" = "yes" ; then
+        #    feature_not_found "libav"
+        #fi
         libav="no"
     fi
 
@@ -4014,9 +4017,9 @@ if test "$libav" != "no"; then
         libs_softmmu="$libav_libs $libs_softmmu"
         libav="yes"
     else
-        if test "$libav" = "yes" ; then
-            feature_not_found "libav"
-        fi
+        #if test "$libav" = "yes" ; then
+        #    feature_not_found "libav"
+        #fi
         libav="no"
     fi
 
@@ -4025,9 +4028,9 @@ if test "$libav" != "no"; then
         libs_softmmu="$libav_libs $libs_softmmu"
         libav="yes"
     else
-        if test "$libav" = "yes" ; then
-            feature_not_found "libav"
-        fi
+        #if test "$libav" = "yes" ; then
+        #    feature_not_found "libav"
+        #fi
         libav="no"
     fi
 
