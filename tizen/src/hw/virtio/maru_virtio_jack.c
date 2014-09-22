@@ -80,6 +80,14 @@ int get_jack_usb(void) {
     return usb_online;
 }
 
+void set_jack_earjack(int online){
+    earjack_online = online;
+}
+
+int get_jack_earjack(void) {
+    return earjack_online;
+}
+
 static void set_jack_data (enum jack_types type, char* data, int len)
 {
     if (len < 0 || len > __MAX_BUF_JACK) {

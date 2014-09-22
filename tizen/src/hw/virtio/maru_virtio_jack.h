@@ -82,6 +82,9 @@ int get_jack_charger(void);
 void set_jack_usb(int online);
 int get_jack_usb(void);
 
+void set_jack_earjack(int online);
+int get_jack_earjack(void);
+
 #ifdef __cplusplus
 }
 #endif
