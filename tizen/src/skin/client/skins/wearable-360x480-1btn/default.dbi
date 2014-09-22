@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmulatorUI xmlns="http://www.tizen.org/emulator/skin/dbi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dbi_version>2.2</dbi_version>
+    <rotations>
+        <rotation name="Portrait">
+            <display id="0">
+                <region left="26" top="60" width="360" height="480"/>
+            </display>
+            <imageList>
+                <mainImage>default_0.png</mainImage>
+                <keyPressedImage>default_0_p.png</keyPressedImage>
+            </imageList>
+            <keyMapList>
+                <keyMap>
+                    <region left="412" top="116" width="12" height="80" update="true"/>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Landscape">
+            <display id="0">
+                <region left="60" top="38" width="480" height="360"/>
+            </display>
+            <imageList>
+                <mainImage>default_L90.png</mainImage>
+                <keyPressedImage>default_L90_p.png</keyPressedImage>
+            </imageList>
+            <keyMapList>
+                <keyMap>
+                    <region left="116" top="0" width="80" height="12" update="true"/>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Reverse Portrait">
+            <display id="0">
+                <region left="38" top="60" width="360" height="480"/>
+            </display>
+            <imageList>
+                <mainImage>default_180.png</mainImage>
+                <keyPressedImage>default_180_p.png</keyPressedImage>
+            </imageList>
+            <keyMapList>
+                <keyMap>
+                    <region left="0" top="404" width="12" height="80" update="true"/>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+        <rotation name="Reverse Landscape">
+            <display id="0">
+                <region left="60" top="26" width="480" height="360"/>
+            </display>
+            <imageList>
+                <mainImage>default_R90.png</mainImage>
+                <keyPressedImage>default_R90_p.png</keyPressedImage>
+            </imageList>
+            <keyMapList>
+                <keyMap>
+                    <region left="404" top="412" width="80" height="12" update="true"/>
+                    <eventInfo>
+                        <keyCode>116</keyCode>
+                        <keyName>Power</keyName>
+                    </eventInfo>
+                    <tooltip>Power</tooltip>
+                </keyMap>
+            </keyMapList>
+        </rotation>
+    </rotations>
+    <hover>
+        <color B="255" G="255" R="255" />
+    </hover>
+    <popupMenu>
+        <scaleItem visible="false" />
+        <keywindowItem visible="false" />
+        <hostKeyboardItem visible="false" />
+        <ramdumpItem visible="false" />
+    </popupMenu>
+</EmulatorUI>
