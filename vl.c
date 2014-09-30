@@ -150,6 +150,10 @@ extern int enable_spice;
 static const char *yagl_backend = NULL;
 static int enable_vigs = 0;
 static char *vigs_backend = NULL;
+#if defined(CONFIG_SPICE) && defined(CONFIG_LINUX)
+extern void websocket_init(void);
+extern void nodejs_init(void);
+#endif
 #endif
 
 static const char *data_dir[16];
@@ -4370,6 +4374,10 @@ int main(int argc, char **argv, char **envp)
     qemu_mutex_lock_iothread();
 
 #ifdef CONFIG_SPICE
+#if defined(CONFIG_MARU) && defined(CONFIG_LINUX)
+    nodejs_init();
+#endif
+
     /* spice needs the timers to be initialized by this point */
     qemu_spice_init();
 #endif
@@ -4636,6 +4644,9 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_SPICE
     if (using_spice) {
         qemu_spice_display_init();
+#if defined(CONFIG_MARU) && defined(CONFIG_LINUX)
+        websocket_init();
+#endif
     }
 #endif
 

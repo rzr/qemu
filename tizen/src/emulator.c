@@ -206,6 +206,10 @@ static void prepare_basic_features(gchar * const kernel_cmdline)
 
     set_base_port();
 
+#if defined(CONFIG_SPICE) && defined(CONFIG_LINUX)
+    clean_websocket_port(SIGKILL);
+#endif
+
     check_vm_lock();
     make_vm_lock();
 

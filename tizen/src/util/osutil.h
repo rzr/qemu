@@ -74,6 +74,15 @@ void download_url(char *);
 size_t write_data(void *, size_t, size_t, FILE *);
 void remove_string(char *, char *, const char *);
 
+#if defined(CONFIG_SPICE) && defined(CONFIG_LINUX)
+void get_process_id(char const *process_name, char *first_param, int *pid, int *pscount);
+void execute_websocket(int port);
+void execute_nodejs(void);
+void clean_websocket_port(int signal);
+void nodejs_init(void);
+void websocket_init(void);
+#endif
+
 static inline int get_timeofday(char *buf, size_t size)
 {
     qemu_timeval tv;

@@ -96,6 +96,7 @@ typedef  struct EmulatorConfigInfo {
     int device_serial_number;
     int ecs_port;
     int spice_port;
+    int websocket_port;
     char *vm_name;
     /* add here */
     int serial_port;
@@ -112,11 +113,13 @@ typedef struct EmulatorConfigState {
 } EmulatorConfigState;
 
 /* misc */
+extern char remote_bin_path[];
 extern char bin_path[];
 #ifdef SUPPORT_LEGACY_ARGS
 extern char log_path[];
 #endif
 
+char const *get_remote_bin_path(void);
 char const *get_bin_path(void);
 char const *get_log_path(void);
 
@@ -151,6 +154,7 @@ int get_device_serial_number(void);
 int get_emul_ecs_port(void);
 int get_emul_serial_port(void);
 int get_emul_spice_port(void);
+int get_emul_websocket_port(void);
 
 int get_emulator_condition(void);
 short get_emul_rotation(void);

@@ -46,12 +46,17 @@ static EmulatorConfigInfo _emul_info = {0,};
 static EmulatorConfigState _emul_state;
 
 /* misc */
+char remote_bin_path[PATH_MAX] = { 0, };
 char bin_path[PATH_MAX] = { 0, };
 #ifdef SUPPORT_LEGACY_ARGS
 // for compatibility
 char log_path[PATH_MAX] = { 0, };
 #endif
 
+const char *get_remote_bin_path(void)
+{
+    return remote_bin_path;
+}
 
 const char *get_bin_path(void)
 {
@@ -188,6 +193,12 @@ void set_emul_vm_base_port(int port)
     _emul_info.ecs_port = port + 3;
     _emul_info.serial_port = port + 4;
     _emul_info.spice_port = port + 5;
+    _emul_info.websocket_port = port + 6;
+}
+
+int get_emul_websocket_port(void)
+{
+    return _emul_info.websocket_port;
 }
 
 int get_emul_spice_port(void)

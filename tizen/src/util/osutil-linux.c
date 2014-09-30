@@ -53,6 +53,9 @@
 #include <linux/version.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
+#ifdef CONFIG_SPICE
+#include <dirent.h>
+#endif
 
 MULTI_DEBUG_CHANNEL(emulator, osutil);
 
@@ -173,6 +176,11 @@ void set_bin_path_os(char const *const exec_argv)
     g_strlcpy(bin_path, link_path, strlen(link_path) - strlen(file_name) + 1);
 
     g_strlcat(bin_path, "/", PATH_MAX);
+
+#ifdef CONFIG_SPICE
+    g_strlcpy(remote_bin_path, link_path, strlen(link_path) - strlen(file_name) - 2);
+    g_strlcat(remote_bin_path, "remote/bin/", PATH_MAX);
+#endif
 }
 
 int get_number_of_processors(void)
@@ -445,3 +453,209 @@ void get_host_proxy_os(char *http_proxy, char *https_proxy, char *ftp_proxy, cha
     }
     pclose(output);
 }
+
+#ifdef CONFIG_SPICE
+#define PID_MAX_COUNT 256
+const char *execution_file_websocket = "websockify.py";
+const char *execution_file_node = "node";
+const char *node_proc_name = "emulator-x86-web";
+
+void get_process_id(char const *process_name, char *first_param, int *pid, int *pscount)
+{
+    char cmdline[2048], dir_name[255];
+    int total_len = 0, current_len = 0;
+    struct dirent *dir_entry_p;
+    DIR *dir_p;
+    FILE *fp;
+    char *mptr;
+
+    dir_p = opendir("/proc/");
+    while (NULL != (dir_entry_p = readdir(dir_p))) {
+        /* Checking for numbered directories */
+        if (strspn(dir_entry_p->d_name, "0123456789") == strlen(dir_entry_p->d_name)) {
+            strcpy(dir_name, "/proc/");
+            strcat(dir_name, dir_entry_p->d_name);
+            strcat(dir_name, "/cmdline");
+
+            fp = fopen(dir_name, "rb");
+            if (fp == NULL) {
+                continue;
+            }
+
+            total_len = 0;
+            memset(cmdline, 0, sizeof(cmdline));
+            while (!feof(fp)) {
+                cmdline[total_len++] = fgetc(fp);
+            }
+
+            fclose(fp);
+            current_len = strlen(cmdline);
+            mptr = cmdline;
+            do {
+                if (strstr(mptr, process_name) != NULL) {
+                    if (!first_param || strstr(&cmdline[current_len + 1], first_param) != NULL) {
+                        if (sizeof(pid) < *pscount + 1) {
+                            WARN("PID array size is not enough.\n");
+                            return;
+                        }
+                        pid[*pscount] = atoi(dir_entry_p->d_name);
+                        INFO("get_process_id(%s %s) :Found. id = %d\n", process_name, first_param, pid[*pscount]);
+                        (*pscount)++;
+                    }
+                    break;
+                }
+
+                mptr = &cmdline[current_len + 1];
+                current_len += strlen(mptr) + 1;
+            } while (current_len < total_len);
+        }
+    }
+
+    closedir(dir_p);
+    if (*pscount == 0) {
+        INFO("get_process_id(%s %s) : id = 0 (could not find process)\n", process_name, first_param);
+    }
+}
+
+void execute_websocket(int port)
+{
+    char const *remote_bin_dir = get_remote_bin_path();
+    char const *relative_path = "../websocket/";
+    char websocket_path[strlen(remote_bin_dir) + strlen(execution_file_websocket) + strlen(relative_path) + 1];
+    int ret = -1;
+    char local_port[32];
+    char websocket_port[16];
+
+    memset(websocket_port, 0, sizeof(websocket_port));
+    sprintf(websocket_port, "%d", port);
+
+    memset(local_port, 0, sizeof(local_port));
+    sprintf(local_port, "localhost:%d", get_emul_spice_port());
+
+    memset(websocket_path, 0, sizeof(websocket_path));
+    sprintf(websocket_path, "%s%s%s", remote_bin_dir, relative_path, execution_file_websocket);
+
+    INFO("Exec [%s %s %s]\n", websocket_path, websocket_port, local_port);
+
+    ret = execl(websocket_path, execution_file_websocket, websocket_port, local_port, (char *)0);
+    if (ret == 127) {
+        WARN("Can't execute websocket.\n");
+    } else if (ret == -1) {
+        WARN("Fork error!\n");
+    }
+}
+
+void execute_nodejs(void)
+{
+    char const *remote_bin_dir = get_remote_bin_path();
+    char const *relative_path = "../web-viewer/bin/emul";
+    char webviewer_script[strlen(remote_bin_dir) + strlen(relative_path) + 1];
+    char nodejs_path[strlen(remote_bin_dir) + strlen(execution_file_node) + 1];
+    int ret = -1;
+
+    memset(webviewer_script, 0, sizeof(webviewer_script));
+    sprintf(webviewer_script, "%s%s", remote_bin_dir, relative_path);
+
+    memset(nodejs_path, 0, sizeof(nodejs_path));
+    sprintf(nodejs_path, "%s%s", remote_bin_dir, execution_file_node);
+
+    INFO("Exec [%s %s]\n", nodejs_path, webviewer_script);
+
+    ret = execl(nodejs_path, execution_file_node, webviewer_script, (char *)0);
+    if (ret == 127) {
+        WARN("Can't execute node server.\n");
+    } else if (ret == -1) {
+        WARN("Fork error!\n");
+    }
+}
+
+void clean_websocket_port(int signal)
+{
+    char websocket_port[16];
+    memset(websocket_port, 0, sizeof(websocket_port));
+    sprintf(websocket_port, "%d", get_emul_websocket_port());
+
+    int pscount = 0, i = 0;
+    int pid[PID_MAX_COUNT];
+
+    memset(pid, 0, PID_MAX_COUNT);
+    get_process_id(execution_file_websocket, websocket_port, pid, &pscount);
+    if (pscount > 0) {
+        for (i = 0; i < pscount; i++) {
+            INFO("Will be killed PID: %d\n", pid[i]);
+            kill(pid[i], signal);
+        }
+    }
+}
+
+static void websocket_notify_exit(Notifier *notifier, void *data)
+{
+    clean_websocket_port(SIGTERM);
+}
+
+static void nodejs_notify_exit(Notifier *notifier, void *data)
+{
+    int pscount = 0, i = 0;
+    int pid[PID_MAX_COUNT];
+
+    memset(pid, 0, sizeof(pid));
+    get_process_id("spicevmc", NULL, pid, &pscount);
+    if (pscount == 1) {
+        INFO("Detected the last spice emulator.\n");
+        pid[0] = 0;
+        pscount = 0;
+        get_process_id(node_proc_name, NULL, pid, &pscount);
+        for (i = 0; i < pscount; i++) {
+            INFO("Will be killed %s, PID: %d\n", node_proc_name, pid[i]);
+            kill(pid[i], SIGTERM);
+        }
+    }
+}
+
+static Notifier websocket_exit = { .notify = websocket_notify_exit };
+static Notifier nodejs_exit = { .notify = nodejs_notify_exit };
+
+void websocket_init(void)
+{
+    int pscount = 0;
+    char websocket_port[16];
+    int pid[PID_MAX_COUNT];
+
+    memset(websocket_port, 0, sizeof(websocket_port));
+    sprintf(websocket_port, "%d", get_emul_websocket_port());
+
+    memset(pid, 0, sizeof(pid));
+    get_process_id(execution_file_websocket, websocket_port, pid, &pscount);
+    emulator_add_exit_notifier(&websocket_exit);
+
+    if (pscount == 0) {
+        int pid = fork();
+        if (pid == 0) {
+            setsid();
+            execute_websocket(get_emul_websocket_port());
+        }
+    } else {
+       INFO("Aleady running websokify %s localhost:%d\n", websocket_port, get_emul_spice_port());
+    }
+}
+
+void nodejs_init(void)
+{
+    int pscount = 0;
+    int pid[PID_MAX_COUNT];
+
+    memset(pid, 0, sizeof(pid));
+    get_process_id(node_proc_name, NULL, pid, &pscount);
+    emulator_add_exit_notifier(&nodejs_exit);
+
+    if (pscount == 0) {
+        int pid = fork();
+        if (pid == 0) {
+            setsid();
+            execute_nodejs();
+        }
+    } else {
+       INFO("Aleady running node server.\n");
+    }
+}
+#endif
