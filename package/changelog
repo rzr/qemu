@@ -1,3 +1,6 @@
+* 2.0.11
+- web-viewer: added init and shutdown logic of nodejs and websocket
+== SungMin Ha <sungmin82.ha@samsung.com> 2014-10-01
 * 2.0.10
 - spice: modified default scale 1/2
 == SungMin Ha <sungmin82.ha@samsung.com> 2014-09-15
