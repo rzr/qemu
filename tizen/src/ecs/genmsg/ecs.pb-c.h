@@ -3,7 +3,7 @@
 #ifndef PROTOBUF_C_ecs_2eproto__INCLUDED
 #define PROTOBUF_C_ecs_2eproto__INCLUDED
 
-#include "../../../distrib/protobuf/protobuf-c.h"
+#include <google/protobuf-c/protobuf-c.h>
 
 PROTOBUF_C_BEGIN_DECLS
 
@@ -24,9 +24,9 @@ typedef struct _ECS__MonitorAns ECS__MonitorAns;
 typedef struct _ECS__MonitorNtf ECS__MonitorNtf;
 typedef struct _ECS__NfcReq ECS__NfcReq;
 typedef struct _ECS__NfcNtf ECS__NfcNtf;
-typedef struct _ECS__TetheringReq ECS__TetheringReq;
-typedef struct _ECS__TetheringAns ECS__TetheringAns;
-typedef struct _ECS__TetheringNtf ECS__TetheringNtf;
+typedef struct _ECS__EventCastReq ECS__EventCastReq;
+typedef struct _ECS__EventCastAns ECS__EventCastAns;
+typedef struct _ECS__EventCastNtf ECS__EventCastNtf;
 typedef struct _ECS__Master ECS__Master;
 
 
@@ -225,7 +225,7 @@ struct  _ECS__NfcNtf
     , NULL, 0,{0,NULL} }
 
 
-struct  _ECS__TetheringReq
+struct  _ECS__EventCastReq
 {
   ProtobufCMessage base;
   char *category;
@@ -235,12 +235,12 @@ struct  _ECS__TetheringReq
   protobuf_c_boolean has_data;
   ProtobufCBinaryData data;
 };
-#define ECS__TETHERING_REQ__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__tethering_req__descriptor) \
+#define ECS__EVENT_CAST_REQ__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__event_cast_req__descriptor) \
     , NULL, 0, 0, 0, 0,{0,NULL} }
 
 
-struct  _ECS__TetheringAns
+struct  _ECS__EventCastAns
 {
   ProtobufCMessage base;
   int32_t errcode;
@@ -252,12 +252,12 @@ struct  _ECS__TetheringAns
   protobuf_c_boolean has_data;
   ProtobufCBinaryData data;
 };
-#define ECS__TETHERING_ANS__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__tethering_ans__descriptor) \
+#define ECS__EVENT_CAST_ANS__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__event_cast_ans__descriptor) \
     , 0, NULL, NULL, 0, 0, 0, 0,{0,NULL} }
 
 
-struct  _ECS__TetheringNtf
+struct  _ECS__EventCastNtf
 {
   ProtobufCMessage base;
   char *category;
@@ -267,8 +267,8 @@ struct  _ECS__TetheringNtf
   protobuf_c_boolean has_data;
   ProtobufCBinaryData data;
 };
-#define ECS__TETHERING_NTF__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&ecs__tethering_ntf__descriptor) \
+#define ECS__EVENT_CAST_NTF__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&ecs__event_cast_ntf__descriptor) \
     , NULL, 0, 0, 0, 0,{0,NULL} }
 
 
@@ -291,9 +291,9 @@ struct  _ECS__Master
   ECS__MonitorNtf *monitor_ntf;
   ECS__NfcReq *nfc_req;
   ECS__NfcNtf *nfc_ntf;
-  ECS__TetheringReq *tethering_req;
-  ECS__TetheringAns *tethering_ans;
-  ECS__TetheringNtf *tethering_ntf;
+  ECS__EventCastReq *eventcast_req;
+  ECS__EventCastAns *eventcast_ans;
+  ECS__EventCastNtf *eventcast_ntf;
 };
 #define ECS__MASTER__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&ecs__master__descriptor) \
@@ -585,62 +585,62 @@ ECS__NfcNtf *
 void   ecs__nfc_ntf__free_unpacked
                      (ECS__NfcNtf *message,
                       ProtobufCAllocator *allocator);
-/* ECS__TetheringReq methods */
-void   ecs__tethering_req__init
-                     (ECS__TetheringReq         *message);
-size_t ecs__tethering_req__get_packed_size
-                     (const ECS__TetheringReq   *message);
-size_t ecs__tethering_req__pack
-                     (const ECS__TetheringReq   *message,
+/* ECS__EventCastReq methods */
+void   ecs__event_cast_req__init
+                     (ECS__EventCastReq         *message);
+size_t ecs__event_cast_req__get_packed_size
+                     (const ECS__EventCastReq   *message);
+size_t ecs__event_cast_req__pack
+                     (const ECS__EventCastReq   *message,
                       uint8_t             *out);
-size_t ecs__tethering_req__pack_to_buffer
-                     (const ECS__TetheringReq   *message,
+size_t ecs__event_cast_req__pack_to_buffer
+                     (const ECS__EventCastReq   *message,
                       ProtobufCBuffer     *buffer);
-ECS__TetheringReq *
-       ecs__tethering_req__unpack
+ECS__EventCastReq *
+       ecs__event_cast_req__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   ecs__tethering_req__free_unpacked
-                     (ECS__TetheringReq *message,
+void   ecs__event_cast_req__free_unpacked
+                     (ECS__EventCastReq *message,
                       ProtobufCAllocator *allocator);
-/* ECS__TetheringAns methods */
-void   ecs__tethering_ans__init
-                     (ECS__TetheringAns         *message);
-size_t ecs__tethering_ans__get_packed_size
-                     (const ECS__TetheringAns   *message);
-size_t ecs__tethering_ans__pack
-                     (const ECS__TetheringAns   *message,
+/* ECS__EventCastAns methods */
+void   ecs__event_cast_ans__init
+                     (ECS__EventCastAns         *message);
+size_t ecs__event_cast_ans__get_packed_size
+                     (const ECS__EventCastAns   *message);
+size_t ecs__event_cast_ans__pack
+                     (const ECS__EventCastAns   *message,
                       uint8_t             *out);
-size_t ecs__tethering_ans__pack_to_buffer
-                     (const ECS__TetheringAns   *message,
+size_t ecs__event_cast_ans__pack_to_buffer
+                     (const ECS__EventCastAns   *message,
                       ProtobufCBuffer     *buffer);
-ECS__TetheringAns *
-       ecs__tethering_ans__unpack
+ECS__EventCastAns *
+       ecs__event_cast_ans__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   ecs__tethering_ans__free_unpacked
-                     (ECS__TetheringAns *message,
+void   ecs__event_cast_ans__free_unpacked
+                     (ECS__EventCastAns *message,
                       ProtobufCAllocator *allocator);
-/* ECS__TetheringNtf methods */
-void   ecs__tethering_ntf__init
-                     (ECS__TetheringNtf         *message);
-size_t ecs__tethering_ntf__get_packed_size
-                     (const ECS__TetheringNtf   *message);
-size_t ecs__tethering_ntf__pack
-                     (const ECS__TetheringNtf   *message,
+/* ECS__EventCastNtf methods */
+void   ecs__event_cast_ntf__init
+                     (ECS__EventCastNtf         *message);
+size_t ecs__event_cast_ntf__get_packed_size
+                     (const ECS__EventCastNtf   *message);
+size_t ecs__event_cast_ntf__pack
+                     (const ECS__EventCastNtf   *message,
                       uint8_t             *out);
-size_t ecs__tethering_ntf__pack_to_buffer
-                     (const ECS__TetheringNtf   *message,
+size_t ecs__event_cast_ntf__pack_to_buffer
+                     (const ECS__EventCastNtf   *message,
                       ProtobufCBuffer     *buffer);
-ECS__TetheringNtf *
-       ecs__tethering_ntf__unpack
+ECS__EventCastNtf *
+       ecs__event_cast_ntf__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   ecs__tethering_ntf__free_unpacked
-                     (ECS__TetheringNtf *message,
+void   ecs__event_cast_ntf__free_unpacked
+                     (ECS__EventCastNtf *message,
                       ProtobufCAllocator *allocator);
 /* ECS__Master methods */
 void   ecs__master__init
@@ -708,14 +708,14 @@ typedef void (*ECS__NfcReq_Closure)
 typedef void (*ECS__NfcNtf_Closure)
                  (const ECS__NfcNtf *message,
                   void *closure_data);
-typedef void (*ECS__TetheringReq_Closure)
-                 (const ECS__TetheringReq *message,
+typedef void (*ECS__EventCastReq_Closure)
+                 (const ECS__EventCastReq *message,
                   void *closure_data);
-typedef void (*ECS__TetheringAns_Closure)
-                 (const ECS__TetheringAns *message,
+typedef void (*ECS__EventCastAns_Closure)
+                 (const ECS__EventCastAns *message,
                   void *closure_data);
-typedef void (*ECS__TetheringNtf_Closure)
-                 (const ECS__TetheringNtf *message,
+typedef void (*ECS__EventCastNtf_Closure)
+                 (const ECS__EventCastNtf *message,
                   void *closure_data);
 typedef void (*ECS__Master_Closure)
                  (const ECS__Master *message,
@@ -741,9 +741,9 @@ extern const ProtobufCMessageDescriptor ecs__monitor_ans__descriptor;
 extern const ProtobufCMessageDescriptor ecs__monitor_ntf__descriptor;
 extern const ProtobufCMessageDescriptor ecs__nfc_req__descriptor;
 extern const ProtobufCMessageDescriptor ecs__nfc_ntf__descriptor;
-extern const ProtobufCMessageDescriptor ecs__tethering_req__descriptor;
-extern const ProtobufCMessageDescriptor ecs__tethering_ans__descriptor;
-extern const ProtobufCMessageDescriptor ecs__tethering_ntf__descriptor;
+extern const ProtobufCMessageDescriptor ecs__event_cast_req__descriptor;
+extern const ProtobufCMessageDescriptor ecs__event_cast_ans__descriptor;
+extern const ProtobufCMessageDescriptor ecs__event_cast_ntf__descriptor;
 extern const ProtobufCMessageDescriptor ecs__master__descriptor;
 
 PROTOBUF_C_END_DECLS

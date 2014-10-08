@@ -15,7 +15,7 @@ obj-y += display/
 obj-y += ecs/
 
 # tethering
-obj-y += tethering/
+obj-y += eventcast/
 
 # maru skin
 obj-y += skin/

@@ -3,7 +3,7 @@
 #ifndef PROTOBUF_C_ecs_5fids_2eproto__INCLUDED
 #define PROTOBUF_C_ecs_5fids_2eproto__INCLUDED
 
-#include "../../../distrib/protobuf/protobuf-c.h"
+#include <google/protobuf-c/protobuf-c.h>
 
 PROTOBUF_C_BEGIN_DECLS
 
@@ -28,9 +28,9 @@ typedef enum _ECS__MasterType {
   ECS__MASTER__TYPE__MONITOR_NTF = 14,
   ECS__MASTER__TYPE__NFC_REQ = 101,
   ECS__MASTER__TYPE__NFC_NTF = 102,
-  ECS__MASTER__TYPE__TETHERING_REQ = 103,
-  ECS__MASTER__TYPE__TETHERING_ANS = 104,
-  ECS__MASTER__TYPE__TETHERING_NTF = 105
+  ECS__MASTER__TYPE__EVENTCAST_REQ = 103,
+  ECS__MASTER__TYPE__EVENTCAST_ANS = 104,
+  ECS__MASTER__TYPE__EVENTCAST_NTF = 105
 } ECS__MasterType;
 
 /* --- messages --- */

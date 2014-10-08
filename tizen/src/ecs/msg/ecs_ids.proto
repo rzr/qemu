@@ -3,8 +3,8 @@ package ECS;
 option java_package = "org.tizen.ecp.msg.genmsg.ecs";
 
 enum Master_Type {
-    CHECKVERSION_REQ = 2;
-    CHECKVERSION_ANS = 3;
+	CHECKVERSION_REQ = 2;
+	CHECKVERSION_ANS = 3;
 	KEEPALIVE_REQ = 4;
 	KEEPALIVE_ANS = 5;
 	INJECTOR_REQ = 6;
@@ -21,7 +21,7 @@ enum Master_Type {
 	NFC_REQ = 101;
 	NFC_NTF = 102;
 
-	TETHERING_REQ = 103;
-	TETHERING_ANS = 104;
-	TETHERING_NTF = 105;
+	EVENTCAST_REQ = 103;
+	EVENTCAST_ANS = 104;
+	EVENTCAST_NTF = 105;
 }

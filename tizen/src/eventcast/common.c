@@ -45,14 +45,14 @@
 #include "sensor.h"
 #include "touch.h"
 #include "emul_state.h"
-#include "ecs/ecs_tethering.h"
-#include "genmsg/tethering.pb-c.h"
+#include "ecs/ecs_eventcast.h"
+#include "genmsg/eventcast.pb-c.h"
 
 #include "util/new_debug_ch.h"
 
 DECLARE_DEBUG_CHANNEL(app_tethering);
 
-#define TETHERING_MSG_HANDSHAKE_KEY     100
+#define EVENTCAST_MSG_HANDSHAKE_KEY     100
 #define MSG_BUF_SIZE    255
 #define MSG_LEN_SIZE    4
 
@@ -69,13 +69,13 @@ enum connection_type {
     WIFI,
 };
 
-typedef struct tethering_recv_buf {
+typedef struct eventcast_recv_buf {
     uint32_t len;
     uint32_t stack_size;
     char data[MSG_BUF_SIZE];
-} tethering_recv_buf;
+} eventcast_recv_buf;
 
-typedef struct _TetheringState {
+typedef struct _EventcastState {
     int fd;
 
     // server address
@@ -90,36 +90,34 @@ typedef struct _TetheringState {
     QemuThread thread;
     QemuMutex mutex;
 
-    tethering_recv_buf recv_buf;
+    eventcast_recv_buf recv_buf;
 
     // device state
     QTAILQ_HEAD(device, input_device_list) device;
     int device_node_cnt;
 
-} TetheringState;
+} EventcastState;
 
-static TetheringState *tethering_client = NULL;
-static tethering_recv_buf recv_buf;
+static EventcastState *eventcast_client = NULL;
+static eventcast_recv_buf recv_buf;
 
-static void end_tethering_socket(int sockfd);
-static void set_tethering_connection_status(int status);
+static void end_eventcast_socket(int sockfd);
+static void set_eventcast_connection_status(int status);
 #if 0
-static bool app_state = false;
-
-static void set_tethering_app_state(bool state);
-static bool get_tethering_app_state(void);
+static void set_eventcast_app_state(bool state);
+static bool get_eventcast_app_state(void);
 #endif
 
 // create master message
-static void *build_tethering_msg(Tethering__TetheringMsg* msg, int *payloadsize)
+static void *build_eventcast_msg(Eventcast__EventCastMsg* msg, int *payloadsize)
 {
     void *buf = NULL;
     int msg_packed_size = 0;
 
-    msg_packed_size = tethering__tethering_msg__get_packed_size(msg);
+    msg_packed_size = eventcast__event_cast_msg__get_packed_size(msg);
     *payloadsize = msg_packed_size + MSG_LEN_SIZE;
 
-    LOG_TRACE("create tethering_msg. msg_packed_size %d, payloadsize %d\n", msg_packed_size, *payloadsize);
+    LOG_TRACE("create eventcast_msg. msg_packed_size %d, payloadsize %d\n", msg_packed_size, *payloadsize);
 
     buf = g_malloc(*payloadsize);
     if (!buf) {
@@ -127,7 +125,7 @@ static void *build_tethering_msg(Tethering__TetheringMsg* msg, int *payloadsize)
         return NULL;
     }
 
-    tethering__tethering_msg__pack(msg, buf + MSG_LEN_SIZE);
+    eventcast__event_cast_msg__pack(msg, buf + MSG_LEN_SIZE);
 
     LOG_TRACE("msg_packed_size 1 %x\n", msg_packed_size);
     msg_packed_size = htonl(msg_packed_size);
@@ -140,7 +138,7 @@ static void *build_tethering_msg(Tethering__TetheringMsg* msg, int *payloadsize)
 
 bool send_msg_to_controller(void *msg)
 {
-    Tethering__TetheringMsg * tetheringMsg = (Tethering__TetheringMsg *)msg;
+    Eventcast__EventCastMsg * eventcastMsg = (Eventcast__EventCastMsg *)msg;
 
     void *buf = NULL;
     int payload_size = 0, sent_size = 0;
@@ -149,17 +147,17 @@ bool send_msg_to_controller(void *msg)
     bool ret = true;
     uint32_t buf_offset = 0;
 
-    buf = build_tethering_msg(tetheringMsg, &payload_size);
+    buf = build_eventcast_msg(eventcastMsg, &payload_size);
     if (!buf) {
         return false;
     }
 
-    if (!tethering_client) {
-        LOG_SEVERE("TetheringState is NULL\n");
+    if (!eventcast_client) {
+        LOG_SEVERE("EventcastState is NULL\n");
         g_free(buf);
         return false;
     }
-    sockfd = tethering_client->fd;
+    sockfd = eventcast_client->fd;
 
     total_buf_size = payload_size;
     do {
@@ -208,14 +206,14 @@ bool send_msg_to_controller(void *msg)
 
 static bool send_handshake_req_msg(void)
 {
-    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
-    Tethering__HandShakeReq req = TETHERING__HAND_SHAKE_REQ__INIT;
+    Eventcast__EventCastMsg msg = EVENTCAST__EVENT_CAST_MSG__INIT;
+    Eventcast__HandShakeReq req = EVENTCAST__HAND_SHAKE_REQ__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
-    req.key = TETHERING_MSG_HANDSHAKE_KEY;
+    req.key = EVENTCAST_MSG_HANDSHAKE_KEY;
 
-    msg.type = TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_REQ;
+    msg.type = EVENTCAST__EVENT_CAST_MSG__TYPE__HANDSHAKE_REQ;
     msg.handshakereq = &req;
 
     LOG_TRACE("send handshake_req message\n");
@@ -228,14 +226,14 @@ static bool send_handshake_req_msg(void)
 
 static bool send_emul_state_msg(void)
 {
-    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
-    Tethering__EmulatorState emul_state = TETHERING__EMULATOR_STATE__INIT;
+    Eventcast__EventCastMsg msg = EVENTCAST__EVENT_CAST_MSG__INIT;
+    Eventcast__EmulatorState emul_state = EVENTCAST__EMULATOR_STATE__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
-    emul_state.state = TETHERING__CONNECTION_STATE__DISCONNECTED;
+    emul_state.state = EVENTCAST__CONNECTION_STATE__DISCONNECTED;
 
-    msg.type = TETHERING__TETHERING_MSG__TYPE__EMUL_STATE;
+    msg.type = EVENTCAST__EVENT_CAST_MSG__TYPE__EMUL_STATE;
     msg.emulstate = &emul_state;
 
     LOG_INFO("send emulator_state message\n");
@@ -247,14 +245,14 @@ static bool send_emul_state_msg(void)
 }
 
 // event messages
-static bool build_event_msg(Tethering__EventMsg *event)
+static bool build_event_msg(Eventcast__EventMsg *event)
 {
     bool ret = false;
-    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
+    Eventcast__EventCastMsg msg = EVENTCAST__EVENT_CAST_MSG__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
-    msg.type = TETHERING__TETHERING_MSG__TYPE__EVENT_MSG;
+    msg.type = EVENTCAST__EVENT_CAST_MSG__TYPE__EVENT_MSG;
     msg.eventmsg = event;
 
     ret = send_msg_to_controller(&msg);
@@ -264,17 +262,17 @@ static bool build_event_msg(Tethering__EventMsg *event)
     return ret;
 }
 
-static bool send_event_start_ans_msg(Tethering__MessageResult result)
+static bool send_event_start_ans_msg(Eventcast__MessageResult result)
 {
     bool ret = false;
-    Tethering__EventMsg event = TETHERING__EVENT_MSG__INIT;
-    Tethering__StartAns start_ans = TETHERING__START_ANS__INIT;
+    Eventcast__EventMsg event = EVENTCAST__EVENT_MSG__INIT;
+    Eventcast__StartAns start_ans = EVENTCAST__START_ANS__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
     start_ans.result = result;
 
-    event.type = TETHERING__EVENT_MSG__TYPE__START_ANS;
+    event.type = EVENTCAST__EVENT_MSG__TYPE__START_ANS;
     event.startans = &start_ans;
 
     LOG_TRACE("send event_start_ans message\n");
@@ -285,19 +283,19 @@ static bool send_event_start_ans_msg(Tethering__MessageResult result)
     return ret;
 }
 
-static bool send_set_event_status_msg(Tethering__EventType event_type,
-                                    Tethering__State status)
+static bool send_set_event_status_msg(Eventcast__EventType event_type,
+                                    Eventcast__State status)
 {
     bool ret = false;
-    Tethering__EventMsg event = TETHERING__EVENT_MSG__INIT;
-    Tethering__SetEventStatus event_status = TETHERING__SET_EVENT_STATUS__INIT;
+    Eventcast__EventMsg event = EVENTCAST__EVENT_MSG__INIT;
+    Eventcast__SetEventStatus event_status = EVENTCAST__SET_EVENT_STATUS__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
     event_status.type = event_type;
     event_status.state = status;
 
-    event.type = TETHERING__EVENT_MSG__TYPE__EVENT_STATUS;
+    event.type = EVENTCAST__EVENT_MSG__TYPE__EVENT_STATUS;
     event.setstatus = &event_status;
 
     LOG_TRACE("send event_set_event_status message\n");
@@ -309,61 +307,61 @@ static bool send_set_event_status_msg(Tethering__EventType event_type,
 }
 
 // message handlers
-static void msgproc_tethering_handshake_ans(Tethering__HandShakeAns *msg)
+static void msgproc_eventcast_handshake_ans(Eventcast__HandShakeAns *msg)
 {
     // handle handshake answer
 }
 
-static void msgproc_app_state_msg(Tethering__AppState *msg)
+static void msgproc_app_state_msg(Eventcast__AppState *msg)
 {
-    int status = TETHERING__STATE__DISABLED;
+    int status = EVENTCAST__STATE__DISABLED;
 
-    if (msg->state == TETHERING__CONNECTION_STATE__TERMINATED) {
+    if (msg->state == EVENTCAST__CONNECTION_STATE__TERMINATED) {
         LOG_INFO("app is terminated\n");
 
-        // set_tethering_app_state(false);
-        set_tethering_sensor_status(status);
-        set_tethering_touch_status(status);
+        // set_eventcast_app_state(false);
+        set_eventcast_sensor_status(status);
+        set_eventcast_touch_status(status);
 
-        disconnect_tethering_app();
+        disconnect_eventcast_app();
     }
 }
 
-static bool msgproc_tethering_event_msg(Tethering__EventMsg *msg)
+static bool msgproc_eventcast_event_msg(Eventcast__EventMsg *msg)
 {
     bool ret = true;
 
     switch(msg->type) {
-    case TETHERING__EVENT_MSG__TYPE__START_REQ:
+    case EVENTCAST__EVENT_MSG__TYPE__START_REQ:
     {
         int touch_status = 0;
 
         LOG_TRACE("EVENT_MSG_TYPE_START_REQ\n");
-        send_set_event_status_msg(TETHERING__EVENT_TYPE__SENSOR,
-                                TETHERING__STATE__ENABLED);
+        send_set_event_status_msg(EVENTCAST__EVENT_TYPE__SENSOR,
+                                EVENTCAST__STATE__ENABLED);
 
         // TODO: check sensor device whether it exists or not
-        set_tethering_sensor_status(TETHERING__STATE__ENABLED);
+        set_eventcast_sensor_status(EVENTCAST__STATE__ENABLED);
 
         if (is_emul_input_touch_enable()) {
-            touch_status = TETHERING__STATE__ENABLED;
+            touch_status = EVENTCAST__STATE__ENABLED;
         } else {
-            touch_status = TETHERING__STATE__DISABLED;
+            touch_status = EVENTCAST__STATE__DISABLED;
         }
-        set_tethering_touch_status(touch_status);
+        set_eventcast_touch_status(touch_status);
 
         LOG_TRACE("send touch event_status msg: %d\n", touch_status);
-        send_set_event_status_msg(TETHERING__EVENT_TYPE__TOUCH, touch_status);
+        send_set_event_status_msg(EVENTCAST__EVENT_TYPE__TOUCH, touch_status);
 
         LOG_TRACE("send event_start_ans msg: %d\n", touch_status);
-        send_event_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
+        send_event_start_ans_msg(EVENTCAST__MESSAGE_RESULT__SUCCESS);
     }
         break;
-    case TETHERING__EVENT_MSG__TYPE__TERMINATE:
+    case EVENTCAST__EVENT_MSG__TYPE__TERMINATE:
         break;
 
     default:
-        LOG_WARNING("invalid event_msg type\n");
+        LOG_TRACE("invalid event_msg type\n");
         ret = false;
         break;
     }
@@ -371,37 +369,37 @@ static bool msgproc_tethering_event_msg(Tethering__EventMsg *msg)
     return ret;
 }
 
-static bool handle_tethering_msg_from_controller(char *data, int len)
+static bool handle_eventcast_msg_from_controller(char *data, int len)
 {
-    Tethering__TetheringMsg *tethering = NULL;
+    Eventcast__EventCastMsg *eventcast = NULL;
     bool ret = true;
 
-    tethering = tethering__tethering_msg__unpack(NULL, (size_t)len,
+    eventcast = eventcast__event_cast_msg__unpack(NULL, (size_t)len,
                                             (const uint8_t *)data);
 
-    if (!tethering) {
-        LOG_SEVERE("no tethering massage\n");
+    if (!eventcast) {
+        LOG_SEVERE("no eventcast massage\n");
         return false;
     }
 
-    switch (tethering->type) {
-    case TETHERING__TETHERING_MSG__TYPE__HANDSHAKE_ANS:
+    switch (eventcast->type) {
+    case EVENTCAST__EVENT_CAST_MSG__TYPE__HANDSHAKE_ANS:
     {
         // TODO: set the result of handshake_ans to
-        Tethering__HandShakeAns *msg = tethering->handshakeans;
+        Eventcast__HandShakeAns *msg = eventcast->handshakeans;
         if (!msg) {
             ret = false;
         } else {
-            msgproc_tethering_handshake_ans(msg);
+            msgproc_eventcast_handshake_ans(msg);
             LOG_TRACE("receive handshake answer\n");
 
-            set_tethering_connection_status(CONNECTED);
+            set_eventcast_connection_status(CONNECTED);
         }
     }
         break;
-    case TETHERING__TETHERING_MSG__TYPE__APP_STATE:
+    case EVENTCAST__EVENT_CAST_MSG__TYPE__APP_STATE:
     {
-        Tethering__AppState *msg = tethering->appstate;
+        Eventcast__AppState *msg = eventcast->appstate;
 
         LOG_TRACE("receive app_state msg\n");
         if (!msg) {
@@ -411,39 +409,39 @@ static bool handle_tethering_msg_from_controller(char *data, int len)
         }
     }
         break;
-    case TETHERING__TETHERING_MSG__TYPE__EVENT_MSG:
+    case EVENTCAST__EVENT_CAST_MSG__TYPE__EVENT_MSG:
     {
-        Tethering__EventMsg *msg = tethering->eventmsg;
+        Eventcast__EventMsg *msg = eventcast->eventmsg;
 
         LOG_TRACE("receive event_msg\n");
         if (!msg) {
             ret = false;
         } else {
-            msgproc_tethering_event_msg(msg);
+            msgproc_eventcast_event_msg(msg);
         }
     }
         break;
-    case TETHERING__TETHERING_MSG__TYPE__SENSOR_MSG:
+    case EVENTCAST__EVENT_CAST_MSG__TYPE__SENSOR_MSG:
     {
-        Tethering__SensorMsg *msg = tethering->sensormsg;
+        Eventcast__SensorMsg *msg = eventcast->sensormsg;
 
         LOG_TRACE("receive sensor_msg\n");
         if (!msg) {
             ret = false;
         } else {
-            msgproc_tethering_sensor_msg(msg);
+            msgproc_eventcast_sensor_msg(msg);
         }
     }
         break;
-    case TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG:
+    case EVENTCAST__EVENT_CAST_MSG__TYPE__TOUCH_MSG:
     {
-        Tethering__TouchMsg *msg = tethering->touchmsg;
+        Eventcast__TouchMsg *msg = eventcast->touchmsg;
 
         LOG_TRACE("receive touch_msg\n");
         if (!msg) {
             ret = false;
         } else {
-            msgproc_tethering_touch_msg(msg);
+            msgproc_eventcast_touch_msg(msg);
         }
     }
         break;
@@ -454,32 +452,32 @@ static bool handle_tethering_msg_from_controller(char *data, int len)
         break;
     }
 
-    tethering__tethering_msg__free_unpacked(tethering, NULL);
+    eventcast__event_cast_msg__free_unpacked(eventcast, NULL);
     return ret;
 }
 
-static void reset_tethering_recv_buf(void *opaque)
+static void reset_eventcast_recv_buf(void *opaque)
 {
-    memset(opaque, 0x00, sizeof(tethering_recv_buf));
+    memset(opaque, 0x00, sizeof(eventcast_recv_buf));
 }
 
-// tethering client socket
-static void tethering_io_handler(void *opaque)
+// eventcast client socket
+static void eventcast_io_handler(void *opaque)
 {
     int payloadsize = 0, read_size = 0;
     int to_read_bytes = 0;
     int sockfd = 0, ret = 0;
 
-    if (!tethering_client) {
+    if (!eventcast_client) {
         return;
     }
-    sockfd = tethering_client->fd;
+    sockfd = eventcast_client->fd;
 
 #ifndef CONFIG_WIN32
     ret = ioctl(sockfd, FIONREAD, &to_read_bytes);
     if (ret < 0) {
         perror("invalid ioctl opertion\n");
-        disconnect_tethering_app();
+        disconnect_eventcast_app();
         return;
     }
 
@@ -488,7 +486,7 @@ static void tethering_io_handler(void *opaque)
     ret = ioctlsocket(sockfd, FIONREAD, &to_read_bytes_long);
     if (ret < 0) {
         perror("invalid ioctl opertion\n");
-        disconnect_tethering_app();
+        disconnect_eventcast_app();
         return;
     }
 
@@ -498,7 +496,7 @@ static void tethering_io_handler(void *opaque)
     LOG_TRACE("ioctl: ret: %d, FIONREAD: %d\n", ret, to_read_bytes);
     if (to_read_bytes == 0) {
         LOG_INFO("there is no read data\n");
-        disconnect_tethering_app();
+        disconnect_eventcast_app();
         return;
     }
 
@@ -533,7 +531,7 @@ static void tethering_io_handler(void *opaque)
                     to_read_bytes, 0);
     if (read_size == 0) {
         LOG_SEVERE("failed to read data\n");
-        disconnect_tethering_app();
+        disconnect_eventcast_app();
         return;
     }
 
@@ -547,15 +545,15 @@ static void tethering_io_handler(void *opaque)
             return;
         } else {
             memcpy(snd_buf, recv_buf.data, recv_buf.stack_size);
-            handle_tethering_msg_from_controller(snd_buf, recv_buf.stack_size);
+            handle_eventcast_msg_from_controller(snd_buf, recv_buf.stack_size);
             g_free(snd_buf);
-            reset_tethering_recv_buf(&recv_buf);
+            reset_eventcast_recv_buf(&recv_buf);
         }
     }
 }
 
 // socket functions
-static int start_tethering_socket(const char *ipaddress, int port)
+static int start_eventcast_socket(const char *ipaddress, int port)
 {
     struct sockaddr_in addr;
     int sock = -1, ret = 0;
@@ -566,27 +564,27 @@ static int start_tethering_socket(const char *ipaddress, int port)
     LOG_INFO("server ip address: %s, port: %d\n", ipaddress, port);
     ret = inet_aton(ipaddress, &addr.sin_addr);
     if (ret == 0) {
-        perror("inet_aton failure\n");
+        LOG_SEVERE("inet_aton failure\n");
         return -1;
     }
 
     sock = qemu_socket(PF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        // set_tethering_connection_status(DISCONNECTED);
-        LOG_SEVERE("tethering socket creation is failed\n", sock);
+        // set_eventcast_connection_status(DISCONNECTED);
+        LOG_SEVERE("eventcast socket creation is failed\n", sock);
         return -1;
     }
-    LOG_INFO("tethering socket is created: %d\n", sock);
+    LOG_INFO("eventcast socket is created: %d\n", sock);
 
     qemu_set_nonblock(sock);
 
-    set_tethering_connection_status(CONNECTING);
+    set_eventcast_connection_status(CONNECTING);
 
     while (1) {
         ret = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
 
         if (ret == 0) {
-            LOG_INFO("tethering socket is connected.\n");
+            LOG_INFO("eventcast socket is connected.\n");
             break;
         } else {
             int connection_errno = socket_error();
@@ -636,19 +634,19 @@ static int start_tethering_socket(const char *ipaddress, int port)
     if (ret < 0) {
         if (ret == -ECONNREFUSED) {
             LOG_INFO("socket connection is refused\n");
-            set_tethering_connection_status(CONNREFUSED);
+            set_eventcast_connection_status(CONNREFUSED);
         }
-        LOG_TRACE("close socket\n");
-        end_tethering_socket(sock);
+        LOG_INFO("close socket\n");
+        end_eventcast_socket(sock);
         sock = -1;
     }
 
     return sock;
 }
 
-static void end_tethering_socket(int sockfd)
+static void end_eventcast_socket(int sockfd)
 {
-    int status = TETHERING__STATE__DISABLED;
+    int status = EVENTCAST__STATE__DISABLED;
 
     LOG_TRACE("enter: %s\n", __func__);
 
@@ -657,99 +655,99 @@ static void end_tethering_socket(int sockfd)
         return;
     }
 
-    tethering_client->fd = -1;
+    eventcast_client->fd = -1;
 
-    LOG_INFO("close tethering socket\n");
-    set_tethering_connection_status(DISCONNECTED);
-    set_tethering_sensor_status(status);
-    set_tethering_touch_status(status);
+    LOG_INFO("close eventcast socket\n");
+    set_eventcast_connection_status(DISCONNECTED);
+    set_eventcast_sensor_status(status);
+    set_eventcast_touch_status(status);
 
     LOG_TRACE("leave: %s\n", __func__);
 }
 
 #if 0
-static void set_tethering_app_state(bool state)
+static void set_eventcast_app_state(bool state)
 {
-    LOG_TRACE("set tethering_app state: %d", state);
+    LOG_TRACE("set eventcast_app state: %d", state);
     app_state = state;
 }
 
-static bool get_tethering_app_state(void)
+static bool get_eventcast_app_state(void)
 {
     return app_state;
 }
 #endif
 
-// ecs <-> tethering
-int get_tethering_connection_status(void)
+// ecs <-> eventcast
+int get_eventcast_connection_status(void)
 {
     int status = 0;
 
-    if (!tethering_client) {
-        LOG_INFO("tethering_client is null\n");
+    if (!eventcast_client) {
+        LOG_INFO("eventcast_client is null\n");
         LOG_INFO("tetherging connection status: %d\n", status);
         return DISCONNECTED;
     }
 
-    qemu_mutex_lock(&tethering_client->mutex);
-    status = tethering_client->status;
-    qemu_mutex_unlock(&tethering_client->mutex);
+    qemu_mutex_lock(&eventcast_client->mutex);
+    status = eventcast_client->status;
+    qemu_mutex_unlock(&eventcast_client->mutex);
 
     LOG_INFO("tetherging connection status: %d\n", status);
 
     return status;
 }
 
-int get_tethering_connected_port(void)
+int get_eventcast_connected_port(void)
 {
-	if (!tethering_client) {
-		LOG_SEVERE("tethering_client is null\n");
+	if (!eventcast_client) {
+		LOG_SEVERE("eventcast_client is null\n");
 		return 0;
 	}
 
-	LOG_TRACE("connected port: %d\n", tethering_client->port);
-	return tethering_client->port;
+	LOG_TRACE("connected port: %d\n", eventcast_client->port);
+	return eventcast_client->port;
 }
 
-const char *get_tethering_connected_ipaddr(void)
+const char *get_eventcast_connected_ipaddr(void)
 {
-	if (!tethering_client) {
-		LOG_SEVERE("tethering client is null\n");
+	if (!eventcast_client) {
+		LOG_SEVERE("eventcast client is null\n");
 		return NULL;
 	}
 
-	LOG_TRACE("connected ip address: %s\n", tethering_client->ipaddress);
-	return tethering_client->ipaddress;
+	LOG_TRACE("connected ip address: %s\n", eventcast_client->ipaddress);
+	return eventcast_client->ipaddress;
 }
 
-static void set_tethering_connection_status(int status)
+static void set_eventcast_connection_status(int status)
 {
-    if (!tethering_client) {
+    if (!eventcast_client) {
         return;
     }
 
-    qemu_mutex_lock(&tethering_client->mutex);
-    tethering_client->status = status;
-    qemu_mutex_unlock(&tethering_client->mutex);
+    qemu_mutex_lock(&eventcast_client->mutex);
+    eventcast_client->status = status;
+    qemu_mutex_unlock(&eventcast_client->mutex);
 
-    send_tethering_connection_status_ecp();
+    send_eventcast_connection_status_ecp();
 }
 
-static void tethering_notify_exit(Notifier *notifier, void *data)
+static void eventcast_notify_exit(Notifier *notifier, void *data)
 {
-    LOG_INFO("tethering_notify_exit\n");
-    disconnect_tethering_app();
+    LOG_INFO("eventcast_notify_exit\n");
+    disconnect_eventcast_app();
 }
-static Notifier tethering_exit = { .notify = tethering_notify_exit };
+static Notifier eventcast_exit = { .notify = eventcast_notify_exit };
 
-static void *initialize_tethering_socket(void *opaque);
+static void *initialize_eventcast_socket(void *opaque);
 
-int connect_tethering_app(const char *ipaddress, int port)
+int connect_eventcast_app(const char *ipaddress, int port)
 {
-    TetheringState *client = NULL;
+    EventcastState *client = NULL;
     int ipaddr_len = 0;
 
-    client = g_malloc0(sizeof(TetheringState));
+    client = g_malloc0(sizeof(EventcastState));
     if (!client) {
         return -1;
     }
@@ -771,44 +769,43 @@ int connect_tethering_app(const char *ipaddress, int port)
         g_free(client);
         return -1;
     }
-
     g_strlcpy(client->ipaddress, ipaddress, ipaddr_len + 1);
     LOG_INFO("connection info. ip %s, port %d type %d\n",
         client->ipaddress, client->port, client->type);
 
-    tethering_client = client;
+    eventcast_client = client;
 
-    qemu_mutex_init(&tethering_client->mutex);
-    qemu_thread_create(&tethering_client->thread, "tethering-io-thread",
-            initialize_tethering_socket, client,
+    qemu_mutex_init(&eventcast_client->mutex);
+    qemu_thread_create(&eventcast_client->thread, "eventcast-io-thread",
+            initialize_eventcast_socket, client,
             QEMU_THREAD_DETACHED);
 
     return 0;
 }
 
-int disconnect_tethering_app(void)
+int disconnect_eventcast_app(void)
 {
     int sock = 0;
 
-    LOG_TRACE("disconnect app from ecp\n");
-    if (!tethering_client) {
-        LOG_SEVERE("tethering client instance is NULL\n");
+    LOG_INFO("disconnect app from ecp\n");
+    if (!eventcast_client) {
+        LOG_SEVERE("eventcast client instance is NULL\n");
         return -1;
     }
 
-    sock = tethering_client->fd;
+    sock = eventcast_client->fd;
     if (sock < 0) {
-        LOG_SEVERE("tethering socket is already terminated or not ready\n");
+        LOG_SEVERE("eventcast socket is already terminated or not ready\n");
         return -1;
     } else {
         send_emul_state_msg();
-        end_tethering_socket(sock);
+        end_eventcast_socket(sock);
     }
 
     return 0;
 }
 
-static int tethering_loop(int sockfd)
+static int eventcast_loop(int sockfd)
 {
     int ret = 0;
     fd_set readfds;
@@ -825,34 +822,33 @@ static int tethering_loop(int sockfd)
 
     if (ret > 0) {
         LOG_TRACE("ready for read operation!!\n");
-        tethering_io_handler(socket);
+        eventcast_io_handler(socket);
     }
 
     return ret;
 }
 
-static void *initialize_tethering_socket(void *opaque)
+static void *initialize_eventcast_socket(void *opaque)
 {
-    TetheringState *client = (TetheringState *)opaque;
-    LOG_TRACE("callback function for tethering_thread\n");
+    EventcastState *client = (EventcastState *)opaque;
+    LOG_TRACE("callback function for eventcast_thread\n");
 
     if (!client) {
-        LOG_SEVERE("TetheringState is NULL\n");
+        LOG_SEVERE("EventcastState is NULL\n");
         return NULL;
     }
 
-    client->fd = start_tethering_socket(client->ipaddress, client->port);
+    client->fd = start_eventcast_socket(client->ipaddress, client->port);
     if (client->fd < 0) {
-        LOG_SEVERE("failed to start tethering_socket\n");
-        // tethering_sock = -1;
+        LOG_SEVERE("failed to start eventcast_socket\n");
         return NULL;
     }
-    LOG_TRACE("tethering_sock: %d\n", client->fd);
+    LOG_TRACE("eventcast_sock: %d\n", client->fd);
 
-    reset_tethering_recv_buf(&recv_buf);
+    reset_eventcast_recv_buf(&recv_buf);
     send_handshake_req_msg();
 
-    emulator_add_exit_notifier(&tethering_exit);
+    emulator_add_exit_notifier(&eventcast_exit);
 
     while (1) {
         qemu_mutex_lock(&client->mutex);
@@ -863,7 +859,7 @@ static void *initialize_tethering_socket(void *opaque)
         }
         qemu_mutex_unlock(&client->mutex);
 
-        tethering_loop(client->fd);
+        eventcast_loop(client->fd);
     }
 
     return client;

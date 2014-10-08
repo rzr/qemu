@@ -29,27 +29,27 @@
  */
 
 /*
- * define tethering messages between ecs and ecp
+ * define eventcast messages between ecs and ecp
  */
-#define ECS_TETHERING_MSG_CATEGORY                      "tethering"
-#define ECS_TETHERING_MSG_GROUP_ECP                     1
+#define ECS_EVENTCAST_MSG_CATEGORY                      "eventcast"
+#define ECS_EVENTCAST_MSG_GROUP_ECP                     1
 
-enum ECS_TETHERING_MSG_ACTION {
-    ECS_TETHERING_MSG_ACTION_CONNECT = 1,
-    ECS_TETHERING_MSG_ACTION_DISCONNECT,
-    ECS_TETHERING_MSG_ACTION_CONNECTION_STATUS,
-    ECS_TETHERING_MSG_ACTION_SENSOR_STATUS,
-    ECS_TETHERING_MSG_ACTION_TOUCH_STATUS,
+enum ECS_EVENTCAST_MSG_ACTION {
+    ECS_EVENTCAST_MSG_ACTION_CONNECT = 1,
+    ECS_EVENTCAST_MSG_ACTION_DISCONNECT,
+    ECS_EVENTCAST_MSG_ACTION_CONNECTION_STATUS,
+    ECS_EVENTCAST_MSG_ACTION_SENSOR_STATUS,
+    ECS_EVENTCAST_MSG_ACTION_TOUCH_STATUS,
 };
 
-void send_tethering_sensor_status_ecp(void);
+void send_eventcast_sensor_status_ecp(void);
 
-void send_tethering_touch_status_ecp(void);
+void send_eventcast_touch_status_ecp(void);
 
-void send_tethering_connection_status_ecp(void);
+void send_eventcast_connection_status_ecp(void);
 
-void send_tethering_sensor_data(const char *data, int len);
+void send_eventcast_sensor_data(const char *data, int len);
 
-void send_tethering_touch_data(int x, int y, int index, int status);
+void send_eventcast_touch_data(int x, int y, int index, int status);
 
-void send_tethering_hwkey_data(int keycode);
+void send_eventcast_hwkey_data(int keycode);

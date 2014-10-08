@@ -45,8 +45,8 @@
 
 #include "sensor.h"
 #include "common.h"
-#include "ecs/ecs_tethering.h"
-#include "genmsg/tethering.pb-c.h"
+#include "ecs/ecs_eventcast.h"
+#include "genmsg/eventcast.pb-c.h"
 
 #include "util/new_debug_ch.h"
 
@@ -74,14 +74,14 @@ enum sensor_level {
 static int sensor_device_status;
 
 // create a sensor message.
-static bool build_sensor_msg(Tethering__SensorMsg *sensor)
+static bool build_sensor_msg(Eventcast__SensorMsg *sensor)
 {
     bool ret = false;
-    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
+    Eventcast__EventCastMsg msg = EVENTCAST__EVENT_CAST_MSG__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
-    msg.type = TETHERING__TETHERING_MSG__TYPE__SENSOR_MSG;
+    msg.type = EVENTCAST__EVENT_CAST_MSG__TYPE__SENSOR_MSG;
     msg.sensormsg = sensor;
 
     ret = send_msg_to_controller(&msg);
@@ -91,17 +91,17 @@ static bool build_sensor_msg(Tethering__SensorMsg *sensor)
     return ret;
 }
 
-static bool send_sensor_start_ans_msg(Tethering__MessageResult result)
+static bool send_sensor_start_ans_msg(Eventcast__MessageResult result)
 {
     bool ret = false;
-    Tethering__SensorMsg event = TETHERING__SENSOR_MSG__INIT;
-    Tethering__StartAns start_ans = TETHERING__START_ANS__INIT;
+    Eventcast__SensorMsg event = EVENTCAST__SENSOR_MSG__INIT;
+    Eventcast__StartAns start_ans = EVENTCAST__START_ANS__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
     start_ans.result = result;
 
-    event.type = TETHERING__SENSOR_MSG__TYPE__START_ANS;
+    event.type = EVENTCAST__SENSOR_MSG__TYPE__START_ANS;
     event.startans = &start_ans;
 
     LOG_TRACE("send sensor_start_ans message\n");
@@ -112,21 +112,21 @@ static bool send_sensor_start_ans_msg(Tethering__MessageResult result)
     return ret;
 }
 
-static bool send_set_sensor_status_msg(Tethering__SensorType sensor_type,
-                                    Tethering__State status)
+static bool send_set_sensor_status_msg(Eventcast__SensorType sensor_type,
+                                    Eventcast__State status)
 {
     bool ret = false;
 
-    Tethering__SensorMsg sensor = TETHERING__SENSOR_MSG__INIT;
-    Tethering__SetSensorStatus sensor_status =
-                            TETHERING__SET_SENSOR_STATUS__INIT;
+    Eventcast__SensorMsg sensor = EVENTCAST__SENSOR_MSG__INIT;
+    Eventcast__SetSensorStatus sensor_status =
+                            EVENTCAST__SET_SENSOR_STATUS__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
     sensor_status.type = sensor_type;
     sensor_status.state = status;
 
-    sensor.type = TETHERING__SENSOR_MSG__TYPE__SENSOR_STATUS;
+    sensor.type = EVENTCAST__SENSOR_MSG__TYPE__SENSOR_STATUS;
     sensor.setstatus = &sensor_status;
 
     LOG_TRACE("send sensor_set_event_status message\n");
@@ -137,7 +137,7 @@ static bool send_set_sensor_status_msg(Tethering__SensorType sensor_type,
     return ret;
 }
 
-static void set_sensor_data(Tethering__SensorData *data)
+static void set_sensor_data(Eventcast__SensorData *data)
 {
     /*
      * data format for sensor device
@@ -147,61 +147,61 @@ static void set_sensor_data(Tethering__SensorData *data)
      */
 
     switch(data->sensor) {
-    case TETHERING__SENSOR_TYPE__ACCEL:
+    case EVENTCAST__SENSOR_TYPE__ACCEL:
     {
         char tmp[255] = {0};
 
         sprintf(tmp, "%d\n%d\n%lf\n%lf\n%lf\n",
                 level_accel, 3, (atof(data->x) * ACCEL_ADJUST),
                 (atof(data->y) * ACCEL_ADJUST), (atof(data->z) * ACCEL_ADJUST));
-        send_tethering_sensor_data(tmp, strlen(tmp));
+        send_eventcast_sensor_data(tmp, strlen(tmp));
 
         LOG_TRACE("sensor_accel x: %s, y: %s, z: %s\n",
             data->x, data->y, data->z);
     }
         break;
-    case TETHERING__SENSOR_TYPE__MAGNETIC:
+    case EVENTCAST__SENSOR_TYPE__MAGNETIC:
     {
         char tmp[255] = {0};
 
         sprintf(tmp, "%d\n%d\n%s\n%s\n%s\n",
                 level_magnetic, 3, data->x, data->y, data->z);
-        send_tethering_sensor_data(tmp, strlen(tmp));
+        send_eventcast_sensor_data(tmp, strlen(tmp));
 
         LOG_TRACE("sensor_mag x: %s, y: %s, z: %s\n",
             data->x, data->y, data->z);
     }
         break;
-    case TETHERING__SENSOR_TYPE__GYROSCOPE:
+    case EVENTCAST__SENSOR_TYPE__GYROSCOPE:
     {
         char tmp[255] = {0};
 
         sprintf(tmp, "%d\n%d\n%lf\n%lf\n%lf\n",
                 level_gyro, 3, (atof(data->x) / GYRO_ADJUST),
                 (atof(data->y) / GYRO_ADJUST), (atof(data->z) / GYRO_ADJUST));
-        send_tethering_sensor_data(tmp, strlen(tmp));
+        send_eventcast_sensor_data(tmp, strlen(tmp));
 
         LOG_TRACE("sensor_gyro x: %s, y: %s, z: %s\n",
             data->x, data->y, data->z);
     }
         break;
-    case TETHERING__SENSOR_TYPE__PROXIMITY:
+    case EVENTCAST__SENSOR_TYPE__PROXIMITY:
     {
         char tmp[255] = {0};
         double x = (double)(atoi(data->x));
 
         sprintf(tmp, "%d\n%d\n%.1f\n", level_proxi, 1, x);
-        send_tethering_sensor_data(tmp, strlen(tmp));
+        send_eventcast_sensor_data(tmp, strlen(tmp));
 
         LOG_TRACE("sensor_proxi x: %.1f, %s\n", x, tmp);
     }
         break;
-    case TETHERING__SENSOR_TYPE__LIGHT:
+    case EVENTCAST__SENSOR_TYPE__LIGHT:
     {
         char tmp[255] = {0};
 
         sprintf(tmp, "%d\n%d\n%s%s\n", level_light, 2, data->x, data->y);
-        send_tethering_sensor_data(tmp, strlen(tmp));
+        send_eventcast_sensor_data(tmp, strlen(tmp));
 
         LOG_TRACE("sensor_light x: %s\n", data->x);
     }
@@ -212,36 +212,36 @@ static void set_sensor_data(Tethering__SensorData *data)
     }
 }
 
-bool msgproc_tethering_sensor_msg(void *message)
+bool msgproc_eventcast_sensor_msg(void *message)
 {
     bool ret = true;
-    Tethering__SensorMsg *msg = (Tethering__SensorMsg *)message;
+    Eventcast__SensorMsg *msg = (Eventcast__SensorMsg *)message;
 
     switch(msg->type) {
-    case TETHERING__SENSOR_MSG__TYPE__START_REQ:
+    case EVENTCAST__SENSOR_MSG__TYPE__START_REQ:
         LOG_TRACE("SENSOR_MSG_TYPE_START_REQ\n");
 
         // set sensor type.
-        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__ACCEL,
-                                TETHERING__STATE__ENABLED);
-        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__MAGNETIC,
-                                TETHERING__STATE__ENABLED);
-        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__GYROSCOPE,
-                                TETHERING__STATE__ENABLED);
-        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__PROXIMITY,
-                                TETHERING__STATE__ENABLED);
-        send_set_sensor_status_msg(TETHERING__SENSOR_TYPE__LIGHT,
-                                TETHERING__STATE__ENABLED);
+        send_set_sensor_status_msg(EVENTCAST__SENSOR_TYPE__ACCEL,
+                                EVENTCAST__STATE__ENABLED);
+        send_set_sensor_status_msg(EVENTCAST__SENSOR_TYPE__MAGNETIC,
+                                EVENTCAST__STATE__ENABLED);
+        send_set_sensor_status_msg(EVENTCAST__SENSOR_TYPE__GYROSCOPE,
+                                EVENTCAST__STATE__ENABLED);
+        send_set_sensor_status_msg(EVENTCAST__SENSOR_TYPE__PROXIMITY,
+                                EVENTCAST__STATE__ENABLED);
+        send_set_sensor_status_msg(EVENTCAST__SENSOR_TYPE__LIGHT,
+                                EVENTCAST__STATE__ENABLED);
 
         LOG_TRACE("SENSOR_MSG_TYPE_START_ANS\n");
-        send_sensor_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
+        send_sensor_start_ans_msg(EVENTCAST__MESSAGE_RESULT__SUCCESS);
 
         break;
-    case TETHERING__SENSOR_MSG__TYPE__TERMINATE:
+    case EVENTCAST__SENSOR_MSG__TYPE__TERMINATE:
         LOG_TRACE("SENSOR_MSG_TYPE_TERMINATE\n");
         break;
 
-    case TETHERING__SENSOR_MSG__TYPE__SENSOR_DATA:
+    case EVENTCAST__SENSOR_MSG__TYPE__SENSOR_DATA:
         LOG_TRACE("SENSOR_MSG_TYPE_SENSOR_DATA\n");
         set_sensor_data(msg->data);
         break;
@@ -254,13 +254,13 @@ bool msgproc_tethering_sensor_msg(void *message)
     return ret;
 }
 
-int get_tethering_sensor_status(void)
+int get_eventcast_sensor_status(void)
 {
     return sensor_device_status;
 }
 
-void set_tethering_sensor_status(int status)
+void set_eventcast_sensor_status(int status)
 {
     sensor_device_status = status;
-    send_tethering_sensor_status_ecp();
+    send_eventcast_sensor_status_ecp();
 }

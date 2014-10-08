@@ -99,7 +99,7 @@ message NfcNtf {
 	optional bytes data = 2;
 }
 
-message TetheringReq {
+message EventCastReq {
 	required string category = 1;
 	required int32 length = 2;
 	required int32 group = 3;
@@ -107,7 +107,7 @@ message TetheringReq {
 	optional bytes data = 5;
 }
 
-message TetheringAns {
+message EventCastAns {
 	required int32 errcode = 1;
 	optional string errstr = 2;
 	required string category = 3;
@@ -117,7 +117,7 @@ message TetheringAns {
 	optional bytes data = 7;
 }
 
-message TetheringNtf {
+message EventCastNtf {
 	required string category = 1;
 	required int32 length = 2;
 	required int32 group = 3;
@@ -152,9 +152,9 @@ message Master {
 	optional NfcReq nfc_req = 101;
 	optional NfcNtf nfc_ntf = 102;
 
-	optional TetheringReq tethering_req = 103;
-	optional TetheringAns tethering_ans = 104;
-	optional TetheringNtf tethering_ntf = 105;
+	optional EventCastReq eventcast_req = 103;
+	optional EventCastAns eventcast_ans = 104;
+	optional EventCastNtf eventcast_ntf = 105;
 }
 
 

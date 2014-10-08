@@ -263,14 +263,15 @@ void *encode_framebuffer(int encoder)
 {
     void *output = NULL;
 
-#ifdef CONFIG_PNG
 #if defined(CONFIG_LINUX) && defined(ENCODE_DEBUG)
     struct timespec start, end;
 
     clock_gettime(CLOCK_MONOTONIC, &start);
 #endif
 
+#ifdef CONFIG_PNG
     output = encode_png();
+#endif
 
 #if defined(CONFIG_LINUX) && defined(ENCODE_DEBUG)
     clock_gettime(CLOCK_MONOTONIC, &end);
@@ -279,7 +280,8 @@ void *encode_framebuffer(int encoder)
         ((double)end.tv_sec + (1.0e-9 * end.tv_nsec)) -
         ((double)start.tv_sec + (1.0e-9 * start.tv_nsec)));
 #endif
-#endif
+
+    LOG_TRACE("encode framebuffer: %p\n", output);
 
     return output;
 }
@@ -288,7 +290,7 @@ static bool display_dirty = false;
 
 void set_display_dirty(bool dirty)
 {
-    LOG_TRACE("qemu display update: %d\n", display_dirty);
+    // LOG_TRACE("qemu display update: %d\n", display_dirty);
     display_dirty = dirty;
 }
 

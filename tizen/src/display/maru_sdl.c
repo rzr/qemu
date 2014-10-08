@@ -39,7 +39,7 @@
 #include "hw/pci/maru_brightness.h"
 #include "debug_ch.h"
 
-#include "tethering/encode_fb.h"
+#include "eventcast/encode_fb.h"
 
 #include <SDL.h>
 #ifndef CONFIG_WIN32

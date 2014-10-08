@@ -42,12 +42,12 @@ enum touch_status {
 
 bool send_msg_to_controller(void *msg);
 
-int connect_tethering_app(const char *ipaddress, int port);
+int connect_eventcast_app(const char *ipaddress, int port);
 
-int disconnect_tethering_app(void);
+int disconnect_eventcast_app(void);
 
-int get_tethering_connection_status(void);
+int get_eventcast_connection_status(void);
 
-int get_tethering_connected_port(void);
+int get_eventcast_connected_port(void);
 
-const char *get_tethering_connected_ipaddr(void);
+const char *get_eventcast_connected_ipaddr(void);

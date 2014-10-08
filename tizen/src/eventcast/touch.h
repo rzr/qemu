@@ -28,8 +28,13 @@
  *
  */
 
-bool msgproc_tethering_sensor_msg(void *msg);
+enum {
+    ENCODE_WEBP = 0,
+    ENCODE_PNG,
+};
 
-int get_tethering_sensor_status(void);
+bool msgproc_eventcast_touch_msg(void *message);
 
-void set_tethering_sensor_status(int status);
+int get_eventcast_touch_status(void);
+
+void set_eventcast_touch_status(int status);

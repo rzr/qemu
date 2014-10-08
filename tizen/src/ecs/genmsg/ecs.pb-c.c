@@ -651,133 +651,133 @@ void   ecs__nfc_ntf__free_unpacked
   PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__nfc_ntf__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   ecs__tethering_req__init
-                     (ECS__TetheringReq         *message)
+void   ecs__event_cast_req__init
+                     (ECS__EventCastReq         *message)
 {
-  static ECS__TetheringReq init_value = ECS__TETHERING_REQ__INIT;
+  static ECS__EventCastReq init_value = ECS__EVENT_CAST_REQ__INIT;
   *message = init_value;
 }
-size_t ecs__tethering_req__get_packed_size
-                     (const ECS__TetheringReq *message)
+size_t ecs__event_cast_req__get_packed_size
+                     (const ECS__EventCastReq *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_req__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t ecs__tethering_req__pack
-                     (const ECS__TetheringReq *message,
+size_t ecs__event_cast_req__pack
+                     (const ECS__EventCastReq *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_req__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t ecs__tethering_req__pack_to_buffer
-                     (const ECS__TetheringReq *message,
+size_t ecs__event_cast_req__pack_to_buffer
+                     (const ECS__EventCastReq *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_req__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-ECS__TetheringReq *
-       ecs__tethering_req__unpack
+ECS__EventCastReq *
+       ecs__event_cast_req__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (ECS__TetheringReq *)
-     protobuf_c_message_unpack (&ecs__tethering_req__descriptor,
+  return (ECS__EventCastReq *)
+     protobuf_c_message_unpack (&ecs__event_cast_req__descriptor,
                                 allocator, len, data);
 }
-void   ecs__tethering_req__free_unpacked
-                     (ECS__TetheringReq *message,
+void   ecs__event_cast_req__free_unpacked
+                     (ECS__EventCastReq *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_req__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   ecs__tethering_ans__init
-                     (ECS__TetheringAns         *message)
+void   ecs__event_cast_ans__init
+                     (ECS__EventCastAns         *message)
 {
-  static ECS__TetheringAns init_value = ECS__TETHERING_ANS__INIT;
+  static ECS__EventCastAns init_value = ECS__EVENT_CAST_ANS__INIT;
   *message = init_value;
 }
-size_t ecs__tethering_ans__get_packed_size
-                     (const ECS__TetheringAns *message)
+size_t ecs__event_cast_ans__get_packed_size
+                     (const ECS__EventCastAns *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_ans__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t ecs__tethering_ans__pack
-                     (const ECS__TetheringAns *message,
+size_t ecs__event_cast_ans__pack
+                     (const ECS__EventCastAns *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_ans__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t ecs__tethering_ans__pack_to_buffer
-                     (const ECS__TetheringAns *message,
+size_t ecs__event_cast_ans__pack_to_buffer
+                     (const ECS__EventCastAns *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_ans__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-ECS__TetheringAns *
-       ecs__tethering_ans__unpack
+ECS__EventCastAns *
+       ecs__event_cast_ans__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (ECS__TetheringAns *)
-     protobuf_c_message_unpack (&ecs__tethering_ans__descriptor,
+  return (ECS__EventCastAns *)
+     protobuf_c_message_unpack (&ecs__event_cast_ans__descriptor,
                                 allocator, len, data);
 }
-void   ecs__tethering_ans__free_unpacked
-                     (ECS__TetheringAns *message,
+void   ecs__event_cast_ans__free_unpacked
+                     (ECS__EventCastAns *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_ans__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_ans__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   ecs__tethering_ntf__init
-                     (ECS__TetheringNtf         *message)
+void   ecs__event_cast_ntf__init
+                     (ECS__EventCastNtf         *message)
 {
-  static ECS__TetheringNtf init_value = ECS__TETHERING_NTF__INIT;
+  static ECS__EventCastNtf init_value = ECS__EVENT_CAST_NTF__INIT;
   *message = init_value;
 }
-size_t ecs__tethering_ntf__get_packed_size
-                     (const ECS__TetheringNtf *message)
+size_t ecs__event_cast_ntf__get_packed_size
+                     (const ECS__EventCastNtf *message)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_ntf__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_ntf__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t ecs__tethering_ntf__pack
-                     (const ECS__TetheringNtf *message,
+size_t ecs__event_cast_ntf__pack
+                     (const ECS__EventCastNtf *message,
                       uint8_t       *out)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_ntf__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_ntf__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t ecs__tethering_ntf__pack_to_buffer
-                     (const ECS__TetheringNtf *message,
+size_t ecs__event_cast_ntf__pack_to_buffer
+                     (const ECS__EventCastNtf *message,
                       ProtobufCBuffer *buffer)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_ntf__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_ntf__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-ECS__TetheringNtf *
-       ecs__tethering_ntf__unpack
+ECS__EventCastNtf *
+       ecs__event_cast_ntf__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (ECS__TetheringNtf *)
-     protobuf_c_message_unpack (&ecs__tethering_ntf__descriptor,
+  return (ECS__EventCastNtf *)
+     protobuf_c_message_unpack (&ecs__event_cast_ntf__descriptor,
                                 allocator, len, data);
 }
-void   ecs__tethering_ntf__free_unpacked
-                     (ECS__TetheringNtf *message,
+void   ecs__event_cast_ntf__free_unpacked
+                     (ECS__EventCastNtf *message,
                       ProtobufCAllocator *allocator)
 {
-  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__tethering_ntf__descriptor);
+  PROTOBUF_C_ASSERT (message->base.descriptor == &ecs__event_cast_ntf__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   ecs__master__init
@@ -1796,7 +1796,7 @@ const ProtobufCMessageDescriptor ecs__nfc_ntf__descriptor =
   (ProtobufCMessageInit) ecs__nfc_ntf__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__tethering_req__field_descriptors[5] =
+static const ProtobufCFieldDescriptor ecs__event_cast_req__field_descriptors[5] =
 {
   {
     "category",
@@ -1804,7 +1804,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_req__field_descriptors[5] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringReq, category),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastReq, category),
     NULL,
     NULL,
     0,            /* packed */
@@ -1816,7 +1816,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_req__field_descriptors[5] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringReq, length),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastReq, length),
     NULL,
     NULL,
     0,            /* packed */
@@ -1828,7 +1828,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_req__field_descriptors[5] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringReq, group),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastReq, group),
     NULL,
     NULL,
     0,            /* packed */
@@ -1840,7 +1840,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_req__field_descriptors[5] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringReq, action),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastReq, action),
     NULL,
     NULL,
     0,            /* packed */
@@ -1851,42 +1851,42 @@ static const ProtobufCFieldDescriptor ecs__tethering_req__field_descriptors[5] =
     5,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_BYTES,
-    PROTOBUF_C_OFFSETOF(ECS__TetheringReq, has_data),
-    PROTOBUF_C_OFFSETOF(ECS__TetheringReq, data),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastReq, has_data),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastReq, data),
     NULL,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned ecs__tethering_req__field_indices_by_name[] = {
+static const unsigned ecs__event_cast_req__field_indices_by_name[] = {
   3,   /* field[3] = action */
   0,   /* field[0] = category */
   4,   /* field[4] = data */
   2,   /* field[2] = group */
   1,   /* field[1] = length */
 };
-static const ProtobufCIntRange ecs__tethering_req__number_ranges[1 + 1] =
+static const ProtobufCIntRange ecs__event_cast_req__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 5 }
 };
-const ProtobufCMessageDescriptor ecs__tethering_req__descriptor =
+const ProtobufCMessageDescriptor ecs__event_cast_req__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.TetheringReq",
-  "TetheringReq",
-  "ECS__TetheringReq",
+  "ECS.EventCastReq",
+  "EventCastReq",
+  "ECS__EventCastReq",
   "ECS",
-  sizeof(ECS__TetheringReq),
+  sizeof(ECS__EventCastReq),
   5,
-  ecs__tethering_req__field_descriptors,
-  ecs__tethering_req__field_indices_by_name,
-  1,  ecs__tethering_req__number_ranges,
-  (ProtobufCMessageInit) ecs__tethering_req__init,
+  ecs__event_cast_req__field_descriptors,
+  ecs__event_cast_req__field_indices_by_name,
+  1,  ecs__event_cast_req__number_ranges,
+  (ProtobufCMessageInit) ecs__event_cast_req__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__tethering_ans__field_descriptors[7] =
+static const ProtobufCFieldDescriptor ecs__event_cast_ans__field_descriptors[7] =
 {
   {
     "errcode",
@@ -1894,7 +1894,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ans__field_descriptors[7] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringAns, errcode),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastAns, errcode),
     NULL,
     NULL,
     0,            /* packed */
@@ -1906,7 +1906,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ans__field_descriptors[7] =
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringAns, errstr),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastAns, errstr),
     NULL,
     NULL,
     0,            /* packed */
@@ -1918,7 +1918,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ans__field_descriptors[7] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringAns, category),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastAns, category),
     NULL,
     NULL,
     0,            /* packed */
@@ -1930,7 +1930,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ans__field_descriptors[7] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringAns, length),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastAns, length),
     NULL,
     NULL,
     0,            /* packed */
@@ -1942,7 +1942,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ans__field_descriptors[7] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringAns, group),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastAns, group),
     NULL,
     NULL,
     0,            /* packed */
@@ -1954,7 +1954,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ans__field_descriptors[7] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringAns, action),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastAns, action),
     NULL,
     NULL,
     0,            /* packed */
@@ -1965,15 +1965,15 @@ static const ProtobufCFieldDescriptor ecs__tethering_ans__field_descriptors[7] =
     7,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_BYTES,
-    PROTOBUF_C_OFFSETOF(ECS__TetheringAns, has_data),
-    PROTOBUF_C_OFFSETOF(ECS__TetheringAns, data),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastAns, has_data),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastAns, data),
     NULL,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned ecs__tethering_ans__field_indices_by_name[] = {
+static const unsigned ecs__event_cast_ans__field_indices_by_name[] = {
   5,   /* field[5] = action */
   2,   /* field[2] = category */
   6,   /* field[6] = data */
@@ -1982,27 +1982,27 @@ static const unsigned ecs__tethering_ans__field_indices_by_name[] = {
   4,   /* field[4] = group */
   3,   /* field[3] = length */
 };
-static const ProtobufCIntRange ecs__tethering_ans__number_ranges[1 + 1] =
+static const ProtobufCIntRange ecs__event_cast_ans__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 7 }
 };
-const ProtobufCMessageDescriptor ecs__tethering_ans__descriptor =
+const ProtobufCMessageDescriptor ecs__event_cast_ans__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.TetheringAns",
-  "TetheringAns",
-  "ECS__TetheringAns",
+  "ECS.EventCastAns",
+  "EventCastAns",
+  "ECS__EventCastAns",
   "ECS",
-  sizeof(ECS__TetheringAns),
+  sizeof(ECS__EventCastAns),
   7,
-  ecs__tethering_ans__field_descriptors,
-  ecs__tethering_ans__field_indices_by_name,
-  1,  ecs__tethering_ans__number_ranges,
-  (ProtobufCMessageInit) ecs__tethering_ans__init,
+  ecs__event_cast_ans__field_descriptors,
+  ecs__event_cast_ans__field_indices_by_name,
+  1,  ecs__event_cast_ans__number_ranges,
+  (ProtobufCMessageInit) ecs__event_cast_ans__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor ecs__tethering_ntf__field_descriptors[5] =
+static const ProtobufCFieldDescriptor ecs__event_cast_ntf__field_descriptors[5] =
 {
   {
     "category",
@@ -2010,7 +2010,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ntf__field_descriptors[5] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringNtf, category),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastNtf, category),
     NULL,
     NULL,
     0,            /* packed */
@@ -2022,7 +2022,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ntf__field_descriptors[5] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringNtf, length),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastNtf, length),
     NULL,
     NULL,
     0,            /* packed */
@@ -2034,7 +2034,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ntf__field_descriptors[5] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringNtf, group),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastNtf, group),
     NULL,
     NULL,
     0,            /* packed */
@@ -2046,7 +2046,7 @@ static const ProtobufCFieldDescriptor ecs__tethering_ntf__field_descriptors[5] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__TetheringNtf, action),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastNtf, action),
     NULL,
     NULL,
     0,            /* packed */
@@ -2057,39 +2057,39 @@ static const ProtobufCFieldDescriptor ecs__tethering_ntf__field_descriptors[5] =
     5,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_BYTES,
-    PROTOBUF_C_OFFSETOF(ECS__TetheringNtf, has_data),
-    PROTOBUF_C_OFFSETOF(ECS__TetheringNtf, data),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastNtf, has_data),
+    PROTOBUF_C_OFFSETOF(ECS__EventCastNtf, data),
     NULL,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned ecs__tethering_ntf__field_indices_by_name[] = {
+static const unsigned ecs__event_cast_ntf__field_indices_by_name[] = {
   3,   /* field[3] = action */
   0,   /* field[0] = category */
   4,   /* field[4] = data */
   2,   /* field[2] = group */
   1,   /* field[1] = length */
 };
-static const ProtobufCIntRange ecs__tethering_ntf__number_ranges[1 + 1] =
+static const ProtobufCIntRange ecs__event_cast_ntf__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 5 }
 };
-const ProtobufCMessageDescriptor ecs__tethering_ntf__descriptor =
+const ProtobufCMessageDescriptor ecs__event_cast_ntf__descriptor =
 {
   PROTOBUF_C_MESSAGE_DESCRIPTOR_MAGIC,
-  "ECS.TetheringNtf",
-  "TetheringNtf",
-  "ECS__TetheringNtf",
+  "ECS.EventCastNtf",
+  "EventCastNtf",
+  "ECS__EventCastNtf",
   "ECS",
-  sizeof(ECS__TetheringNtf),
+  sizeof(ECS__EventCastNtf),
   5,
-  ecs__tethering_ntf__field_descriptors,
-  ecs__tethering_ntf__field_indices_by_name,
-  1,  ecs__tethering_ntf__number_ranges,
-  (ProtobufCMessageInit) ecs__tethering_ntf__init,
+  ecs__event_cast_ntf__field_descriptors,
+  ecs__event_cast_ntf__field_indices_by_name,
+  1,  ecs__event_cast_ntf__number_ranges,
+  (ProtobufCMessageInit) ecs__event_cast_ntf__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor ecs__master__field_descriptors[19] =
@@ -2287,37 +2287,37 @@ static const ProtobufCFieldDescriptor ecs__master__field_descriptors[19] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "tethering_req",
+    "eventcast_req",
     103,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, tethering_req),
-    &ecs__tethering_req__descriptor,
+    PROTOBUF_C_OFFSETOF(ECS__Master, eventcast_req),
+    &ecs__event_cast_req__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "tethering_ans",
+    "eventcast_ans",
     104,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, tethering_ans),
-    &ecs__tethering_ans__descriptor,
+    PROTOBUF_C_OFFSETOF(ECS__Master, eventcast_ans),
+    &ecs__event_cast_ans__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "tethering_ntf",
+    "eventcast_ntf",
     105,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
-    PROTOBUF_C_OFFSETOF(ECS__Master, tethering_ntf),
-    &ecs__tethering_ntf__descriptor,
+    PROTOBUF_C_OFFSETOF(ECS__Master, eventcast_ntf),
+    &ecs__event_cast_ntf__descriptor,
     NULL,
     0,            /* packed */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -2329,6 +2329,9 @@ static const unsigned ecs__master__field_indices_by_name[] = {
   9,   /* field[9] = device_ans */
   10,   /* field[10] = device_ntf */
   8,   /* field[8] = device_req */
+  17,   /* field[17] = eventcast_ans */
+  18,   /* field[18] = eventcast_ntf */
+  16,   /* field[16] = eventcast_req */
   6,   /* field[6] = injector_ans */
   7,   /* field[7] = injector_ntf */
   5,   /* field[5] = injector_req */
@@ -2339,9 +2342,6 @@ static const unsigned ecs__master__field_indices_by_name[] = {
   11,   /* field[11] = monitor_req */
   15,   /* field[15] = nfc_ntf */
   14,   /* field[14] = nfc_req */
-  17,   /* field[17] = tethering_ans */
-  18,   /* field[18] = tethering_ntf */
-  16,   /* field[16] = tethering_req */
   0,   /* field[0] = type */
 };
 static const ProtobufCIntRange ecs__master__number_ranges[2 + 1] =

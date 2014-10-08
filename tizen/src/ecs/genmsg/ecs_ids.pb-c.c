@@ -23,9 +23,9 @@ const ProtobufCEnumValue ecs__master__type__enum_values_by_number[18] =
   { "MONITOR_NTF", "ECS__MASTER__TYPE__MONITOR_NTF", 14 },
   { "NFC_REQ", "ECS__MASTER__TYPE__NFC_REQ", 101 },
   { "NFC_NTF", "ECS__MASTER__TYPE__NFC_NTF", 102 },
-  { "TETHERING_REQ", "ECS__MASTER__TYPE__TETHERING_REQ", 103 },
-  { "TETHERING_ANS", "ECS__MASTER__TYPE__TETHERING_ANS", 104 },
-  { "TETHERING_NTF", "ECS__MASTER__TYPE__TETHERING_NTF", 105 },
+  { "EVENTCAST_REQ", "ECS__MASTER__TYPE__EVENTCAST_REQ", 103 },
+  { "EVENTCAST_ANS", "ECS__MASTER__TYPE__EVENTCAST_ANS", 104 },
+  { "EVENTCAST_NTF", "ECS__MASTER__TYPE__EVENTCAST_NTF", 105 },
 };
 static const ProtobufCIntRange ecs__master__type__value_ranges[] = {
 {2, 0},{101, 13},{0, 18}
@@ -37,6 +37,9 @@ const ProtobufCEnumValueIndex ecs__master__type__enum_values_by_name[18] =
   { "DEVICE_ANS", 8 },
   { "DEVICE_NTF", 9 },
   { "DEVICE_REQ", 7 },
+  { "EVENTCAST_ANS", 16 },
+  { "EVENTCAST_NTF", 17 },
+  { "EVENTCAST_REQ", 15 },
   { "INJECTOR_ANS", 5 },
   { "INJECTOR_NTF", 6 },
   { "INJECTOR_REQ", 4 },
@@ -47,9 +50,6 @@ const ProtobufCEnumValueIndex ecs__master__type__enum_values_by_name[18] =
   { "MONITOR_REQ", 10 },
   { "NFC_NTF", 14 },
   { "NFC_REQ", 13 },
-  { "TETHERING_ANS", 16 },
-  { "TETHERING_NTF", 17 },
-  { "TETHERING_REQ", 15 },
 };
 const ProtobufCEnumDescriptor ecs__master__type__descriptor =
 {

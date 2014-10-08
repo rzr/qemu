@@ -33,8 +33,8 @@
 #include "common.h"
 #include "touch.h"
 #include "encode_fb.h"
-#include "genmsg/tethering.pb-c.h"
-#include "ecs/ecs_tethering.h"
+#include "genmsg/eventcast.pb-c.h"
+#include "ecs/ecs_eventcast.h"
 #include "util/new_debug_ch.h"
 
 DECLARE_DEBUG_CHANNEL(app_tethering);
@@ -45,17 +45,17 @@ static bool send_display_image_data(void);
 #define HARD_KEY_MENU 169
 #define HARD_KEY_BACK 158
 
-static bool build_touch_msg(Tethering__TouchMsg *touch)
+static bool build_touch_msg(Eventcast__TouchMsg *touch)
 {
     bool ret = false;
-    Tethering__TetheringMsg msg = TETHERING__TETHERING_MSG__INIT;
+    Eventcast__EventCastMsg msg = EVENTCAST__EVENT_CAST_MSG__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
-    msg.type = TETHERING__TETHERING_MSG__TYPE__TOUCH_MSG;
+    msg.type = EVENTCAST__EVENT_CAST_MSG__TYPE__TOUCH_MSG;
     msg.touchmsg = touch;
 
-    LOG_TRACE("touch message size: %d\n", tethering__tethering_msg__get_packed_size(&msg));
+    LOG_TRACE("touch message size: %d\n", eventcast__event_cast_msg__get_packed_size(&msg));
     ret = send_msg_to_controller(&msg);
 
     LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
@@ -63,18 +63,18 @@ static bool build_touch_msg(Tethering__TouchMsg *touch)
     return ret;
 }
 
-static bool send_touch_start_ans_msg(Tethering__MessageResult result)
+static bool send_touch_start_ans_msg(Eventcast__MessageResult result)
 {
     bool ret = false;
 
-    Tethering__TouchMsg mt = TETHERING__TOUCH_MSG__INIT;
-    Tethering__StartAns start_ans = TETHERING__START_ANS__INIT;
+    Eventcast__TouchMsg mt = EVENTCAST__TOUCH_MSG__INIT;
+    Eventcast__StartAns start_ans = EVENTCAST__START_ANS__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
     start_ans.result = result;
 
-    mt.type = TETHERING__TOUCH_MSG__TYPE__START_ANS;
+    mt.type = EVENTCAST__TOUCH_MSG__TYPE__START_ANS;
     mt.startans = &start_ans;
 
     ret = build_touch_msg(&mt);
@@ -88,15 +88,15 @@ static bool send_set_touch_max_count(void)
 {
     bool ret = false;
 
-    Tethering__TouchMsg mt = TETHERING__TOUCH_MSG__INIT;
-    Tethering__TouchMaxCount touch_cnt =
-        TETHERING__TOUCH_MAX_COUNT__INIT;
+    Eventcast__TouchMsg mt = EVENTCAST__TOUCH_MSG__INIT;
+    Eventcast__TouchMaxCount touch_cnt =
+        EVENTCAST__TOUCH_MAX_COUNT__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
     touch_cnt.max = get_emul_max_touch_point();
 
-    mt.type = TETHERING__TOUCH_MSG__TYPE__MAX_COUNT;
+    mt.type = EVENTCAST__TOUCH_MSG__TYPE__MAX_COUNT;
     mt.maxcount = &touch_cnt;
 
     LOG_TRACE("send touch max count: %d\n", touch_cnt.max);
@@ -107,20 +107,20 @@ static bool send_set_touch_max_count(void)
     return ret;
 }
 
-static void set_touch_data(Tethering__TouchData *data)
+static void set_touch_data(Eventcast__TouchData *data)
 {
     float x = 0.0, y = 0.0;
     int32_t index = 0, state = 0;
 
     switch(data->state) {
-    case TETHERING__TOUCH_STATE__PRESSED:
+    case EVENTCAST__TOUCH_STATE__PRESSED:
         LOG_TRACE("touch pressed\n");
         index = data->index;
         x = data->xpoint;
         y = data->ypoint;
         state = PRESSED;
         break;
-    case TETHERING__TOUCH_STATE__RELEASED:
+    case EVENTCAST__TOUCH_STATE__RELEASED:
         LOG_TRACE("touch released\n");
         index = data->index;
         x = data->xpoint;
@@ -133,22 +133,22 @@ static void set_touch_data(Tethering__TouchData *data)
     }
 
     LOG_TRACE("set touch_data. index: %d, x: %lf, y: %lf\n", index, x, y);
-    send_tethering_touch_data(x, y, index, state);
+    send_eventcast_touch_data(x, y, index, state);
 }
 
 static bool send_set_touch_resolution(void)
 {
     bool ret = false;
 
-    Tethering__TouchMsg mt = TETHERING__TOUCH_MSG__INIT;
-    Tethering__Resolution resolution = TETHERING__RESOLUTION__INIT;
+    Eventcast__TouchMsg mt = EVENTCAST__TOUCH_MSG__INIT;
+    Eventcast__Resolution resolution = EVENTCAST__RESOLUTION__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
     resolution.width = get_emul_resolution_width();
     resolution.height = get_emul_resolution_height();
 
-    mt.type = TETHERING__TOUCH_MSG__TYPE__RESOLUTION;
+    mt.type = EVENTCAST__TOUCH_MSG__TYPE__RESOLUTION;
     mt.resolution = &resolution;
 
     LOG_TRACE("send touch resolution: %dx%d\n",
@@ -160,32 +160,32 @@ static bool send_set_touch_resolution(void)
     return ret;
 }
 
-static void set_hwkey_data(Tethering__HWKeyMsg *msg)
+static void set_hwkey_data(Eventcast__HWKeyMsg *msg)
 {
     int32_t keycode = 0;
 
     switch (msg->type) {
-    case TETHERING__HWKEY_TYPE__MENU:
+    case EVENTCAST__HWKEY_TYPE__MENU:
         keycode = HARD_KEY_MENU;
         break;
 
-    case TETHERING__HWKEY_TYPE__HOME:
+    case EVENTCAST__HWKEY_TYPE__HOME:
         keycode = HARD_KEY_HOME;
         break;
 
-    case TETHERING__HWKEY_TYPE__BACK:
+    case EVENTCAST__HWKEY_TYPE__BACK:
         keycode = HARD_KEY_BACK;
         break;
 
-    case TETHERING__HWKEY_TYPE__POWER:
+    case EVENTCAST__HWKEY_TYPE__POWER:
         keycode = HARD_KEY_POWER;
         break;
 
-    case TETHERING__HWKEY_TYPE__VOLUME_UP:
+    case EVENTCAST__HWKEY_TYPE__VOLUME_UP:
         keycode = HARD_KEY_VOL_UP;
         break;
 
-    case TETHERING__HWKEY_TYPE__VOLUME_DOWN:
+    case EVENTCAST__HWKEY_TYPE__VOLUME_DOWN:
         keycode = HARD_KEY_VOL_DOWN;
         break;
 
@@ -194,31 +194,31 @@ static void set_hwkey_data(Tethering__HWKeyMsg *msg)
     }
 
     LOG_TRACE("convert hwkey msg to keycode: %d\n", keycode);
-    send_tethering_hwkey_data(keycode);
+    send_eventcast_hwkey_data(keycode);
 }
 
-bool msgproc_tethering_touch_msg(void *message)
+bool msgproc_eventcast_touch_msg(void *message)
 {
     bool ret = true;
-    Tethering__TouchMsg *msg = (Tethering__TouchMsg *)message;
+    Eventcast__TouchMsg *msg = (Eventcast__TouchMsg *)message;
 
     switch(msg->type) {
-    case TETHERING__TOUCH_MSG__TYPE__START_REQ:
+    case EVENTCAST__TOUCH_MSG__TYPE__START_REQ:
         LOG_TRACE("TOUCH_MSG_TYPE_START\n");
         send_set_touch_max_count();
         send_set_touch_resolution();
-        ret = send_touch_start_ans_msg(TETHERING__MESSAGE_RESULT__SUCCESS);
+        ret = send_touch_start_ans_msg(EVENTCAST__MESSAGE_RESULT__SUCCESS);
         break;
-    case TETHERING__TOUCH_MSG__TYPE__TERMINATE:
+    case EVENTCAST__TOUCH_MSG__TYPE__TERMINATE:
         LOG_TRACE("TOUCH_MSG_TYPE_TERMINATE\n");
         break;
 
-    case TETHERING__TOUCH_MSG__TYPE__TOUCH_DATA:
+    case EVENTCAST__TOUCH_MSG__TYPE__TOUCH_DATA:
         LOG_TRACE("TOUCH_MSG_TYPE_TOUCH_DATA\n");
         set_touch_data(msg->touchdata);
         break;
 
-    case TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG:
+    case EVENTCAST__TOUCH_MSG__TYPE__DISPLAY_MSG:
         LOG_TRACE("TOUCH_MSG_TYPE_DISPLAY_MSG\n");
 
         if (is_display_dirty()) {
@@ -229,7 +229,7 @@ bool msgproc_tethering_touch_msg(void *message)
         }
         break;
 
-    case TETHERING__TOUCH_MSG__TYPE__HWKEY_MSG:
+    case EVENTCAST__TOUCH_MSG__TYPE__HWKEY_MSG:
         LOG_TRACE("TOUCH_MSG_TYPE_HWKEY_MSG\n");
         set_hwkey_data(msg->hwkey);
         break;
@@ -243,15 +243,15 @@ bool msgproc_tethering_touch_msg(void *message)
     return ret;
 }
 
-int get_tethering_touch_status(void)
+int get_eventcast_touch_status(void)
 {
     return touch_device_status;
 }
 
-void set_tethering_touch_status(int status)
+void set_eventcast_touch_status(int status)
 {
     touch_device_status = status;
-    send_tethering_touch_status_ecp();
+    send_eventcast_touch_status_ecp();
 }
 
 static void dump_display_image_data(struct encode_mem *image)
@@ -272,8 +272,8 @@ static bool send_display_image_data(void)
     bool ret = false;
     struct encode_mem *image = NULL;
 
-    Tethering__TouchMsg touch = TETHERING__TOUCH_MSG__INIT;
-    Tethering__DisplayMsg display = TETHERING__DISPLAY_MSG__INIT;
+    Eventcast__TouchMsg touch = EVENTCAST__TOUCH_MSG__INIT;
+    Eventcast__DisplayMsg display = EVENTCAST__DISPLAY_MSG__INIT;
 
     LOG_TRACE("enter: %s\n", __func__);
 
@@ -290,7 +290,7 @@ static bool send_display_image_data(void)
     display.imagedata.len = image->length;
     display.imagedata.data = image->buffer;
 
-    touch.type = TETHERING__TOUCH_MSG__TYPE__DISPLAY_MSG;
+    touch.type = EVENTCAST__TOUCH_MSG__TYPE__DISPLAY_MSG;
     touch.display = &display;
 
     ret = build_touch_msg(&touch);
@@ -300,5 +300,6 @@ static bool send_display_image_data(void)
     g_free(image);
 
     LOG_TRACE("leave: %s, ret: %d\n", __func__, ret);
+
     return ret;
 }

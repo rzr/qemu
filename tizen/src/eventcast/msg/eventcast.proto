@@ -1,8 +1,8 @@
-package tethering;
+package eventcast;
 
-option java_package = "device.tethering.genmsg";
+option java_package = "device.eventcast.genmsg";
 
-// protoc-c --c_out=../genmsg tethering.proto
+// protoc-c --c_out=../genmsg eventcast.proto
 
 // define value
 enum MessageResult {
@@ -193,7 +193,7 @@ message TouchMsg {
 	optional HWKeyMsg hwkey = 9;
 }
 
-message TetheringMsg {
+message EventCastMsg {
 	enum Type {
 		HANDSHAKE_REQ = 2;
 		HANDSHAKE_ANS = 3;

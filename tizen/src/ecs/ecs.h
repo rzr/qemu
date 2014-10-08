@@ -202,7 +202,7 @@ bool msgproc_device_req(ECS_Client* ccli, ECS__DeviceReq* msg);
 bool msgproc_nfc_req(ECS_Client* ccli, ECS__NfcReq* msg);
 void msgproc_checkversion_req(ECS_Client* ccli, ECS__CheckVersionReq* msg);
 void msgproc_keepalive_ans(ECS_Client* ccli, ECS__KeepAliveAns* msg);
-bool msgproc_tethering_req(ECS_Client* ccli, ECS__TetheringReq* msg);
+bool msgproc_eventcast_req(ECS_Client* ccli, ECS__EventCastReq* msg);
 
 char *get_tizen_sdk_data_path(void);
 
