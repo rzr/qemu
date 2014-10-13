@@ -47,6 +47,14 @@
 
 DECLARE_DEBUG_CHANNEL(app_tethering);
 
+#if !defined(CONFIG_SDL) || (!defined(CONFIG_SHM) && defined(CONFIG_DARWIN))
+bool maru_extract_framebuffer(void *buffer)
+{
+    LOG_INFO("SDL or SHM module is not enabled");
+    return false;
+}
+#endif
+
 #ifdef CONFIG_WEBP
 /*
  *  webp functions
