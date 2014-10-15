@@ -1,0 +1,7 @@
+obj-y += genmsg/eventcast.pb-c.o # protobuf-c.o
+obj-y += common.o
+obj-y += sensor.o
+obj-y += touch.o
+obj-y += encode_fb.o
+
+encode_fb.o-cflags := $(LIBPNG_CFLAGS)
