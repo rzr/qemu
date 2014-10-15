@@ -355,13 +355,13 @@ static int emulator_main(int argc, char *argv[], char **envp)
         }
     }
 
-    if (!profile && !conf) {
+   /* if (!profile && !conf) {
         fprintf(stderr, "Usage: %s {-c|--conf} conf_file ...\n"
                         "       %s {-p|--profile} profile ...\n",
                         basename(argv[0]), basename(argv[0]));
 
         return -1;
-    }
+    }*/
 
     // load profile configurations
     _qemu_argc = 0;
