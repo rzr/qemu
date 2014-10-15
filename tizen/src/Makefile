@@ -4,6 +4,11 @@ DIBS_ARM_DIR=../arm
 DIBS_COMMON_DIR=../common
 DIBS_SWT_DIR=-Dclasspath.dibs=$(ROOTDIR)/tools/emulator/bin
 
+ifeq ($(CC),"")
+	@echo "cc does not exist"
+	@exit 1
+endif
+
 ifndef TIZEN_SDK_DEV_PATH
 TIZEN_SDK_DEV_PATH=${HOME}/tizen-sdk-dev
 endif
@@ -46,9 +51,9 @@ CHECK_GL_LDFLAGS += -mmacosx-version-min=10.4 `pkg-config --cflags --libs glib-2
 endif
 
 util/check-gl$(EXESUF): $(CHECK_GL_OBJS)
-	gcc $(CHECK_GL_OBJS) $(CHECK_GL_LDFLAGS) -o $@
+	$(CC) $(CHECK_GL_OBJS) $(CHECK_GL_LDFLAGS) -o $@
 $(CHECK_GL_OBJS): %.o: %.c
-	gcc $< $(CHECK_GL_CFLAGS) -o $@
+	$(CC) $< $(CHECK_GL_CFLAGS) -o $@
 
 # Building check-cam
 CHECK_CAM_CFLAGS = -c

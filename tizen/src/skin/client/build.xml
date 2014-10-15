@@ -123,7 +123,7 @@
 			<classpath refid="classpath" />
 			<class name="org.tizen.emulator.skin.EmulatorShmSkin" />
 		</javah>
-		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+		<exec dir="native_src" executable="cc" failifexecutionfails="false">
 			<arg line="-mmacosx-version-min=10.4" />
 			<arg line="-c" />
 			<arg line="share.c" />
@@ -131,7 +131,7 @@
 			<arg line="share.o" />
 			<arg line="-I${env.JAVA_JNI_H_INCLUDE_PATH}" />
 		</exec>
-		<exec dir="native_src" executable="gcc" failifexecutionfails="false">
+		<exec dir="native_src" executable="cc" failifexecutionfails="false">
 			<arg line="-dynamiclib" />
 			<arg line="share.o" />
 			<arg line="-o" />
