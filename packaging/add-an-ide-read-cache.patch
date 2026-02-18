@@ -1,3 +1,7 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: add-an-ide-read-cache
+
 Add an IDE read cache
 
 From: Tim Smith <tim.smith@citrix.com>
@@ -6,11 +10,16 @@ Insert a read cache at the IDE layer to improve the performance of
 multiple sector reads. This also converts the read to a blocking read
 instead of an asynchronous one, which affects performance beyond the
 operation of the cache.
+---
+ hw/ide/core.c             | 52 +++++++++++++++++++++++++++++++++++++++++++++--
+ include/hw/ide/internal.h |  7 +++++++
+ 2 files changed, 57 insertions(+), 2 deletions(-)
+
 diff --git a/hw/ide/core.c b/hw/ide/core.c
-index 8e1624f7ce..959163364d 100644
+index f7bd8fc..6f762da 100644
 --- a/hw/ide/core.c
 +++ b/hw/ide/core.c
-@@ -747,6 +747,7 @@ static void ide_sector_read(IDEState *s)
+@@ -761,6 +761,7 @@ static void ide_sector_read(IDEState *s)
  {
      int64_t sector_num;
      int n;
@@ -18,7 +27,7 @@ index 8e1624f7ce..959163364d 100644
  
      s->status = READY_STAT | SEEK_STAT;
      s->error = 0; /* not needed by IDE spec, but needed by Windows */
-@@ -776,8 +777,52 @@ static void ide_sector_read(IDEState *s)
+@@ -790,8 +791,52 @@ static void ide_sector_read(IDEState *s)
  
      block_acct_start(blk_get_stats(s->blk), &s->acct,
                       n * BDRV_SECTOR_SIZE, BLOCK_ACCT_READ);
@@ -73,7 +82,7 @@ index 8e1624f7ce..959163364d 100644
  }
  
  void dma_buf_commit(IDEState *s, uint32_t tx_bytes)
-@@ -1020,6 +1065,7 @@ static void ide_sector_write(IDEState *s)
+@@ -1048,6 +1093,7 @@ static void ide_sector_write(IDEState *s)
      s->status = READY_STAT | SEEK_STAT | BUSY_STAT;
      sector_num = ide_get_sector(s);
  
@@ -81,7 +90,7 @@ index 8e1624f7ce..959163364d 100644
      n = s->nsector;
      if (n > s->req_nb_sectors) {
          n = s->req_nb_sectors;
-@@ -1337,6 +1383,7 @@ static void ide_reset(IDEState *s)
+@@ -1365,6 +1411,7 @@ static void ide_reset(IDEState *s)
      s->end_transfer_func = ide_dummy_transfer_stop;
      ide_dummy_transfer_stop(s);
      s->media_changed = 0;
@@ -89,7 +98,7 @@ index 8e1624f7ce..959163364d 100644
  }
  
  static bool cmd_nop(IDEState *s, uint8_t cmd)
-@@ -2476,6 +2523,7 @@ int ide_init_drive(IDEState *s, BlockBackend *blk, IDEDriveKind kind,
+@@ -2504,6 +2551,7 @@ int ide_init_drive(IDEState *s, BlockBackend *blk, IDEDriveKind kind,
      s->smart_autosave = 1;
      s->smart_errors = 0;
      s->smart_selftest_count = 0;
@@ -98,10 +107,10 @@ index 8e1624f7ce..959163364d 100644
          blk_set_dev_ops(blk, &ide_cd_block_ops, s);
          blk_set_guest_block_size(blk, 2048);
 diff --git a/include/hw/ide/internal.h b/include/hw/ide/internal.h
-index 8efd03132b..f169a61649 100644
+index 52ec197..00668ce 100644
 --- a/include/hw/ide/internal.h
 +++ b/include/hw/ide/internal.h
-@@ -314,6 +314,9 @@ typedef struct IDEDMAOps IDEDMAOps;
+@@ -316,6 +316,9 @@ typedef struct IDEDMAOps IDEDMAOps;
  #define SMART_DISABLE         0xd9
  #define SMART_STATUS          0xda
  
@@ -111,7 +120,7 @@ index 8efd03132b..f169a61649 100644
  typedef enum { IDE_HD, IDE_CD, IDE_CFATA } IDEDriveKind;
  
  typedef void EndTransferFunc(IDEState *);
-@@ -438,6 +441,10 @@ struct IDEState {
+@@ -440,6 +443,10 @@ struct IDEState {
      uint8_t *smart_selftest_data;
      /* AHCI */
      int ncq_queues;
