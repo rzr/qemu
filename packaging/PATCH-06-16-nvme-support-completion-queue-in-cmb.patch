@@ -1,4 +1,3 @@
-From 72e643135a8e1103ad25199b49b16444c584e428 Mon Sep 17 00:00:00 2001
 From: Klaus Birkelund Jensen <klaus@birkelund.eu>
 Date: Fri, 5 Jul 2019 09:23:23 +0200
 Subject: [PATCH 06/16] nvme: support completion queue in cmb
@@ -12,10 +11,10 @@ Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
  1 file changed, 13 insertions(+), 3 deletions(-)
 
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index b87c1f7aa0..09559f79ac 100644
+index 6090346..bba63e4 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -55,6 +55,16 @@ static void nvme_addr_read(NvmeCtrl *n, hwaddr addr, void *buf, int size)
+@@ -60,6 +60,16 @@ static void nvme_addr_read(NvmeCtrl *n, hwaddr addr, void *buf, int size)
      }
  }
  
@@ -32,7 +31,7 @@ index b87c1f7aa0..09559f79ac 100644
  static int nvme_check_sqid(NvmeCtrl *n, uint16_t sqid)
  {
      return sqid < n->params.num_queues && n->sq[sqid] != NULL ? 0 : -1;
-@@ -274,6 +284,7 @@ static void nvme_post_cqes(void *opaque)
+@@ -279,6 +289,7 @@ static void nvme_post_cqes(void *opaque)
  
      QTAILQ_FOREACH_SAFE(req, &cq->req_list, entry, next) {
          NvmeSQueue *sq;
@@ -40,7 +39,7 @@ index b87c1f7aa0..09559f79ac 100644
          hwaddr addr;
  
          if (nvme_cq_full(cq)) {
-@@ -287,8 +298,7 @@ static void nvme_post_cqes(void *opaque)
+@@ -292,8 +303,7 @@ static void nvme_post_cqes(void *opaque)
          req->cqe.sq_head = cpu_to_le16(sq->head);
          addr = cq->dma_addr + cq->tail * n->cqe_size;
          nvme_inc_cq_tail(cq);
@@ -50,7 +49,7 @@ index b87c1f7aa0..09559f79ac 100644
          QTAILQ_INSERT_TAIL(&sq->req_list, req, entry);
      }
      if (cq->tail != cq->head) {
-@@ -1398,7 +1408,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -1402,7 +1412,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
          NVME_CMBLOC_SET_OFST(n->bar.cmbloc, 0);
  
          NVME_CMBSZ_SET_SQS(n->bar.cmbsz, 1);
@@ -59,6 +58,3 @@ index b87c1f7aa0..09559f79ac 100644
          NVME_CMBSZ_SET_LISTS(n->bar.cmbsz, 0);
          NVME_CMBSZ_SET_RDS(n->bar.cmbsz, 1);
          NVME_CMBSZ_SET_WDS(n->bar.cmbsz, 1);
--- 
-2.21.0
-
