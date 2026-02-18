@@ -1,4 +1,6 @@
-nvme-ns: Allow inactive namespaces
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: nvme-ns-allow-inactive
 
 The controller advertises the maximum namespace number but not all of these
 slots may have proper namespaces. These are defined as inactive namespaces by
@@ -11,11 +13,15 @@ Changes are needed in a few places:
 * When the controller is unplugged, only cleanup active namespaces.
 * Keep track of and advertise the maximum valid namespace number rather than
 * the number of active namespaces.
+---
+ hw/block/nvme.c | 24 +++++++++++++++++-------
+ 1 file changed, 17 insertions(+), 7 deletions(-)
+
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 1b8a09853d..29ea5c2023 100644
+index 752459e..d8d68cc 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -1302,6 +1302,7 @@ static uint16_t nvme_identify_ctrl(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -1307,6 +1307,7 @@ static uint16_t nvme_identify_ctrl(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
  static uint16_t nvme_identify_ns(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
  {
      NvmeNamespace *ns;
@@ -23,7 +29,7 @@ index 1b8a09853d..29ea5c2023 100644
      uint32_t nsid = le32_to_cpu(cmd->nsid);
  
      trace_nvme_identify_ns(nsid);
-@@ -1312,9 +1313,13 @@ static uint16_t nvme_identify_ns(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -1317,9 +1318,13 @@ static uint16_t nvme_identify_ns(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
      }
  
      ns = n->namespaces[nsid - 1];
@@ -39,7 +45,7 @@ index 1b8a09853d..29ea5c2023 100644
  }
  
  static uint16_t nvme_identify_ns_list(NvmeCtrl *n, NvmeCmd *cmd,
-@@ -1330,7 +1335,7 @@ static uint16_t nvme_identify_ns_list(NvmeCtrl *n, NvmeCmd *cmd,
+@@ -1335,7 +1340,7 @@ static uint16_t nvme_identify_ns_list(NvmeCtrl *n, NvmeCmd *cmd,
  
      list = g_malloc0(data_len);
      for (i = 0; i < n->num_namespaces; i++) {
@@ -48,7 +54,7 @@ index 1b8a09853d..29ea5c2023 100644
              continue;
          }
          list[j++] = cpu_to_le32(i + 1);
-@@ -1861,7 +1866,9 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
+@@ -1866,7 +1871,9 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
      int i;
  
      for (i = 0; i < n->num_namespaces; i++) {
@@ -59,7 +65,7 @@ index 1b8a09853d..29ea5c2023 100644
      }
  
      for (i = 0; i < n->params.num_queues; i++) {
-@@ -1886,7 +1893,9 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
+@@ -1891,7 +1898,9 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
      }
  
      for (i = 0; i < n->num_namespaces; i++) {
@@ -70,7 +76,7 @@ index 1b8a09853d..29ea5c2023 100644
      }
  
      n->bar.cc = 0;
-@@ -2464,8 +2473,9 @@ int nvme_register_namespace(NvmeCtrl *n, NvmeNamespace *ns, Error **errp)
+@@ -2469,8 +2478,9 @@ int nvme_register_namespace(NvmeCtrl *n, NvmeNamespace *ns, Error **errp)
      trace_nvme_register_namespace(nsid);
  
      n->namespaces[nsid - 1] = ns;
