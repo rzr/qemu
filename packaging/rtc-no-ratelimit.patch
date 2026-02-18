@@ -1,3 +1,7 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: rtc-no-ratelimit
+
 Don't rate limit RTC_CHANGE events
 
 Windows doesn't use the RTC_SET bit in Register B so whenever it
@@ -7,12 +11,15 @@ some get lost and the time offset stored by XAPI gets out of sync. This
 doesn't lessen security since RTC updates were not rate limited with
 qemu-trad (and a guest can consume a lot of dom0 CPU by just writing
 random IO ports anyway).
+---
+ monitor/monitor.c | 1 -
+ 1 file changed, 1 deletion(-)
 
 diff --git a/monitor/monitor.c b/monitor/monitor.c
-index 3ef28171c0..3d63e2e01a 100644
+index 12898b6..ef9531c 100644
 --- a/monitor/monitor.c
 +++ b/monitor/monitor.c
-@@ -226,7 +226,6 @@ int error_vprintf_unless_qmp(const char *fmt, va_list ap)
+@@ -227,7 +227,6 @@ int error_vprintf_unless_qmp(const char *fmt, va_list ap)
  
  static MonitorQAPIEventConf monitor_qapi_event_conf[QAPI_EVENT__MAX] = {
      /* Limit guest-triggerable events to 1 per second */
