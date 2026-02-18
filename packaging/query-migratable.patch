@@ -1,3 +1,7 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:42 +0100
+Subject: query-migratable
+
 Add a command to allow querying whether the VM is migratable
 
 Add a command to allow querying whether the VM is migratable which
@@ -5,11 +9,16 @@ allows the toolstack to prevent migrations when it won't work.
 Like many QMP commands, it returns nothing on success (if the VM is
 migratable). If the VM is not migratable, it returns an error message
 indicating which device is preventing migration.
+---
+ migration/savevm.c |  5 +++++
+ qapi/misc.json     | 17 +++++++++++++++++
+ 2 files changed, 22 insertions(+)
+
 diff --git a/migration/savevm.c b/migration/savevm.c
-index 47c7bc0808..01a5f5abb9 100644
+index 133a1b8..57d029d 100644
 --- a/migration/savevm.c
 +++ b/migration/savevm.c
-@@ -2652,6 +2652,11 @@ int save_snapshot(const char *name, Error **errp)
+@@ -2733,6 +2733,11 @@ int save_snapshot(const char *name, Error **errp)
      return ret;
  }
  
@@ -22,10 +31,10 @@ index 47c7bc0808..01a5f5abb9 100644
                                  Error **errp)
  {
 diff --git a/qapi/misc.json b/qapi/misc.json
-index b91ac34d88..5367459153 100644
+index 33caa72..b02258f 100644
 --- a/qapi/misc.json
 +++ b/qapi/misc.json
-@@ -1617,6 +1617,23 @@
+@@ -1601,6 +1601,23 @@
            }
  }
  
