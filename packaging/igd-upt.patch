@@ -1,14 +1,20 @@
-xen_pt: Support UPT for IGD
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:42 +0100
+Subject: igd-upt
 
 When passing through an IGD in UPT (universal passthrough) mode rather
 than legacy, it does not need to be treated specially.  Fix the
 incorrect assumption that any device at position 00:02.0 is an IGD being
 passed through in legacy mode.
+---
+ hw/xen/xen_pt.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
 diff --git a/hw/xen/xen_pt.c b/hw/xen/xen_pt.c
-index 375efa6..d6bd5a0 100644
+index 8fbaf2e..9c4a77e 100644
 --- a/hw/xen/xen_pt.c
 +++ b/hw/xen/xen_pt.c
-@@ -802,7 +802,8 @@ static void xen_pt_realize(PCIDevice *d, Error **errp)
+@@ -803,7 +803,8 @@ static void xen_pt_realize(PCIDevice *d, Error **errp)
  
      /* Setup VGA bios for passthrough GFX */
      if ((s->real_device.domain == 0) && (s->real_device.bus == 0) &&
