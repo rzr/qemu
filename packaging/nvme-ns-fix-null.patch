@@ -1,12 +1,18 @@
-nvme: Fix NULL ptr dereference
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: nvme-ns-fix-null
 
 For an admin command (get_feature and set_feature) the namespace is not
 set in the req. Instead, get it based on the command's nsid.
+---
+ hw/block/nvme.c | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 1660845874..1b8a09853d 100644
+index 167b1c2..752459e 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -1453,12 +1453,12 @@ static uint16_t nvme_get_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
+@@ -1458,12 +1458,12 @@ static uint16_t nvme_get_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
  
  static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
  {
@@ -21,7 +27,7 @@ index 1660845874..1b8a09853d 100644
      trace_nvme_getfeat(dw10);
  
      switch (dw10) {
-@@ -1475,7 +1475,13 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -1480,7 +1480,13 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          result = cpu_to_le32(n->features.err_rec);
          break;
      case NVME_VOLATILE_WRITE_CACHE:
@@ -36,7 +42,7 @@ index 1660845874..1b8a09853d 100644
          trace_nvme_getfeat_vwcache(result ? "enabled" : "disabled");
          break;
      case NVME_NUMBER_OF_QUEUES:
-@@ -1529,11 +1535,11 @@ static uint16_t nvme_set_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
+@@ -1534,11 +1540,11 @@ static uint16_t nvme_set_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
  
  static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
  {
@@ -50,7 +56,7 @@ index 1660845874..1b8a09853d 100644
      trace_nvme_setfeat(dw10, dw11);
  
      switch (dw10) {
-@@ -1545,7 +1551,13 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -1550,7 +1556,13 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          }
          break;
      case NVME_VOLATILE_WRITE_CACHE:
