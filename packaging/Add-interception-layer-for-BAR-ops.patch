@@ -1,5 +1,17 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: Add-interception-layer-for-BAR-ops
+
+---
+ hw/xen/xen_pt.c             | 248 ++++++++++++++++++++++++++++++++------------
+ hw/xen/xen_pt.h             |  23 ++--
+ hw/xen/xen_pt_config_init.c |  24 ++---
+ hw/xen/xen_pt_graphics.c    |  18 +++-
+ hw/xen/xen_pt_msi.c         |   4 +-
+ 5 files changed, 226 insertions(+), 91 deletions(-)
+
 diff --git a/hw/xen/xen_pt.c b/hw/xen/xen_pt.c
-index 9c4a77e6eb..3fb9d6b95f 100644
+index 9c4a77e..3fb9d6b 100644
 --- a/hw/xen/xen_pt.c
 +++ b/hw/xen/xen_pt.c
 @@ -260,7 +260,7 @@ static void xen_pt_pci_write_config(PCIDevice *d, uint32_t addr,
@@ -369,7 +381,7 @@ index 9c4a77e6eb..3fb9d6b95f 100644
      xen_pt_destroy(d);
      assert(rc);
 diff --git a/hw/xen/xen_pt.h b/hw/xen/xen_pt.h
-index 9167bbaf6d..89bde3a131 100644
+index 9167bba..89bde3a 100644
 --- a/hw/xen/xen_pt.h
 +++ b/hw/xen/xen_pt.h
 @@ -94,6 +94,7 @@ typedef struct XenPTRegion {
@@ -437,7 +449,7 @@ index 9167bbaf6d..89bde3a131 100644
                       Error **errp);
  #endif /* XEN_PT_H */
 diff --git a/hw/xen/xen_pt_config_init.c b/hw/xen/xen_pt_config_init.c
-index 888127fb43..12609d99df 100644
+index 888127f..12609d9 100644
 --- a/hw/xen/xen_pt_config_init.c
 +++ b/hw/xen/xen_pt_config_init.c
 @@ -410,7 +410,7 @@ static XenPTBarFlag xen_pt_bar_reg_parse(XenPCIPassthroughState *s,
@@ -524,7 +536,7 @@ index 888127fb43..12609d99df 100644
      /* set emulate mask and read-only mask */
      bar_ro_mask = (reg->ro_mask | (r_size - 1)) & ~PCI_ROM_ADDRESS_ENABLE;
 diff --git a/hw/xen/xen_pt_graphics.c b/hw/xen/xen_pt_graphics.c
-index b69732729b..4ff5ebd1c7 100644
+index b697327..4ff5ebd 100644
 --- a/hw/xen/xen_pt_graphics.c
 +++ b/hw/xen/xen_pt_graphics.c
 @@ -50,11 +50,16 @@ static struct VGARegion vga_args[] = {
@@ -567,7 +579,7 @@ index b69732729b..4ff5ebd1c7 100644
      }
  
 diff --git a/hw/xen/xen_pt_msi.c b/hw/xen/xen_pt_msi.c
-index fb4b887b92..1d8f00d16a 100644
+index fb4b887..1d8f00d 100644
 --- a/hw/xen/xen_pt_msi.c
 +++ b/hw/xen/xen_pt_msi.c
 @@ -604,7 +604,7 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
