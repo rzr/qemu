@@ -1,4 +1,3 @@
-From 0082e904ee976590e4726a71f8a1e5effb241e90 Mon Sep 17 00:00:00 2001
 From: Ross Lagerwall <ross.lagerwall@citrix.com>
 Date: Mon, 21 Aug 2017 14:55:39 +0100
 Subject: [PATCH] xen: Emit RTC_CHANGE upon TIMEOFFSET ioreq
@@ -9,8 +8,12 @@ rather than ignoring it so that something useful can be done with the
 information.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+---
+ hw/i386/xen/xen-hvm.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index 82ece6b9e7..aaf4b602b2 100644
+index 82ece6b..aaf4b60 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
 @@ -23,6 +23,7 @@
