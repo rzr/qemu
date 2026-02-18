@@ -1,14 +1,20 @@
-nvme: Disassociate block driver state during unplug
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: nvme-close-backend
 
 Disassociate the block driver state when unplugging the NVME controller
 so that the underlying fd is closed. Otherwise QEMU keeps the fd open
 forever and vbd-unplug fails because tapdisk cannot close the disk
 image.
+---
+ hw/block/nvme.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 29ea5c2023..d96fbb70b9 100644
+index d8d68cc..c69bc90 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -2500,6 +2500,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -2505,6 +2505,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
  
  static void nvme_exit(PCIDevice *pci_dev)
  {
@@ -16,7 +22,7 @@ index 29ea5c2023..d96fbb70b9 100644
      NvmeCtrl *n = NVME(pci_dev);
  
      nvme_clear_ctrl(n);
-@@ -2513,6 +2514,11 @@ static void nvme_exit(PCIDevice *pci_dev)
+@@ -2518,6 +2519,11 @@ static void nvme_exit(PCIDevice *pci_dev)
          g_free(n->cmbuf);
      }
      msix_uninit_exclusive_bar(pci_dev);
