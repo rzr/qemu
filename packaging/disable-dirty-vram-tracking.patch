@@ -1,3 +1,7 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: disable-dirty-vram-tracking
+
 Don't call into xen_track_dirty_vram if not in migration
 
 Avoid expensive hypercall when possible (like qemu-trad) - send a full
@@ -7,9 +11,12 @@ At the same time, there is significant performance increase for Dom0 CPU
 time bound workloads, e.g. intra-VM network bandwidth. We still need to
 call xen_track_dirty_vram during migration to avoid any increase in
 downtime.
+---
+ hw/i386/xen/xen-hvm.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index bd46734c67..6c82379260 100644
+index 7f5fabf..ce96903 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
 @@ -651,6 +651,11 @@ static void xen_sync_dirty_bitmap(XenIOState *state,
