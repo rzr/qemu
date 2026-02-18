@@ -1,5 +1,42 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: gvt-g
+
+---
+ configure                                  |   17 +
+ hw/display/Makefile.objs                   |    5 +
+ hw/display/intel-tools/Makefile.objs       |    5 +
+ hw/display/intel-tools/igt_debug.h         |   68 +
+ hw/display/intel-tools/intel_batchbuffer.c |  393 +++
+ hw/display/intel-tools/intel_batchbuffer.h |  200 ++
+ hw/display/intel-tools/intel_chipset.c     |  115 +
+ hw/display/intel-tools/intel_chipset.h     |  522 ++++
+ hw/display/intel-tools/intel_reg.h         | 3618 ++++++++++++++++++++++++++++
+ hw/display/vga.c                           |   13 +-
+ hw/display/vgt-stub.c                      |   32 +
+ hw/display/vgt_console.c                   |  530 ++++
+ hw/display/vgt_vga.c                       |  340 +++
+ hw/i386/pc_piix.c                          |    9 +
+ hw/i386/xen/xen-hvm.c                      |   20 +
+ hw/pci-host/i440fx.c                       |    6 +
+ include/hw/display/vgt_vga.h               |   28 +
+ qemu-options.hx                            |   47 +
+ vl.c                                       |   30 +
+ 19 files changed, 5996 insertions(+), 2 deletions(-)
+ create mode 100644 hw/display/intel-tools/Makefile.objs
+ create mode 100644 hw/display/intel-tools/igt_debug.h
+ create mode 100644 hw/display/intel-tools/intel_batchbuffer.c
+ create mode 100644 hw/display/intel-tools/intel_batchbuffer.h
+ create mode 100644 hw/display/intel-tools/intel_chipset.c
+ create mode 100644 hw/display/intel-tools/intel_chipset.h
+ create mode 100644 hw/display/intel-tools/intel_reg.h
+ create mode 100644 hw/display/vgt-stub.c
+ create mode 100644 hw/display/vgt_console.c
+ create mode 100644 hw/display/vgt_vga.c
+ create mode 100644 include/hw/display/vgt_vga.h
+
 diff --git a/configure b/configure
-index 6099be1d84..f92f7d6e69 100755
+index 6099be1..f92f7d6 100755
 --- a/configure
 +++ b/configure
 @@ -377,6 +377,7 @@ libattr=""
@@ -62,7 +99,7 @@ index 6099be1d84..f92f7d6e69 100755
    echo "CONFIG_COCOA=y" >> $config_host_mak
  fi
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index b3772f3962..95838d5937 100644
+index b3772f3..95838d5 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
 @@ -7,6 +7,11 @@ common-obj-$(CONFIG_FW_CFG_DMA) += ramfb-standalone.o
@@ -79,7 +116,7 @@ index b3772f3962..95838d5937 100644
  common-obj-$(CONFIG_PL110) += pl110.o
 diff --git a/hw/display/intel-tools/Makefile.objs b/hw/display/intel-tools/Makefile.objs
 new file mode 100644
-index 0000000000..6fa4960821
+index 0000000..6fa4960
 --- /dev/null
 +++ b/hw/display/intel-tools/Makefile.objs
 @@ -0,0 +1,5 @@
@@ -90,7 +127,7 @@ index 0000000000..6fa4960821
 +intel_chipset.o-libs := -ldrm -ldrm_intel
 diff --git a/hw/display/intel-tools/igt_debug.h b/hw/display/intel-tools/igt_debug.h
 new file mode 100644
-index 0000000000..d424f72e44
+index 0000000..d424f72
 --- /dev/null
 +++ b/hw/display/intel-tools/igt_debug.h
 @@ -0,0 +1,68 @@
@@ -164,7 +201,7 @@ index 0000000000..d424f72e44
 +#endif /* IGT_DEBUG_H */
 diff --git a/hw/display/intel-tools/intel_batchbuffer.c b/hw/display/intel-tools/intel_batchbuffer.c
 new file mode 100644
-index 0000000000..992d002c22
+index 0000000..992d002
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_batchbuffer.c
 @@ -0,0 +1,393 @@
@@ -563,7 +600,7 @@ index 0000000000..992d002c22
 +
 diff --git a/hw/display/intel-tools/intel_batchbuffer.h b/hw/display/intel-tools/intel_batchbuffer.h
 new file mode 100644
-index 0000000000..7f8876f8e0
+index 0000000..7f8876f
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_batchbuffer.h
 @@ -0,0 +1,200 @@
@@ -769,7 +806,7 @@ index 0000000000..7f8876f8e0
 +#endif
 diff --git a/hw/display/intel-tools/intel_chipset.c b/hw/display/intel-tools/intel_chipset.c
 new file mode 100644
-index 0000000000..d1217ad271
+index 0000000..d1217ad
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_chipset.c
 @@ -0,0 +1,115 @@
@@ -890,7 +927,7 @@ index 0000000000..d1217ad271
 +}
 diff --git a/hw/display/intel-tools/intel_chipset.h b/hw/display/intel-tools/intel_chipset.h
 new file mode 100644
-index 0000000000..378ee004a5
+index 0000000..378ee00
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_chipset.h
 @@ -0,0 +1,522 @@
@@ -1418,7 +1455,7 @@ index 0000000000..378ee004a5
 +#endif /* _INTEL_CHIPSET_H */
 diff --git a/hw/display/intel-tools/intel_reg.h b/hw/display/intel-tools/intel_reg.h
 new file mode 100644
-index 0000000000..92380c1671
+index 0000000..92380c1
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_reg.h
 @@ -0,0 +1,3618 @@
@@ -5041,7 +5078,7 @@ index 0000000000..92380c1671
 +
 +#endif /* _I810_REG_H */
 diff --git a/hw/display/vga.c b/hw/display/vga.c
-index fc81eb77ff..f38e8ebb26 100644
+index fc81eb7..f38e8eb 100644
 --- a/hw/display/vga.c
 +++ b/hw/display/vga.c
 @@ -28,6 +28,7 @@
@@ -5094,7 +5131,7 @@ index fc81eb77ff..f38e8ebb26 100644
  void vga_init_vbe(VGACommonState *s, Object *obj, MemoryRegion *system_memory)
 diff --git a/hw/display/vgt-stub.c b/hw/display/vgt-stub.c
 new file mode 100644
-index 0000000000..943a050eaa
+index 0000000..943a050
 --- /dev/null
 +++ b/hw/display/vgt-stub.c
 @@ -0,0 +1,32 @@
@@ -5132,7 +5169,7 @@ index 0000000000..943a050eaa
 +}
 diff --git a/hw/display/vgt_console.c b/hw/display/vgt_console.c
 new file mode 100644
-index 0000000000..08c0dfdcf2
+index 0000000..08c0dfd
 --- /dev/null
 +++ b/hw/display/vgt_console.c
 @@ -0,0 +1,530 @@
@@ -5668,7 +5705,7 @@ index 0000000000..08c0dfdcf2
 +}
 diff --git a/hw/display/vgt_vga.c b/hw/display/vgt_vga.c
 new file mode 100644
-index 0000000000..5e39c6c11d
+index 0000000..5e39c6c
 --- /dev/null
 +++ b/hw/display/vgt_vga.c
 @@ -0,0 +1,340 @@
@@ -6013,7 +6050,7 @@ index 0000000000..5e39c6c11d
 +
 +type_init(vgt_register_types)
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index 9c324a66cf..f06bcbb9e1 100644
+index 9c324a6..f06bcbb 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
 @@ -34,6 +34,7 @@
@@ -6040,7 +6077,7 @@ index 9c324a66cf..f06bcbb9e1 100644
  
      assert(pcms->vmport != ON_OFF_AUTO__MAX);
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index b9b4250f8c..ab0b4e7f29 100644
+index b9b4250..ab0b4e7 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
 @@ -17,6 +17,7 @@
@@ -6078,7 +6115,7 @@ index b9b4250f8c..ab0b4e7f29 100644
  
  void xen_shutdown_fatal_error(const char *fmt, ...)
 diff --git a/hw/pci-host/i440fx.c b/hw/pci-host/i440fx.c
-index f27131102d..866ba6e95e 100644
+index f271311..866ba6e 100644
 --- a/hw/pci-host/i440fx.c
 +++ b/hw/pci-host/i440fx.c
 @@ -29,11 +29,13 @@
@@ -6108,7 +6145,7 @@ index f27131102d..866ba6e95e 100644
  PCIBus *i440fx_init(const char *host_type, const char *pci_type,
 diff --git a/include/hw/display/vgt_vga.h b/include/hw/display/vgt_vga.h
 new file mode 100644
-index 0000000000..26d6768338
+index 0000000..26d6768
 --- /dev/null
 +++ b/include/hw/display/vgt_vga.h
 @@ -0,0 +1,28 @@
@@ -6141,7 +6178,7 @@ index 0000000000..26d6768338
 +
 +#endif
 diff --git a/qemu-options.hx b/qemu-options.hx
-index f970e84989..ebf8ccfa00 100644
+index f970e84..ebf8ccf 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
 @@ -1866,6 +1866,53 @@ Disable VGA card.
@@ -6199,7 +6236,7 @@ index f970e84989..ebf8ccfa00 100644
      "-full-screen    start in full screen\n", QEMU_ARCH_ALL)
  STEXI
 diff --git a/vl.c b/vl.c
-index 42d99a1f21..1a6753347f 100644
+index 42d99a1..1a67533 100644
 --- a/vl.c
 +++ b/vl.c
 @@ -62,6 +62,7 @@ int main(int argc, char **argv)
