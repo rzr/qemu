@@ -1,5 +1,13 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:42 +0100
+Subject: xen-platform-add-device-id-property
+
+---
+ hw/i386/xen/xen_platform.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index 0f7b05e5e1..562fca7476 100644
+index 0f7b05e..562fca7 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
 @@ -27,6 +27,7 @@
