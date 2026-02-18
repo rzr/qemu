@@ -1,5 +1,14 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: pci-add-subsystem-id-properties
+
+---
+ hw/pci/pci.c         | 9 ++++++++-
+ include/hw/pci/pci.h | 3 +++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
 diff --git a/hw/pci/pci.c b/hw/pci/pci.c
-index 8f822b4014..91a3bfa1a0 100644
+index caa0952..972f7a5 100644
 --- a/hw/pci/pci.c
 +++ b/hw/pci/pci.c
 @@ -69,6 +69,8 @@ static Property pci_props[] = {
@@ -11,7 +20,7 @@ index 8f822b4014..91a3bfa1a0 100644
      DEFINE_PROP_BIT("command_serr_enable", PCIDevice, cap_present,
                      QEMU_PCI_CAP_SERR_BITNR, true),
      DEFINE_PROP_BIT("x-pcie-lnksta-dllla", PCIDevice, cap_present,
-@@ -1083,7 +1085,12 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev,
+@@ -1067,7 +1069,12 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev,
      pci_config_set_class(pci_dev->config, pc->class_id);
  
      if (!pc->is_bridge) {
@@ -26,7 +35,7 @@ index 8f822b4014..91a3bfa1a0 100644
                           pc->subsystem_vendor_id);
              pci_set_word(pci_dev->config + PCI_SUBSYSTEM_ID,
 diff --git a/include/hw/pci/pci.h b/include/hw/pci/pci.h
-index cb48f9d692..c15890c020 100644
+index db75c6d..fbce602 100644
 --- a/include/hw/pci/pci.h
 +++ b/include/hw/pci/pci.h
 @@ -356,6 +356,9 @@ struct PCIDevice {
