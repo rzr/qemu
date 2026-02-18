@@ -1,8 +1,17 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: force-lba-geometry
+
+---
+ hw/block/hd-geometry.c | 3 ++-
+ qapi/block.json        | 5 ++++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
 diff --git a/hw/block/hd-geometry.c b/hw/block/hd-geometry.c
-index 79384a2b0a..69d0da4dd1 100644
+index dcbccee..82b59bc 100644
 --- a/hw/block/hd-geometry.c
 +++ b/hw/block/hd-geometry.c
-@@ -133,7 +133,8 @@ void hd_geometry_guess(BlockBackend *blk,
+@@ -128,7 +128,8 @@ void hd_geometry_guess(BlockBackend *blk,
          *psecs = geo.sectors;
          *pheads = geo.heads;
          translation = BIOS_ATA_TRANSLATION_NONE;
@@ -13,7 +22,7 @@ index 79384a2b0a..69d0da4dd1 100644
          guess_chs_for_size(blk, pcyls, pheads, psecs);
          translation = hd_bios_chs_auto_trans(*pcyls, *pheads, *psecs);
 diff --git a/qapi/block.json b/qapi/block.json
-index 145c268bb6..3976ca41c6 100644
+index 145c268..3976ca4 100644
 --- a/qapi/block.json
 +++ b/qapi/block.json
 @@ -39,10 +39,13 @@
