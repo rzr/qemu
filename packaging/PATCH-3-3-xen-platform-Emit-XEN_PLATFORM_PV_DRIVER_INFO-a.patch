@@ -1,4 +1,3 @@
-From 78274917e2e38e234ae891a6ad0408ec06fa845b Mon Sep 17 00:00:00 2001
 From: Anoob Soman <anoob.soman@citrix.com>
 Date: Wed, 19 Jul 2017 12:07:37 +0100
 Subject: [PATCH 3/3] xen-platform: Emit XEN_PLATFORM_PV_DRIVER_INFO after
@@ -8,8 +7,13 @@ After drivers writes a four-byte build number to IO port `0x10`, emit
 XEN_PLATFORM_PV_DRIVER_INFO event.
 
 Signed-off-by: Anoob Soman <anoob.soman@citrix.com>
+---
+ hw/i386/xen/xen_platform.c |  4 ++++
+ qapi/misc.json             | 21 +++++++++++++++++++++
+ 2 files changed, 25 insertions(+)
+
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index bb0b560128..4eab0723e7 100644
+index bb0b560..4eab072 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
 @@ -26,6 +26,7 @@
@@ -31,7 +35,7 @@ index bb0b560128..4eab0723e7 100644
      }
  }
 diff --git a/qapi/misc.json b/qapi/misc.json
-index 7af0d0abb8..33caa722de 100644
+index 7af0d0a..33caa72 100644
 --- a/qapi/misc.json
 +++ b/qapi/misc.json
 @@ -1772,6 +1772,27 @@
