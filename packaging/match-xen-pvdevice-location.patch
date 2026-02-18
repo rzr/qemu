@@ -1,3 +1,7 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: match-xen-pvdevice-location
+
 Fix resume when PV device location changes
 
 The Xen PV device location may change when resuming because the
@@ -5,8 +9,12 @@ toolstack starts QEMU with a different NIC configuration when
 migrating after hot(un)plugging NICs. Assume there's only one PV
 device and match it regardless of its location. This matches
 qemu-trad's behavior.
+---
+ migration/savevm.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
 diff --git a/migration/savevm.c b/migration/savevm.c
-index 2b27954..fa31168 100644
+index 57d029d..42924fd 100644
 --- a/migration/savevm.c
 +++ b/migration/savevm.c
 @@ -28,6 +28,7 @@
@@ -17,7 +25,7 @@ index 2b27954..fa31168 100644
  #include "hw/xen/xen.h"
  #include "net/net.h"
  #include "migration.h"
-@@ -1323,6 +1324,21 @@ static SaveStateEntry *find_se(const char *idstr, int instance_id)
+@@ -1616,6 +1617,21 @@ static SaveStateEntry *find_se(const char *idstr, int instance_id)
                   instance_id == se->alias_id))
                  return se;
          }
