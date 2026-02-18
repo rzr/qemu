@@ -1,14 +1,18 @@
-From 6f14e3024270cd36911d9150ba988884972f0300 Mon Sep 17 00:00:00 2001
 From: Klaus Birkelund Jensen <klaus@birkelund.eu>
 Date: Fri, 5 Jul 2019 09:23:25 +0200
 Subject: [PATCH 08/16] nvme: refactor device realization
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
+---
+ hw/block/nvme.c | 195 ++++++++++++++++++++++++++++++++++++++++----------------
+ hw/block/nvme.h |  11 ++++
+ 2 files changed, 151 insertions(+), 55 deletions(-)
+
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 84ff5ba126..5c41c9aae9 100644
+index e9732aa..d496501 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -39,6 +39,7 @@
+@@ -41,6 +41,7 @@
  #include "trace.h"
  #include "nvme.h"
  
@@ -16,7 +20,7 @@ index 84ff5ba126..5c41c9aae9 100644
  #define NVME_OP_ABORTED 0xff
  #define NVME_GUEST_ERR(trace, fmt, ...) \
      do { \
-@@ -1366,66 +1367,104 @@ static const MemoryRegionOps nvme_cmb_ops = {
+@@ -1368,66 +1369,104 @@ static const MemoryRegionOps nvme_cmb_ops = {
      },
  };
  
@@ -154,7 +158,7 @@ index 84ff5ba126..5c41c9aae9 100644
      id->rab = 6;
      id->ieee[0] = 0x00;
      id->ieee[1] = 0x02;
-@@ -1459,36 +1498,82 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -1461,36 +1500,82 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
  
      n->bar.vs = 0x00010201;
      n->bar.intmc = n->bar.intms = 0;
@@ -260,7 +264,7 @@ index 84ff5ba126..5c41c9aae9 100644
  
  static void nvme_exit(PCIDevice *pci_dev)
 diff --git a/hw/block/nvme.h b/hw/block/nvme.h
-index 9e45a2a416..37366f8bf2 100644
+index 9e45a2a..37366f8 100644
 --- a/hw/block/nvme.h
 +++ b/hw/block/nvme.h
 @@ -100,4 +100,15 @@ typedef struct NvmeCtrl {
