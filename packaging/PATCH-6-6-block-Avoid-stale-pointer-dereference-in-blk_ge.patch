@@ -1,4 +1,3 @@
-From e6cada9231af022ffc2e351c70dfaea8530496e1 Mon Sep 17 00:00:00 2001
 From: Greg Kurz <groug@kaod.org>
 Date: Thu, 9 Jul 2020 15:50:45 +0200
 Subject: [PATCH 6/6] block: Avoid stale pointer dereference in
@@ -46,10 +45,10 @@ Signed-off-by: Kevin Wolf <kwolf@redhat.com>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/block/block-backend.c b/block/block-backend.c
-index 6936b25c836c..0bf0188133e3 100644
+index 8b8f2a8..2505e5e 100644
 --- a/block/block-backend.c
 +++ b/block/block-backend.c
-@@ -808,6 +808,7 @@ void blk_remove_bs(BlockBackend *blk)
+@@ -783,6 +783,7 @@ void blk_remove_bs(BlockBackend *blk)
  {
      ThrottleGroupMember *tgm = &blk->public.throttle_group_member;
      BlockDriverState *bs;
@@ -57,7 +56,7 @@ index 6936b25c836c..0bf0188133e3 100644
  
      notifier_list_notify(&blk->remove_bs_notifiers, blk);
      if (tgm->throttle_state) {
-@@ -825,8 +826,9 @@ void blk_remove_bs(BlockBackend *blk)
+@@ -800,8 +801,9 @@ void blk_remove_bs(BlockBackend *blk)
       * to avoid that and a potential QEMU crash.
       */
      blk_drain(blk);
@@ -68,6 +67,3 @@ index 6936b25c836c..0bf0188133e3 100644
  }
  
  /*
--- 
-Anthony PERARD
-
