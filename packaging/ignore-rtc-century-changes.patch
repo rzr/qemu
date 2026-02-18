@@ -1,3 +1,7 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:42 +0100
+Subject: ignore-rtc-century-changes
+
 Don't emit RTC_CHANGE events for RTC_CENTURY writes
 
 Xen emulates the RTC except for the RTC_CENTURY register. qemu-trad
@@ -9,9 +13,12 @@ in Xen).  Windows writes RTC_CENTURY when setting the RTC even though it
 isn't advertised in the ACPI tables and it hasn't changed.  Since
 RTC_CENTURY isn't emulated in Xen, don't allow QEMU to emit RTC_CENTURY
 events when running under Xen.
+---
+ hw/rtc/mc146818rtc.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/hw/rtc/mc146818rtc.c b/hw/rtc/mc146818rtc.c
-index 74ae74bc5c..1cd8214e65 100644
+index 74ae74b..1cd8214 100644
 --- a/hw/rtc/mc146818rtc.c
 +++ b/hw/rtc/mc146818rtc.c
 @@ -29,6 +29,7 @@
