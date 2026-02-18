@@ -1,5 +1,18 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: Add-AMD-code
+
+---
+ hw/xen/Makefile.objs         |    2 +-
+ hw/xen/gim_ioctl.h           |   90 ++++
+ hw/xen/xen_pt_amd_graphics.c | 1037 ++++++++++++++++++++++++++++++++++++++++++
+ hw/xen/xen_pt_graphics.c     |   21 +
+ 4 files changed, 1149 insertions(+), 1 deletion(-)
+ create mode 100644 hw/xen/gim_ioctl.h
+ create mode 100644 hw/xen/xen_pt_amd_graphics.c
+
 diff --git a/hw/xen/Makefile.objs b/hw/xen/Makefile.objs
-index 84df60a928..58a8e4efc1 100644
+index 84df60a..58a8e4e 100644
 --- a/hw/xen/Makefile.objs
 +++ b/hw/xen/Makefile.objs
 @@ -2,5 +2,5 @@
@@ -11,7 +24,7 @@ index 84df60a928..58a8e4efc1 100644
  obj-$(CONFIG_XEN_PCI_PASSTHROUGH) += xen_pt_load_rom.o
 diff --git a/hw/xen/gim_ioctl.h b/hw/xen/gim_ioctl.h
 new file mode 100644
-index 0000000000..d5293d1321
+index 0000000..d5293d1
 --- /dev/null
 +++ b/hw/xen/gim_ioctl.h
 @@ -0,0 +1,90 @@
@@ -107,7 +120,7 @@ index 0000000000..d5293d1321
 +#endif
 diff --git a/hw/xen/xen_pt_amd_graphics.c b/hw/xen/xen_pt_amd_graphics.c
 new file mode 100644
-index 0000000000..6e50876d49
+index 0000000..6e50876
 --- /dev/null
 +++ b/hw/xen/xen_pt_amd_graphics.c
 @@ -0,0 +1,1037 @@
@@ -1149,7 +1162,7 @@ index 0000000000..6e50876d49
 + * End:
 + */
 diff --git a/hw/xen/xen_pt_graphics.c b/hw/xen/xen_pt_graphics.c
-index 4ff5ebd1c7..8134d376dc 100644
+index 4ff5ebd..8134d37 100644
 --- a/hw/xen/xen_pt_graphics.c
 +++ b/hw/xen/xen_pt_graphics.c
 @@ -47,6 +47,11 @@ static struct VGARegion vga_args[] = {
