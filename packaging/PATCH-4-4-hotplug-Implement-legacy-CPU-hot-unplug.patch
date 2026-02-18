@@ -1,4 +1,3 @@
-From 296852489da11bb4e9472192e20ba2176a3884c5 Mon Sep 17 00:00:00 2001
 From: Ross Lagerwall <ross.lagerwall@citrix.com>
 Date: Mon, 3 Jul 2017 13:56:36 +0100
 Subject: [PATCH 4/4] hotplug: Implement legacy CPU hot unplug
@@ -6,8 +5,15 @@ Subject: [PATCH 4/4] hotplug: Implement legacy CPU hot unplug
 This is done in the same way that qemu-trad does CPU hot unplug.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+---
+ hw/acpi/cpu_hotplug.c         | 19 +++++++++++++++++++
+ hw/acpi/piix4.c               |  9 ++++++---
+ hw/i386/pc_piix.c             |  3 +++
+ include/hw/acpi/cpu_hotplug.h |  2 ++
+ 4 files changed, 30 insertions(+), 3 deletions(-)
+
 diff --git a/hw/acpi/cpu_hotplug.c b/hw/acpi/cpu_hotplug.c
-index 3ac2045a95..25d18ff5e7 100644
+index 3ac2045..25d18ff 100644
 --- a/hw/acpi/cpu_hotplug.c
 +++ b/hw/acpi/cpu_hotplug.c
 @@ -71,6 +71,18 @@ static void acpi_set_cpu_present_bit(AcpiCpuHotplug *g, CPUState *cpu,
@@ -44,7 +50,7 @@ index 3ac2045a95..25d18ff5e7 100644
                                    AcpiCpuHotplug *gpe_cpu, uint16_t base)
  {
 diff --git a/hw/acpi/piix4.c b/hw/acpi/piix4.c
-index 93aec2dd2c..ecbc9f1e7b 100644
+index 93aec2d..ecbc9f1 100644
 --- a/hw/acpi/piix4.c
 +++ b/hw/acpi/piix4.c
 @@ -410,9 +410,12 @@ static void piix4_device_unplug_cb(HotplugHandler *hotplug_dev,
@@ -64,7 +70,7 @@ index 93aec2dd2c..ecbc9f1e7b 100644
          error_setg(errp, "acpi: device unplug for not supported device"
                     " type: %s", object_get_typename(OBJECT(dev)));
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index 1fa4f5e588..e5f037ff6f 100644
+index 1fa4f5e..e5f037f 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
 @@ -414,6 +414,7 @@ static void pc_xen_hvm_init(MachineState *machine)
@@ -85,7 +91,7 @@ index 1fa4f5e588..e5f037ff6f 100644
  
  static void pc_i440fx_4_2_machine_options(MachineClass *m)
 diff --git a/include/hw/acpi/cpu_hotplug.h b/include/hw/acpi/cpu_hotplug.h
-index 3b932abbbb..d781fc9ea7 100644
+index 3b932ab..d781fc9 100644
 --- a/include/hw/acpi/cpu_hotplug.h
 +++ b/include/hw/acpi/cpu_hotplug.h
 @@ -27,6 +27,8 @@ typedef struct AcpiCpuHotplug {
