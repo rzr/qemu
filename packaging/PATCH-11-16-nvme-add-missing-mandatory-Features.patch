@@ -1,4 +1,3 @@
-From ba22cfabc5180d110bfd910e06be4460a86d8261 Mon Sep 17 00:00:00 2001
 From: Klaus Birkelund Jensen <klaus@birkelund.eu>
 Date: Fri, 5 Jul 2019 09:23:28 +0200
 Subject: [PATCH 11/16] nvme: add missing mandatory Features
@@ -7,11 +6,17 @@ Add support for returning a resonable response to Get/Set Features of
 mandatory features.
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
+---
+ hw/block/nvme.c       | 51 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ hw/block/trace-events |  2 ++
+ include/block/nvme.h  |  3 ++-
+ 3 files changed, 52 insertions(+), 4 deletions(-)
+
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 7f784a0265..2ccd0aabb9 100644
+index 92547d4..4e0b56b 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -858,13 +858,24 @@ static uint16_t nvme_get_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd)
+@@ -863,13 +863,24 @@ static uint16_t nvme_get_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd)
  static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
  {
      uint32_t dw10 = le32_to_cpu(cmd->cdw10);
@@ -36,7 +41,7 @@ index 7f784a0265..2ccd0aabb9 100644
      case NVME_VOLATILE_WRITE_CACHE:
          result = blk_enable_write_cache(n->conf.blk);
          trace_nvme_getfeat_vwcache(result ? "enabled" : "disabled");
-@@ -876,6 +887,19 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -881,6 +892,19 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          break;
      case NVME_TIMESTAMP:
          return nvme_get_feature_timestamp(n, cmd);
@@ -56,7 +61,7 @@ index 7f784a0265..2ccd0aabb9 100644
      case NVME_ASYNCHRONOUS_EVENT_CONF:
          result = cpu_to_le32(n->features.async_config);
          break;
-@@ -911,6 +935,8 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -916,6 +940,8 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
      uint32_t dw10 = le32_to_cpu(cmd->cdw10);
      uint32_t dw11 = le32_to_cpu(cmd->cdw11);
  
@@ -65,7 +70,7 @@ index 7f784a0265..2ccd0aabb9 100644
      switch (dw10) {
      case NVME_TEMPERATURE_THRESHOLD:
          n->features.temp_thresh = dw11;
-@@ -935,6 +961,13 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -940,6 +966,13 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
      case NVME_ASYNCHRONOUS_EVENT_CONF:
          n->features.async_config = dw11;
          break;
@@ -79,7 +84,7 @@ index 7f784a0265..2ccd0aabb9 100644
      default:
          trace_nvme_err_invalid_setfeat(dw10);
          return NVME_INVALID_FIELD | NVME_DNR;
-@@ -1681,6 +1714,8 @@ static int nvme_init_blk(NvmeCtrl *n, Error **errp)
+@@ -1686,6 +1719,8 @@ static int nvme_init_blk(NvmeCtrl *n, Error **errp)
  
  static void nvme_init_state(NvmeCtrl *n)
  {
@@ -88,7 +93,7 @@ index 7f784a0265..2ccd0aabb9 100644
      n->num_namespaces = 1;
      n->reg_size = pow2ceil(0x1004 + 2 * (n->params.num_queues + 1) * 4);
      n->starttime_ms = qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL);
-@@ -1690,6 +1725,14 @@ static void nvme_init_state(NvmeCtrl *n)
+@@ -1695,6 +1730,14 @@ static void nvme_init_state(NvmeCtrl *n)
      n->aer_reqs = g_new0(NvmeRequest *, NVME_AERL + 1);
      n->temperature = NVME_TEMPERATURE;
      n->features.temp_thresh = 0x14d;
@@ -103,7 +108,7 @@ index 7f784a0265..2ccd0aabb9 100644
  }
  
  static void nvme_init_cmb(NvmeCtrl *n, PCIDevice *pci_dev)
-@@ -1766,6 +1809,10 @@ static void nvme_init_ctrl(NvmeCtrl *n)
+@@ -1771,6 +1814,10 @@ static void nvme_init_ctrl(NvmeCtrl *n)
      id->nn = cpu_to_le32(n->num_namespaces);
      id->oncs = cpu_to_le16(NVME_ONCS_WRITE_ZEROS | NVME_ONCS_TIMESTAMP);
  
@@ -114,7 +119,7 @@ index 7f784a0265..2ccd0aabb9 100644
      strcpy((char *) id->subnqn, "nqn.2014-08.org.nvmexpress:uuid:");
      qemu_uuid_unparse(&qemu_uuid,
          (char *) id->subnqn + strlen((char *) id->subnqn));
-@@ -1773,9 +1820,6 @@ static void nvme_init_ctrl(NvmeCtrl *n)
+@@ -1778,9 +1825,6 @@ static void nvme_init_ctrl(NvmeCtrl *n)
      id->psd[0].mp = cpu_to_le16(0x9c4);
      id->psd[0].enlat = cpu_to_le32(0x10);
      id->psd[0].exlat = cpu_to_le32(0x4);
@@ -124,7 +129,7 @@ index 7f784a0265..2ccd0aabb9 100644
  
      n->bar.cap = 0;
      NVME_CAP_SET_MQES(n->bar.cap, 0x7ff);
-@@ -1873,6 +1917,7 @@ static void nvme_exit(PCIDevice *pci_dev)
+@@ -1878,6 +1922,7 @@ static void nvme_exit(PCIDevice *pci_dev)
      g_free(n->sq);
      g_free(n->elpes);
      g_free(n->aer_reqs);
@@ -133,10 +138,10 @@ index 7f784a0265..2ccd0aabb9 100644
      if (n->params.cmb_size_mb) {
          g_free(n->cmbuf);
 diff --git a/hw/block/trace-events b/hw/block/trace-events
-index cd5343b55f..247a778294 100644
+index abf72d9..a468886 100644
 --- a/hw/block/trace-events
 +++ b/hw/block/trace-events
-@@ -25,6 +25,8 @@ nvme_del_cq(uint16_t cqid) "deleted completion queue, sqid=%"PRIu16""
+@@ -41,6 +41,8 @@ nvme_del_cq(uint16_t cqid) "deleted completion queue, sqid=%"PRIu16""
  nvme_identify_ctrl(void) "identify controller"
  nvme_identify_ns(uint16_t ns) "identify namespace, nsid=%"PRIu16""
  nvme_identify_nslist(uint16_t ns) "identify namespace list, nsid=%"PRIu16""
@@ -146,7 +151,7 @@ index cd5343b55f..247a778294 100644
  nvme_getfeat_numq(int result) "get feature number of queues, result=%d"
  nvme_setfeat_numq(int reqcq, int reqsq, int gotcq, int gotsq) "requested cq_count=%d sq_count=%d, responding with cq_count=%d sq_count=%d"
 diff --git a/include/block/nvme.h b/include/block/nvme.h
-index 5a10b8b674..d24b1f28e0 100644
+index a7ffd12..4707b48 100644
 --- a/include/block/nvme.h
 +++ b/include/block/nvme.h
 @@ -445,7 +445,8 @@ enum NvmeStatusCodes {
