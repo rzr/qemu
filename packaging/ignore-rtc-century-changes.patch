@@ -1,0 +1,34 @@
+Don't emit RTC_CHANGE events for RTC_CENTURY writes
+
+Xen emulates the RTC except for the RTC_CENTURY register. qemu-trad
+supports reading and writing that register and the rest of the CMOS but
+doesn't actually use it for any date calculations.  QEMU upstream does
+emulate it fully and triggers RTC_CHANGE events when it is written which
+is a problem since QEMU doesn't have the full RTC state (most of it is
+in Xen).  Windows writes RTC_CENTURY when setting the RTC even though it
+isn't advertised in the ACPI tables and it hasn't changed.  Since
+RTC_CENTURY isn't emulated in Xen, don't allow QEMU to emit RTC_CENTURY
+events when running under Xen.
+
+diff --git a/hw/rtc/mc146818rtc.c b/hw/rtc/mc146818rtc.c
+index 74ae74bc5c..1cd8214e65 100644
+--- a/hw/rtc/mc146818rtc.c
++++ b/hw/rtc/mc146818rtc.c
+@@ -29,6 +29,7 @@
+ #include "qemu/bcd.h"
+ #include "hw/irq.h"
+ #include "hw/qdev-properties.h"
++#include "hw/xen/xen.h"
+ #include "qemu/timer.h"
+ #include "sysemu/sysemu.h"
+ #include "sysemu/replay.h"
+@@ -615,7 +616,8 @@ static void rtc_set_time(RTCState *s)
+     s->base_rtc = mktimegm(&tm);
+     s->last_update = qemu_clock_get_ns(rtc_clock);
+ 
+-    qapi_event_send_rtc_change(qemu_timedate_diff(&tm));
++    if (!xen_enabled())
++        qapi_event_send_rtc_change(qemu_timedate_diff(&tm));
+ }
+ 
+ static void rtc_set_cmos(RTCState *s, const struct tm *tm)

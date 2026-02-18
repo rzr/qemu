@@ -1,0 +1,51 @@
+Add a command to allow querying whether the VM is migratable
+
+Add a command to allow querying whether the VM is migratable which
+allows the toolstack to prevent migrations when it won't work.
+Like many QMP commands, it returns nothing on success (if the VM is
+migratable). If the VM is not migratable, it returns an error message
+indicating which device is preventing migration.
+diff --git a/migration/savevm.c b/migration/savevm.c
+index 47c7bc0808..01a5f5abb9 100644
+--- a/migration/savevm.c
++++ b/migration/savevm.c
+@@ -2652,6 +2652,11 @@ int save_snapshot(const char *name, Error **errp)
+     return ret;
+ }
+ 
++void qmp_query_migratable(Error **errp)
++{
++    qemu_savevm_state_blocked(errp);
++}
++
+ void qmp_xen_save_devices_state(const char *filename, bool has_live, bool live,
+                                 Error **errp)
+ {
+diff --git a/qapi/misc.json b/qapi/misc.json
+index b91ac34d88..5367459153 100644
+--- a/qapi/misc.json
++++ b/qapi/misc.json
+@@ -1617,6 +1617,23 @@
+           }
+ }
+ 
++##
++# @query-migratable:
++#
++# Query whether a VM is migratable or not.
++#
++# Returns: Nothing on success
++#
++# Since: XXX.XXX
++#
++# Example:
++#
++# -> { "execute": "query-migratable" }
++# <- { "return": { } }
++#
++##
++{ 'command': 'query-migratable' }
++
+ ##
+ # @query-memory-devices:
+ #
