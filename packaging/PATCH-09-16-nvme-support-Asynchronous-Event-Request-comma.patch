@@ -1,4 +1,3 @@
-From 4602d2c9d81448aa02ac655418164ca81a0d4813 Mon Sep 17 00:00:00 2001
 From: Klaus Birkelund Jensen <klaus@birkelund.eu>
 Date: Fri, 5 Jul 2019 09:23:26 +0200
 Subject: [PATCH 09/16] nvme: support Asynchronous Event Request command
@@ -10,16 +9,16 @@ Modified from Keith's qemu-nvme tree.
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
 ---
- hw/block/nvme.c       | 88 ++++++++++++++++++++++++++++++++++++++++++-
+ hw/block/nvme.c       | 88 +++++++++++++++++++++++++++++++++++++++++++++++++--
  hw/block/nvme.h       |  7 ++++
  hw/block/trace-events |  7 ++++
  3 files changed, 100 insertions(+), 2 deletions(-)
 
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index e3cb1c6140..3d0b6d2b9d 100644
+index d496501..d606c0e 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -37,6 +37,7 @@
+@@ -42,6 +42,7 @@
  #include "nvme.h"
  
  #define NVME_MAX_QS PCI_MSIX_FLAGS_QSIZE
@@ -27,7 +26,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
  #define NVME_OP_ABORTED 0xff
  #define NVME_GUEST_ERR(trace, fmt, ...) \
      do { \
-@@ -316,6 +317,51 @@ static void nvme_enqueue_req_completion(NvmeCQueue *cq, NvmeRequest *req)
+@@ -321,6 +322,51 @@ static void nvme_enqueue_req_completion(NvmeCQueue *cq, NvmeRequest *req)
      timer_mod(cq->timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + 500);
  }
  
@@ -79,7 +78,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
  static void nvme_rw_cb(void *opaque, int ret)
  {
      NvmeRequest *req = opaque;
-@@ -794,6 +840,8 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -799,6 +845,8 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          break;
      case NVME_TIMESTAMP:
          return nvme_get_feature_timestamp(n, cmd);
@@ -88,7 +87,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
          break;
      default:
          trace_nvme_err_invalid_getfeat(dw10);
-@@ -839,11 +887,11 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -844,11 +892,11 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          req->cqe.result = cpu_to_le32((n->params.num_queues - 2) |
              ((n->params.num_queues - 2) << 16));
          break;
@@ -102,7 +101,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
      default:
          trace_nvme_err_invalid_setfeat(dw10);
          return NVME_INVALID_FIELD | NVME_DNR;
-@@ -852,6 +900,22 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -857,6 +905,22 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
      return NVME_SUCCESS;
  }
  
@@ -125,7 +124,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
  static uint16_t nvme_abort(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
  {
      NvmeSQueue *sq;
-@@ -916,6 +980,8 @@ static uint16_t nvme_admin_cmd(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -921,6 +985,8 @@ static uint16_t nvme_admin_cmd(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          return nvme_set_feature(n, cmd, req);
      case NVME_ADM_CMD_GET_FEATURES:
          return nvme_get_feature(n, cmd, req);
@@ -134,7 +133,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
      case NVME_ADM_CMD_ABORT:
          return nvme_abort(n, cmd, req);
      default:
-@@ -961,6 +1027,7 @@ static void nvme_process_sq(void *opaque)
+@@ -966,6 +1032,7 @@ static void nvme_process_sq(void *opaque)
  
  static void nvme_clear_ctrl(NvmeCtrl *n)
  {
@@ -142,7 +141,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
      int i;
  
      blk_drain(n->conf.blk);
-@@ -976,8 +1043,19 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
+@@ -981,8 +1048,19 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
          }
      }
  
@@ -162,7 +161,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
  }
  
  static int nvme_start_ctrl(NvmeCtrl *n)
-@@ -1072,6 +1150,9 @@ static int nvme_start_ctrl(NvmeCtrl *n)
+@@ -1077,6 +1155,9 @@ static int nvme_start_ctrl(NvmeCtrl *n)
  
      nvme_set_timestamp(n, 0ULL);
  
@@ -172,7 +171,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
      return 0;
  }
  
-@@ -1402,6 +1483,7 @@ static void nvme_init_state(NvmeCtrl *n)
+@@ -1407,6 +1488,7 @@ static void nvme_init_state(NvmeCtrl *n)
      n->reg_size = pow2ceil(0x1004 + 2 * (n->params.num_queues + 1) * 4);
      n->sq = g_new0(NvmeSQueue *, n->params.num_queues);
      n->cq = g_new0(NvmeCQueue *, n->params.num_queues);
@@ -180,7 +179,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
  }
  
  static void nvme_init_cmb(NvmeCtrl *n, PCIDevice *pci_dev)
-@@ -1469,6 +1551,7 @@ static void nvme_init_ctrl(NvmeCtrl *n)
+@@ -1474,6 +1556,7 @@ static void nvme_init_ctrl(NvmeCtrl *n)
      id->ver = cpu_to_le32(0x00010201);
      id->oacs = cpu_to_le16(0);
      id->acl = 3;
@@ -188,7 +187,7 @@ index e3cb1c6140..3d0b6d2b9d 100644
      id->frmw = 7 << 1;
      id->sqes = (0x6 << 4) | 0x6;
      id->cqes = (0x4 << 4) | 0x4;
-@@ -1580,6 +1663,7 @@ static void nvme_exit(PCIDevice *pci_dev)
+@@ -1585,6 +1668,7 @@ static void nvme_exit(PCIDevice *pci_dev)
      nvme_clear_ctrl(n);
      g_free(n->cq);
      g_free(n->sq);
@@ -197,10 +196,10 @@ index e3cb1c6140..3d0b6d2b9d 100644
      if (n->params.cmb_size_mb) {
          g_free(n->cmbuf);
 diff --git a/hw/block/nvme.h b/hw/block/nvme.h
-index f0ade468ce..0f3b109a6c 100644
+index 37366f8..cd069e1 100644
 --- a/hw/block/nvme.h
 +++ b/hw/block/nvme.h
-@@ -808,18 +808,25 @@ typedef struct NvmeCtrl {
+@@ -85,18 +85,25 @@ typedef struct NvmeCtrl {
      uint32_t    num_namespaces;
      uint32_t    max_q_ents;
      uint64_t    ns_size;
@@ -227,10 +226,10 @@ index f0ade468ce..0f3b109a6c 100644
  } NvmeCtrl;
  
 diff --git a/hw/block/trace-events b/hw/block/trace-events
-index 5f010567bc..8882725903 100644
+index c03e80c..65a0dcf 100644
 --- a/hw/block/trace-events
 +++ b/hw/block/trace-events
-@@ -30,6 +30,13 @@ nvme_getfeat_numq(int result) "get feature number of queues, result=%d"
+@@ -46,6 +46,13 @@ nvme_getfeat_numq(int result) "get feature number of queues, result=%d"
  nvme_setfeat_numq(int reqcq, int reqsq, int gotcq, int gotsq) "requested cq_count=%d sq_count=%d, responding with cq_count=%d sq_count=%d"
  nvme_setfeat_timestamp(uint64_t ts) "set feature timestamp = 0x%"PRIx64""
  nvme_getfeat_timestamp(uint64_t ts) "get feature timestamp = 0x%"PRIx64""
@@ -244,6 +243,3 @@ index 5f010567bc..8882725903 100644
  nvme_mmio_intm_set(uint64_t data, uint64_t new_mask) "wrote MMIO, interrupt mask set, data=0x%"PRIx64", new_mask=0x%"PRIx64""
  nvme_mmio_intm_clr(uint64_t data, uint64_t new_mask) "wrote MMIO, interrupt mask clr, data=0x%"PRIx64", new_mask=0x%"PRIx64""
  nvme_mmio_cfg(uint64_t data) "wrote MMIO, config controller config=0x%"PRIx64""
--- 
-2.21.0
-
