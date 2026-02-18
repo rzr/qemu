@@ -1,13 +1,18 @@
-piix: Don't initialize vCPUs running on Xen
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:42 +0100
+Subject: dont-init-cpus-on-xen
 
 When running on Xen, QEMU doesn't handle the CPU execution context so
 initializing the CPUs serves no purpose other than using resources
 (memory + one thread per vCPU).
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+---
+ cpus.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
 diff --git a/cpus.c b/cpus.c
-index 63bda152f5..162350ba21 100644
+index 63bda15..162350b 100644
 --- a/cpus.c
 +++ b/cpus.c
 @@ -59,6 +59,7 @@
