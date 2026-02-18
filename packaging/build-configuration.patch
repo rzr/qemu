@@ -1,3 +1,7 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: build-configuration
+
 Change the build configuration to decrease size and attack area
 
 This is made up of:
@@ -6,10 +10,20 @@ This is made up of:
 * Enable NVME for guest UEFI
 * List of devices needed so ./configure option
   --without-default-devices can be used.
-
+---
+ backends/Makefile.objs           |   4 +-
+ block/Makefile.objs              |   5 +-
+ crypto/Makefile.objs             |   4 +
+ default-configs/i386-softmmu.mak |  29 +++++-
+ hw/Makefile.objs                 |   2 +-
+ hw/i386/Kconfig                  |   2 +-
+ stubs/Makefile.objs              |   1 +
+ stubs/crypto.c                   | 202 +++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 240 insertions(+), 9 deletions(-)
+ create mode 100644 stubs/crypto.c
 
 diff --git a/backends/Makefile.objs b/backends/Makefile.objs
-index f0691116e8..f51224cc84 100644
+index f069111..f51224c 100644
 --- a/backends/Makefile.objs
 +++ b/backends/Makefile.objs
 @@ -6,8 +6,8 @@ common-obj-$(CONFIG_TPM) += tpm.o
@@ -24,7 +38,7 @@ index f0691116e8..f51224cc84 100644
  ifeq ($(CONFIG_VIRTIO_CRYPTO),y)
  common-obj-y += cryptodev-vhost.o
 diff --git a/block/Makefile.objs b/block/Makefile.objs
-index e394fe0b6c..27981e6e2f 100644
+index e394fe0..27981e6 100644
 --- a/block/Makefile.objs
 +++ b/block/Makefile.objs
 @@ -1,4 +1,5 @@
@@ -44,7 +58,7 @@ index e394fe0b6c..27981e6e2f 100644
  block-obj-y += blkdebug.o blkverify.o blkreplay.o
  block-obj-$(CONFIG_PARALLELS) += parallels.o
 diff --git a/crypto/Makefile.objs b/crypto/Makefile.objs
-index cdb01f9de9..cb1d85c367 100644
+index cdb01f9..cb1d85c 100644
 --- a/crypto/Makefile.objs
 +++ b/crypto/Makefile.objs
 @@ -40,3 +40,7 @@ crypto-obj-y += block-luks.o
@@ -56,7 +70,7 @@ index cdb01f9de9..cb1d85c367 100644
 +crypto-obj-y = hash.o
 +crypto-obj-$(if $(CONFIG_NETTLE),n,$(if $(CONFIG_GCRYPT),n,y)) += hash-glib.o
 diff --git a/default-configs/i386-softmmu.mak b/default-configs/i386-softmmu.mak
-index 4cc64dafa2..f2024c9aa3 100644
+index 4cc64da..f2024c9 100644
 --- a/default-configs/i386-softmmu.mak
 +++ b/default-configs/i386-softmmu.mak
 @@ -25,7 +25,30 @@
@@ -94,7 +108,7 @@ index 4cc64dafa2..f2024c9aa3 100644
 +CONFIG_VGA_CIRRUS=y
 +CONFIG_VGA_PCI=y
 diff --git a/hw/Makefile.objs b/hw/Makefile.objs
-index 66eef20561..efc8663d75 100644
+index 66eef20..efc8663 100644
 --- a/hw/Makefile.objs
 +++ b/hw/Makefile.objs
 @@ -33,7 +33,7 @@ devices-dirs-y += ssi/
@@ -107,7 +121,7 @@ index 66eef20561..efc8663d75 100644
  devices-dirs-y += watchdog/
  devices-dirs-y += xen/
 diff --git a/hw/i386/Kconfig b/hw/i386/Kconfig
-index 5a494342ea..9a107153af 100644
+index 5a49434..9a10715 100644
 --- a/hw/i386/Kconfig
 +++ b/hw/i386/Kconfig
 @@ -27,7 +27,7 @@ config PC
@@ -120,7 +134,7 @@ index 5a494342ea..9a107153af 100644
      select MC146818RTC
      # For ACPI builder:
 diff --git a/stubs/Makefile.objs b/stubs/Makefile.objs
-index 4a50e95ec3..335c06cb05 100644
+index 4a50e95..335c06c 100644
 --- a/stubs/Makefile.objs
 +++ b/stubs/Makefile.objs
 @@ -4,6 +4,7 @@ stub-obj-y += blockdev-close-all-bdrv-states.o
@@ -133,7 +147,7 @@ index 4a50e95ec3..335c06cb05 100644
  stub-obj-y += fdset.o
 diff --git a/stubs/crypto.c b/stubs/crypto.c
 new file mode 100644
-index 0000000000..7ad970aa85
+index 0000000..7ad970a
 --- /dev/null
 +++ b/stubs/crypto.c
 @@ -0,0 +1,202 @@
