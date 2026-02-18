@@ -1,11 +1,18 @@
-From bd478cbdd904bbb3d6d63add81d9138b0bad266b Mon Sep 17 00:00:00 2001
 From: Liang Dai <liang.dai1@citrix.com>
 Date: Wed, 16 Aug 2017 22:00:37 +0800
 Subject: [PATCH] CP-23753: Talk to new clipboard daemon
 
 Signed-off-by: Liang Dai <liang.dai1@citrix.com>
+---
+ include/ui/console.h |   2 +
+ qemu-options.hx      |   3 +
+ ui/vnc.c             | 176 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ ui/vnc.h             |  22 +++++++
+ vl.c                 |   6 ++
+ 5 files changed, 209 insertions(+)
+
 diff --git a/include/ui/console.h b/include/ui/console.h
-index f981696848..c9b5635d53 100644
+index f981696..c9b5635 100644
 --- a/include/ui/console.h
 +++ b/include/ui/console.h
 @@ -445,9 +445,11 @@ void qemu_display_init(DisplayState *ds, DisplayOptions *opts);
@@ -21,10 +28,10 @@ index f981696848..c9b5635d53 100644
  
  /* input.c */
 diff --git a/qemu-options.hx b/qemu-options.hx
-index 9621e934c0..7d5f141604 100644
+index e14d88e..f970e84 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
-@@ -1991,6 +1991,9 @@ STEXI
+@@ -2078,6 +2078,9 @@ STEXI
  @table @option
  ETEXI
  
@@ -35,10 +42,10 @@ index 9621e934c0..7d5f141604 100644
      "-win2k-hack     use it when installing Windows 2000 to avoid a disk full bug\n",
      QEMU_ARCH_I386)
 diff --git a/ui/vnc.c b/ui/vnc.c
-index 38f92bfca3..7eb47712fd 100644
+index f94b3a2..31b3461 100644
 --- a/ui/vnc.c
 +++ b/ui/vnc.c
-@@ -58,6 +58,9 @@ static const struct timeval VNC_REFRESH_LOSSY = { 2, 0 };
+@@ -60,6 +60,9 @@ static const struct timeval VNC_REFRESH_LOSSY = { 2, 0 };
  #include "vnc_keysym.h"
  #include "crypto/cipher.h"
  
@@ -48,7 +55,7 @@ index 38f92bfca3..7eb47712fd 100644
  static QTAILQ_HEAD(, VncDisplay) vnc_displays =
      QTAILQ_HEAD_INITIALIZER(vnc_displays);
  
-@@ -1707,6 +1710,49 @@ uint32_t read_u32(uint8_t *data, size_t offset)
+@@ -1696,6 +1699,49 @@ uint32_t read_u32(uint8_t *data, size_t offset)
  
  static void client_cut_text(VncState *vs, size_t len, uint8_t *text)
  {
@@ -98,7 +105,7 @@ index 38f92bfca3..7eb47712fd 100644
  }
  
  static void check_pointer_type_change(Notifier *notifier, void *data)
-@@ -4090,6 +4136,129 @@ QemuOpts *vnc_parse(const char *str, Error **errp)
+@@ -4094,6 +4140,129 @@ QemuOpts *vnc_parse(const char *str, Error **errp)
      return opts;
  }
  
@@ -228,7 +235,7 @@ index 38f92bfca3..7eb47712fd 100644
  int vnc_init_func(void *opaque, QemuOpts *opts, Error **errp)
  {
      Error *local_err = NULL;
-@@ -4106,6 +4275,13 @@ int vnc_init_func(void *opaque, QemuOpts *opts, Error **errp)
+@@ -4110,6 +4279,13 @@ int vnc_init_func(void *opaque, QemuOpts *opts, Error **errp)
          error_propagate(errp, local_err);
          return -1;
      }
@@ -243,10 +250,10 @@ index 38f92bfca3..7eb47712fd 100644
  }
  
 diff --git a/ui/vnc.h b/ui/vnc.h
-index 2f84db3142..4295a4dd45 100644
+index fea79c2..b003ea2 100644
 --- a/ui/vnc.h
 +++ b/ui/vnc.h
-@@ -64,6 +64,7 @@ typedef struct VncState VncState;
+@@ -63,6 +63,7 @@ typedef struct VncState VncState;
  typedef struct VncJob VncJob;
  typedef struct VncRect VncRect;
  typedef struct VncRectEntry VncRectEntry;
@@ -254,7 +261,7 @@ index 2f84db3142..4295a4dd45 100644
  
  typedef int VncReadEvent(VncState *vs, uint8_t *data, size_t len);
  
-@@ -75,6 +76,9 @@ typedef void VncSendHextileTile(VncState *vs,
+@@ -74,6 +75,9 @@ typedef void VncSendHextileTile(VncState *vs,
                                  void *last_fg,
                                  int *has_bg, int *has_fg);
  
@@ -264,7 +271,7 @@ index 2f84db3142..4295a4dd45 100644
  /* VNC_DIRTY_PIXELS_PER_BIT is the number of dirty pixels represented
   * by one bit in the dirty bitmap, should be a power of 2 */
  #define VNC_DIRTY_PIXELS_PER_BIT 16
-@@ -97,6 +101,8 @@ typedef void VncSendHextileTile(VncState *vs,
+@@ -96,6 +100,8 @@ typedef void VncSendHextileTile(VncState *vs,
  
  #define VNC_AUTH_CHALLENGE_SIZE 16
  
@@ -273,7 +280,7 @@ index 2f84db3142..4295a4dd45 100644
  typedef struct VncDisplay VncDisplay;
  
  #include "vnc-auth-vencrypt.h"
-@@ -348,6 +354,14 @@ struct VncState
+@@ -349,6 +355,14 @@ struct VncState
      QTAILQ_ENTRY(VncState) next;
  };
  
@@ -288,7 +295,7 @@ index 2f84db3142..4295a4dd45 100644
  
  /*****************************************************************************
   *
-@@ -540,6 +554,12 @@ void vnc_read_when(VncState *vs, VncReadEvent *func, size_t expecting);
+@@ -541,6 +555,12 @@ void vnc_read_when(VncState *vs, VncReadEvent *func, size_t expecting);
  void vnc_disconnect_finish(VncState *vs);
  void vnc_start_protocol(VncState *vs);
  
@@ -301,7 +308,7 @@ index 2f84db3142..4295a4dd45 100644
  
  /* Buffer I/O functions */
  uint32_t read_u32(uint8_t *data, size_t offset);
-@@ -597,4 +617,6 @@ int vnc_zrle_send_framebuffer_update(VncState *vs, int x, int y, int w, int h);
+@@ -598,4 +618,6 @@ int vnc_zrle_send_framebuffer_update(VncState *vs, int x, int y, int w, int h);
  int vnc_zywrle_send_framebuffer_update(VncState *vs, int x, int y, int w, int h);
  void vnc_zrle_clear(VncState *vs);
  
@@ -309,10 +316,10 @@ index 2f84db3142..4295a4dd45 100644
 +
  #endif /* QEMU_VNC_H */
 diff --git a/vl.c b/vl.c
-index b426b32134..5150b9aa55 100644
+index bf0a634..42d99a1 100644
 --- a/vl.c
 +++ b/vl.c
-@@ -3569,6 +3569,12 @@ int main(int argc, char **argv, char **envp)
+@@ -3561,6 +3561,12 @@ int main(int argc, char **argv, char **envp)
              case QEMU_OPTION_vnc:
                  vnc_parse(optarg, &error_fatal);
                  break;
