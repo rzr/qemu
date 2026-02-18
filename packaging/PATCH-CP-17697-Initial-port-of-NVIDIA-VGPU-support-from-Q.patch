@@ -1,11 +1,19 @@
-From fbb3af9eb9ac1f9605a9523750135f5995a9b48a Mon Sep 17 00:00:00 2001
 From: Igor Druzhinin <igor.druzhinin@citrix.com>
 Date: Thu, 18 May 2017 21:16:35 +0100
 Subject: [PATCH] CP-17697 Initial port of NVIDIA VGPU support from QEMU-trad
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
+---
+ hw/display/Makefile.objs  |   2 +
+ hw/display/vgpu_fb.c      | 315 ++++++++++++++++++++++++++++++++++++++++++++++
+ hw/i386/pc_piix.c         |   2 +
+ include/hw/display/vgpu.h |   6 +
+ 4 files changed, 325 insertions(+)
+ create mode 100644 hw/display/vgpu_fb.c
+ create mode 100644 include/hw/display/vgpu.h
+
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index f2182e3bef..b3772f3962 100644
+index f2182e3..b3772f3 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
 @@ -58,4 +58,6 @@ virtio-gpu-3d.o-libs += $(VIRGL_LIBS)
@@ -17,7 +25,7 @@ index f2182e3bef..b3772f3962 100644
  common-obj-$(CONFIG_ATI_VGA) += ati.o ati_2d.o ati_dbg.o
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000000..28d7ff131b
+index 0000000..28d7ff1
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
 @@ -0,0 +1,315 @@
@@ -337,7 +345,7 @@ index 0000000000..28d7ff131b
 +
 +type_init(vgpu_register_types)
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index abe6fb38f9..9c324a66cf 100644
+index abe6fb3..9c324a6 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
 @@ -33,6 +33,7 @@
@@ -358,7 +366,7 @@ index abe6fb38f9..9c324a66cf 100644
  }
 diff --git a/include/hw/display/vgpu.h b/include/hw/display/vgpu.h
 new file mode 100644
-index 0000000000..f0bbfef7e9
+index 0000000..f0bbfef
 --- /dev/null
 +++ b/include/hw/display/vgpu.h
 @@ -0,0 +1,6 @@
