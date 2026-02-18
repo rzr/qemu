@@ -1,8 +1,16 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:42 +0100
+Subject: xen-platform-add-class-id-property
+
+---
+ hw/i386/xen/xen_platform.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index 901ea2a..c0ea919 100644
+index 562fca7..a777ccd 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
-@@ -67,6 +67,7 @@ typedef struct PCIXenPlatformState {
+@@ -68,6 +68,7 @@ typedef struct PCIXenPlatformState {
      char log_buffer[4096];
      int log_buffer_off;
  
@@ -10,7 +18,7 @@ index 901ea2a..c0ea919 100644
      uint16_t device_id;
  } PCIXenPlatformState;
  
-@@ -445,6 +446,7 @@ static void xen_platform_realize(PCIDevice *dev, Error **errp)
+@@ -480,6 +481,7 @@ static void xen_platform_realize(PCIDevice *dev, Error **errp)
      pci_conf[PCI_INTERRUPT_PIN] = 1;
  
      pci_set_word(pci_conf + PCI_DEVICE_ID, d->device_id);
@@ -18,7 +26,7 @@ index 901ea2a..c0ea919 100644
  
      platform_ioport_bar_setup(d);
      pci_register_bar(dev, 0, PCI_BASE_ADDRESS_SPACE_IO, &d->bar);
-@@ -467,6 +469,8 @@ static void platform_reset(DeviceState *dev)
+@@ -502,6 +504,8 @@ static void platform_reset(DeviceState *dev)
  static Property xen_platform_props[] = {
      DEFINE_PROP_UINT16("device-id", PCIXenPlatformState, device_id,
                         PCI_DEVICE_ID_XEN_PLATFORM),
@@ -27,7 +35,7 @@ index 901ea2a..c0ea919 100644
      DEFINE_PROP_END_OF_LIST()
  };
  
-@@ -477,7 +481,6 @@ static void xen_platform_class_init(ObjectClass *klass, void *data)
+@@ -512,7 +516,6 @@ static void xen_platform_class_init(ObjectClass *klass, void *data)
  
      k->realize = xen_platform_realize;
      k->vendor_id = PCI_VENDOR_ID_XEN;
