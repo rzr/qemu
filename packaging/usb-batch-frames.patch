@@ -1,8 +1,16 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: usb-batch-frames
+
+---
+ hw/usb/hcd-uhci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 diff --git a/hw/usb/hcd-uhci.c b/hw/usb/hcd-uhci.c
-index ca72a80..cba26f9 100644
+index 23507ad..9c345ac 100644
 --- a/hw/usb/hcd-uhci.c
 +++ b/hw/usb/hcd-uhci.c
-@@ -1182,7 +1182,7 @@ static void uhci_frame_timer(void *opaque)
+@@ -1187,7 +1187,7 @@ static void uhci_frame_timer(void *opaque)
      }
      s->pending_int_mask = 0;
  
