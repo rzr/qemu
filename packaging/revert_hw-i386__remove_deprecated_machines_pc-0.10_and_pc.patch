@@ -1,3 +1,7 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: revert_hw-i386__remove_deprecated_machines_pc-0.10_and_pc-0.11
+
 Revert "hw/i386: Remove deprecated machines pc-0.10 and pc-0.11"
 
 From: Anthony PERARD <anthony.perard@citrix.com>
@@ -6,12 +10,17 @@ Date: Fri 26 Jun 2020 14:30:46 BST +0100
 This reverts commit cc425b5ddfe8f8474814f369409e637c36898542.
 And apply changes that happend to the other compat handling since that
 commit.
+---
+ hw/i386/pc_piix.c     | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ qemu-deprecated.texi  |  2 +-
+ tests/cpu-plug-test.c |  4 ++-
+ 3 files changed, 74 insertions(+), 3 deletions(-)
 
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index c7c093f387..e6903f345f 100644
+index e5f037f..abe6fb3 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
-@@ -382,7 +382,7 @@ static void pc_compat_1_2(MachineState *machine)
+@@ -364,7 +364,7 @@ static void pc_compat_1_2(MachineState *machine)
      x86_cpu_change_kvm_default("kvm-pv-eoi", NULL);
  }
  
@@ -20,7 +29,7 @@ index c7c093f387..e6903f345f 100644
  static void pc_compat_0_13(MachineState *machine)
  {
      pc_compat_1_2(machine);
-@@ -884,6 +884,75 @@ static void pc_i440fx_0_12_machine_options(MachineClass *m)
+@@ -879,6 +879,75 @@ static void pc_i440fx_0_12_machine_options(MachineClass *m)
  DEFINE_I440FX_MACHINE(v0_12, "pc-0.12", pc_compat_0_13,
                        pc_i440fx_0_12_machine_options);
  
@@ -97,10 +106,10 @@ index c7c093f387..e6903f345f 100644
      uint16_t gpu_device_id;
      uint16_t pch_device_id;
 diff --git a/qemu-deprecated.texi b/qemu-deprecated.texi
-index fff07bb2a3..db5b1b0408 100644
+index b42d8b3..b21aafa 100644
 --- a/qemu-deprecated.texi
 +++ b/qemu-deprecated.texi
-@@ -231,7 +231,7 @@ their usecases.
+@@ -266,7 +266,7 @@ The 'scsi-disk' device is deprecated. Users should use 'scsi-hd' or
  
  @section System emulator machines
  
@@ -110,10 +119,10 @@ index fff07bb2a3..db5b1b0408 100644
  These machine types are very old and likely can not be used for live migration
  from old QEMU versions anymore. A newer machine type should be used instead.
 diff --git a/tests/cpu-plug-test.c b/tests/cpu-plug-test.c
-index 668f00144e..f4a677d238 100644
+index 30e514b..cf199e2 100644
 --- a/tests/cpu-plug-test.c
 +++ b/tests/cpu-plug-test.c
-@@ -157,7 +157,9 @@ static void add_pc_test_case(const char *mname)
+@@ -152,7 +152,9 @@ static void add_pc_test_case(const char *mname)
          (strcmp(mname, "pc-0.15") == 0) ||
          (strcmp(mname, "pc-0.14") == 0) ||
          (strcmp(mname, "pc-0.13") == 0) ||
