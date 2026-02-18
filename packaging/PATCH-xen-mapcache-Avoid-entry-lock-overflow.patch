@@ -1,4 +1,3 @@
-From a021a2dd8b790437d27db95774969349632f856a Mon Sep 17 00:00:00 2001
 From: Ross Lagerwall <ross.lagerwall@citrix.com>
 Date: Mon, 24 Jan 2022 10:44:50 +0000
 Subject: [PATCH] xen-mapcache: Avoid entry->lock overflow
@@ -22,7 +21,7 @@ Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/hw/i386/xen/xen-mapcache.c b/hw/i386/xen/xen-mapcache.c
-index bd47c3d672..f2ef977963 100644
+index e82b7dc..dc85a45 100644
 --- a/hw/i386/xen/xen-mapcache.c
 +++ b/hw/i386/xen/xen-mapcache.c
 @@ -52,7 +52,7 @@ typedef struct MapCacheEntry {
@@ -34,7 +33,7 @@ index bd47c3d672..f2ef977963 100644
  #define XEN_MAPCACHE_ENTRY_DUMMY (1 << 0)
      uint8_t flags;
      hwaddr size;
-@@ -355,6 +355,12 @@ tryagain:
+@@ -354,6 +354,12 @@ tryagain:
      if (lock) {
          MapCacheRev *reventry = g_malloc0(sizeof(MapCacheRev));
          entry->lock++;
@@ -47,6 +46,3 @@ index bd47c3d672..f2ef977963 100644
          reventry->dma = dma;
          reventry->vaddr_req = mapcache->last_entry->vaddr_base + address_offset;
          reventry->paddr_index = mapcache->last_entry->paddr_index;
--- 
-2.27.0
-
