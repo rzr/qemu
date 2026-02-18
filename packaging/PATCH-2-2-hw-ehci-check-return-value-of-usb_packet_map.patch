@@ -1,4 +1,3 @@
-From 2fdb42d840400d58f2e706ecca82c142b97bcbd6 Mon Sep 17 00:00:00 2001
 From: Li Qiang <liq3ea@163.com>
 Date: Wed, 12 Aug 2020 09:17:27 -0700
 Subject: [PATCH 2/2] hw: ehci: check return value of 'usb_packet_map'
@@ -14,10 +13,10 @@ Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
  1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/hw/usb/hcd-ehci.c b/hw/usb/hcd-ehci.c
-index 58cceacbf8..4da446d2de 100644
+index 4705049..5331417 100644
 --- a/hw/usb/hcd-ehci.c
 +++ b/hw/usb/hcd-ehci.c
-@@ -1373,7 +1373,10 @@ static int ehci_execute(EHCIPacket *p, const char *action)
+@@ -1374,7 +1374,10 @@ static int ehci_execute(EHCIPacket *p, const char *action)
          spd = (p->pid == USB_TOKEN_IN && NLPTR_TBIT(p->qtd.altnext) == 0);
          usb_packet_setup(&p->packet, p->pid, ep, 0, p->qtdaddr, spd,
                           (p->qtd.token & QTD_TOKEN_IOC) != 0);
@@ -29,7 +28,7 @@ index 58cceacbf8..4da446d2de 100644
          p->async = EHCI_ASYNC_INITIALIZED;
      }
  
-@@ -1453,7 +1456,10 @@ static int ehci_process_itd(EHCIState *ehci,
+@@ -1454,7 +1457,10 @@ static int ehci_process_itd(EHCIState *ehci,
              if (ep && ep->type == USB_ENDPOINT_XFER_ISOC) {
                  usb_packet_setup(&ehci->ipacket, pid, ep, 0, addr, false,
                                   (itd->transact[i] & ITD_XACT_IOC) != 0);
