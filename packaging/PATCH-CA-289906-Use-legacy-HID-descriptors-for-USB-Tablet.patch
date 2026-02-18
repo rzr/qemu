@@ -1,12 +1,15 @@
-From ab9b29acf3dd7c16a320d4a266ce49ea4e2952fa Mon Sep 17 00:00:00 2001
 From: Igor Druzhinin <igor.druzhinin@citrix.com>
 Date: Tue, 22 May 2018 21:57:25 +0100
 Subject: [PATCH] CA-289906: Use legacy HID descriptors for USB Tablet in
  trad-compat mode
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
+---
+ hw/usb/dev-hid.c | 138 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 133 insertions(+), 5 deletions(-)
+
 diff --git a/hw/usb/dev-hid.c b/hw/usb/dev-hid.c
-index 88492f26e6..65cfb10886 100644
+index 88492f2..65cfb10 100644
 --- a/hw/usb/dev-hid.c
 +++ b/hw/usb/dev-hid.c
 @@ -31,6 +31,7 @@
