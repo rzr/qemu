@@ -1,11 +1,15 @@
-From 1c4e074b93b1b0d51885557b6e12d6b8f5f823c6 Mon Sep 17 00:00:00 2001
 From: "ben.sims@citrix.com" <ben.sims@citrix.com>
 Date: Tue, 31 Mar 2020 08:38:15 +0000
 Subject: [PATCH] CP-33348 - Allow media replace qmp command to take a numeric
  socket fds for nbd.
 
+---
+ block/nbd.c         | 27 +++++++++++----------------
+ util/qemu-sockets.c | 24 +++++++++++++++++++-----
+ 2 files changed, 30 insertions(+), 21 deletions(-)
+
 diff --git a/block/nbd.c b/block/nbd.c
-index eb380102c0..251b695f56 100644
+index eb38010..251b695 100644
 --- a/block/nbd.c
 +++ b/block/nbd.c
 @@ -1645,10 +1645,13 @@ static void nbd_parse_filename(const char *filename, QDict *options,
@@ -61,10 +65,10 @@ index eb380102c0..251b695f56 100644
  }
  
 diff --git a/util/qemu-sockets.c b/util/qemu-sockets.c
-index bcc06d0e01..694b262dc8 100644
+index bcc06d0..694b262d 100644
 --- a/util/qemu-sockets.c
 +++ b/util/qemu-sockets.c
-@@ -1068,18 +1068,26 @@ SocketAddress *socket_parse(const char *str, Error **errp)
+@@ -1068,18 +1068,26 @@ fail:
      return NULL;
  }
  
