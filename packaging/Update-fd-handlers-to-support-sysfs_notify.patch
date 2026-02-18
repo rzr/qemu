@@ -1,5 +1,16 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: Update-fd-handlers-to-support-sysfs_notify
+
+---
+ include/block/aio.h      |  9 +++++++++
+ include/qemu/main-loop.h |  5 +++++
+ util/aio-posix.c         | 47 ++++++++++++++++++++++++++++++++++++++---------
+ util/main-loop.c         | 11 +++++++++++
+ 4 files changed, 63 insertions(+), 9 deletions(-)
+
 diff --git a/include/block/aio.h b/include/block/aio.h
-index 6b0d52f732..cd61b04b7f 100644
+index 6b0d52f..cd61b04 100644
 --- a/include/block/aio.h
 +++ b/include/block/aio.h
 @@ -342,6 +342,15 @@ void aio_set_fd_handler(AioContext *ctx,
@@ -19,7 +30,7 @@ index 6b0d52f732..cd61b04b7f 100644
   * registered with aio_set_fd_handler.  Do nothing if the file descriptor is
   * not registered.
 diff --git a/include/qemu/main-loop.h b/include/qemu/main-loop.h
-index f6ba78ea73..b36dab6ce8 100644
+index f6ba78e..b36dab6 100644
 --- a/include/qemu/main-loop.h
 +++ b/include/qemu/main-loop.h
 @@ -217,6 +217,11 @@ void qemu_set_fd_handler(int fd,
@@ -35,7 +46,7 @@ index f6ba78ea73..b36dab6ce8 100644
  /**
   * event_notifier_set_handler: Register an EventNotifier with the main loop
 diff --git a/util/aio-posix.c b/util/aio-posix.c
-index 31a8e03ca7..62317806e9 100644
+index 31a8e03..6231780 100644
 --- a/util/aio-posix.c
 +++ b/util/aio-posix.c
 @@ -28,6 +28,7 @@ struct AioHandler
@@ -163,7 +174,7 @@ index 31a8e03ca7..62317806e9 100644
          if (node->deleted) {
              if (qemu_lockcnt_dec_if_lock(&ctx->list_lock)) {
 diff --git a/util/main-loop.c b/util/main-loop.c
-index eda63fe4e0..29bbc601b2 100644
+index eda63fe..29bbc60 100644
 --- a/util/main-loop.c
 +++ b/util/main-loop.c
 @@ -568,6 +568,17 @@ void qemu_set_fd_handler(int fd,
