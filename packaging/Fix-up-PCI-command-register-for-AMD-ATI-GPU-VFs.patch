@@ -1,8 +1,16 @@
+From: Philippe Coval <philippe.coval@vates.tech>
+Date: Wed, 18 Feb 2026 14:07:43 +0100
+Subject: Fix-up-PCI-command-register-for-AMD-ATI-GPU-VFs
+
+---
+ hw/xen/xen_pt_config_init.c | 44 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 42 insertions(+), 2 deletions(-)
+
 diff --git a/hw/xen/xen_pt_config_init.c b/hw/xen/xen_pt_config_init.c
-index 6f18366..6baf5d7 100644
+index 31ec5ad..888127f 100644
 --- a/hw/xen/xen_pt_config_init.c
 +++ b/hw/xen/xen_pt_config_init.c
-@@ -304,7 +304,47 @@ static int xen_pt_irqpin_reg_init(XenPCIPassthroughState *s,
+@@ -306,7 +306,47 @@ static int xen_pt_irqpin_reg_init(XenPCIPassthroughState *s,
      return 0;
  }
  
@@ -50,7 +58,7 @@ index 6f18366..6baf5d7 100644
  static int xen_pt_cmd_reg_write(XenPCIPassthroughState *s, XenPTReg *cfg_entry,
                                  uint16_t *val, uint16_t dev_value,
                                  uint16_t valid_mask)
-@@ -613,8 +653,8 @@ static XenPTRegInfo xen_pt_emu_reg_header0[] = {
+@@ -617,8 +657,8 @@ static XenPTRegInfo xen_pt_emu_reg_header0[] = {
          .init_val   = 0x0000,
          .res_mask   = 0xF880,
          .emu_mask   = 0x0743,
