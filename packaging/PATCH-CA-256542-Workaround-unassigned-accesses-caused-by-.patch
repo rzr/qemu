@@ -1,7 +1,7 @@
-From bad71b32564565d340497a4e29b10577b0239b42 Mon Sep 17 00:00:00 2001
 From: Igor Druzhinin <igor.druzhinin@citrix.com>
 Date: Tue, 20 Jun 2017 17:24:43 +0100
-Subject: [PATCH] CA-256542 Workaround unassigned accesses caused by ballooning
+Subject: [PATCH] CA-256542 Workaround unassigned accesses caused by
+ ballooning
 
 Xen Balloon memory hotplug makes a guest to populate memory areas
 which are not sufficiently described in QEMU. Some legacy Linux
@@ -17,8 +17,16 @@ We try to intercept and correctly process all the unassigned memory
 accesses in QEMU in this mode.
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
+---
+ hw/i386/pc.c          | 20 ++++++++++++++++++++
+ hw/i386/xen/xen-hvm.c | 37 +++++++++++++++++++++++++++++++++++++
+ include/hw/i386/pc.h  |  2 ++
+ include/hw/xen/xen.h  |  3 +++
+ memory.c              |  8 ++++++++
+ 5 files changed, 70 insertions(+)
+
 diff --git a/hw/i386/pc.c b/hw/i386/pc.c
-index e843dd8281..d43488f138 100644
+index e843dd8..d43488f 100644
 --- a/hw/i386/pc.c
 +++ b/hw/i386/pc.c
 @@ -2129,6 +2129,21 @@ static void pc_machine_set_trad_compat(Object *obj, bool value, Error **errp)
@@ -63,7 +71,7 @@ index e843dd8281..d43488f138 100644
  
  static const TypeInfo pc_machine_info = {
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index aaf4b602b2..b9b4250f8c 100644
+index aaf4b60..b9b4250 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
 @@ -32,6 +32,7 @@
@@ -129,7 +137,7 @@ index aaf4b602b2..b9b4250f8c 100644
 +    }
 +}
 diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
-index f8641b32a5..306fcbfc8c 100644
+index f8641b3..306fcbf 100644
 --- a/include/hw/i386/pc.h
 +++ b/include/hw/i386/pc.h
 @@ -58,6 +58,7 @@ struct PCMachineState {
@@ -149,7 +157,7 @@ index f8641b32a5..306fcbfc8c 100644
  /**
   * PCMachineClass:
 diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
-index 5ac1c6dc55..894a0415b4 100644
+index 5ac1c6d..894a041 100644
 --- a/include/hw/xen/xen.h
 +++ b/include/hw/xen/xen.h
 @@ -45,4 +45,7 @@ void xen_hvm_modified_memory(ram_addr_t start, ram_addr_t length);
@@ -161,7 +169,7 @@ index 5ac1c6dc55..894a0415b4 100644
 +
  #endif /* QEMU_HW_XEN_H */
 diff --git a/memory.c b/memory.c
-index 06484c2bff..95eb3f6ece 100644
+index 06484c2..95eb3f6 100644
 --- a/memory.c
 +++ b/memory.c
 @@ -1257,6 +1257,11 @@ static uint64_t unassigned_mem_read(void *opaque, hwaddr addr,
