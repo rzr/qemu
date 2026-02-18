@@ -1,9 +1,8 @@
-From 1caff0340f49c93d535c6558a5138d20d475315c Mon Sep 17 00:00:00 2001
 From: Jason Wang <jasowang@redhat.com>
 Date: Wed, 24 Feb 2021 12:13:22 +0800
 Subject: [PATCH 2/2] e1000: switch to use qemu_receive_packet() for loopback
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
 
 This patch switches to use qemu_receive_packet() which can detect
@@ -20,10 +19,10 @@ Signed-off-by: Jason Wang <jasowang@redhat.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/hw/net/e1000.c b/hw/net/e1000.c
-index 4345d863e6..4f75b44cfc 100644
+index d1404ea..9c48603 100644
 --- a/hw/net/e1000.c
 +++ b/hw/net/e1000.c
-@@ -546,7 +546,7 @@ e1000_send_packet(E1000State *s, const uint8_t *buf, int size)
+@@ -547,7 +547,7 @@ e1000_send_packet(E1000State *s, const uint8_t *buf, int size)
  
      NetClientState *nc = qemu_get_queue(s->nic);
      if (s->phy_reg[PHY_CTRL] & MII_CR_LOOPBACK) {
@@ -32,6 +31,3 @@ index 4345d863e6..4f75b44cfc 100644
      } else {
          qemu_send_packet(nc, buf, size);
      }
--- 
-2.27.0
-
